@@ -1,0 +1,91 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{3E19DA8D-056C-4F05-B976-698498311FC2}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>LinqToDB.DataProvider.DB2iSeries</RootNamespace>
+    <AssemblyName>LinqToDB.DataProvider.DB2iSeries</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>LinqToDB.DB2iSeries.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data.Linq" />
+    <Reference Include="System.Data.Services" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="DB2iSeriesBulkCopy.cs" />
+    <Compile Include="DB2iSeriesDataProvider.cs" />
+    <Compile Include="DB2iSeriesExpressions.cs" />
+    <Compile Include="DB2iSeriesFactory.cs" />
+    <Compile Include="DB2iSeriesIdentifierQuoteMode.cs" />
+    <Compile Include="DB2iSeriesMappingSchema.cs" />
+    <Compile Include="DB2iSeriesMerge.cs" />
+    <Compile Include="DB2iSeriesMultipleRowsHelper.cs" />
+    <Compile Include="DB2iSeriesNamingConvention.cs" />
+    <Compile Include="DB2iSeriesSchemaProvider.cs" />
+    <Compile Include="DB2iSeriesSqlBuilder.cs" />
+    <Compile Include="DB2iSeriesSqlOptimizer.cs" />
+    <Compile Include="DB2iSeriesTools.cs" />
+    <Compile Include="DB2iSeriesTypeCreator.cs" />
+    <Compile Include="DB2iSeriesTypes.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TypeCreator.cs" />
+    <Compile Include="TypeCreatorBase.cs" />
+    <Compile Include="TypeCreatorNoDefault.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="LinqToDB.DB2iSeries.snk" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\linq2db\Source\LinqToDB.csproj">
+      <Project>{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}</Project>
+      <Name>LinqToDB</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
