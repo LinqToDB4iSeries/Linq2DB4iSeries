@@ -37,6 +37,10 @@
     <AssemblyOriginatorKeyFile>LinqToDB.DB2iSeries.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="linq2db, Version=1.0.7.5, Culture=neutral, PublicKeyToken=f19f8aed7feff67e, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\linq2db.1.7.5\lib\net45\linq2db.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
@@ -73,12 +77,6 @@
   <ItemGroup>
     <None Include="LinqToDB.DB2iSeries.snk" />
     <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\linq2db\Source\LinqToDB.csproj">
-      <Project>{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}</Project>
-      <Name>LinqToDB</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -144,6 +144,10 @@
       <HintPath>..\..\Redist\IBM\IBM.Data.Informix.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="linq2db, Version=1.0.7.5, Culture=neutral, PublicKeyToken=f19f8aed7feff67e, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\linq2db.1.7.5\lib\net45\linq2db.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.SqlServer.Types, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
       <Private>True</Private>
@@ -335,10 +339,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\linq2db\Source\LinqToDB.csproj">
-      <Project>{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}</Project>
-      <Name>LinqToDB</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj">
       <Project>{3e19da8d-056c-4f05-b976-698498311fc2}</Project>
       <Name>LinqToDB.DataProvider.DB2iSeries</Name>

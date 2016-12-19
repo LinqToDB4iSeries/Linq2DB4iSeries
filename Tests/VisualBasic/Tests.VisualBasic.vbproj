@@ -121,6 +121,10 @@
     <AssemblyOriginatorKeyFile>linq2db.Tests.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="linq2db, Version=1.0.7.5, Culture=neutral, PublicKeyToken=f19f8aed7feff67e, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\linq2db.1.7.5\lib\net45\linq2db.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
@@ -149,10 +153,6 @@
     <Compile Include="CompilerServices.vb" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\linq2db\Source\LinqToDB.csproj">
-      <Project>{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}</Project>
-      <Name>LinqToDB</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Model\Tests.Model.csproj">
       <Project>{D527524F-EC92-465E-9CAE-86278121675A}</Project>
       <Name>Tests.Model</Name>

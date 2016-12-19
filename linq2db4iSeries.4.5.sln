@@ -35,8 +35,6 @@ Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "Tests.VisualBasic", "Tests\
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Tests.FSharp", "Tests\FSharp\Tests.FSharp.fsproj", "{56109866-4005-4852-9F9A-19A7A8D3B369}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinqToDB", "..\linq2db\Source\LinqToDB.csproj", "{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug FW 3.5|Any CPU = Debug FW 3.5|Any CPU
@@ -283,46 +281,6 @@ Global
 		{56109866-4005-4852-9F9A-19A7A8D3B369}.ReleaseMono|x64.Build.0 = Release|Any CPU
 		{56109866-4005-4852-9F9A-19A7A8D3B369}.ReleaseMono|x86.ActiveCfg = Release|Any CPU
 		{56109866-4005-4852-9F9A-19A7A8D3B369}.ReleaseMono|x86.Build.0 = Release|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Debug FW 3.5|Any CPU.ActiveCfg = DebugMono|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Debug FW 3.5|Any CPU.Build.0 = DebugMono|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Debug FW 3.5|ARM.ActiveCfg = DebugMono|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Debug FW 3.5|ARM.Build.0 = DebugMono|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Debug FW 3.5|x64.ActiveCfg = DebugMono|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Debug FW 3.5|x64.Build.0 = DebugMono|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Debug FW 3.5|x86.ActiveCfg = DebugMono|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Debug FW 3.5|x86.Build.0 = DebugMono|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Debug|ARM.ActiveCfg = Debug|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Debug|ARM.Build.0 = Debug|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Debug|x64.Build.0 = Debug|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Debug|x86.Build.0 = Debug|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.DebugMono|Any CPU.ActiveCfg = DebugMono|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.DebugMono|Any CPU.Build.0 = DebugMono|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.DebugMono|ARM.ActiveCfg = DebugMono|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.DebugMono|ARM.Build.0 = DebugMono|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.DebugMono|x64.ActiveCfg = DebugMono|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.DebugMono|x64.Build.0 = DebugMono|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.DebugMono|x86.ActiveCfg = DebugMono|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.DebugMono|x86.Build.0 = DebugMono|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Release|ARM.ActiveCfg = Release|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Release|ARM.Build.0 = Release|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Release|x64.ActiveCfg = Release|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Release|x64.Build.0 = Release|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Release|x86.ActiveCfg = Release|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.Release|x86.Build.0 = Release|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.ReleaseMono|Any CPU.ActiveCfg = ReleaseMono|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.ReleaseMono|Any CPU.Build.0 = ReleaseMono|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.ReleaseMono|ARM.ActiveCfg = ReleaseMono|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.ReleaseMono|ARM.Build.0 = ReleaseMono|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.ReleaseMono|x64.ActiveCfg = ReleaseMono|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.ReleaseMono|x64.Build.0 = ReleaseMono|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.ReleaseMono|x86.ActiveCfg = ReleaseMono|Any CPU
-		{7CBD2975-3D0C-4BC3-BB4E-932F910778CF}.ReleaseMono|x86.Build.0 = ReleaseMono|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
