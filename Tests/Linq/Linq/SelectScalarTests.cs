@@ -70,7 +70,12 @@ namespace Tests.Linq
 		{
 			const string s = "123";
 			using (var db = GetDataContext(context))
-				Assert.AreEqual(s.Substring(1), db.Select(() => s.Substring(1)));
+			{
+				var expected = s.Substring(1);
+				var actual = db.Select(() => s.Substring(1));
+
+				Assert.AreEqual(expected, actual);
+			}
 		}
 
 		[Test, DataContextSource]

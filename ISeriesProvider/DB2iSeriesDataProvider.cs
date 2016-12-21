@@ -34,13 +34,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public override string ConnectionNamespace { get; }
 		protected override string ConnectionTypeName { get { return DB2iSeriesTools.ConnectionTypeName; } }
 		protected override string DataReaderTypeName { get { return DB2iSeriesTools.DataReaderTypeName; } }
-		public override string DummyTableName
-		{
-			get
-			{
-				return DB2iSeriesTools.iSeriesDummyTableName();
-			}
-		}
+		public string DummyTableName {	get { return DB2iSeriesTools.iSeriesDummyTableName(); } }
 
 		public override BulkCopyRowsCopied BulkCopy<T>(DataConnection dataConnection, BulkCopyOptions options, IEnumerable<T> source)
 		{
@@ -55,7 +49,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		}
 		public override ISqlBuilder CreateSqlBuilder()
 		{
-			//      Return New iSeriesSqlBuilder_DB2(GetSqlOptimizer, SqlProviderFlags, MappingSchema.ValueToSqlConverter)
 			return new DB2iSeriesSqlBuilder(GetSqlOptimizer(), SqlProviderFlags, MappingSchema.ValueToSqlConverter);
 		}
 		public override ISchemaProvider GetSchemaProvider()
@@ -248,9 +241,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					}
 					break;
 				case DataType.DateTime2:
-					//if(value is DateTime && ((DateTime)value).TimeOfDay.Ticks == 0)
-					//	dataType__1 = DataType.Date;
-					//else
 						dataType__1 = DataType.DateTime;
 					break;
 				case DataType.Blob:

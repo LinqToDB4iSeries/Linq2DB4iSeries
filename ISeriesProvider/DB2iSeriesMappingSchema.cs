@@ -24,61 +24,60 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetDataType(typeof(string), new SqlDataType(DataType.NVarChar, typeof(string), 255));
 			SetValueToSqlConverter(typeof(string), (sb, dt, v) => ConvertStringToSql(sb, v.ToString()));
 			SetValueToSqlConverter(typeof(char), (sb, dt, v) => ConvertCharToSql(sb, (char)v));
+			SetValueToSqlConverter(typeof(DateTime), (sb, dt, v) => ConvertDateTimeToSql(sb, dt, (DateTime)v));
+
 			ValueToSqlConverter.ParameterValueExpression = (dataType, value) =>
 			{
 				string colType = "CHAR";
 
+
 				if (dataType != null)
 				{
 					var actualType = SqlDataType.GetDataType(dataType.Type);
-					switch (actualType.DataType)
-					{
-						case DataType.Variant:
-						case DataType.Binary:
-							colType = $"BINARY({(actualType.Length == 0 ? 1 : actualType.Length)})";
-							break;
-						case DataType.Int64:
-							colType = "BIGINT";
-							break;
-						case DataType.Blob:
-							colType = $"BLOB({ (actualType.Length == 0 ? 1 : actualType.Length)})";
-							break;
-						case DataType.VarBinary:
-							colType = $"VARBINARY({ (actualType.Length == 0 ? 1 : actualType.Length)})";
-							break;
-						case DataType.Char: colType = "CHAR"; break;
-						case DataType.Date: colType = "DATE"; break;
-						case DataType.Decimal: colType = "DECIMAL"; break;
-						case DataType.Double: colType = "DOUBLE"; break;
-						case DataType.Int32: colType = "INTEGER"; break;
-						case DataType.Single: colType = "REAL"; break;
-						case DataType.Int16:
-						case DataType.Boolean:
-							colType = "SMALLINT";
-							break;
-						case DataType.Time:
-						case DataType.DateTimeOffset:
-							colType = "TIME";
-							break;
-						case DataType.Timestamp:
-						case DataType.DateTime:
-						case DataType.DateTime2:
-							colType = "TIMESTAMP";
-							break;
-						case DataType.VarChar:
-							colType = $"VARCHAR({ (actualType.Length == 0 ? 1 : actualType.Length)})";
-							break;
-						case DataType.NVarChar:
-							colType = $"NVARCHAR({ (actualType.Length == 0 ? 1 : actualType.Length)})";
-							break;
-						default:
-							colType = actualType.DataType.ToString();
-							break;
-					}
+
+					colType = GetiSeriesType(actualType);
 				}
 
 				return $"CAST({value} AS {colType})";
 			};
+		}
+
+		internal static string GetiSeriesType(SqlDataType dataType)
+		{
+			switch (dataType.DataType)
+			{
+				case DataType.Variant:
+				case DataType.Binary:
+					return $"BINARY({(dataType.Length == 0 ? 1 : dataType.Length)})";
+				case DataType.Int64:
+					return "BIGINT";
+				case DataType.Blob:
+					return $"BLOB({ (dataType.Length == 0 ? 1 : dataType.Length)})";
+				case DataType.VarBinary:
+					return $"VARBINARY({ (dataType.Length == 0 ? 1 : dataType.Length)})";
+				case DataType.Char: return "CHAR";
+				case DataType.Date: return "DATE";
+				case DataType.Decimal: return "DECIMAL";
+				case DataType.Double: return "DOUBLE";
+				case DataType.Int32: return "INTEGER";
+				case DataType.Single: return "REAL";
+				case DataType.Int16:
+				case DataType.Boolean:
+					return "SMALLINT";
+				case DataType.Time:
+				case DataType.DateTimeOffset:
+					return "TIME";
+				case DataType.Timestamp:
+				case DataType.DateTime:
+				case DataType.DateTime2:
+					return "TIMESTAMP";
+				case DataType.VarChar:
+					return $"VARCHAR({ (dataType.Length == 0 ? 1 : dataType.Length)})";
+				case DataType.NVarChar:
+					return $"NVARCHAR({ (dataType.Length == 0 ? 1 : dataType.Length)})";
+				default:
+					return dataType.DataType.ToString();
+			}
 		}
 
 		protected override T GetSpecificAttributes<T>(MemberInfo memberInfo)
@@ -136,35 +135,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						return (T)(object)new Sql.FunctionAttribute(DB2iSeriesFactory.ProviderName, "Repeat");
 				}
 			}
-			//else if (typeof(T) == typeof(Sql.FunctionAttribute))
-			//{
-			//	switch (memberInfo.Name)
-			//	{
-			//		case "Substring":
-			//			return (T)(object)new Sql.FunctionAttribute(DB2iSeriesFactory.ProviderName, "Substr") { PreferServerSide = true };
-			//		case "Atan2":
-			//			return (T)(object)new Sql.FunctionAttribute(DB2iSeriesFactory.ProviderName, "Atan2", 1, 0);
-			//		case "Log":
-			//			return (T)(object)new Sql.FunctionAttribute(DB2iSeriesFactory.ProviderName, "Ln");
-			//		case "Log10":
-			//			return (T)(object)new Sql.FunctionAttribute(DB2iSeriesFactory.ProviderName, "Log");
-			//		case "NChar":
-			//		case "NVarChar":
-			//			return (T)(object)new Sql.FunctionAttribute(DB2iSeriesFactory.ProviderName, "Char") { ServerSideOnly = true };
-
-			//	}
-			//}
-			//else if (typeof(T) == typeof(Sql.DatePartAttribute))
-			//{
-			//	switch (memberInfo.Name)
-			//	{
-			//		case "DateAdd":
-			//			return (T)(object)new Sql.DatePartAttribute(DB2iSeriesFactory.ProviderName, "{{1}} + {0}", Precedence.Additive, true, new[] { "{0} Year", "({0} * 3) Month", "{0} Month", "{0} Day", "{0} Day", "({0} * 7) Day", "{0} Day", "{0} Hour", "{0} Minute", "{0} Second", "({0} * 1000) Microsecond" }, 0, 1, 2);
-			//		case "DatePart":
-			//			return (T)(object)new Sql.DatePartAttribute(DB2iSeriesFactory.ProviderName, "{0}", false, new[] { null, null, null, null, null, null, "DayOfWeek", null, null, null, null }, 0, 1);
-			//	}
-			//}
-
 
 			return base.GetSpecificAttributes<T>(memberInfo);
 		}
@@ -183,6 +153,25 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		private static void ConvertCharToSql(StringBuilder stringBuilder, char value)
 		{
 			DataTools.ConvertCharToSql(stringBuilder, "'", AppendConversion, value);
+		}
+
+		private static void ConvertDateTimeToSql(StringBuilder stringBuilder, SqlDataType datatype, DateTime value)
+		{
+			var format = value.Millisecond == 0 ?
+						"'{0:yyyy-MM-dd HH:mm:ss}'":
+						"'{0:yyyy-MM-dd HH:mm:ss.fff}'";
+
+			if (datatype.DataType == DataType.Date)
+				format = "'{0:yyyy-MM-dd}'";
+
+			if (datatype.DataType == DataType.Time)
+			{
+				format = value.Millisecond == 0 ?
+							"'{0:HH:mm:ss}'":
+							"'{0:HH:mm:ss.fff}'";
+			}
+
+			stringBuilder.AppendFormat(format, value);
 		}
 
 		private static void ConvertGuidToSql(StringBuilder stringBuilder, Guid value)

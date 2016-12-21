@@ -10,7 +10,7 @@ using LinqToDB.DataProvider.SqlServer;
 namespace Tests.Data
 {
 	using System.Configuration;
-
+	using LinqToDB.DataProvider.DB2iSeries;
 	using Model;
 
 	[TestFixture]
@@ -31,8 +31,7 @@ namespace Tests.Data
 		{
 			using (var dbm = new DataConnection())
 			{
-				string fromClause = string.IsNullOrWhiteSpace(dbm.DataProvider.DummyTableName) ? "" : string.Format(" from {0}", dbm.DataProvider.DummyTableName);
-				var gender = dbm.Execute<Gender>(string.Format("select 'M'{0}", fromClause));
+				var gender = dbm.Execute<Gender>(string.Format("select 'M'{0}", TestBase.GetDummyFrom(dbm.DataProvider)));
 
 				Assert.That(gender, Is.EqualTo(Gender.Male));
 			}

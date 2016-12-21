@@ -20,6 +20,8 @@ using NUnit.Framework.Internal.Builders;
 
 namespace Tests
 {
+	using LinqToDB.DataProvider;
+	using LinqToDB.DataProvider.DB2iSeries;
 	using Model;
 
 	public class TestBase
@@ -93,6 +95,16 @@ namespace Tests
 					default                   : return null;
 				}
 			};
+		}
+
+		public static string GetDummyFrom(IDataProvider provider)
+		{
+			if (provider is DB2iSeriesDataProvider)
+			{
+				return $" FROM {((DB2iSeriesDataProvider)provider).DummyTableName}";
+			}
+
+			return string.Empty;
 		}
 
 		const int IP = 22654;

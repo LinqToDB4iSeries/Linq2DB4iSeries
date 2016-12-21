@@ -3,6 +3,7 @@ using System.Linq;
 
 using LinqToDB;
 using LinqToDB.Data;
+using LinqToDB.DataProvider.DB2iSeries;
 using LinqToDB.Mapping;
 
 using NUnit.Framework;
@@ -30,9 +31,8 @@ namespace Tests.Data
 
 			using (var conn = new DataConnection())
 			{
-				string fromClause = string.IsNullOrWhiteSpace(conn.DataProvider.DummyTableName) ? "" : string.Format(" from {0}", conn.DataProvider.DummyTableName);
 				string param = conn.MappingSchema.ValueToSqlConverter.ParameterValueExpression(new LinqToDB.SqlQuery.SqlDataType(DataType.Binary), "@p");
-				string sql = string.Format("SELECT {0}{1}", param, fromClause);
+				string sql = string.Format("SELECT {0}{1}", param, TestBase.GetDummyFrom(conn.DataProvider));
 				Assert.That(conn.Execute<byte[]>(sql, new { p = arr1 }), Is.EqualTo(arr1));
 				Assert.That(conn.Execute<byte[]>(sql, new { p = arr2 }), Is.EqualTo(arr2));
 			}
@@ -43,9 +43,8 @@ namespace Tests.Data
 		{
 			using (var conn = new DataConnection())
 			{
-				string fromClause = string.IsNullOrWhiteSpace(conn.DataProvider.DummyTableName) ? "" : string.Format(" from {0}", conn.DataProvider.DummyTableName);
 				string param = conn.MappingSchema.ValueToSqlConverter.ParameterValueExpression(new LinqToDB.SqlQuery.SqlDataType(DataType.Int64), "@p");
-				string sql = string.Format("SELECT {0}{1}", param, fromClause);
+				string sql = string.Format("SELECT {0}{1}", param, TestBase.GetDummyFrom(conn.DataProvider));
 				Assert.That(conn.Execute<int>(sql, new { p = 1 }), Is.EqualTo(1));
 			}
 		}
@@ -55,9 +54,8 @@ namespace Tests.Data
 		{
 			using (var conn = new DataConnection())
 			{
-				string fromClause = string.IsNullOrWhiteSpace(conn.DataProvider.DummyTableName) ? "" : string.Format(" from {0}", conn.DataProvider.DummyTableName);
 				string param = conn.MappingSchema.ValueToSqlConverter.ParameterValueExpression(new LinqToDB.SqlQuery.SqlDataType(DataType.Int64), "@p");
-				string sql = string.Format("SELECT {0}{1}", param, fromClause);
+				string sql = string.Format("SELECT {0}{1}", param, TestBase.GetDummyFrom(conn.DataProvider));
 
 				var res = conn.Execute<string>(
 					sql,
@@ -88,9 +86,8 @@ namespace Tests.Data
 		{
 			using (var conn = new DataConnection())
 			{
-				string fromClause = string.IsNullOrWhiteSpace(conn.DataProvider.DummyTableName) ? "" : string.Format(" from {0}", conn.DataProvider.DummyTableName);
 				string param = conn.MappingSchema.ValueToSqlConverter.ParameterValueExpression(new LinqToDB.SqlQuery.SqlDataType(DataType.Int64), "@p");
-				string sql = string.Format("SELECT {0}{1}", param, fromClause);
+				string sql = string.Format("SELECT {0}{1}", param, TestBase.GetDummyFrom(conn.DataProvider));
 
 				Assert.That(conn.Execute<string>(
 					sql,
@@ -130,9 +127,8 @@ namespace Tests.Data
 
 			using (var conn = new DataConnection().AddMappingSchema(ms))
 			{
-				string fromClause = string.IsNullOrWhiteSpace(conn.DataProvider.DummyTableName) ? "" : string.Format(" from {0}", conn.DataProvider.DummyTableName);
 				string param = conn.MappingSchema.ValueToSqlConverter.ParameterValueExpression(new LinqToDB.SqlQuery.SqlDataType(DataType.Int64), "@p");
-				var n = conn.Execute<long>(string.Format("SELECT {0}{1}", param, fromClause), new { p = new TwoValues { Value1 = 1, Value2 = 2 } });
+				var n = conn.Execute<long>(string.Format("SELECT {0}{1}", param, TestBase.GetDummyFrom(conn.DataProvider)), new { p = new TwoValues { Value1 = 1, Value2 = 2 } });
 
 				Assert.AreEqual(1L << 32 | 2, n);
 			}
@@ -147,9 +143,8 @@ namespace Tests.Data
 
 			using (var conn = new DataConnection().AddMappingSchema(ms))
 			{
-				string fromClause = string.IsNullOrWhiteSpace(conn.DataProvider.DummyTableName) ? "" : string.Format(" from {0}", conn.DataProvider.DummyTableName);
 				string param = conn.MappingSchema.ValueToSqlConverter.ParameterValueExpression(new LinqToDB.SqlQuery.SqlDataType(DataType.Int64), "@p");
-				var n = conn.Execute<long?>(string.Format("SELECT {0}{1}", param, fromClause), new { p = (TwoValues)null });
+				var n = conn.Execute<long?>(string.Format("SELECT {0}{1}", param, TestBase.GetDummyFrom(conn.DataProvider)), new { p = (TwoValues)null });
 
 				Assert.AreEqual(null, n);
 			}
@@ -170,9 +165,8 @@ namespace Tests.Data
 
 			using (var conn = new DataConnection().AddMappingSchema(ms))
 			{
-				string fromClause = string.IsNullOrWhiteSpace(conn.DataProvider.DummyTableName) ? "" : string.Format(" from {0}", conn.DataProvider.DummyTableName);
 				string param = conn.MappingSchema.ValueToSqlConverter.ParameterValueExpression(new LinqToDB.SqlQuery.SqlDataType(DataType.Int64), "@p");
-				var n = conn.Execute<long?>(string.Format("SELECT {0}{1}", param, fromClause), new { p = (TwoValues)null });
+				var n = conn.Execute<long?>(string.Format("SELECT {0}{1}", param, TestBase.GetDummyFrom(conn.DataProvider)), new { p = (TwoValues)null });
 
 				Assert.AreEqual(null, n);
 			}

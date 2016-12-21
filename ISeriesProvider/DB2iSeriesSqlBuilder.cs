@@ -29,6 +29,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected override void BuildColumnExpression(ISqlExpression expr, string alias, ref bool addAlias)
 		{
+			BuildColumnExpression(expr, alias, ref addAlias, true);
+		}
+
+		protected void BuildColumnExpression(ISqlExpression expr, string alias, ref bool addAlias, bool wrapParameter)
+		{
 			var wrap = false;
 			if (expr.SystemType == typeof(bool))
 			{
@@ -42,6 +47,17 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					wrap = ex != null && ex.Expr == "{0}" && ex.Parameters.Length == 1 && ex.Parameters[0] is SelectQuery.SearchCondition;
 				}
 			}
+
+			if (wrapParameter && expr is SqlParameter)  // || expr is SqlValue)
+			{
+				if (((SqlParameter)expr).Name != null)
+				{
+					var dataType = SqlDataType.GetDataType(expr.SystemType);
+
+					expr = new SqlFunction(expr.SystemType, dataType.DataType.ToString(), expr);
+				}
+			}
+
 			if (wrap)
 			{
 				StringBuilder.Append("CASE WHEN ");
@@ -114,6 +130,121 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		protected override void BuildInsertOrUpdateQuery()
 		{
 			BuildInsertOrUpdateQueryAsMerge($"FROM {DB2iSeriesTools.iSeriesDummyTableName()} FETCH FIRST 1 ROW ONLY");
+		}
+
+		protected override void BuildInsertOrUpdateQueryAsMerge(string fromDummyTable)
+		{
+			var table = SelectQuery.Insert.Into;
+			var targetAlias = Convert(SelectQuery.From.Tables[0].Alias, ConvertType.NameToQueryTableAlias).ToString();
+			var sourceAlias = Convert(GetTempAliases(1, "s")[0], ConvertType.NameToQueryTableAlias).ToString();
+			var keys = SelectQuery.Update.Keys;
+
+			AppendIndent().Append("MERGE INTO ");
+			BuildPhysicalTable(table, null);
+			StringBuilder.Append(' ').AppendLine(targetAlias);
+
+			AppendIndent().Append("USING (SELECT ");
+
+			for (var i = 0; i < keys.Count; i++)
+			{
+				var key = keys[i];
+				var expr = key.Expression;
+
+				if (expr is SqlParameter)
+				{
+					var exprType = SqlDataType.GetDataType(expr.SystemType);
+					var asType = DB2iSeriesMappingSchema.GetiSeriesType(exprType);
+
+					StringBuilder.Append("CAST(");
+					BuildExpression(expr, false, false);
+					StringBuilder.AppendFormat(" AS {0})", asType);
+				}
+				else
+					BuildExpression(expr, false, false);
+
+
+				StringBuilder.Append(" AS ");
+				BuildExpression(key.Column, false, false);
+
+				if (i + 1 < keys.Count)
+					StringBuilder.Append(", ");
+			}
+
+			if (!string.IsNullOrEmpty(fromDummyTable))
+				StringBuilder.Append(' ').Append(fromDummyTable);
+
+			StringBuilder.Append(") ").Append(sourceAlias).AppendLine(" ON");
+
+			AppendIndent().AppendLine("(");
+
+			Indent++;
+
+			for (var i = 0; i < keys.Count; i++)
+			{
+				var key = keys[i];
+
+				AppendIndent();
+
+				StringBuilder.Append(targetAlias).Append('.');
+				BuildExpression(key.Column, false, false);
+
+				StringBuilder.Append(" = ").Append(sourceAlias).Append('.');
+				BuildExpression(key.Column, false, false);
+
+				if (i + 1 < keys.Count)
+					StringBuilder.Append(" AND");
+
+				StringBuilder.AppendLine();
+			}
+
+			Indent--;
+
+			AppendIndent().AppendLine(")");
+			AppendIndent().AppendLine("WHEN MATCHED THEN");
+
+			Indent++;
+			AppendIndent().AppendLine("UPDATE ");
+			BuildUpdateSet();
+			Indent--;
+
+			AppendIndent().AppendLine("WHEN NOT MATCHED THEN");
+
+			Indent++;
+			BuildInsertClause("INSERT", false);
+			Indent--;
+
+			while (_endLine.Contains(StringBuilder[StringBuilder.Length - 1]))
+				StringBuilder.Length--;
+		}
+
+		protected override void BuildUpdateSet()
+		{
+			AppendIndent()
+				.AppendLine("SET");
+
+			Indent++;
+
+			var first = true;
+
+			foreach (var expr in SelectQuery.Update.Items)
+			{
+				if (!first)
+					StringBuilder.Append(',').AppendLine();
+				first = false;
+
+				AppendIndent();
+
+				BuildExpression(expr.Column, SqlProviderFlags.IsUpdateSetTableAliasSupported, true, false);
+				StringBuilder.Append(" = ");
+
+				var addAlias = false;
+
+				BuildColumnExpression(expr.Expression, null, ref addAlias, false);
+			}
+
+			Indent--;
+
+			StringBuilder.AppendLine();
 		}
 
 		protected override void BuildSelectClause()

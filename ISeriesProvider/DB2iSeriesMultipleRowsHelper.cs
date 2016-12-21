@@ -25,8 +25,17 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			{
 				var column = Columns[i];
 				var value = column.GetValue(item);
+				var columnType = ColumnTypes[i];
 
-				if (skipConvert(column) || !ValueConverter.TryConvert(StringBuilder, ColumnTypes[i], value))
+				if (column.DbType != null)
+				{
+					if (column.DbType.Equals("time", StringComparison.CurrentCultureIgnoreCase))
+						columnType = new SqlDataType(DataType.Time);
+					else if (column.DbType.Equals("date", StringComparison.CurrentCultureIgnoreCase))
+						columnType = new SqlDataType(DataType.Date);
+				}
+
+				if (skipConvert(column) || !ValueConverter.TryConvert(StringBuilder, columnType, value))
 				{
 					var name = ParameterName == "?" ? ParameterName : ParameterName + ++ParameterIndex;
 
