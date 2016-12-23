@@ -29,8 +29,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from ch in    Child where ch.ParentID == 1 select ch.Parent).Concat(
-					(from ch in    Child where ch.ParentID == 2 select ch.Parent)),
+					(from ch in Child where ch.ParentID == 1 select ch.Parent).Concat(
+					(from ch in Child where ch.ParentID == 2 select ch.Parent)),
 					(from ch in db.Child where ch.ParentID == 1 select ch.Parent).Concat(
 					(from ch in db.Child where ch.ParentID == 2 select ch.Parent)));
 		}
@@ -40,10 +40,10 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p  in    Parent where p.ParentID  == 1 select p).Concat(
-					(from ch in    Child  where ch.ParentID == 2 select ch.Parent)),
-					(from p  in db.Parent where p.ParentID  == 1 select p).Concat(
-					(from ch in db.Child  where ch.ParentID == 2 select ch.Parent)));
+					(from p in Parent where p.ParentID == 1 select p).Concat(
+					(from ch in Child where ch.ParentID == 2 select ch.Parent)),
+					(from p in db.Parent where p.ParentID == 1 select p).Concat(
+					(from ch in db.Child where ch.ParentID == 2 select ch.Parent)));
 		}
 
 		[Test, DataContextSource]
@@ -79,8 +79,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from c in    Child where c.ParentID == 1 select c).Concat(
-					(from c in    Child where c.ParentID == 3 select new Child { ParentID = c.ParentID, ChildID = c.ChildID + 1000 }).
+					(from c in Child where c.ParentID == 1 select c).Concat(
+					(from c in Child where c.ParentID == 3 select new Child { ParentID = c.ParentID, ChildID = c.ChildID + 1000 }).
 					Where(c => c.ChildID != 1032))
 					,
 					(from c in db.Child where c.ParentID == 1 select c).Concat(
@@ -93,8 +93,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from c in    Child where c.ParentID == 1 select c).Concat(
-					(from c in    Child where c.ParentID == 3 select new Child { ChildID = c.ChildID + 1000, ParentID = c.ParentID }).
+					(from c in Child where c.ParentID == 1 select c).Concat(
+					(from c in Child where c.ParentID == 3 select new Child { ChildID = c.ChildID + 1000, ParentID = c.ParentID }).
 					Where(c => c.ChildID != 1032))
 					,
 					(from c in db.Child where c.ParentID == 1 select c).Concat(
@@ -107,8 +107,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from c in    Child where c.ParentID == 1 select c).Concat(
-					(from c in    Child where c.ParentID == 3 select new Child { ChildID = c.ChildID + 1000 }).
+					(from c in Child where c.ParentID == 1 select c).Concat(
+					(from c in Child where c.ParentID == 3 select new Child { ChildID = c.ChildID + 1000 }).
 					Where(c => c.ChildID != 1032))
 					,
 					(from c in db.Child where c.ParentID == 1 select c).Concat(
@@ -121,12 +121,12 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from c in    Child where c.ParentID == 1 select new Child { ParentID = c.ParentID }).Concat(
-					(from c in    Child where c.ParentID == 3 select new Child { ChildID  = c.ChildID + 1000 }).
+					(from c in Child where c.ParentID == 1 select new Child { ParentID = c.ParentID }).Concat(
+					(from c in Child where c.ParentID == 3 select new Child { ChildID = c.ChildID + 1000 }).
 					Where(c => c.ParentID == 1))
 					,
 					(from c in db.Child where c.ParentID == 1 select new Child { ParentID = c.ParentID }).Concat(
-					(from c in db.Child where c.ParentID == 3 select new Child { ChildID  = c.ChildID + 1000 })).
+					(from c in db.Child where c.ParentID == 3 select new Child { ChildID = c.ChildID + 1000 })).
 					Where(c => c.ParentID == 1));
 		}
 
@@ -135,8 +135,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from c in    Child where c.ParentID == 1 select c.Parent).Concat(
-					(from c in    Child where c.ParentID == 3 select c.Parent).
+					(from c in Child where c.ParentID == 1 select c.Parent).Concat(
+					(from c in Child where c.ParentID == 3 select c.Parent).
 					Where(p => p.Value1.Value != 2))
 					,
 					(from c in db.Child where c.ParentID == 1 select c.Parent).Concat(
@@ -149,7 +149,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					   Child.Where(c => c.GrandChildren.Count == 2).Concat(   Child.Where(c => c.GrandChildren.Count() == 3)),
+					   Child.Where(c => c.GrandChildren.Count == 2).Concat(Child.Where(c => c.GrandChildren.Count() == 3)),
 					db.Child.Where(c => c.GrandChildren.Count == 2).Concat(db.Child.Where(c => c.GrandChildren.Count() == 3)));
 		}
 
@@ -159,9 +159,9 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 				AreEqual(
 					   Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID, }).Concat(
-					   Child. Select(c => new { ID1 = c.ParentID, ID2 = c.ChildID,  })),
+					   Child.Select(c => new { ID1 = c.ParentID, ID2 = c.ChildID, })),
 					db.Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID, }).Concat(
-					db.Child. Select(c => new { ID1 = c.ParentID, ID2 = c.ChildID,  })));
+					db.Child.Select(c => new { ID1 = c.ParentID, ID2 = c.ChildID, })));
 		}
 
 		[Test, DataContextSource]
@@ -169,9 +169,9 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					   Child. Select(c => new { ID1 = c.ParentID, ID2 = c.ChildID,  }).Concat(
+					   Child.Select(c => new { ID1 = c.ParentID, ID2 = c.ChildID, }).Concat(
 					   Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID, })),
-					db.Child. Select(c => new { ID1 = c.ParentID, ID2 = c.ChildID,  }).Concat(
+					db.Child.Select(c => new { ID1 = c.ParentID, ID2 = c.ChildID, }).Concat(
 					db.Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID, })));
 		}
 
@@ -180,10 +180,10 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					   Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID, ID3 = c.Value1 ?? 0,  }).Concat(
-					   Child. Select(c => new { ID1 = c.ParentID, ID2 = c.ChildID,  ID3 = c.ParentID + 1, })),
-					db.Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID, ID3 = c.Value1 ?? 0,  }).Concat(
-					db.Child. Select(c => new { ID1 = c.ParentID, ID2 = c.ChildID,  ID3 = c.ParentID + 1, })));
+					   Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID, ID3 = c.Value1 ?? 0, }).Concat(
+					   Child.Select(c => new { ID1 = c.ParentID, ID2 = c.ChildID, ID3 = c.ParentID + 1, })),
+					db.Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID, ID3 = c.Value1 ?? 0, }).Concat(
+					db.Child.Select(c => new { ID1 = c.ParentID, ID2 = c.ChildID, ID3 = c.ParentID + 1, })));
 		}
 
 		[Test, DataContextSource]
@@ -191,10 +191,10 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					   Child. Select(c => new { ID1 = c.ParentID, ID2 = c.ChildID,  ID3 = c.ParentID + 1, }).Concat(
-					   Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID, ID3 = c.Value1 ?? 0,  })),
-					db.Child. Select(c => new { ID1 = c.ParentID, ID2 = c.ChildID,  ID3 = c.ParentID + 1, }).Concat(
-					db.Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID, ID3 = c.Value1 ?? 0,  })));
+					   Child.Select(c => new { ID1 = c.ParentID, ID2 = c.ChildID, ID3 = c.ParentID + 1, }).Concat(
+					   Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID, ID3 = c.Value1 ?? 0, })),
+					db.Child.Select(c => new { ID1 = c.ParentID, ID2 = c.ChildID, ID3 = c.ParentID + 1, }).Concat(
+					db.Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID, ID3 = c.Value1 ?? 0, })));
 		}
 
 		[Test, DataContextSource]
@@ -202,10 +202,10 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					   Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.Value1 ?? 0,  ID3 = c.ParentID, }).Concat(
-					   Child. Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID + 1, ID3 = c.ChildID,  })),
-					db.Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.Value1 ?? 0,  ID3 = c.ParentID, }).Concat(
-					db.Child. Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID + 1, ID3 = c.ChildID,  })));
+					   Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.Value1 ?? 0, ID3 = c.ParentID, }).Concat(
+					   Child.Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID + 1, ID3 = c.ChildID, })),
+					db.Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.Value1 ?? 0, ID3 = c.ParentID, }).Concat(
+					db.Child.Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID + 1, ID3 = c.ChildID, })));
 		}
 
 		[Test, DataContextSource]
@@ -213,10 +213,10 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					   Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID,     ID3 = c.ParentID, }).Concat(
-					   Child. Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID + 1, ID3 = c.ChildID,  })),
-					db.Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID,     ID3 = c.ParentID, }).Concat(
-					db.Child. Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID + 1, ID3 = c.ChildID,  })));
+					   Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID, ID3 = c.ParentID, }).Concat(
+					   Child.Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID + 1, ID3 = c.ChildID, })),
+					db.Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID, ID3 = c.ParentID, }).Concat(
+					db.Child.Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID + 1, ID3 = c.ChildID, })));
 		}
 
 		[Test, DataContextSource]
@@ -224,21 +224,25 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					   Child. Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID + 1, ID3 = c.ChildID,  }).Concat(
-					   Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.Value1 ?? 0,  ID3 = c.ParentID, })),
-					db.Child. Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID + 1, ID3 = c.ChildID,  }).Concat(
-					db.Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.Value1 ?? 0,  ID3 = c.ParentID, })));
+					   Child.Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID + 1, ID3 = c.ChildID, }).Concat(
+					   Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.Value1 ?? 0, ID3 = c.ParentID, })),
+					db.Child.Select(c => new { ID1 = c.ParentID, ID2 = c.ParentID + 1, ID3 = c.ChildID, }).Concat(
+					db.Parent.Select(c => new { ID1 = c.ParentID, ID2 = c.Value1 ?? 0, ID3 = c.ParentID, })));
 		}
 
 		[Test, DataContextSource(ProviderName.Informix)]
 		public void Concat87(string context)
 		{
 			using (var db = GetDataContext(context))
-				AreEqual(
-					   Child. Select(c => new Parent { ParentID = c.ParentID }).Concat(
-					   Parent.Select(c => new Parent { Value1   = c.Value1   })),
-					db.Child. Select(c => new Parent { ParentID = c.ParentID }).Concat(
-					db.Parent.Select(c => new Parent { Value1   = c.Value1   })));
+			{
+				var expected = Child.Select(c => new Parent { ParentID = c.ParentID })
+					.Concat(Parent.Select(c => new Parent { Value1 = c.Value1 }));
+
+				var actual = db.Child.Select(c => new Parent { ParentID = c.ParentID })
+					.Concat(db.Parent.Select(c => new Parent { Value1 = c.Value1 }));
+
+				AreEqual(expected, actual);
+			}
 		}
 
 		[Test, DataContextSource(ProviderName.Informix)]
@@ -246,10 +250,10 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					   Parent.Select(c => new Parent { Value1   = c.Value1   }).Concat(
-					   Child. Select(c => new Parent { ParentID = c.ParentID })),
-					db.Parent.Select(c => new Parent { Value1   = c.Value1   }).Concat(
-					db.Child. Select(c => new Parent { ParentID = c.ParentID })));
+					   Parent.Select(c => new Parent { Value1 = c.Value1 }).Concat(
+					   Child.Select(c => new Parent { ParentID = c.ParentID })),
+					db.Parent.Select(c => new Parent { Value1 = c.Value1 }).Concat(
+					db.Child.Select(c => new Parent { ParentID = c.ParentID })));
 		}
 
 		[Test, DataContextSource]
@@ -257,10 +261,10 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					   Child. Select(c => new Parent { Value1   = c.ChildID,  ParentID = c.ParentID }).Concat(
-					   Parent.Select(c => new Parent { ParentID = c.ParentID, Value1   = c.Value1   })),
-					db.Child. Select(c => new Parent { Value1   = c.ChildID,  ParentID = c.ParentID }).Concat(
-					db.Parent.Select(c => new Parent { ParentID = c.ParentID, Value1   = c.Value1   })));
+					   Child.Select(c => new Parent { Value1 = c.ChildID, ParentID = c.ParentID }).Concat(
+					   Parent.Select(c => new Parent { ParentID = c.ParentID, Value1 = c.Value1 })),
+					db.Child.Select(c => new Parent { Value1 = c.ChildID, ParentID = c.ParentID }).Concat(
+					db.Parent.Select(c => new Parent { ParentID = c.ParentID, Value1 = c.Value1 })));
 		}
 
 		[Test, DataContextSource(ProviderName.Informix)]
@@ -268,10 +272,10 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					   Child. Select(c => new Parent { Value1   = c.ParentID, ParentID = c.ParentID }).Concat(
-					   Parent.Select(c => new Parent { ParentID = c.ParentID                        })),
-					db.Child. Select(c => new Parent { Value1   = c.ParentID, ParentID = c.ParentID }).Concat(
-					db.Parent.Select(c => new Parent { ParentID = c.ParentID                        })));
+					   Child.Select(c => new Parent { Value1 = c.ParentID, ParentID = c.ParentID }).Concat(
+					   Parent.Select(c => new Parent { ParentID = c.ParentID })),
+					db.Child.Select(c => new Parent { Value1 = c.ParentID, ParentID = c.ParentID }).Concat(
+					db.Parent.Select(c => new Parent { ParentID = c.ParentID })));
 		}
 
 		[Test, DataContextSource]
@@ -279,11 +283,11 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from g  in    GrandChild join ch in    Child  on g.ChildID   equals ch.ChildID select ch).Union(
-					(from ch in    Child      join p  in    Parent on ch.ParentID equals p.ParentID select ch))
+					(from g in GrandChild join ch in Child on g.ChildID equals ch.ChildID select ch).Union(
+					(from ch in Child join p in Parent on ch.ParentID equals p.ParentID select ch))
 					,
-					(from g  in db.GrandChild join ch in db.Child  on g.ChildID   equals ch.ChildID select ch).Union(
-					(from ch in db.Child      join p  in db.Parent on ch.ParentID equals p.ParentID select ch)));
+					(from g in db.GrandChild join ch in db.Child on g.ChildID equals ch.ChildID select ch).Union(
+					(from ch in db.Child join p in db.Parent on ch.ParentID equals p.ParentID select ch)));
 		}
 
 		[Test, DataContextSource]
@@ -291,15 +295,15 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from r  in
-						(from g  in GrandChild join ch in Child  on g.ChildID   equals ch.ChildID select ch.ChildID).Union(
-						(from ch in Child      join p  in Parent on ch.ParentID equals p.ParentID select ch.ChildID))
+					from r in
+						(from g in GrandChild join ch in Child on g.ChildID equals ch.ChildID select ch.ChildID).Union(
+						(from ch in Child join p in Parent on ch.ParentID equals p.ParentID select ch.ChildID))
 					join child in Child on r equals child.ChildID
 					select child
 					,
 					from r in
-						(from g  in db.GrandChild join ch in db.Child  on g.ChildID   equals ch.ChildID select ch.ChildID).Union(
-						(from ch in db.Child      join p  in db.Parent on ch.ParentID equals p.ParentID select ch.ChildID))
+						(from g in db.GrandChild join ch in db.Child on g.ChildID equals ch.ChildID select ch.ChildID).Union(
+						(from ch in db.Child join p in db.Parent on ch.ParentID equals p.ParentID select ch.ChildID))
 					join child in db.Child on r equals child.ChildID
 					select child);
 		}
@@ -309,11 +313,11 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p  in    Parent select new { id = p.ParentID,  val = true }).Union(
-					(from ch in    Child  select new { id = ch.ParentID, val = false }))
+					(from p in Parent select new { id = p.ParentID, val = true }).Union(
+					(from ch in Child select new { id = ch.ParentID, val = false }))
 					,
-					(from p  in db.Parent select new { id = p.ParentID,  val = true }).Union(
-					(from ch in db.Child  select new { id = ch.ParentID, val = false })));
+					(from p in db.Parent select new { id = p.ParentID, val = true }).Union(
+					(from ch in db.Child select new { id = ch.ParentID, val = false })));
 		}
 
 		[Test, DataContextSource]
@@ -321,12 +325,12 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p  in    Parent select new { id = p.ParentID,  val = true }).Union(
-					(from ch in    Child  select new { id = ch.ParentID, val = false }))
+					(from p in Parent select new { id = p.ParentID, val = true }).Union(
+					(from ch in Child select new { id = ch.ParentID, val = false }))
 					.Select(p => new { p.id, p.val })
 					,
-					(from p  in db.Parent select new { id = p.ParentID,  val = true }).Union(
-					(from ch in db.Child  select new { id = ch.ParentID, val = false }))
+					(from p in db.Parent select new { id = p.ParentID, val = true }).Union(
+					(from ch in db.Child select new { id = ch.ParentID, val = false }))
 					.Select(p => new { p.id, p.val }));
 		}
 
@@ -335,12 +339,12 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p  in    Parent select new { id = p.ParentID,  val = true }).Union(
-					(from ch in    Child  select new { id = ch.ParentID, val = false }))
+					(from p in Parent select new { id = p.ParentID, val = true }).Union(
+					(from ch in Child select new { id = ch.ParentID, val = false }))
 					.Select(p => p)
 					,
-					(from p  in db.Parent select new { id = p.ParentID,  val = true }).Union(
-					(from ch in db.Child  select new { id = ch.ParentID, val = false }))
+					(from p in db.Parent select new { id = p.ParentID, val = true }).Union(
+					(from ch in db.Child select new { id = ch.ParentID, val = false }))
 					.Select(p => p));
 		}
 
@@ -349,11 +353,11 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p  in    Parent select new { id = p. ParentID, val = true  }).Union(
-					(from ch in    Child  select new { id = ch.ParentID, val = false }))
+					(from p in Parent select new { id = p.ParentID, val = true }).Union(
+					(from ch in Child select new { id = ch.ParentID, val = false }))
 					.Select(p => p.val),
-					(from p  in db.Parent select new { id = p. ParentID, val = true  }).Union(
-					(from ch in db.Child  select new { id = ch.ParentID, val = false }))
+					(from p in db.Parent select new { id = p.ParentID, val = true }).Union(
+					(from ch in db.Child select new { id = ch.ParentID, val = false }))
 					.Select(p => p.val));
 		}
 
@@ -362,13 +366,13 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p  in    Parent select new { id = p. ParentID, val = true  }).Union(
-					(from p  in    Parent select new { id = p. ParentID, val = false }).Union(
-					(from ch in    Child  select new { id = ch.ParentID, val = false })))
+					(from p in Parent select new { id = p.ParentID, val = true }).Union(
+					(from p in Parent select new { id = p.ParentID, val = false }).Union(
+					(from ch in Child select new { id = ch.ParentID, val = false })))
 					.Select(p => p.val),
-					(from p  in db.Parent select new { id = p. ParentID, val = true  }).Union(
-					(from p  in db.Parent select new { id = p. ParentID, val = false }).Union(
-					(from ch in db.Child  select new { id = ch.ParentID, val = false })))
+					(from p in db.Parent select new { id = p.ParentID, val = true }).Union(
+					(from p in db.Parent select new { id = p.ParentID, val = false }).Union(
+					(from ch in db.Child select new { id = ch.ParentID, val = false })))
 					.Select(p => p.val));
 		}
 
@@ -377,8 +381,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p1 in    Parent select p1).Union(
-					(from p2 in    Parent select new Parent { ParentID = p2.ParentID }))
+					(from p1 in Parent select p1).Union(
+					(from p2 in Parent select new Parent { ParentID = p2.ParentID }))
 					.Select(p => new Parent { ParentID = p.ParentID, Value1 = p.Value1 })
 					,
 					(from p1 in db.Parent select p1).Union(
@@ -391,8 +395,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p1  in   Parent select p1).Union(
-					(from p2 in    Parent select new Parent { ParentID = p2.ParentID }))
+					(from p1 in Parent select p1).Union(
+					(from p2 in Parent select new Parent { ParentID = p2.ParentID }))
 					,
 					(from p1 in db.Parent select p1).Union(
 					(from p2 in db.Parent select new Parent { ParentID = p2.ParentID })));
@@ -403,8 +407,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p1 in    Parent select new Parent { ParentID = p1.ParentID }).Union(
-					(from p2 in    Parent select p2))
+					(from p1 in Parent select new Parent { ParentID = p1.ParentID }).Union(
+					(from p2 in Parent select p2))
 					,
 					(from p1 in db.Parent select new Parent { ParentID = p1.ParentID }).Union(
 					(from p2 in db.Parent select p2)));
@@ -415,8 +419,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p1 in    Parent select new Parent { ParentID = p1.ParentID }).Union(
-					(from p2 in    Parent select p2))
+					(from p1 in Parent select new Parent { ParentID = p1.ParentID }).Union(
+					(from p2 in Parent select p2))
 					.Select(p => p.Value1)
 					,
 					(from p1 in db.Parent select new Parent { ParentID = p1.ParentID }).Union(
@@ -429,8 +433,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p1 in    Parent select new Parent { Value1 = p1.Value1 }).Union(
-					(from p2 in    Parent select p2))
+					(from p1 in Parent select new Parent { Value1 = p1.Value1 }).Union(
+					(from p2 in Parent select p2))
 					,
 					(from p1 in db.Parent select new Parent { Value1 = p1.Value1 }).Union(
 					(from p2 in db.Parent select p2)));
@@ -441,8 +445,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p1 in    Parent select new Parent { ParentID = p1.ParentID }).Union(
-					(from p2 in    Parent select p2)),
+					(from p1 in Parent select new Parent { ParentID = p1.ParentID }).Union(
+					(from p2 in Parent select p2)),
 					(from p1 in db.Parent select new Parent { ParentID = p1.ParentID }).Union(
 					(from p2 in db.Parent select p2)));
 		}
@@ -452,11 +456,11 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p1 in    Parent select new Parent { ParentID = p1.ParentID }).Union(
-					(from p2 in    Parent select new Parent { Value1   = p2.Value1   }))
+					(from p1 in Parent select new Parent { ParentID = p1.ParentID }).Union(
+					(from p2 in Parent select new Parent { Value1 = p2.Value1 }))
 					,
 					(from p1 in db.Parent select new Parent { ParentID = p1.ParentID }).Union(
-					(from p2 in db.Parent select new Parent { Value1   = p2.Value1   })));
+					(from p2 in db.Parent select new Parent { Value1 = p2.Value1 })));
 		}
 
 		//[Test, DataContextSource]
@@ -464,9 +468,9 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p1 in    Parent select new { ParentID = p1.ParentID,    p = p1,           ch = (Child)null }).Union(
-					(from p2 in    Parent select new { ParentID = p2.Value1 ?? 0, p = (Parent)null, ch = p2.Children.First() })),
-					(from p1 in db.Parent select new { ParentID = p1.ParentID,    p = p1,           ch = (Child)null }).Union(
+					(from p1 in Parent select new { ParentID = p1.ParentID, p = p1, ch = (Child)null }).Union(
+					(from p2 in Parent select new { ParentID = p2.Value1 ?? 0, p = (Parent)null, ch = p2.Children.First() })),
+					(from p1 in db.Parent select new { ParentID = p1.ParentID, p = p1, ch = (Child)null }).Union(
 					(from p2 in db.Parent select new { ParentID = p2.Value1 ?? 0, p = (Parent)null, ch = p2.Children.First() })));
 		}
 
@@ -475,11 +479,11 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p1 in    Parent select new { ParentID = p1.ParentID,    p = p1,           ch = (Child)null }).Union(
-					(from p2 in    Parent select new { ParentID = p2.Value1 ?? 0, p = (Parent)null, ch = p2.Children.First() }))
+					(from p1 in Parent select new { ParentID = p1.ParentID, p = p1, ch = (Child)null }).Union(
+					(from p2 in Parent select new { ParentID = p2.Value1 ?? 0, p = (Parent)null, ch = p2.Children.First() }))
 					.Select(p => new { p.ParentID, p.p, p.ch })
 					,
-					(from p1 in db.Parent select new { ParentID = p1.ParentID,    p = p1,           ch = (Child)null }).Union(
+					(from p1 in db.Parent select new { ParentID = p1.ParentID, p = p1, ch = (Child)null }).Union(
 					(from p2 in db.Parent select new { ParentID = p2.Value1 ?? 0, p = (Parent)null, ch = p2.Children.First() }))
 					.Select(p => new { p.ParentID, p.p, p.ch }));
 		}
@@ -489,9 +493,9 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p1 in    Parent where p1.ParentID >  3 select p1).Union(
-					(from p2 in    Parent where p2.ParentID <= 3 select p2)),
-					(from p1 in db.Parent where p1.ParentID >  3 select p1).Union(
+					(from p1 in Parent where p1.ParentID > 3 select p1).Union(
+					(from p2 in Parent where p2.ParentID <= 3 select p2)),
+					(from p1 in db.Parent where p1.ParentID > 3 select p1).Union(
 					(from p2 in db.Parent where p2.ParentID <= 3 select p2)));
 		}
 
@@ -500,9 +504,9 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p1 in    Parent where p1.ParentID >  3 select p1).Union(
-					(from p2 in    Parent where p2.ParentID <= 3 select (Parent)null)),
-					(from p1 in db.Parent where p1.ParentID >  3 select p1).Union(
+					(from p1 in Parent where p1.ParentID > 3 select p1).Union(
+					(from p2 in Parent where p2.ParentID <= 3 select (Parent)null)),
+					(from p1 in db.Parent where p1.ParentID > 3 select p1).Union(
 					(from p2 in db.Parent where p2.ParentID <= 3 select (Parent)null)));
 		}
 
@@ -511,9 +515,9 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p1 in    Parent where p1.ParentID >  3 select new { p = p1 }).Union(
-					(from p2 in    Parent where p2.ParentID <= 3 select new { p = p2 })),
-					(from p1 in db.Parent where p1.ParentID >  3 select new { p = p1 }).Union(
+					(from p1 in Parent where p1.ParentID > 3 select new { p = p1 }).Union(
+					(from p2 in Parent where p2.ParentID <= 3 select new { p = p2 })),
+					(from p1 in db.Parent where p1.ParentID > 3 select new { p = p1 }).Union(
 					(from p2 in db.Parent where p2.ParentID <= 3 select new { p = p2 })));
 		}
 
@@ -522,9 +526,9 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p1 in    Parent where p1.ParentID >  3 select new { p = new { p = p1, p1.ParentID } }).Union(
-					(from p2 in    Parent where p2.ParentID <= 3 select new { p = new { p = p2, p2.ParentID } })),
-					(from p1 in db.Parent where p1.ParentID >  3 select new { p = new { p = p1, p1.ParentID } }).Union(
+					(from p1 in Parent where p1.ParentID > 3 select new { p = new { p = p1, p1.ParentID } }).Union(
+					(from p2 in Parent where p2.ParentID <= 3 select new { p = new { p = p2, p2.ParentID } })),
+					(from p1 in db.Parent where p1.ParentID > 3 select new { p = new { p = p1, p1.ParentID } }).Union(
 					(from p2 in db.Parent where p2.ParentID <= 3 select new { p = new { p = p2, p2.ParentID } })));
 		}
 
@@ -533,9 +537,9 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p1 in    Parent where p1.ParentID >  3 select new { p = new { p = p1, ParentID = p1.ParentID + 1 } }).Union(
-					(from p2 in    Parent where p2.ParentID <= 3 select new { p = new { p = p2, ParentID = p2.ParentID + 1 } })),
-					(from p1 in db.Parent where p1.ParentID >  3 select new { p = new { p = p1, ParentID = p1.ParentID + 1 } }).Union(
+					(from p1 in Parent where p1.ParentID > 3 select new { p = new { p = p1, ParentID = p1.ParentID + 1 } }).Union(
+					(from p2 in Parent where p2.ParentID <= 3 select new { p = new { p = p2, ParentID = p2.ParentID + 1 } })),
+					(from p1 in db.Parent where p1.ParentID > 3 select new { p = new { p = p1, ParentID = p1.ParentID + 1 } }).Union(
 					(from p2 in db.Parent where p2.ParentID <= 3 select new { p = new { p = p2, ParentID = p2.ParentID + 1 } })));
 		}
 
@@ -545,7 +549,7 @@ namespace Tests.Linq
 		[Test]
 		public void Concat90()
 		{
-			using(var context = new TestDataConnection())
+			using (var context = new TestDataConnection())
 			{
 				var join1 =
 					from t1 in context.GetTable<TestEntity1>()
@@ -582,7 +586,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from c in    Child.Union(Child)
+					from c in Child.Union(Child)
 					let p = c.Parent
 					select p.ParentID,
 					from c in db.Child.Union(db.Child)
@@ -595,7 +599,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from c in    Child.Union(Child)
+					from c in Child.Union(Child)
 					select c.Parent.ParentID,
 					from c in db.Child.Union(db.Child)
 					select c.Parent.ParentID);
@@ -606,7 +610,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from c in    Child.Concat(Child)
+					from c in Child.Concat(Child)
 					select c.Parent.ParentID,
 					from c in db.Child.Concat(db.Child)
 					select c.Parent.ParentID);

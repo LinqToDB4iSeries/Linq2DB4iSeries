@@ -48,13 +48,29 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				}
 			}
 
-			if (wrapParameter && expr is SqlParameter)  // || expr is SqlValue)
+			if (wrapParameter)
 			{
-				if (((SqlParameter)expr).Name != null)
+				if (expr is SqlParameter)
 				{
-					var dataType = SqlDataType.GetDataType(expr.SystemType);
+					if (((SqlParameter)expr).Name != null)
+					{
+						var dataType = SqlDataType.GetDataType(expr.SystemType);
 
-					expr = new SqlFunction(expr.SystemType, dataType.DataType.ToString(), expr);
+						expr = new SqlFunction(expr.SystemType, dataType.DataType.ToString(), expr);
+					}
+				}
+				else if ((expr is SqlValue) && ((SqlValue)expr).Value == null)
+				{
+					string colType = "CHAR";
+
+					if (expr.SystemType != null)
+					{
+						var actualType = SqlDataType.GetDataType(expr.SystemType);
+
+						colType = DB2iSeriesMappingSchema.GetiSeriesType(actualType);
+					}
+
+					expr = new SqlExpression(expr.SystemType, "Cast({0} as {1})", Precedence.Primary, expr, new SqlExpression(colType, Precedence.Primary));
 				}
 			}
 
@@ -150,7 +166,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				var key = keys[i];
 				var expr = key.Expression;
 
-				if (expr is SqlParameter)
+				if (expr is SqlParameter || expr is SqlValue)
 				{
 					var exprType = SqlDataType.GetDataType(expr.SystemType);
 					var asType = DB2iSeriesMappingSchema.GetiSeriesType(exprType);
@@ -379,7 +395,17 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 				var param2 = GetParm(p.Expr2 as IValueContainer, p.Expr1.SystemType);
 				if (param2 != null)
-					newpredicate = new SelectQuery.Predicate.Like(p.Expr1, p.IsNot, param2, p.Escape);
+				{
+					if(param2 is SqlValue && ((SqlValue)param2).Value == null)
+					{
+						if (p.IsNot)
+							newpredicate = new SelectQuery.Predicate.ExprExpr(p.Expr1, SelectQuery.Predicate.Operator.NotEqual, p.Expr2);
+						else
+							newpredicate = new SelectQuery.Predicate.ExprExpr(p.Expr1, SelectQuery.Predicate.Operator.Equal, p.Expr2);
+					}
+					else
+						newpredicate = new SelectQuery.Predicate.Like(p.Expr1, p.IsNot, param2, p.Escape);
+				}
 			}
 			if (predicate is SelectQuery.Predicate.ExprExpr)
 			{
@@ -400,12 +426,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		private ISqlExpression GetDateParm(IValueContainer parameter)
 		{
 			if (parameter != null && parameter is SqlParameter)
-				{
-					var p = ((SqlParameter)parameter);
-					p.DataType = DataType.Date;
-					return p;
-				}
-			
+			{
+				var p = ((SqlParameter)parameter);
+				p.DataType = DataType.Date;
+				return p;
+			}
+
 			return null;
 
 		}

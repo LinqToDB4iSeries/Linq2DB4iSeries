@@ -1,10 +1,10 @@
-DROP TABLE LINQ2DB/Doctor
+DROP TABLE Doctor
 GO
-DROP TABLE LINQ2DB/Patient
+DROP TABLE Patient
 GO
-DROP TABLE LINQ2DB/Person
+DROP TABLE Person
 GO
-CREATE TABLE LINQ2DB/Person( 
+CREATE TABLE Person( 
 	PersonID   INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY NOT NULL,
 	FirstName  VARCHAR(50) NOT NULL,
 	LastName   VARCHAR(50) NOT NULL,
@@ -12,75 +12,75 @@ CREATE TABLE LINQ2DB/Person(
 	Gender     CHAR(1)     NOT NULL
 )
 GO
-INSERT INTO LINQ2DB/Person (FirstName, LastName, Gender) VALUES ('John',   'Pupkin',    'M')
+INSERT INTO Person (FirstName, LastName, Gender) VALUES ('John',   'Pupkin',    'M')
 GO
-INSERT INTO LINQ2DB/Person (FirstName, LastName, Gender) VALUES ('Tester', 'Testerson', 'M')
+INSERT INTO Person (FirstName, LastName, Gender) VALUES ('Tester', 'Testerson', 'M')
 GO
-INSERT INTO LINQ2DB/Person (FirstName, LastName, Gender) VALUES ( 'Miss', 'Scarlet', 'F')
+INSERT INTO Person (FirstName, LastName, Gender) VALUES ( 'Miss', 'Scarlet', 'F')
 GO
-INSERT INTO LINQ2DB/Person (FirstName, LastName, Gender) VALUES ('Rev', 'Green', 'M')
+INSERT INTO Person (FirstName, LastName, Gender) VALUES ('Rev', 'Green', 'M')
 GO
-INSERT INTO LINQ2DB/Person (FirstName, LastName, Gender) VALUES ('Col', 'Mustard', 'M')
+INSERT INTO Person (FirstName, LastName, Gender) VALUES ('Col', 'Mustard', 'M')
 GO
-INSERT INTO LINQ2DB/Person (FirstName, LastName, Gender) VALUES ('Mrs','Peacock', 'F')
+INSERT INTO Person (FirstName, LastName, Gender) VALUES ('Mrs','Peacock', 'F')
 GO
-INSERT INTO LINQ2DB/Person (FirstName, LastName, Gender) VALUES ('Prof', 'Plum','M')
+INSERT INTO Person (FirstName, LastName, Gender) VALUES ('Prof', 'Plum','M')
 GO
-INSERT INTO LINQ2DB/Person (FirstName, LastName, Gender) VALUES ('Mrs', 'White', 'F')
+INSERT INTO Person (FirstName, LastName, Gender) VALUES ('Mrs', 'White', 'F')
 GO
 
 -- Doctor Table Extension
 
-CREATE TABLE LINQ2DB/Doctor(
+CREATE TABLE Doctor(
 	PersonID INTEGER     NOT NULL,
 	Taxonomy VARCHAR(50) NOT NULL,
-	FOREIGN KEY FK_Doctor_Person(PersonID) REFERENCES LINQ2DB/Person
+	FOREIGN KEY FK_Doctor_Person(PersonID) REFERENCES Person
 )
 GO
-INSERT INTO LINQ2DB/Doctor (PersonID, Taxonomy) VALUES (1, 'Psychiatry')
+INSERT INTO Doctor (PersonID, Taxonomy) VALUES (1, 'Psychiatry')
 GO
 
-DROP TABLE LINQ2DB/MasterTable
+DROP TABLE MasterTable
 GO
-DROP TABLE LINQ2DB/SlaveTable
+DROP TABLE SlaveTable
 GO
-CREATE TABLE LINQ2DB/MasterTable(
+CREATE TABLE MasterTable(
 	ID1 INTEGER NOT NULL,
 	ID2 INTEGER NOT NULL,
 	PRIMARY KEY (ID1,ID2)
 )
 GO
-CREATE TABLE LINQ2DB/SlaveTable(
+CREATE TABLE SlaveTable(
 	ID1    INTEGER NOT NULL,
 	"ID 2222222222222222222222  22" INTEGER NOT NULL,
 	"ID 2222222222222222"           INTEGER NOT NULL,
 	FOREIGN KEY FK_SlaveTable_MasterTable ("ID 2222222222222222222222  22", ID1)
-	REFERENCES LINQ2DB/MasterTable
+	REFERENCES MasterTable
 )
 GO
 
-CREATE TABLE LINQ2DB/Patient(
+CREATE TABLE Patient(
 	PersonID  INTEGER      NOT NULL,
 	Diagnosis VARCHAR(256) NOT NULL
 )
 GO
-INSERT INTO LINQ2DB/Patient(PersonID, Diagnosis) VALUES (2, 'Hallucination with Paranoid Bugs'' Delirium of Persecution')
+INSERT INTO Patient(PersonID, Diagnosis) VALUES (2, 'Hallucination with Paranoid Bugs'' Delirium of Persecution')
 GO
-DROP TABLE LINQ2DB/Parent
+DROP TABLE Parent
 GO
-DROP TABLE LINQ2DB/Child
+DROP TABLE Child
 GO
-DROP TABLE LINQ2DB/GrandChild
+DROP TABLE GrandChild
 GO
-CREATE TABLE LINQ2DB/Parent      (ParentID int, Value1 int)
+CREATE TABLE Parent      (ParentID int, Value1 int)
 GO
-CREATE TABLE LINQ2DB/Child       (ParentID int, ChildID int)
+CREATE TABLE Child       (ParentID int, ChildID int)
 GO
-CREATE TABLE LINQ2DB/GrandChild  (ParentID int, ChildID int, GrandChildID int)
+CREATE TABLE GrandChild  (ParentID int, ChildID int, GrandChildID int)
 GO
-DROP TABLE LINQ2DB/LinqDataTypes
+DROP TABLE LinqDataTypes
 GO
-CREATE TABLE LINQ2DB/LinqDataTypes(
+CREATE TABLE LinqDataTypes(
 	ID             int,
 	MoneyValue     decimal(10,4),
 	DateTimeValue  timestamp,
@@ -93,15 +93,15 @@ CREATE TABLE LINQ2DB/LinqDataTypes(
 	BigIntValue    bigint     Default NULL
 )
 GO
-DROP TABLE LINQ2DB/TestIdentity
+DROP TABLE TestIdentity
 GO
-CREATE TABLE LINQ2DB/TestIdentity (
+CREATE TABLE TestIdentity (
 	ID   INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY NOT NULL
 )
 GO
-DROP TABLE LINQ2DB/AllTypes
+DROP TABLE AllTypes
 GO
-CREATE TABLE LINQ2DB/AllTypes(
+CREATE TABLE AllTypes(
 	  ID INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY NOT NULL
 
 	, bigintDataType           bigint                  Default NULL
@@ -133,10 +133,10 @@ CREATE TABLE LINQ2DB/AllTypes(
 )
 GO
 
-INSERT INTO LINQ2DB/AllTypes (bigintDataType) VALUES (NULL)
+INSERT INTO AllTypes (bigintDataType) VALUES (NULL)
 
 GO
-INSERT INTO LINQ2DB/AllTypes(
+INSERT INTO AllTypes(
 	  bigintDataType           
 	, binaryDataType           
 	, blobDataType             
@@ -194,20 +194,20 @@ INSERT INTO LINQ2DB/AllTypes(
 )
 GO
 
-DROP VIEW LINQ2DB/PersonView
+DROP VIEW PersonView
 GO
-CREATE VIEW LINQ2DB/PersonView
+CREATE VIEW PersonView
 AS
-SELECT * FROM LINQ2DB/Person
+SELECT * FROM Person
 GO
-DROP Procedure LINQ2DB/Person_SelectByKey
+DROP Procedure Person_SelectByKey
 GO
-CREATE Procedure LINQ2DB/Person_SelectByKey(in ID integer)
+CREATE Procedure Person_SelectByKey(in ID integer)
 RESULT SETS 1
 LANGUAGE SQL
 BEGIN
 	DECLARE C1 CURSOR FOR
-		SELECT * FROM LINQ2DB/Person WHERE PersonID = ID;
+		SELECT * FROM Person WHERE PersonID = ID;
 
 	OPEN C1;
 END

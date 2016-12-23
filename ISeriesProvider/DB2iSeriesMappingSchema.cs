@@ -25,24 +25,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetValueToSqlConverter(typeof(string), (sb, dt, v) => ConvertStringToSql(sb, v.ToString()));
 			SetValueToSqlConverter(typeof(char), (sb, dt, v) => ConvertCharToSql(sb, (char)v));
 			SetValueToSqlConverter(typeof(DateTime), (sb, dt, v) => ConvertDateTimeToSql(sb, dt, (DateTime)v));
-
-			ValueToSqlConverter.ParameterValueExpression = (dataType, value) =>
-			{
-				string colType = "CHAR";
-
-
-				if (dataType != null)
-				{
-					var actualType = SqlDataType.GetDataType(dataType.Type);
-
-					colType = GetiSeriesType(actualType);
-				}
-
-				return $"CAST({value} AS {colType})";
-			};
 		}
 
-		internal static string GetiSeriesType(SqlDataType dataType)
+		public static string GetiSeriesType(SqlDataType dataType)
 		{
 			switch (dataType.DataType)
 			{
@@ -80,7 +65,17 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 		}
 
-		protected override T GetSpecificAttributes<T>(MemberInfo memberInfo)
+		public override T GetAttribute<T>(MemberInfo memberInfo, Func<T, string> configGetter, bool inherit = true)
+		{
+			var specific = GetSpecificAttributes<T>(memberInfo);
+			if (specific != default(T))
+				return specific;
+
+			return base.GetAttribute<T>(memberInfo, configGetter, inherit);
+		}
+
+
+		protected T GetSpecificAttributes<T>(MemberInfo memberInfo)
 		{
 			if (typeof(T) == typeof(Sql.ExpressionAttribute))
 			{
@@ -136,7 +131,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				}
 			}
 
-			return base.GetSpecificAttributes<T>(memberInfo);
+			return default(T);
 		}
 
 

@@ -14,7 +14,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	{
 		public DB2iSeriesMultipleRowsHelper(DataConnection dataConnection, BulkCopyOptions options, bool enforceKeepIdentity) : base(dataConnection, options, enforceKeepIdentity)
 		{
-			
+
 		}
 
 		public override void BuildColumns(object item, Func<ColumnDescriptor, bool> skipConvert = null)
@@ -35,7 +35,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						columnType = new SqlDataType(DataType.Date);
 				}
 
-				if (skipConvert(column) || !ValueConverter.TryConvert(StringBuilder, columnType, value))
+				if (skipConvert(column) || value == null ||!ValueConverter.TryConvert(StringBuilder, columnType, value))
 				{
 					var name = ParameterName == "?" ? ParameterName : ParameterName + ++ParameterIndex;
 
@@ -43,14 +43,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					{
 						value = ((DataParameter)value).Value;
 					}
-					
+
 					var dataParameter = new DataParameter(ParameterName == "?" ? ParameterName : "p" + ParameterIndex, value, column.DataType);
 
 					Parameters.Add(dataParameter);
 
 					// wrap the parameter with a cast
-					var dbType = DataConnection.MappingSchema.GetDataType(value.GetType());
-					var nameWithCast = DataConnection.MappingSchema.ValueToSqlConverter.ParameterValueExpression(dbType, "@" + dataParameter.Name);
+					var dbType = value == null ? columnType : DataConnection.MappingSchema.GetDataType(value.GetType());
+					var nameWithCast = NameWithCast(dbType, "@" + dataParameter.Name);
 
 					StringBuilder.Append(nameWithCast);
 				}
@@ -59,6 +59,21 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 
 			StringBuilder.Length--;
+		}
+
+		private string NameWithCast(SqlDataType dataType, string value)
+		{
+			string colType = "CHAR";
+
+
+			if (dataType != null)
+			{
+				var actualType = SqlDataType.GetDataType(dataType.Type);
+
+				colType = DB2iSeriesMappingSchema.GetiSeriesType(actualType);
+			}
+
+			return $"CAST({value} AS {colType})";
 		}
 	}
 }
