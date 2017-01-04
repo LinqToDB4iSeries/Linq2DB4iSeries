@@ -87,7 +87,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected override void BuildCommand(int commandNumber)
 		{
-			StringBuilder.AppendLine($"SELECT {DB2iSeriesTools.IdentityColumnSql} FROM {DB2iSeriesTools.iSeriesDummyTableName()}");
+			StringBuilder.AppendLine(string.Format("SELECT {0} FROM {1}", DB2iSeriesTools.IdentityColumnSql, DB2iSeriesTools.iSeriesDummyTableName()));
 		}
 
 		protected override void BuildCreateTableIdentityAttribute1(SqlField field)
@@ -145,7 +145,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected override void BuildInsertOrUpdateQuery()
 		{
-			BuildInsertOrUpdateQueryAsMerge($"FROM {DB2iSeriesTools.iSeriesDummyTableName()} FETCH FIRST 1 ROW ONLY");
+			BuildInsertOrUpdateQueryAsMerge(string.Format("FROM {0} FETCH FIRST 1 ROW ONLY", DB2iSeriesTools.iSeriesDummyTableName()));
 		}
 
 		protected override void BuildInsertOrUpdateQueryAsMerge(string fromDummyTable)
@@ -292,7 +292,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			{
 				AppendIndent().AppendLine("SELECT");
 				BuildColumns();
-				AppendIndent().AppendLine($"FROM {DB2iSeriesTools.iSeriesDummyTableName()} FETCH FIRST 1 ROW ONLY");
+				AppendIndent().AppendLine(string.Format("FROM {0} FETCH FIRST 1 ROW ONLY", DB2iSeriesTools.iSeriesDummyTableName()));
 			}
 			else
 			{

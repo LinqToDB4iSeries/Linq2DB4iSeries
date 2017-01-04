@@ -35,7 +35,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						columnType = new SqlDataType(DataType.Date);
 				}
 
-				if (skipConvert(column) || value == null ||!ValueConverter.TryConvert(StringBuilder, columnType, value))
+				if (skipConvert(column) || value == null || !ValueConverter.TryConvert(StringBuilder, columnType, value))
 				{
 					var name = ParameterName == "?" ? ParameterName : ParameterName + ++ParameterIndex;
 
@@ -73,7 +73,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				colType = DB2iSeriesMappingSchema.GetiSeriesType(actualType);
 			}
 
-			return $"CAST({value} AS {colType})";
+			return string.Format("CAST({0} AS {1})", value, colType);
 		}
 	}
 }

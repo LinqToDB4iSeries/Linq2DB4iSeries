@@ -101,7 +101,7 @@ namespace Tests
 		{
 			if (provider is DB2iSeriesDataProvider)
 			{
-				return $" FROM {((DB2iSeriesDataProvider)provider).DummyTableName}";
+				return string.Format(" FROM {0}", ((DB2iSeriesDataProvider)provider).DummyTableName);
 			}
 
 			return string.Empty;

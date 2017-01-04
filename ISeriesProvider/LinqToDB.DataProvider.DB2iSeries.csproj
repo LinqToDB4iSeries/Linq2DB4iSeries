@@ -17,18 +17,20 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>bin\Debug.4.5\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>bin\Release.4.5\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
@@ -37,9 +39,9 @@
     <AssemblyOriginatorKeyFile>LinqToDB.DB2iSeries.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="linq2db, Version=1.0.7.5, Culture=neutral, PublicKeyToken=f19f8aed7feff67e, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\linq2db.1.7.5\lib\net45\linq2db.dll</HintPath>
+    <Reference Include="linq2db, Version=1.0.7.6, Culture=neutral, PublicKeyToken=f19f8aed7feff67e, processorArchitecture=MSIL">
+      <HintPath>..\packages\linq2db.1.7.6-rc246\lib\net45\linq2db.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
@@ -61,6 +63,7 @@
     <Compile Include="DB2iSeriesIdentifierQuoteMode.cs" />
     <Compile Include="DB2iSeriesMappingSchema.cs" />
     <Compile Include="DB2iSeriesMerge.cs" />
+    <Compile Include="DB2iSeriesMetadataReader.cs" />
     <Compile Include="DB2iSeriesMultipleRowsHelper.cs" />
     <Compile Include="DB2iSeriesNamingConvention.cs" />
     <Compile Include="DB2iSeriesSchemaProvider.cs" />
@@ -75,6 +78,7 @@
     <Compile Include="TypeCreatorNoDefault.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Compile.bat" />
     <None Include="LinqToDB.DB2iSeries.snk" />
     <None Include="packages.config" />
   </ItemGroup>

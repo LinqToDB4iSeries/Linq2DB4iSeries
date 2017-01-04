@@ -24,7 +24,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public static string iSeriesDummyTableName(DB2iSeriesNamingConvention naming = DB2iSeriesNamingConvention.System)
 		{
 			var seperator = (naming == DB2iSeriesNamingConvention.System) ? "/" : ".";
-			return $"SYSIBM{seperator}SYSDUMMY1";
+			return string.Format("SYSIBM{0}SYSDUMMY1", seperator);
 		}
 
 		static readonly DB2iSeriesDataProvider _db2iSeriesDataProvider = new DB2iSeriesDataProvider();

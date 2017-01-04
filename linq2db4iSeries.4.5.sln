@@ -14,14 +14,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests.Model", "Tests\Model\
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".doc", ".doc", "{751CE0BA-690F-42BF-94C7-C8276F8A84CF}"
 	ProjectSection(SolutionItems) = preProject
-		appveyor.yml = appveyor.yml
 		MIT-LICENSE.txt = MIT-LICENSE.txt
 		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NuGet", "NuGet", "{BAE16247-BCCD-4C39-B714-39CDF10904E9}"
 	ProjectSection(SolutionItems) = preProject
-		NuGet\linq2db.nuspec = NuGet\linq2db.nuspec
+		NuGet\linq2db4iSeries.nuspec = NuGet\linq2db4iSeries.nuspec
+		NuGet\linq2db4iSeries.png = NuGet\linq2db4iSeries.png
 		NuGet\Pack.bat = NuGet\Pack.bat
 		NuGet\Push.bat = NuGet\Push.bat
 		NuGet\Readme.txt = NuGet\Readme.txt

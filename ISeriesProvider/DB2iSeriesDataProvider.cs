@@ -31,7 +31,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		#region "overrides"
 
-		public override string ConnectionNamespace { get; }
+		public override string ConnectionNamespace { get { return ""; } }
 		protected override string ConnectionTypeName { get { return DB2iSeriesTools.ConnectionTypeName; } }
 		protected override string DataReaderTypeName { get { return DB2iSeriesTools.DataReaderTypeName; } }
 		public string DummyTableName {	get { return DB2iSeriesTools.iSeriesDummyTableName(); } }

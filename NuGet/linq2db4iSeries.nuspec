@@ -1,27 +1,35 @@
 <?xml version="1.0"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
 	<metadata>
-		<id>linq2db</id>
-		<version>1.0.7.4</version>
-		<title>LINQ to DB</title>
-		<authors>Igor Tkachev</authors>
+		<id>linq2db4iSeries</id>
+		<version>1.0.0-rc1</version>
+		<title>LINQ to DB provider for iSeries DB2</title>
+		<authors>Roy Chase,  </authors>
 		<owners />
-		<licenseUrl>https://github.com/linq2db/linq2db/blob/master/MIT-LICENSE.txt</licenseUrl>
-		<projectUrl>https://github.com/linq2db/linq2db</projectUrl>
-		<iconUrl>http://www.gravatar.com/avatar/fc2e509b6ed116b9aa29a7988fdb8990?s=320</iconUrl>
+		<licenseUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries/blob/master/MIT-LICENSE.txt</licenseUrl>
+		<projectUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries</projectUrl>
+		<iconUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries/blob/master/NuGet/linq2db4iSeries.png</iconUrl>
 		<requireLicenseAcceptance>false</requireLicenseAcceptance>
-		<description>LINQ to DB is a data access technology that provides a run-time infrastructure for managing relational data as objects.</description>
+		<description>LINQ to DB is a data access technology that provides a run-time infrastructure for managing relational data as objects.  This package is a provider for DB2 on the IBM iSeries.</description>
 		<summary />
 		<tags>
-			linq linq2db LinqToDB ORM database DB SQL SqlServer Access SqlCe SqlServerCe MySql Firebird SQLite Sybase Oracle ODP PostgreSQL DB2 Informix SapHana
+			linq linq2db LinqToDB ORM database DB2 iSeries
 		</tags>
+		<dependencies>
+			<group>
+				<dependency id="linq2db" version="1.7.6-rc246" />
+			</group>
+		</dependencies>
 	</metadata>
 	<files>
 		<file src="Readme.txt"                                                  target="" />
+		<!--
 		<file src="..\Source\bin\Release.4.0\linq2db.dll"                       target="lib\net40" />
 		<file src="..\Source\bin\Release.4.0\linq2db.pdb"                       target="lib\net40" />
-		<file src="..\Source\bin\Release.4.5\linq2db.dll"                       target="lib\net45" />
-		<file src="..\Source\bin\Release.4.5\linq2db.pdb"                       target="lib\net45" />
+		-->
+		<file src="..\ISeriesProvider\bin\Release.4.5\LinqToDB.DataProvider.DB2iSeries.dll" target="lib\net45" />
+		<file src="..\ISeriesProvider\bin\Release.4.5\LinqToDB.DataProvider.DB2iSeries.pdb" target="lib\net45" />
+		<!--
 		<file src="..\Source\bin\Release.Silverlight.4\linq2db.Silverlight.dll" target="lib\sl4" />
 		<file src="..\Source\bin\Release.Silverlight.4\linq2db.Silverlight.pdb" target="lib\sl4" />
 		<file src="..\Source\bin\Release.Silverlight.5\linq2db.Silverlight.dll" target="lib\sl5" />
@@ -30,5 +38,6 @@
 		<file src="..\Source\bin\Release.WindowsStore\linq2db.WindowsStore.pdb" target="lib\netcore45" />
 		<file src="..\Source\bin\Release.WindowsStore\linq2db.WindowsStore.dll" target="lib\windows8" />
 		<file src="..\Source\bin\Release.WindowsStore\linq2db.WindowsStore.pdb" target="lib\windows8" />
+		-->
 	</files>
 </package>
