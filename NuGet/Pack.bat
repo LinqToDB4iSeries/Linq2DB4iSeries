@@ -1,4 +1,7 @@
+cd %~dp0
+
 cd ..\ISeriesProvider
+
 call Compile.bat
 
 cd ..\NuGet
