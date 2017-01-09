@@ -20,18 +20,6 @@ namespace Tests.Linq
 					db.Child.Except(db.Child.Where(p => p.ParentID == 3)));
 		}
 
-		//[Test, DataContextSource]
-		// expression can be written differntly?
-		public void Except2(string context)
-		{
-			var ids = new[] { 1, 2 };
-
-			using (var db = GetDataContext(context))
-				Assert.AreEqual(
-					   Child.Where(c => c.GrandChildren.Select(gc => gc.ParentID ?? 0).Except(ids).Count() == 0),
-					db.Child.Where(c => c.GrandChildren.Select(gc => gc.ParentID ?? 0).Except(ids).Count() == 0));
-		}
-
 		[Test, DataContextSource]
 		public void Intersect(string context)
 		{

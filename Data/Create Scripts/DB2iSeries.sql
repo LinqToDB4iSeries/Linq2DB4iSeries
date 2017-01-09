@@ -6,10 +6,10 @@ DROP TABLE Person
 GO
 CREATE TABLE Person( 
 	PersonID   INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY NOT NULL,
-	FirstName  VARCHAR(50) NOT NULL,
-	LastName   VARCHAR(50) NOT NULL,
-	MiddleName VARCHAR(50),
-	Gender     CHAR(1)     NOT NULL
+	FirstName  NVARCHAR(50) NOT NULL,
+	LastName   NVARCHAR(50) NOT NULL,
+	MiddleName NVARCHAR(50) ,
+	Gender     NCHAR(1)     NOT NULL
 )
 GO
 INSERT INTO Person (FirstName, LastName, Gender) VALUES ('John',   'Pupkin',    'M')
@@ -113,11 +113,11 @@ CREATE TABLE AllTypes(
 	, dataLinkDataType         dataLink                Default NULL
 	, dateDataType             date                    Default NULL
 	, dbclobDataType           dbclob(100)             Default NULL
-	, decfloat16DataType       decfloat(16)                Default NULL
-	, decfloat34DataType       decfloat(34)               Default NULL
+	, decfloat16DataType       decfloat(16)            Default NULL
+	, decfloat34DataType       decfloat(34)            Default NULL
 	, decimalDataType          decimal(30)             Default NULL
 	, doubleDataType           double                  Default NULL
-	, graphicDataType          graphic(10)             Default NULL
+	, graphicDataType          graphic(10)  ccsid 13488           Default NULL
     , intDataType              int                     Default NULL
 	, numericDataType          numeric                 Default NULL
 	, realDataType             real                    Default NULL
@@ -128,8 +128,8 @@ CREATE TABLE AllTypes(
 	, varbinaryDataType        varbinary(20)           Default NULL
 	, varcharDataType          varchar(20)             Default NULL
 	, varCharForBitDataType    varchar(5) for bit data Default NULL
-	, varGraphicDataType       vargraphic(10)          Default NULL
---, xmlDataType              xml(20)                 Default NULL
+	, varGraphicDataType       vargraphic(10)  ccsid 13488        Default NULL
+	, xmlDataType              xml                     Default NULL
 )
 GO
 
@@ -162,7 +162,7 @@ INSERT INTO AllTypes(
 	, varcharDataType          
 	, varCharForBitDataType    
 	, varGraphicDataType       
---	, xmlDataType              
+	, xmlDataType              
 ) VALUES (
 	  1000000                    --bigIntDataType         
 	, Cast('123' as binary)      --binaryDataType
@@ -177,7 +177,7 @@ INSERT INTO AllTypes(
 	, 777.987                    --decfloat34DataType       
 	, 666.987                    --decimalDataType          
 	, 555.987                    --doubleDataType           
-	, DEFAULT --Cast('graphic' as graphic) --graphicDataType          gets error when casting the data
+	, 'graphic' -- DEFAULT --Cast('graphic' as graphic) --graphicDataType          gets error when casting the data
   , 444444                     --intDataType              
 	, 333.987                    --numericDataType          
 	, 222.987                    --realDataType             
@@ -188,9 +188,8 @@ INSERT INTO AllTypes(
 	, Cast('456' as binary)      --varbinaryDataType        
 	, 'var-char'                 --varcharDataType          
 	, 'vcfb'                     --varCharForBitDataType    
-	, DEFAULT                    --varGraphicDataType
-  
---	, '<root><element strattr="strvalue" intattr="12345"/></root>' --xmlDataType  
+	, 'vargraphic'                    --varGraphicDataType
+	, '<root><element strattr="strvalue" intattr="12345"/></root>' --xmlDataType  
 )
 GO
 

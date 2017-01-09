@@ -221,23 +221,6 @@ namespace Tests.Linq
 			}
 		}
 
-		//[Test, DataContextSource]
-		public void Simple14(string context)
-		{
-			using (var db = GetDataContext(context))
-				AreEqual(
-					from p in    Parent
-					select
-						from c in p.Children
-						group c by c.ParentID into g
-						select g.Key,
-					from p in db.Parent
-					select
-						from c in p.Children
-						group c by c.ParentID into g
-						select g.Key);
-		}
-
 		[Test, DataContextSource]
 		public void MemberInit1(string context)
 		{
@@ -522,9 +505,6 @@ namespace Tests.Linq
 						group ch by ch.ParentID > 2 ? ch.ParentID > 3 ? "1" : "2" : "3"
 						into g select g
 					).ToList().OrderBy(p => p.Key).ToList();
-
-				var spam1 = expected[0];
-				var spam2 = result[0].First();
 
 				AreEqual(expected[0], result[0]);
 				AreEqual(expected.Select(p => p.Key), result.Select(p => p.Key));
@@ -1286,20 +1266,6 @@ namespace Tests.Linq
 					select g.Max());
 		}
 
-		//[Test, DataContextSource]
-		public void Scalar51(string context)
-		{
-			using (var db = GetDataContext(context))
-				AreEqual(
-					from ch in Child
-					group ch by ch.ParentID into g
-					select g.Max()
-					,
-					from ch in db.Child
-					group ch by ch.ParentID into g
-					select g.Max());
-		}
-
 		[Test, DataContextSource(ProviderName.SqlCe)]
 		public void Scalar6(string context)
 		{
@@ -1537,56 +1503,6 @@ namespace Tests.Linq
 			}
 		}
 
-		// TODO: [Test, DataContextSource]
-		public void GroupByDate1(string context)
-		{
-			using (var db = GetDataContext(context))
-			{
-				AreEqual(
-					from t in Types
-					group t by new { t.DateTimeValue.Month, t.DateTimeValue.Year } into grp
-					select new
-					{
-						Total = grp.Sum(_ => _.MoneyValue),
-						year  = grp.Key.Year,
-						month = grp.Key.Month
-					},
-					from t in db.Types
-					group t by new { t.DateTimeValue.Month, t.DateTimeValue.Year } into grp
-					select new
-					{
-						Total = grp.Sum(_ => _.MoneyValue),
-						year  = grp.Key.Year,
-						month = grp.Key.Month
-					});
-			}
-		}
-
-		// TODO: [Test, DataContextSource]
-		public void GroupByDate2(string context)
-		{
-			using (var db = GetDataContext(context))
-			{
-				AreEqual(
-					from t in Types2
-					group t by new { t.DateTimeValue.Value.Month, t.DateTimeValue.Value.Year } into grp
-					select new
-					{
-						Total = grp.Sum(_ => _.MoneyValue),
-						year  = grp.Key.Year,
-						month = grp.Key.Month
-					},
-					from t in db.Types2
-					group t by new { t.DateTimeValue.Value.Month, t.DateTimeValue.Value.Year } into grp
-					select new
-					{
-						Total = grp.Sum(_ => _.MoneyValue),
-						year  = grp.Key.Year,
-						month = grp.Key.Month
-					});
-			}
-		}
-
 		[Test, DataContextSource]
 		public void GroupByCount(string context)
 		{
@@ -1637,43 +1553,6 @@ namespace Tests.Linq
 			public int ParentID;
 			public int ChildID;
 			public int RandValue;
-		}
-
-		//////[Test, DataContextSource(ProviderName.Informix, ProviderName.Sybase)]
-		public void GroupByCustomEntity1(string context)
-		{
-			var rand = new Random().Next(5);
-			//var rand = new Random();
-
-			using (var db = GetDataContext(context))
-			{
-				AreEqual(
-					from e in
-						from c in Child
-						select new ChildEntity
-						{
-							RandValue = rand//.Next(5)
-							,
-							ParentID  = c.ParentID,
-						}
-					group e by new { e.ParentID, e.RandValue } into g
-					select new
-					{
-						Count = g.Count()
-					},
-					from e in
-						from c in db.Child
-						select new ChildEntity
-						{
-							RandValue = rand,
-							ParentID  = c.ParentID,
-						}
-					group e by new { e.ParentID, e.RandValue } into g
-					select new
-					{
-						Count = g.Count()
-					});
-			}
 		}
 
 		static int GetID(int id)

@@ -515,22 +515,5 @@ namespace Tests.Linq
 				Assert.That(sql.IndexOf("ParentID_"), Is.LessThan(0));
 			}
 		}
-
-		//[Test, Ignore("Not currently supported")]
-		public void SelectComplexField()
-		{
-			using (var db = new TestDataConnection())
-			{
-				var q =
-					from p in db.GetTable<ComplexPerson>()
-					select p.Name.LastName;
-
-				var sql = q.ToString();
-
-				Assert.That(sql.IndexOf("First"), Is.LessThan(0));
-				Assert.That(sql.IndexOf("LastName"), Is.GreaterThan(0));
-			}
-		}
-
 	}
 }

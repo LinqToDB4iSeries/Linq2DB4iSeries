@@ -27,6 +27,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetValueToSqlConverter(typeof(DateTime), (sb, dt, v) => ConvertDateTimeToSql(sb, dt, (DateTime)v));
 
 			AddMetadataReader(new DB2iSeriesMetadataReader());
+			AddMetadataReader(new DB2iSeriesAttributeReader());
 		}
 
 		public static string GetiSeriesType(SqlDataType dataType)

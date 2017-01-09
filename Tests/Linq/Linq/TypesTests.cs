@@ -193,32 +193,6 @@ namespace Tests.Linq
 					from p in db.Types where ids.Contains(p.GuidValue) select p.GuidValue);
 		}
 
-		//[Test, DataContextSource(
-		//	ProviderName.DB2, "DB2.iSeries", ProviderName.Informix, ProviderName.Firebird, ProviderName.PostgreSQL, ProviderName.SQLite, ProviderName.Access, ProviderName.SapHana)]
-		public void NewGuid(string context)
-		{
-			using (var db = GetDataContext(context))
-			{
-				db.Types.Delete(_ => _.ID > 1000);
-				db.Types.Insert(() => new LinqDataTypes
-				{
-					ID            = 1001,
-					MoneyValue    = 1001,
-					DateTimeValue = Sql.CurrentTimestamp,
-					BoolValue     = true,
-					GuidValue     = Sql.NewGuid(),
-					BinaryValue   = new Binary(new byte[] { 1 }),
-					SmallIntValue = 1001
-				});
-
-				var guid = db.Types.Single(_ => _.ID == 1001).GuidValue;
-
-				Assert.AreEqual(1001, db.Types.Single(_ => _.GuidValue == guid).ID);
-
-				db.Types.Delete(_ => _.ID > 1000);
-			}
-		}
-
 		[Test, DataContextSource(ProviderName.Access)]
 		public void BinaryLength(string context)
 		{
@@ -237,25 +211,6 @@ namespace Tests.Linq
 					.Where(t => t.ID == 1)
 					.Set(t => t.BinaryValue, (Binary)null)
 					.Update();
-			}
-		}
-
-		//[Test, DataContextSource(
-		//	ProviderName.DB2, "DB2.iSeries", ProviderName.Informix, ProviderName.Firebird, ProviderName.PostgreSQL, ProviderName.SQLite, ProviderName.Access)]
-		public void InsertBinary1(string context)
-		{
-			using (var db = GetDataContext(context))
-			{
-				Binary data = null;
-
-				db.Types.Delete(_ => _.ID > 1000);
-				db.Types.Insert(() => new LinqDataTypes
-				{
-					ID          = 1001,
-					BinaryValue = data,
-					BoolValue   = true,
-				});
-				db.Types.Delete(_ => _.ID > 1000);
 			}
 		}
 
@@ -332,75 +287,6 @@ namespace Tests.Linq
 			}
 		}
 
-		//[Test, DataContextSource(
-		//		ProviderName.SqlCe, ProviderName.Access, ProviderName.SqlServer2005, ProviderName.DB2, "DB2.iSeries", ProviderName.Informix,
-		//		ProviderName.Firebird, ProviderName.OracleNative, ProviderName.OracleManaged, ProviderName.PostgreSQL, ProviderName.MySql,
-		//		ProviderName.Sybase, ProviderName.SqlServer2000, ProviderName.SapHana, TestProvName.MariaDB)]
-		public void DateTime22(string context)
-		{
-			using (var db = GetDataContext(context))
-			{
-				var pdt = db.Types2.First(t => t.ID == 1).DateTimeValue2;
-				var dt  = DateTime.Parse("2010-12-14T05:00:07.4250141Z");
-
-				db.Types2.Update(t => t.ID == 1, t => new LinqDataTypes2 { DateTimeValue2 = dt });
-
-				var dt2 = db.Types2.First(t => t.ID == 1).DateTimeValue2;
-
-				db.Types2.Update(t => t.ID == 1, t => new LinqDataTypes2 { DateTimeValue2 = pdt });
-
-				Assert.AreEqual(dt, dt2);
-			}
-		}
-
-		//[Test, DataContextSource(
-		//		ProviderName.SqlCe, ProviderName.Access, ProviderName.SqlServer2005, ProviderName.DB2, "DB2.iSeries", ProviderName.Informix,
-		//		ProviderName.Firebird, ProviderName.OracleNative, ProviderName.OracleManaged, ProviderName.PostgreSQL, ProviderName.MySql,
-		//		ProviderName.Sybase, ProviderName.SqlServer2000, ProviderName.SapHana, TestProvName.MariaDB)]
-		public void DateTime23(string context)
-		{
-			using (var db = GetDataContext(context))
-			{
-				var pdt = db.Types2.First(t => t.ID == 1).DateTimeValue2;
-				var dt  = DateTime.Parse("2010-12-14T05:00:07.4250141Z");
-
-				db.Types2
-					.Where(t => t.ID == 1)
-					.Set  (_ => _.DateTimeValue2, dt)
-					.Update();
-
-				var dt2 = db.Types2.First(t => t.ID == 1).DateTimeValue2;
-
-				db.Types2.Update(t => t.ID == 1, t => new LinqDataTypes2 { DateTimeValue2 = pdt });
-
-				Assert.AreEqual(dt, dt2);
-			}
-		}
-
-		//[Test, DataContextSource(
-		//		ProviderName.SqlCe, ProviderName.Access, ProviderName.SqlServer2005, ProviderName.DB2, "DB2.iSeries", ProviderName.Informix,
-		//		ProviderName.Firebird, ProviderName.OracleNative, ProviderName.OracleManaged, ProviderName.PostgreSQL, ProviderName.MySql, TestProvName.MariaDB,
-		//		TestProvName.MariaDB, ProviderName.Sybase, ProviderName.SqlServer2000, ProviderName.SapHana)]
-		public void DateTime24(string context)
-		{
-			using (var db = GetDataContext(context))
-			{
-				var pdt = db.Types2.First(t => t.ID == 1).DateTimeValue2;
-				var dt  = DateTime.Parse("2010-12-14T05:00:07.4250141Z");
-				var tt  = db.Types2.First(t => t.ID == 1);
-
-				tt.DateTimeValue2 = dt;
-
-				db.Update(tt);
-
-				var dt2 = db.Types2.First(t => t.ID == 1).DateTimeValue2;
-
-				db.Types2.Update(t => t.ID == 1, t => new LinqDataTypes2 { DateTimeValue2 = pdt });
-
-				Assert.AreEqual(dt, dt2);
-			}
-		}
-
 		[Test, DataContextSource]
 		public void DateTimeArray1(string context)
 		{
@@ -474,8 +360,8 @@ namespace Tests.Linq
 					from p in db.Parent select new { Value = p.Value1.GetValueOrDefault() });
 		}
 
-		//[Test, DataContextSource(ProviderName.Informix, ProviderName.Firebird, ProviderName.Sybase)]
-		// UNICODE seems to store correctly but unicode parameters don't seem to translate correctly
+		[Test, DataContextSource(ProviderName.Informix, ProviderName.Firebird, ProviderName.Sybase)]
+		//TODO: UNICODE seems to store correctly but unicode parameters don't seem to translate correctly
 		public void Unicode(string context)
 		{
 			using (var db = GetDataContext(context))

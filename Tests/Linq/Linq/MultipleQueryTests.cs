@@ -10,32 +10,6 @@ namespace Tests.Linq
 	[TestFixture]
 	public class MultipleQueryTests : TestBase
 	{
-		//[Test, DataContextSource]
-		public void Test1(string context)
-		{
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = true;
-
-			using (var db = GetDataContext(context))
-				AreEqual(
-					from p in    Parent select p.Children,
-					from p in db.Parent select p.Children);
-
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = false;
-		}
-
-		//[Test, DataContextSource]
-		public void Test2(string context)
-		{
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = true;
-
-			using (var db = GetDataContext(context))
-				AreEqual(
-					from p in    Parent select p.Children.ToList(),
-					from p in db.Parent select p.Children.ToList());
-
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = false;
-		}
-
 		[Test, DataContextSource]
 		public void Test3(string context)
 		{

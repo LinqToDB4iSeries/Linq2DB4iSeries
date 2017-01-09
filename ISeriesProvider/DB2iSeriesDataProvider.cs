@@ -34,7 +34,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public override string ConnectionNamespace { get { return ""; } }
 		protected override string ConnectionTypeName { get { return DB2iSeriesTools.ConnectionTypeName; } }
 		protected override string DataReaderTypeName { get { return DB2iSeriesTools.DataReaderTypeName; } }
-		public string DummyTableName {	get { return DB2iSeriesTools.iSeriesDummyTableName(); } }
+		public string DummyTableName { get { return DB2iSeriesTools.iSeriesDummyTableName(); } }
 
 		public override BulkCopyRowsCopied BulkCopy<T>(DataConnection dataConnection, BulkCopyOptions options, IEnumerable<T> source)
 		{
@@ -189,12 +189,18 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			{
 				case DataType.UInt16:
 					dataType__1 = DataType.Int32;
+					if (value != null)
+						value = Convert.ToInt32(value);
 					break;
 				case DataType.UInt32:
 					dataType__1 = DataType.Int64;
+					if (value != null)
+						value = Convert.ToInt64(value);
 					break;
 				case DataType.UInt64:
 					dataType__1 = DataType.Decimal;
+					if (value != null)
+						value = Convert.ToDecimal(value);
 					break;
 				case DataType.VarNumeric:
 					dataType__1 = DataType.Decimal;
@@ -241,7 +247,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					}
 					break;
 				case DataType.DateTime2:
-						dataType__1 = DataType.DateTime;
+					dataType__1 = DataType.DateTime;
 					break;
 				case DataType.Blob:
 					base.SetParameter(parameter, Convert.ToString("@") + name, dataType__1, value);

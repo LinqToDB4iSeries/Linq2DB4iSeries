@@ -42,41 +42,6 @@ namespace Tests.Linq
 			}
 		}
 
-		//[Test, DataContextSource(ProviderName.SqlCe, ProviderName.SQLite, ProviderName.PostgreSQL, ProviderName.Informix, ProviderName.DB2, "DB2.iSeries")]
-		public void CharAsSqlParameter1(string context)
-		{
-			using (var  db = GetDataContext(context))
-			{
-				var s1 = "0 \x0 ' 0";
-				var s2 = db.Select(() => Sql.ToSql(s1));
-
-				Assert.That(s2, Is.EqualTo(s1));
-			}
-		}
-
-		//[Test, DataContextSource(ProviderName.SqlCe, ProviderName.SQLite, ProviderName.PostgreSQL, ProviderName.Informix, ProviderName.Informix, ProviderName.DB2, "DB2.iSeries")]
-		public void CharAsSqlParameter2(string context)
-		{
-			using (var  db = GetDataContext(context))
-			{
-				var s1 = "\x0 \x0 ' \x0";
-				var s2 = db.Select(() => Sql.ToSql(s1));
-
-				Assert.That(s2, Is.EqualTo(s1));
-			}
-		}
-
-		//[Test, DataContextSource(ProviderName.SqlCe, ProviderName.PostgreSQL, ProviderName.Informix, ProviderName.Informix, ProviderName.DB2, "DB2.iSeries")]
-		public void CharAsSqlParameter3(string context)
-		{
-			using (var  db = GetDataContext(context))
-			{
-				var s1 = "\x0";
-				var s2 = db.Select(() => Sql.ToSql(s1));
-
-				Assert.That(s2, Is.EqualTo(s1));
-			}
-		}
 
 		[Test, DataContextSource]
 		public void CharAsSqlParameter4(string context)
@@ -84,18 +49,6 @@ namespace Tests.Linq
 			using (var  db = GetDataContext(context))
 			{
 				var s1 = "\x1-\x2-\x3";
-				var s2 = db.Select(() => Sql.ToSql(s1));
-
-				Assert.That(s2, Is.EqualTo(s1));
-			}
-		}
-
-		//[Test, DataContextSource(ProviderName.PostgreSQL, ProviderName.Informix, ProviderName.Informix, ProviderName.DB2, "DB2.iSeries")]
-		public void CharAsSqlParameter5(string context)
-		{
-			using (var  db = GetDataContext(context))
-			{
-				var s1 = '\x0';
 				var s2 = db.Select(() => Sql.ToSql(s1));
 
 				Assert.That(s2, Is.EqualTo(s1));

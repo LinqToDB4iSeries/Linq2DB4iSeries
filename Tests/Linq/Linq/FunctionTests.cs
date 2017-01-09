@@ -287,26 +287,6 @@ namespace Tests.Linq
 					from p in db.Parent where p.Value1.Equals(null) select p);
 		}
 
-		//[Test, DataContextSource(
-		//	ProviderName.DB2, "DB2.iSeries", ProviderName.Informix, ProviderName.PostgreSQL, ProviderName.SQLite, ProviderName.Access)]
-		public void NewGuid1(string context)
-		{
-			using (var db = GetDataContext(context))
-			{
-				var val1 = from p in Types where p.GuidValue != Sql.NewGuid() select p.GuidValue;
-				var val2 = from p in db.Types where p.GuidValue != Sql.NewGuid() select p.GuidValue;
-
-				AreEqual(val1, val2);
-			}
-		}
-
-		//[Test, DataContextSource(ProviderName.DB2, "DB2.iSeries", ProviderName.Informix, ProviderName.PostgreSQL, ProviderName.SQLite, ProviderName.Access)]
-		public void NewGuid2(string context)
-		{
-			using (var db = GetDataContext(context))
-				Assert.AreNotEqual(Guid.Empty, (from p in db.Types select Sql.NewGuid()).First());
-		}
-
 		[Test, DataContextSource]
 		public void CustomFunc(string context)
 		{
@@ -357,35 +337,7 @@ namespace Tests.Linq
 					   Parent.Select(p => p.Children.Where(c => c.ParentID > 2).Sum(c => c.ParentID * c.ChildID)),
 					db.Parent.Select(p => ChildCount(p)));
 		}
-		//TODO: RC- not sure that this ever worked
-		//[Test, DataContextSource]
-		public void Aggregate1(string context)
-		{
-			using (var db = GetDataContext(context))
-			{
-				var expected = from p in Parent
-							   group p by p.ParentID into g
-							   select new
-							   {
-								   sum1 = g.Sum(i => i.Value1),
-								   sum2 = g.MySum(i => i.Value1),
-							   };
-				var actual =
-					from p in db.Parent
-					group p by p.ParentID into g
-					select new
-					{
-						sum1 = g.Sum(i => i.Value1),
-						sum2 = g.MySum(i => i.Value1),
-					};
-
-				var e = expected.ToArray();
-				var a = actual.ToArray();
-
-				AreEqual(expected, actual);
-			}
-		}
-
+		
 		[Test, DataContextSource]
 		public void GetValueOrDefault(string context)
 		{

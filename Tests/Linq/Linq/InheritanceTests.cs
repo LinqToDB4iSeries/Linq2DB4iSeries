@@ -127,19 +127,6 @@ namespace Tests.Linq
 					from p in db.ParentInheritance1 where p.ParentID == 1 select p);
 		}
 
-		//[Test, DataContextSource]
-		public void Test13(string context)
-		{
-			using (var db = GetDataContext(context))
-				AreEqual(
-					from p in    ParentInheritance4
-					join c in    Child on p.ParentID equals c.ParentID
-					select p,
-					from p in db.ParentInheritance4
-					join c in db.Child on p.ParentID equals c.ParentID
-					select p);
-		}
-
 		[Test, DataContextSource]
 		public void Cast1(string context)
 		{

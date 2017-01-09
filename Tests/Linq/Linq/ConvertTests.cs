@@ -126,8 +126,6 @@ namespace Tests.Linq
 				var expected = from t in Types select Sql.Convert(Sql.TinyInt, t.MoneyValue);
 				var actual = from t in db.Types select Sql.Convert(Sql.TinyInt, t.MoneyValue);
 
-				var spam = actual.ToArray();
-
 				AreEqual(expected,actual);
 			}
 		}
@@ -406,7 +404,7 @@ namespace Tests.Linq
 		}
 
 		[Test, DataContextSource(ProviderName.SQLite
-			, ProviderName.Access, ProviderName.Sybase ///////// TODO
+			, ProviderName.Access, ProviderName.Sybase 
 			)]
 		public void ToSqlTime(string context)
 		{

@@ -179,8 +179,8 @@ namespace Tests.DataProvider
 				Assert.That(TestType<byte[]>(conn, "blobDataType", DataType.Blob, skipDefaultNull: true, skipUndefinedNull: true, skipDefault: true, skipUndefined: true), Is.EqualTo(new byte[] { 0xF2, 0xF3, 0xF4 }));
 				Assert.That(TestType<byte[]>(conn, "blobDataType", DataType.VarBinary, skipDefaultNull: true, skipUndefinedNull: true, skipDefault: true, skipUndefined: true), Is.EqualTo(new byte[] { 0xF2, 0xF3, 0xF4 }));
 
-				// TODO: test graphic column type
-				//Assert.That(TestType<string>(conn, "graphicDataType", DataType.VarChar), Is.EqualTo("23        "));
+				Assert.That(TestType<string>(conn, "graphicDataType", DataType.VarChar), Is.EqualTo("graphic   "));
+				Assert.That(TestType<string>(conn, "vargraphicDataType", DataType.VarChar), Is.EqualTo("vargraphic"));
 
 				Assert.That(TestType<DateTime?>(conn, "dateDataType", DataType.Date, skipDefault: true, skipUndefined: true), Is.EqualTo(new DateTime(2012, 12, 12)));
 				Assert.That(TestType<iDB2Date?>(conn, "dateDataType", DataType.Date), Is.EqualTo(new iDB2Date(new DateTime(2012, 12, 12))));
@@ -189,8 +189,7 @@ namespace Tests.DataProvider
 				Assert.That(TestType<DateTime?>(conn, "timestampDataType", DataType.DateTime2, skipDefault: true, skipUndefined: true), Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12, 0)));
 				Assert.That(TestType<iDB2TimeStamp?>(conn, "timestampDataType", DataType.DateTime2), Is.EqualTo(new iDB2TimeStamp(new DateTime(2012, 12, 12, 12, 12, 12, 0))));
 
-				// TODO: test XML column type
-				//Assert.That(TestType<string>(conn, "xmlDataType", DataType.Xml, skipPass: true), Is.EqualTo("<root><element strattr=\"strvalue\" intattr=\"12345\"/></root>"));
+				Assert.That(TestType<string>(conn, "xmlDataType", DataType.Xml, skipPass: true), Is.EqualTo("<root><element strattr=\"strvalue\" intattr=\"12345\"/></root>"));
 
 				Assert.That(conn.Execute<byte[]>("SELECT rowidDataType FROM AllTypes WHERE ID = 2").Length, Is.Not.EqualTo(0));
 				Assert.That(conn.Execute<iDB2Rowid>("SELECT rowidDataType FROM AllTypes WHERE ID = 2").Value.Length, Is.Not.EqualTo(0));
@@ -198,8 +197,7 @@ namespace Tests.DataProvider
 				TestType<iDB2Clob>(conn, "clobDataType", DataType.Text, skipNotNull: true);
 				TestType<iDB2Blob>(conn, "blobDataType", DataType.VarBinary, skipNotNull: true);
 
-				//TODO: test XML column
-				//TestType<iDB2Xml>(conn, "xmlDataType", DataType.Xml, skipPass: true);
+				TestType<iDB2Xml>(conn, "xmlDataType", DataType.Xml, skipPass: true);
 
 				Assert.That(TestType<iDB2Decimal?>(conn, "decimalDataType", DataType.Decimal).ToString(), Is.EqualTo(new iDB2Decimal(666m).ToString()));
 				Assert.That(TestType<iDB2Binary>(conn, "varbinaryDataType", DataType.VarBinary).ToString(), Is.EqualTo(new iDB2Binary(new byte[] { 0xF4 }).ToString()));
@@ -236,28 +234,44 @@ namespace Tests.DataProvider
 				case DataType.Int16:
 				case DataType.Int32:
 				case DataType.Int64:
-
 				case DataType.UInt32:
-				case DataType.UInt64:
 					castType = "bigint";
 					break;
 				case DataType.UInt16:
 					castType = "int";
 					break;
+				case DataType.UInt64:
+					castType = "decimal(20,0)";
+					break;
 				case DataType.Single:
 					castType = "real";
 					break;
 				case DataType.Double:
-				case DataType.Decimal:
 					castType = "float(34)";
+					break;
+				case DataType.VarNumeric:
+				case DataType.Decimal:
+					if (expectedValue != null)
+					{
+						var val = expectedValue.ToString();
+						int precision = val.Replace("-", "").Replace(".", "").Length;
+						int point = val.IndexOf(".");
+						int scale = point < 0 ? 0 : val.Length - point;
+						castType = string.Format("decimal({0},{1})", precision, scale);
+					}
+					else
+						castType = "decimal";
 					break;
 				case DataType.Money:
 					castType = "decfloat";
 					break;
 			}
 
+
 			Debug.WriteLine("{0} -> DataType.{1}", typeof(T), dataType);
-			Assert.That(conn.Execute<T>($"SELECT cast(@p as {castType}) FROM SYSIBM.SYSDUMMY1", new DataParameter { Name = "p", DataType = dataType, Value = expectedValue }), Is.EqualTo(expectedValue));
+			string sql1 = $"SELECT cast(@p as {castType}) FROM SYSIBM.SYSDUMMY1";
+
+			Assert.That(conn.Execute<T>(sql1, new DataParameter { Name = "p", DataType = dataType, Value = expectedValue }), Is.EqualTo(expectedValue));
 			Debug.WriteLine("{0} -> auto", typeof(T));
 			Assert.That(conn.Execute<T>($"SELECT cast(@p as {castType}) FROM SYSIBM.SYSDUMMY1", new DataParameter { Name = "p", Value = expectedValue }), Is.EqualTo(expectedValue));
 			Debug.WriteLine("{0} -> new", typeof(T));
@@ -300,33 +314,18 @@ namespace Tests.DataProvider
 				TestNumeric(conn, int.MaxValue, DataType.Int32, "smallint real");
 				TestNumeric(conn, long.MinValue, DataType.Int64, "smallint int double");
 				TestNumeric(conn, long.MaxValue, DataType.Int64, "smallint int double real");
-
 				TestNumeric(conn, byte.MaxValue, DataType.Byte);
-
-				//TODO: gives an error that value cannot be cast to Int16
-				//TestNumeric(conn, ushort.MaxValue, DataType.UInt16, "smallint");
-
-				//TODO: gives an error that value cannot be cast to Int16
-				//TestNumeric(conn, uint.MaxValue, DataType.UInt32, "smallint int real");
-
-				//TODO: gives an error that value cannot be cast to Int16
-				//TestNumeric(conn, ulong.MaxValue, DataType.UInt64, "smallint int real bigint double");
-
+				TestNumeric(conn, ushort.MaxValue, DataType.UInt16, "smallint");
+				TestNumeric(conn, uint.MaxValue, DataType.UInt32, "smallint int real");
+				TestNumeric(conn, ulong.MaxValue, DataType.UInt64, "smallint int real bigint double");
 				TestNumeric(conn, -3.40282306E+38f, DataType.Single, "bigint int smallint decimal(31) decfloat");
 				TestNumeric(conn, 3.40282306E+38f, DataType.Single, "bigint int smallint decimal(31) decfloat");
 				TestNumeric(conn, -1.79E+308d, DataType.Double, "bigint int smallint decimal(31) decfloat real");
 				TestNumeric(conn, 1.79E+308d, DataType.Double, "bigint int smallint decimal(31) decfloat real");
-
-				// TODO: DB2 returns the result as an exponent value that is too big so fails
-				//TestNumeric(conn, decimal.MinValue, DataType.Decimal, "bigint int smallint double real");
-
-				// TODO: DB2 returns the result as an exponent value that is too big so fails
-				//TestNumeric(conn, decimal.MaxValue, DataType.Decimal, "bigint int smallint double real");
-
-				// TODO: DB2 returns the result as an exponent value that is too big so fails
-				//TestNumeric(conn, decimal.MinValue, DataType.VarNumeric, "bigint int smallint double real");
-				// TODO: DB2 returns the result as an exponent value that is too big so fails
-				//TestNumeric(conn, decimal.MaxValue, DataType.VarNumeric, "bigint int smallint double real");
+				TestNumeric(conn, decimal.MinValue, DataType.Decimal, "bigint int smallint double real");
+				TestNumeric(conn, decimal.MaxValue, DataType.Decimal, "bigint int smallint double real");
+				TestNumeric(conn, decimal.MinValue, DataType.VarNumeric, "bigint int smallint double real");
+				TestNumeric(conn, decimal.MaxValue, DataType.VarNumeric, "bigint int smallint double real");
 				TestNumeric(conn, -922337203685477m, DataType.Money, "int smallint real");
 				TestNumeric(conn, +922337203685477m, DataType.Money, "int smallint real");
 				TestNumeric(conn, -214748m, DataType.SmallMoney, "smallint");
@@ -395,10 +394,6 @@ namespace Tests.DataProvider
 				Assert.That(conn.Execute<char?>("SELECT Cast('1' as varchar(1)) FROM SYSIBM.SYSDUMMY1"), Is.EqualTo('1'));
 				Assert.That(conn.Execute<char>("SELECT Cast('1' as varchar(20)) FROM SYSIBM.SYSDUMMY1"), Is.EqualTo('1'));
 				Assert.That(conn.Execute<char?>("SELECT Cast('1' as varchar(20)) FROM SYSIBM.SYSDUMMY1"), Is.EqualTo('1'));
-
-				// the following two statements are not valid DB2 SQL
-				//Assert.That(conn.Execute<char>("SELECT @p FROM SYSIBM.SYSDUMMY1", DataParameter.Char("p", '1')), Is.EqualTo('1'));
-				//Assert.That(conn.Execute<char?>("SELECT @p FROM SYSIBM.SYSDUMMY1", DataParameter.Char("p", '1')), Is.EqualTo('1'));
 
 				Assert.That(conn.Execute<char>("SELECT Cast(@p as char) FROM SYSIBM.SYSDUMMY1", DataParameter.Char("p", '1')), Is.EqualTo('1'));
 				Assert.That(conn.Execute<char?>("SELECT Cast(@p as char) FROM SYSIBM.SYSDUMMY1", DataParameter.Char("p", '1')), Is.EqualTo('1'));
@@ -576,15 +571,17 @@ namespace Tests.DataProvider
 			public byte[] BLOBDATATYPE { get; set; } // BLOB(10)
 			[Column(DbType = "graphic(10)"), Nullable]
 			public string GRAPHICDATATYPE { get; set; } // GRAPHIC(10)
+			[Column(DbType = "vargraphic(10)"), Nullable]
+			public string VARGRAPHICDATATYPE { get; set; } // GRAPHIC(10)
+
 			[Column(DbType = "date"), Nullable]
 			public DateTime? DATEDATATYPE { get; set; } // DATE
 			[Column(DbType = "time"), Nullable]
 			public TimeSpan? TIMEDATATYPE { get; set; } // TIME
 			[Column(DbType = "timestamp"), Nullable]
 			public DateTime? TIMESTAMPDATATYPE { get; set; } // TIMESTAMP
-
-			//[Column, Nullable]
-			//public string XMLDATATYPE { get; set; } // XML
+			[Column, Nullable]
+			public string XMLDATATYPE { get; set; } // XML
 		}
 
 		void BulkCopyTest(string context, BulkCopyType bulkCopyType, int maxSize, int batchSize)
@@ -619,15 +616,14 @@ namespace Tests.DataProvider
 						BINARYDATATYPE = null,
 						VARBINARYDATATYPE = null,
 						BLOBDATATYPE = new byte[] { 1, 2, 3 },
-						GRAPHICDATATYPE = null,
+						GRAPHICDATATYPE = "abc",
+						VARGRAPHICDATATYPE = "xyz",
 						DATEDATATYPE = DateTime.Now.Date,
 						TIMEDATATYPE = null,
-						TIMESTAMPDATATYPE = null
-						//,
-						//XMLDATATYPE = null,
-					}));
+						TIMESTAMPDATATYPE = null,
+						XMLDATATYPE = "<root><element strattr=\"strvalue\" intattr=\"12345\"/></root>"
 
-				//var list = conn.GetTable<ALLTYPE>().ToList();
+					}));
 
 				conn.GetTable<ALLTYPE>().Delete(p => p.SMALLINTDATATYPE >= 5000);
 			}
@@ -729,38 +725,35 @@ namespace Tests.DataProvider
 		[Test, IncludeDataContextSource(CurrentProvider)]
 		public void TestClobSize(string context)
 		{
-			//TODO: this gives an DB2 driver exception - need to fix
-			Assert.Inconclusive("Insert gives driver error");
+			using (var conn = new DataConnection(context))
+			{
+				try
+				{
+					var sb = new StringBuilder();
 
-			//using (var conn = new DataConnection(context))
-			//{
-			//	try
-			//	{
-			//		var sb = new StringBuilder();
+					for (var i = 0; i < 100000; i++)
+						sb.Append(((char)((i % (byte.MaxValue - 31)) + 32)).ToString());
 
-			//		for (var i = 0; i < 100000; i++)
-			//			sb.Append(((char)((i % byte.MaxValue) + 32)).ToString());
+					var data = sb.ToString();
 
-			//		var data = sb.ToString();
+					conn.GetTable<ALLTYPE>().Insert(() => new ALLTYPE
+					{
+						INTDATATYPE = 2000,
+						CLOBDATATYPE = data,
+					});
 
-			//		conn.GetTable<ALLTYPE>().Insert(() => new ALLTYPE
-			//		{
-			//			INTDATATYPE = 2000,
-			//			CLOBDATATYPE = data,
-			//		});
+					var blob = conn.GetTable<ALLTYPE>()
+					  .Where(t => t.INTDATATYPE == 2000)
+					  .Select(t => t.CLOBDATATYPE)
+					  .First();
 
-			//		var blob = conn.GetTable<ALLTYPE>()
-			//		  .Where(t => t.INTDATATYPE == 2000)
-			//		  .Select(t => t.CLOBDATATYPE)
-			//		  .First();
-
-			//		Assert.AreEqual(data, blob);
-			//	}
-			//	finally
-			//	{
-			//		conn.GetTable<ALLTYPE>().Delete(p => p.INTDATATYPE == 2000);
-			//	}
-			//}
+					Assert.AreEqual(data, blob);
+				}
+				finally
+				{
+					conn.GetTable<ALLTYPE>().Delete(p => p.INTDATATYPE == 2000);
+				}
+			}
 		}
 
 		[Test, IncludeDataContextSource(CurrentProvider)]
@@ -897,11 +890,11 @@ namespace Tests.DataProvider
 		public void CompareDate2(string context)
 		{
 			var dt = Types2[3].DateTimeValue;
-			
+
 			using (var db = GetDataContext(context))
 			{
-				var expected = Types2.Where(t => t.DateTimeValue.Value.Date >  dt.Value.Date);
-				var actual = db.Types2.Where(t => t.DateTimeValue.Value.Date > dt.Value.Date); 
+				var expected = Types2.Where(t => t.DateTimeValue.Value.Date > dt.Value.Date);
+				var actual = db.Types2.Where(t => t.DateTimeValue.Value.Date > dt.Value.Date);
 
 				AreEqual(expected, actual);
 			}

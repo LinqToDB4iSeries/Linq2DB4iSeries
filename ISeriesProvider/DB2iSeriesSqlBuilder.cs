@@ -118,20 +118,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		protected override void BuildFunction(SqlFunction func)
 		{
 			func = ConvertFunctionParameters(func);
-			//      switch (func.Name) {
-			//        case "Coalesce":
-			//          if (func.Parameters.Length > 2) {
-			//            var parms = new ISqlExpression[func.Parameters.Length - 1];
-			//            Array.Copy(func.Parameters, 1, parms, 0, parms.Length);
-			//            BuildFunction(new SqlFunction(func.SystemType, func.Name, func.Parameters[0],
-			//                          new SqlFunction(func.SystemType, func.Name, parms)));
-			//            return;
-			//          }
-			//          var sc = new SelectQuery.SearchCondition();
-			//          sc.Conditions.Add(new SelectQuery.Condition(false, new SelectQuery.Predicate.IsNull(func.Parameters[0], false)));
-			//          func = new SqlFunction(func.SystemType, "xIif", sc, func.Parameters[1], func.Parameters[0]);
-			//          break;
-			//      }
+		
 			base.BuildFunction(func);
 		}
 

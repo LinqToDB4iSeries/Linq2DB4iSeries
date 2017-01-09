@@ -153,8 +153,6 @@ namespace Tests.Linq
 				var expected = from t in from p in Types select Math.Floor(Math.Log((double)p.MoneyValue)) where t != 0.1 select t;
 				var actual = from t in from p in db.Types select Math.Floor(Math.Log((double)p.MoneyValue)) where t != 0.1 select t;
 
-				var spam = actual.First();
-
 				AreEqual(expected,	actual);
 			}
 		}
@@ -249,17 +247,15 @@ namespace Tests.Linq
 					from t in from p in db.Types select Math.Round(p.MoneyValue, MidpointRounding.AwayFromZero) where t != 0 select t);
 		}
 
-		//[Test, DataContextSource]
-		// iseries does casting othen rounding gives differnt results (rounding errors?)
+		// [Test, DataContextSource]
+		// TODO: iseries does casting othen rounding gives differnt results (rounding errors?)
 		public void Round6(string context)
 		{
 			using (var db = GetDataContext(context))
 			{
 				var expected = from t in from p in Types select Math.Round((double)p.MoneyValue, MidpointRounding.AwayFromZero) where t != 0 select t;
 				var result = from t in from p in db.Types select Math.Round((double)p.MoneyValue, MidpointRounding.AwayFromZero) where t != 0 select t;
-
-				var spam = result.First();
-
+				
 				AreEqual(expected, result);
 			}
 		}

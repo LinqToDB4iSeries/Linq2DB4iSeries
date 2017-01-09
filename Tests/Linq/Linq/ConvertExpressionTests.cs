@@ -119,45 +119,6 @@ namespace Tests.Linq
 					select children2.Sum(c => c.ChildID));
 		}
 
-		//[Test, DataContextSource]
-		public void Where4(string context)
-		{
-			using (var db = GetDataContext(context))
-				AreEqual(
-					   Parent
-						.Select(p => new { p, children1 = p.Children. Where(c => c.ParentID > 1)  })
-						.Where (t => t.children1.Any()),
-					db.Parent
-						.Select(p => new { p, children1 = p.Children. Where(c => c.ParentID > 1)  })
-						.Where (t => t.children1.Any()));
-		}
-
-		//[Test, DataContextSource]
-		public void Where5(string context)
-		{
-			using (var db = GetDataContext(context))
-				AreEqual(
-					   Parent
-						.Select(p => new { children1 = p.Children. Where(c => c.ParentID > 1)  })
-						.Where (t => t.children1.Any()),
-					db.Parent
-						.Select(p => new { children1 = p.Children. Where(c => c.ParentID > 1)  })
-						.Where (t => t.children1.Any()));
-		}
-
-		//[Test, DataContextSource]
-		public void Where6(string context)
-		{
-			using (var db = GetDataContext(context))
-				AreEqual(
-					   Parent
-						.Select(p => p.Children. Where(c => c.ParentID > 1))
-						.Where (t => t.Any()),
-					db.Parent
-						.Select(p => p.Children. Where(c => c.ParentID > 1))
-						.Where (t => t.Any()));
-		}
-
 		[Test, DataContextSource]
 		public void Any1(string context)
 		{
@@ -199,20 +160,7 @@ namespace Tests.Linq
 						.Any());
 		}
 
-		//[Test, DataContextSource]
-		public void Any4(string context)
-		{
-			using (var db = GetDataContext(context))
-				Assert.AreEqual(
-					   Parent
-						.Select(p => new { children1 = p.Children.Where(c => c.ParentID > 1) })
-						.Where(p => p.children1.Any())
-						.Any(),
-					db.Parent
-						.Select(p => new { children1 = p.Children.Where(c => c.ParentID > 1) })
-						.Where(p => p.children1.Any())
-						.Any());
-		}
+	
 
 		[Test, DataContextSource(ProviderName.SqlCe, ProviderName.Informix, ProviderName.Sybase, ProviderName.SapHana)]
 		public void LetTest1(string context)

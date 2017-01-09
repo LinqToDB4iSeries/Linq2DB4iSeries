@@ -202,57 +202,6 @@ namespace Tests.Linq
 			}
 		}
 
-		//[Test, DataContextSource(ProviderName.DB2, ProviderName.Access)]
-		public void StartsWith2(string context)
-		{
-			using (var db = GetDataContext(context))
-				AreEqual(
-					from p in Person where "John123".StartsWith(p.FirstName) select p,
-					from p in db.Person where "John123".StartsWith(p.FirstName) select p);
-		}
-
-		//[Test, DataContextSource(ProviderName.DB2, "DB2.iSeries", ProviderName.Access)]
-		public void StartsWith3(string context)
-		{
-			var str = "John123";
-
-			using (var db = GetDataContext(context))
-				AreEqual(
-					from p in Person where str.StartsWith(p.FirstName) select p,
-					from p in db.Person where str.StartsWith(p.FirstName) select p);
-		}
-
-		//[Test, DataContextSource(ProviderName.DB2, "DB2.iSeries", ProviderName.Access)]
-		public void StartsWith4(string context)
-		{
-			using (var db = GetDataContext(context))
-				AreEqual(
-					from p1 in Person
-					from p2 in Person
-					where p1.ID == p2.ID && p1.FirstName.StartsWith(p2.FirstName)
-					select p1,
-					from p1 in db.Person
-					from p2 in db.Person
-					where p1.ID == p2.ID &&
-						Sql.Like(p1.FirstName, p2.FirstName.Replace("%", "~%"), '~')
-					select p1);
-		}
-
-		//[Test, DataContextSource(ProviderName.DB2, ProviderName.Access)]
-		public void StartsWith5(string context)
-		{
-			using (var db = GetDataContext(context))
-				AreEqual(
-					from p1 in Person
-					from p2 in Person
-					where p1.ID == p2.ID && p1.FirstName.Replace("J", "%").StartsWith(p2.FirstName.Replace("J", "%"))
-					select p1,
-					from p1 in db.Person
-					from p2 in db.Person
-					where p1.ID == p2.ID && p1.FirstName.Replace("J", "%").StartsWith(p2.FirstName.Replace("J", "%"))
-					select p1);
-		}
-
 		[Test, DataContextSource]
 		public void EndsWith(string context)
 		{
@@ -333,52 +282,6 @@ namespace Tests.Linq
 			}
 		}
 
-		//[Test, DataContextSource(ProviderName.DB2, "DB2.iSeries", ProviderName.Firebird, ProviderName.Informix,ProviderName.SqlCe, ProviderName.Sybase, ProviderName.Access)]
-		public void IndexOf3(string context)
-		{
-			var s = "e";
-			var n1 = 2;
-			var n2 = 5;
-
-			using (var db = GetDataContext(context))
-			{
-				var q = from p in db.Person where p.LastName.IndexOf(s, n1, n2) == 1 && p.ID == 2 select p;
-				Assert.AreEqual(2, q.ToList().First().ID);
-			}
-		}
-
-		//[Test, DataContextSource(	ProviderName.DB2, ProviderName.Firebird, ProviderName.Informix, ProviderName.SqlCe, ProviderName.Access, ProviderName.SapHana)]
-		public void LastIndexOf1(string context)
-		{
-			using (var db = GetDataContext(context))
-			{
-				var q = from p in db.Person where p.LastName.LastIndexOf("p") == 2 && p.ID == 1 select p;
-				Assert.AreEqual(1, q.ToList().First().ID);
-			}
-		}
-
-		//[Test, DataContextSource(ProviderName.DB2, "DB2.iSeries", ProviderName.Firebird, ProviderName.Informix, ProviderName.SqlCe, ProviderName.Access, ProviderName.SapHana)]
-		public void LastIndexOf2(string context)
-		{
-			using (var db = GetDataContext(context))
-			{
-				var q = from p in db.Person where p.ID == 1 select new { p.ID, FirstName = "123" + p.FirstName + "012345" };
-				q = q.Where(p => p.FirstName.LastIndexOf("123", 5) == 8);
-				Assert.AreEqual(1, q.ToList().First().ID);
-			}
-		}
-
-		//[Test, DataContextSource(ProviderName.DB2, "DB2.iSeries", ProviderName.Firebird, ProviderName.Informix, ProviderName.SqlCe, ProviderName.Access, ProviderName.SapHana)]
-		public void LastIndexOf3(string context)
-		{
-			using (var db = GetDataContext(context))
-			{
-				var q = from p in db.Person where p.ID == 1 select new { p.ID, FirstName = "123" + p.FirstName + "0123451234" };
-				q = q.Where(p => p.FirstName.LastIndexOf("123", 5, 6) == 8);
-				Assert.AreEqual(1, q.ToList().First().ID);
-			}
-		}
-
 		[Test, DataContextSource(ProviderName.Firebird, ProviderName.Informix)]
 		public void CharIndex1(string context)
 		{
@@ -445,16 +348,6 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 			{
 				var q = from p in db.Person where p.FirstName.Substring(1, 2) == "oh" && p.ID == 1 select p;
-				Assert.AreEqual(1, q.ToList().First().ID);
-			}
-		}
-
-		//[Test, DataContextSource(ProviderName.DB2, ProviderName.Informix, ProviderName.SqlCe, ProviderName.Access, ProviderName.SapHana)]
-		public void Reverse(string context)
-		{
-			using (var db = GetDataContext(context))
-			{
-				var q = from p in db.Person where Sql.Reverse(p.FirstName) == "nhoJ" && p.ID == 1 select p;
 				Assert.AreEqual(1, q.ToList().First().ID);
 			}
 		}
@@ -750,36 +643,6 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 			{
 				var q = from p in db.Person where 0 >= p.FirstName.CompareTo("Johnn") && p.ID == 1 select p;
-				Assert.AreEqual(1, q.ToList().First().ID);
-			}
-		}
-
-		//[Test, DataContextSource]
-		public void CompareTo3(string context)
-		{
-			using (var db = GetDataContext(context))
-			{
-				var q = from p in db.Person where p.FirstName.CompareTo(55) > 0 && p.ID == 1 select p;
-				Assert.AreEqual(1, q.ToList().First().ID);
-			}
-		}
-
-		//[Test, DataContextSource]
-		public void CompareTo31(string context)
-		{
-			using (var db = GetDataContext(context))
-			{
-				var q = from p in db.Person where p.FirstName.CompareTo(55) >= 0 && p.ID == 1 select p;
-				Assert.AreEqual(1, q.ToList().First().ID);
-			}
-		}
-
-		//[Test, DataContextSource]
-		public void CompareTo32(string context)
-		{
-			using (var db = GetDataContext(context))
-			{
-				var q = from p in db.Person where 0 <= p.FirstName.CompareTo(55) && p.ID == 1 select p;
 				Assert.AreEqual(1, q.ToList().First().ID);
 			}
 		}

@@ -610,20 +610,5 @@ namespace Tests.Linq
 				q3.ToList();
 			}
 		}
-
-		/////[Test, DataContextSource]
-		public void Test92(string context)
-		{
-			using (var db = GetDataContext(context))
-				AreEqual(
-					db.Parent
-						.SelectMany(c => c.Children, (c, p) => new { c, p, })
-						.Select(_ => new { _.c, p = new Child { ParentID = _.c.ParentID, ChildID = _.p.ChildID } })
-						.SelectMany(ch => ch.p.GrandChildren, (ch, t) => new { t, ch }),
-					db.Parent
-						.SelectMany(c => c.Children, (c, p) => new { c, p, })
-						.Select(_ => new { _.c, p = new Child { ParentID = _.c.ParentID, ChildID = _.p.ChildID } })
-						.SelectMany(ch => ch.p.GrandChildren, (ch, t) => new { t, ch }));
-		}
 	}
 }
