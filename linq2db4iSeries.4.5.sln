@@ -20,11 +20,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".doc", ".doc", "{751CE0BA-6
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NuGet", "NuGet", "{BAE16247-BCCD-4C39-B714-39CDF10904E9}"
 	ProjectSection(SolutionItems) = preProject
+		app.config.install.xdt = app.config.install.xdt
 		NuGet\linq2db4iSeries.nuspec = NuGet\linq2db4iSeries.nuspec
 		NuGet\linq2db4iSeries.png = NuGet\linq2db4iSeries.png
 		NuGet\Pack.bat = NuGet\Pack.bat
 		NuGet\Push.bat = NuGet\Push.bat
 		NuGet\Readme.txt = NuGet\Readme.txt
+		NuGet\web.config.install.xdt = NuGet\web.config.install.xdt
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestApp", "Tests\TestApp\TestApp.csproj", "{DBD530B2-745E-43DC-9821-A266BD7DD22A}"

@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
 	<metadata>
 		<id>linq2db4iSeries</id>
-		<version>1.0.0-rc1</version>
+		<version>1.0.0-rc16</version>
 		<title>LINQ to DB provider for iSeries DB2</title>
 		<authors>Roy Chase,  </authors>
 		<owners />
@@ -29,6 +29,12 @@
 		-->
 		<file src="..\ISeriesProvider\bin\Release.4.5\LinqToDB.DataProvider.DB2iSeries.dll" target="lib\net45" />
 		<file src="..\ISeriesProvider\bin\Release.4.5\LinqToDB.DataProvider.DB2iSeries.pdb" target="lib\net45" />
+		
+		<!-- the xdt configs don't work as desired so leave them out for the moment-->
+		
+		<!--<file src="app.config.install.xdt" target="content" />
+		<file src="web.config.install.xdt" target="content" />-->
+		
 		<!--
 		<file src="..\Source\bin\Release.Silverlight.4\linq2db.Silverlight.dll" target="lib\sl4" />
 		<file src="..\Source\bin\Release.Silverlight.4\linq2db.Silverlight.pdb" target="lib\sl4" />
