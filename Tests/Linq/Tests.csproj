@@ -132,8 +132,8 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="linq2db, Version=1.0.7.6, Culture=neutral, PublicKeyToken=f19f8aed7feff67e, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\linq2db.1.7.6-rc246\lib\net45\linq2db.dll</HintPath>
+      <HintPath>..\..\packages\linq2db.1.7.6\lib\net45\linq2db.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="MiniProfiler, Version=3.2.0.157, Culture=neutral, PublicKeyToken=b44f9351044011a3, processorArchitecture=MSIL">
@@ -189,6 +189,7 @@
     <Compile Include="DataProvider\DataProviderTestBase.cs" />
     <Compile Include="Data\TransactionTests.cs" />
     <Compile Include="ExpectedExceptionAttribute.cs" />
+    <Compile Include="Linq\ExtensionTests.cs" />
     <Compile Include="Linq\FSharpTests.cs" />
     <Compile Include="Linq\InterfaceTests.cs" />
     <Compile Include="Linq\VisualBasicTests.cs" />
@@ -284,6 +285,9 @@
       <Link>Database\Create Scripts\DB2iSeries.sql</Link>
     </Content>
     <Content Include="DefaultDataProviders.txt" />
+    <None Include="DefaultConnectionStrings.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="UserConnectionStrings.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

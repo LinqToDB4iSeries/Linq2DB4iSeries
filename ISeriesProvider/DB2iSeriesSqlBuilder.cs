@@ -216,7 +216,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			BuildInsertClause("INSERT", false);
 			Indent--;
 
-			while (_endLine.Contains(StringBuilder[StringBuilder.Length - 1]))
+			while (EndLine.Contains(StringBuilder[StringBuilder.Length - 1]))
 				StringBuilder.Length--;
 		}
 

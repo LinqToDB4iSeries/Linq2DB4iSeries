@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!-- This file defines connection strings.
+ Copy this file as UserConnectionStrings.xml and configure your connection string
+ UserConnectionStrings.xml is in .gitignore and it is not committed to the repository.
+-->
+<connectionStrings>
+	<add name="DB2.iSeries" connectionString="Data Source={SERVERNAMEORIP}; Persist Security Info=True;User ID={ISERIESUSERNAME};Password={ISERIESPASSWORD};Library List=LINQ2DB;Default Collection=LINQ2DB;Naming=1" providerName="DB2.iSeries" />
+</connectionStrings>
