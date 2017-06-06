@@ -168,10 +168,11 @@
 		protected ISqlExpression AlternativeExists(SqlFunction func)
 		{
 			var query = (SelectQuery)func.Parameters[0];
-			if (query.Select.Columns.Count == 0)
+
+            if (query.Select.Columns.Count == 0)
 				query.Select.Columns.Add(new SelectQuery.Column(query, new SqlExpression("'.'")));
 
-			query.Select.TakeValue = new SqlValue(1);
+			query.Select.Take(1, null);
 
 			var sc = new SelectQuery.SearchCondition();
 

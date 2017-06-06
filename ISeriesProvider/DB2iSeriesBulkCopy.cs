@@ -42,7 +42,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				if (_bulkCopyCreator != null)
 				{
 					var columns = descriptor.Columns.Where(c => !c.SkipOnInsert || options.KeepIdentity == true && c.IsIdentity).ToList();
-					var rd = new BulkCopyReader(dataConnection.DataProvider, columns, source);
+					var rd = new BulkCopyReader(dataConnection.DataProvider, dataConnection.MappingSchema, columns, source);
 					var rc = new BulkCopyRowsCopied();
 					var bcOptions = 0; // Default
 					if (options.KeepIdentity == true) bcOptions |= 1; // KeepIdentity = 1, TableLock = 2, Truncate = 4,

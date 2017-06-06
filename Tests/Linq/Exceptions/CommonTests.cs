@@ -43,7 +43,7 @@ namespace Tests.Exceptions
 						if (value == 555)
 						{
 							var tableName = "Parent1";
-							var dic       = new Dictionary<IQueryElement,IQueryElement>();
+							var dic = new Dictionary<IQueryElement, IQueryElement>();
 
 							selectQuery = new QueryVisitor().Convert(selectQuery, e =>
 							{

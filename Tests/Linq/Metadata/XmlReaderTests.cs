@@ -66,25 +66,25 @@ namespace Tests.Metadata
 		[Test]
 		public void FieldAttribute()
 		{
-			var rd    = new XmlAttributeReader(new MemoryStream(Encoding.UTF8.GetBytes(Data)));
-			var attrs = rd.GetAttributes<ColumnAttribute>(MemberHelper.MemberOf<XmlReaderTests>(a => a.Field1));
+            var rd = new XmlAttributeReader(new MemoryStream(Encoding.UTF8.GetBytes(Data)));
+            var attrs = rd.GetAttributes<ColumnAttribute>(typeof(XmlReaderTests), MemberHelper.MemberOf<XmlReaderTests>(a => a.Field1));
 
-			Assert.NotNull (attrs);
-			Assert.AreEqual(1, attrs.Length);
-			Assert.AreEqual("TestName", attrs[0].Name);
-		}
+            Assert.NotNull(attrs);
+            Assert.AreEqual(1, attrs.Length);
+            Assert.AreEqual("TestName", attrs[0].Name);
+        }
 
 		public int Property1 { get; set; }
 
 		[Test]
 		public void PropertyAttribute()
 		{
-			var rd    = new XmlAttributeReader(new MemoryStream(Encoding.UTF8.GetBytes(Data)));
-			var attrs = rd.GetAttributes<ColumnAttribute>(MemberHelper.MemberOf<XmlReaderTests>(a => a.Property1));
+            var rd = new XmlAttributeReader(new MemoryStream(Encoding.UTF8.GetBytes(Data)));
+            var attrs = rd.GetAttributes<ColumnAttribute>(typeof(XmlReaderTests), MemberHelper.MemberOf<XmlReaderTests>(a => a.Property1));
 
-			Assert.NotNull (attrs);
-			Assert.AreEqual(1, attrs.Length);
-			Assert.AreEqual("TestName", attrs[0].Name);
-		}
+            Assert.NotNull(attrs);
+            Assert.AreEqual(1, attrs.Length);
+            Assert.AreEqual("TestName", attrs[0].Name);
+        }
 	}
 }

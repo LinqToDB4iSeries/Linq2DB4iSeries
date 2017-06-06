@@ -14,7 +14,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	{
 		public DB2iSeriesMultipleRowsHelper(DataConnection dataConnection, BulkCopyOptions options, bool enforceKeepIdentity) : base(dataConnection, options, enforceKeepIdentity)
 		{
-
+            
 		}
 
 		public override void BuildColumns(object item, Func<ColumnDescriptor, bool> skipConvert = null)
@@ -24,7 +24,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			for (var i = 0; i < Columns.Length; i++)
 			{
 				var column = Columns[i];
-				var value = column.GetValue(item);
+				var value = column.GetValue(DataConnection.MappingSchema, item);
 				var columnType = ColumnTypes[i];
 
 				if (column.DbType != null)

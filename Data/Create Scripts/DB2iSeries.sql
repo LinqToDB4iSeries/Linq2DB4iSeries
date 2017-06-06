@@ -32,7 +32,7 @@ GO
 -- Doctor Table Extension
 
 CREATE TABLE Doctor(
-	PersonID INTEGER     NOT NULL,
+	PersonID INTEGER     PRIMARY KEY  NOT NULL,
 	Taxonomy VARCHAR(50) NOT NULL,
 	FOREIGN KEY FK_Doctor_Person(PersonID) REFERENCES Person
 )
@@ -52,16 +52,19 @@ CREATE TABLE MasterTable(
 GO
 CREATE TABLE SlaveTable(
 	ID1    INTEGER NOT NULL,
-	"ID 2222222222222222222222  22" INTEGER NOT NULL,
-	"ID 2222222222222222"           INTEGER NOT NULL,
-	FOREIGN KEY FK_SlaveTable_MasterTable ("ID 2222222222222222222222  22", ID1)
+	ID2222222222222222222222 INTEGER NOT NULL,
+	ID2222222222222222           INTEGER NOT NULL,
+	FOREIGN KEY FK_SlaveTable_MasterTable (ID2222222222222222222222, ID1)
 	REFERENCES MasterTable
 )
 GO
 
-CREATE TABLE Patient(
-	PersonID  INTEGER      NOT NULL,
-	Diagnosis VARCHAR(256) NOT NULL
+CREATE TABLE Patient
+(
+	PersonID  INTEGER      PRIMARY KEY NOT NULL,
+	Diagnosis VARCHAR(256) NOT NULL,
+
+	FOREIGN KEY FK_Patient_Person (PersonID) REFERENCES Person
 )
 GO
 INSERT INTO Patient(PersonID, Diagnosis) VALUES (2, 'Hallucination with Paranoid Bugs'' Delirium of Persecution')
@@ -90,7 +93,8 @@ CREATE TABLE LinqDataTypes(
 	BinaryValue    blob(5000) Default NULL,
 	SmallIntValue  smallint,
 	IntValue       int        Default NULL,
-	BigIntValue    bigint     Default NULL
+	BigIntValue    bigint     Default NULL,
+	StringValue    VARCHAR(50) Default NULL
 )
 GO
 DROP TABLE TestIdentity

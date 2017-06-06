@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
 	<metadata>
 		<id>linq2db4iSeries</id>
-		<version>1.0.0.2</version>
+		<version>1.8.2.1</version>
 		<title>LINQ to DB provider for iSeries DB2</title>
 		<authors>Retail Assist Ltd</authors>
 		<owners />
@@ -17,12 +17,11 @@
 		</tags>
 		<dependencies>
 			<group>
-				<dependency id="linq2db" version="1.7.6" />
+				<dependency id="linq2db" version="1.8.2" />
 			</group>
 		</dependencies>
 	</metadata>
 	<files>
-		<file src="Readme.txt"                                                  target="" />
 		<!--
 		<file src="..\Source\bin\Release.4.0\linq2db.dll"                       target="lib\net40" />
 		<file src="..\Source\bin\Release.4.0\linq2db.pdb"                       target="lib\net40" />

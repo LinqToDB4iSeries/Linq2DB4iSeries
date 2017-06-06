@@ -32,15 +32,15 @@ namespace Tests.Linq
 		//		db.GetTable<Parent>().DatabaseName("TestData").ToList();
 		//}
 
-		[Test, DataContextSource]
-		public void SchemaName(string context)
-		{
-			using (var db = GetDataContext(context))
-			{
-				var result = db.GetTable<Parent>().SchemaName("WIBBLE").ToList();
+		//[Test, DataContextSource]
+		//public void SchemaName(string context)
+		//{
+		//	using (var db = GetDataContext(context))
+		//	{
+		//		var result = db.GetTable<Parent>().SchemaName("WIBBLE").ToList();
 
-			}
-		}
+		//	}
+		//}
 
 		//[Test, DataContextSource]
 		//public void AllNames(string context)

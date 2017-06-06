@@ -27,11 +27,11 @@ namespace Tests.Metadata
 		[Test]
 		public void FieldAttribute()
 		{
-			var rd    = new AttributeReader();
-			var attrs = rd.GetAttributes<ColumnAttribute>(MemberHelper.MemberOf<AttributeReaderTests>(a => a.Field1));
+            var rd = new AttributeReader();
+            var attrs = rd.GetAttributes<ColumnAttribute>(typeof(AttributeReaderTests), MemberHelper.MemberOf<AttributeReaderTests>(a => a.Field1));
 
-			Assert.AreEqual(0, attrs.Length);
-		}
+            Assert.AreEqual(0, attrs.Length);
+        }
 
 		[Column(Name = "TestName")]
 		public int Property1 { get; set; }
@@ -39,12 +39,12 @@ namespace Tests.Metadata
 		[Test]
 		public void PropertyAttribute()
 		{
-			var rd    = new AttributeReader();
-			var attrs = rd.GetAttributes<ColumnAttribute>(MemberHelper.MemberOf<AttributeReaderTests>(a => a.Property1));
+            var rd = new AttributeReader();
+            var attrs = rd.GetAttributes<ColumnAttribute>(typeof(AttributeReaderTests), MemberHelper.MemberOf<AttributeReaderTests>(a => a.Property1));
 
-			Assert.NotNull (attrs);
-			Assert.AreEqual(1, attrs.Length);
-			Assert.AreEqual("TestName", attrs[0].Name);
-		}
+            Assert.NotNull(attrs);
+            Assert.AreEqual(1, attrs.Length);
+            Assert.AreEqual("TestName", attrs[0].Name);
+        }
 	}
 }

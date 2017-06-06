@@ -12,7 +12,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 	class DB2iSeriesMetadataReader : IMetadataReader
 	{
-		public T[] GetAttributes<T>(MemberInfo memberInfo, bool inherit = true) where T : Attribute
+		public T[] GetAttributes<T>(Type type, MemberInfo memberInfo, bool inherit = true) where T : Attribute
 		{
 			if (typeof(T) == typeof(Sql.ExpressionAttribute))
 			{

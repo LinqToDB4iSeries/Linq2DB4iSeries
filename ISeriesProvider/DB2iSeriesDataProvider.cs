@@ -232,13 +232,19 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						value = ((Guid)value).ToByteArray();
 						dataType__1 = DataType.VarBinary;
 					}
+					if (value == null)
+						dataType__1 = DataType.VarBinary;
 					break;
 				case DataType.Binary:
 				case DataType.VarBinary:
-					if (value is Guid)
+					if (value is Guid) value = ((Guid)value).ToByteArray();
+					else if (parameter.Size == 0 && value != null && value.GetType().Name == "DB2Binary")
 					{
-						value = ((Guid)value).ToByteArray();
+						dynamic v = value;
+						if (v.IsNull)
+							value = DBNull.Value;
 					}
+
 					break;
 				case DataType.Time:
 					if (value is TimeSpan)
