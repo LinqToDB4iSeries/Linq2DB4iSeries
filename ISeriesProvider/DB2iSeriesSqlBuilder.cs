@@ -101,7 +101,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			{
 				case DataType.DateTime: StringBuilder.Append("timestamp"); break;
 				case DataType.DateTime2: StringBuilder.Append("timestamp"); break;
-				default: base.BuildDataType(type); break;
+				default: base.BuildDataType(type, false); break;
 			}
 		}
 
