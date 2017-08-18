@@ -902,7 +902,7 @@ namespace Tests.Linq
 
 			public override void BuildQuery<T>(Query<T> query, ParameterExpression queryParameter)
 			{
-				query.GetElement = (ctx,db,expr,ps) => this;
+				query.GetElement = (db,expr,ps) => this;
 			}
 		}
 	}

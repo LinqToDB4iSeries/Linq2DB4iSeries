@@ -119,8 +119,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="linq2db, Version=1.8.3.0, Culture=neutral, PublicKeyToken=f19f8aed7feff67e, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\linq2db.1.8.3\lib\net45\linq2db.dll</HintPath>
-      <Private>True</Private>
     </Reference>
     <Reference Include="System">
     </Reference>

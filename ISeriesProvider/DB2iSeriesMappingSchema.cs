@@ -76,7 +76,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		private static void ConvertStringToSql(StringBuilder stringBuilder, string value)
 		{
-			DataTools.ConvertStringToSql(stringBuilder, "||", "'", AppendConversion, value);
+			DataTools.ConvertStringToSql(stringBuilder, "||", "", AppendConversion, value, null);
 		}
 
 		private static void ConvertCharToSql(StringBuilder stringBuilder, char value)
