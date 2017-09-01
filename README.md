@@ -40,4 +40,5 @@ The rest of the usage is exactly the same as Linq2DB. See https://github.com/lin
 2. Any objects created using this provider (e.g. as the result of a Create table statement) will be created in the Library in the Default Collection connection string parameter.  If this is not specifed then it wil be created in the default library for the user account.
 3. Transactions can only be used if journalling is set up on the table (file).  If the iSeries schema is created with a CREATE SCHEMA command then this will be set by default however if the schema is created using the iSeries commands then you will need to either add journalling to the table explicitly OR create a journal receiver called QSQJRN in the Library to have journalling automatically applied to each table.
 4. This is currently only working for .Net 4.0/4.5
+5. The new Linq2DB merge syntax is currently untested.
 
