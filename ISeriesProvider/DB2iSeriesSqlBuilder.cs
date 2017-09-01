@@ -148,6 +148,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			AppendIndent().Append("USING (SELECT ");
 
+            ExtractMergeParametersIfCannotCombine(keys);
+
 			for (var i = 0; i < keys.Count; i++)
 			{
 				var key = keys[i];
@@ -220,6 +222,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				StringBuilder.Length--;
 		}
 
+
 		protected override void BuildUpdateSet()
 		{
 			AppendIndent()
@@ -290,7 +293,42 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		protected override void BuildSql()
 		{
 			AlternativeBuildSql(true, base.BuildSql);
+
+			//// HACK: the number of parameters are not always provided by Linq2DB 
+			////		the missing ones should simply be copies of existing ones
+			//var sql = this.StringBuilder.ToString();
+			//var cnt = sql.Count(c => c.Equals('@'));
+
+			//if (cnt != SelectQuery.Parameters.Count)
+			//{
+			//	// do something
+			//	var currentParams = SelectQuery.Parameters.Select(p => p.Name).ToList();
+
+			//	var matches = ParseParams(sql);
+			//	foreach (var item in matches)
+			//	{
+			//		if (currentParams.Contains(item))
+			//			currentParams.Remove(item);
+			//		else
+			//		{
+			//			// add the parameter as a copy of the original one
+			//			var old = SelectQuery.Parameters.Where(p => p.Name == item).First();
+
+			//			SelectQuery.Parameters.Add(old);
+			//		}
+			//	}
+			//}
 		}
+
+		//IEnumerable<string> ParseParams(string sql)
+		//{
+		//	var parms = sql.Split(new[] { '@' }, StringSplitOptions.None);
+		//	foreach (var part in parms.Skip(1))
+		//	{
+		//		var retval = part.TakeWhile(s => char.IsLetterOrDigit(s));
+		//		yield return string.Concat(retval);
+		//	}
+		//}
 
 
 		protected override IEnumerable<SelectQuery.Column> GetSelectedColumns()

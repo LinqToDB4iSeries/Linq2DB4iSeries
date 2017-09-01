@@ -61,7 +61,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 							return _db2iSeriesDataProvider;
 						}
 					}
-					catch (Exception ex)
+					catch (Exception)
 					{
 					}
 				}

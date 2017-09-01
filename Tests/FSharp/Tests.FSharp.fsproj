@@ -58,7 +58,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="linq2db">
-      <HintPath>..\..\packages\linq2db.1.8.3\lib\net45\linq2db.dll</HintPath>
+      <HintPath>..\..\packages\linq2db.1.9.0\lib\net45\linq2db.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="mscorlib" />
