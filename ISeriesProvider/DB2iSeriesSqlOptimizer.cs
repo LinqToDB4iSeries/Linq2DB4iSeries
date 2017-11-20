@@ -5,10 +5,11 @@
 	using SqlQuery;
 	class DB2iSeriesSqlOptimizer : BasicSqlOptimizer
 	{
-
-		public DB2iSeriesSqlOptimizer(SqlProviderFlags sqlProviderFlags) : base(sqlProviderFlags)
+        public DB2iSeriesSqlProviderFlags DB2iSeriesSqlProviderFlags { get; private set; }
+		public DB2iSeriesSqlOptimizer(SqlProviderFlags sqlProviderFlags, DB2iSeriesSqlProviderFlags db2iSeriesSqlProviderFlags) : base(sqlProviderFlags)
 		{
-		}
+            DB2iSeriesSqlProviderFlags = db2iSeriesSqlProviderFlags;
+        }
 
 		private static void SetQueryParameter(IQueryElement element)
 		{

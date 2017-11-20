@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace LinqToDB.DataProvider.DB2iSeries
@@ -13,16 +14,21 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 	public class DB2iSeriesDataProvider : DynamicDataProviderBase
 	{
-		public DB2iSeriesDataProvider() : base(DB2iSeriesFactory.ProviderName, null)
+        public DB2iSeriesDataProvider() : this(DB2iSeriesSqlProviderFlags.Defaults.Clone())
+        {
+
+        }
+
+        public DB2iSeriesDataProvider(DB2iSeriesSqlProviderFlags dB2iSeriesSqlProviderFlags) : base(DB2iSeriesFactory.ProviderName, null)
 		{
-			SqlProviderFlags.AcceptsTakeAsParameter = false;
+            SqlProviderFlags.AcceptsTakeAsParameter = false;
 			SqlProviderFlags.AcceptsTakeAsParameterIfSkip = true;
 			SqlProviderFlags.IsDistinctOrderBySupported = true;
 			SqlProviderFlags.CanCombineParameters = false;
 			SqlProviderFlags.IsParameterOrderDependent = true;
 
 			SetCharField("CHAR", (r, i) => r.GetString(i).TrimEnd());
-			_sqlOptimizer = new DB2iSeriesSqlOptimizer(SqlProviderFlags);
+			_sqlOptimizer = new DB2iSeriesSqlOptimizer(SqlProviderFlags, dB2iSeriesSqlProviderFlags);
 		}
 
 		readonly DB2iSeriesSqlOptimizer _sqlOptimizer;

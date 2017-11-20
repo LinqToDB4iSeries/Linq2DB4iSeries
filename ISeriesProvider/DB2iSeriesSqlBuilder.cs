@@ -12,22 +12,32 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 	public class DB2iSeriesSqlBuilder : BasicSqlBuilder
 	{
+        public static DB2iSeriesIdentifierQuoteMode IdentifierQuoteMode = DB2iSeriesIdentifierQuoteMode.None;
 
-		public static DB2iSeriesIdentifierQuoteMode IdentifierQuoteMode = DB2iSeriesIdentifierQuoteMode.None;
+        private DB2iSeriesSqlProviderFlags DB2iSeriesSqlProviderFlags { get; set; }
 
-		public DB2iSeriesSqlBuilder(ISqlOptimizer sqlOptimizer, SqlProviderFlags sqlProviderFlags, ValueToSqlConverter valueToSqlConverter) : base(sqlOptimizer, sqlProviderFlags, valueToSqlConverter)
+        protected override string OffsetFormat { get { return "OFFSET {0}"; } }
+        protected override bool OffsetFirst { get { return false; } }
+        
+        public DB2iSeriesSqlBuilder(ISqlOptimizer sqlOptimizer, SqlProviderFlags sqlProviderFlags, ValueToSqlConverter valueToSqlConverter) : base(sqlOptimizer, sqlProviderFlags, valueToSqlConverter)
 		{
-		}
+            if (sqlOptimizer is DB2iSeriesSqlOptimizer o)
+                DB2iSeriesSqlProviderFlags = o.DB2iSeriesSqlProviderFlags;
+            else
+                DB2iSeriesSqlProviderFlags = DB2iSeriesSqlProviderFlags.Defaults.Clone();
+        }
 
-		protected override string LimitFormat
-		{
-			get
-			{
-				return ((SelectQuery.Select.SkipValue == null) ? " FETCH FIRST {0} ROWS ONLY" : null);
-			}
-		}
+        protected override string LimitFormat
+        {
+            get
+            {
+                return DB2iSeriesSqlProviderFlags.SupportsLimitAndOffset ?
+                    (SelectQuery.Select.SkipValue != null ? "LIMIT {0}" : null) :
+                    (SelectQuery.Select.SkipValue == null ? " FETCH FIRST {0} ROWS ONLY" : null);
+            }
+        }
 
-		protected override void BuildColumnExpression(ISqlExpression expr, string alias, ref bool addAlias)
+        protected override void BuildColumnExpression(ISqlExpression expr, string alias, ref bool addAlias)
 		{
 			BuildColumnExpression(expr, alias, ref addAlias, true);
 		}
@@ -290,48 +300,51 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 		}
 
-		protected override void BuildSql()
-		{
-			AlternativeBuildSql(true, base.BuildSql);
+        protected override void BuildSql()
+        {
+            if (DB2iSeriesSqlProviderFlags.SupportsLimitAndOffset)
+                base.BuildSql();
+            else
+                AlternativeBuildSql(true, base.BuildSql);
 
-			//// HACK: the number of parameters are not always provided by Linq2DB 
-			////		the missing ones should simply be copies of existing ones
-			//var sql = this.StringBuilder.ToString();
-			//var cnt = sql.Count(c => c.Equals('@'));
+            //// HACK: the number of parameters are not always provided by Linq2DB 
+            ////		the missing ones should simply be copies of existing ones
+            //var sql = this.StringBuilder.ToString();
+            //var cnt = sql.Count(c => c.Equals('@'));
 
-			//if (cnt != SelectQuery.Parameters.Count)
-			//{
-			//	// do something
-			//	var currentParams = SelectQuery.Parameters.Select(p => p.Name).ToList();
+            //if (cnt != SelectQuery.Parameters.Count)
+            //{
+            //	// do something
+            //	var currentParams = SelectQuery.Parameters.Select(p => p.Name).ToList();
 
-			//	var matches = ParseParams(sql);
-			//	foreach (var item in matches)
-			//	{
-			//		if (currentParams.Contains(item))
-			//			currentParams.Remove(item);
-			//		else
-			//		{
-			//			// add the parameter as a copy of the original one
-			//			var old = SelectQuery.Parameters.Where(p => p.Name == item).First();
+            //	var matches = ParseParams(sql);
+            //	foreach (var item in matches)
+            //	{
+            //		if (currentParams.Contains(item))
+            //			currentParams.Remove(item);
+            //		else
+            //		{
+            //			// add the parameter as a copy of the original one
+            //			var old = SelectQuery.Parameters.Where(p => p.Name == item).First();
 
-			//			SelectQuery.Parameters.Add(old);
-			//		}
-			//	}
-			//}
-		}
+            //			SelectQuery.Parameters.Add(old);
+            //		}
+            //	}
+            //}
+        }
 
-		//IEnumerable<string> ParseParams(string sql)
-		//{
-		//	var parms = sql.Split(new[] { '@' }, StringSplitOptions.None);
-		//	foreach (var part in parms.Skip(1))
-		//	{
-		//		var retval = part.TakeWhile(s => char.IsLetterOrDigit(s));
-		//		yield return string.Concat(retval);
-		//	}
-		//}
+        //IEnumerable<string> ParseParams(string sql)
+        //{
+        //	var parms = sql.Split(new[] { '@' }, StringSplitOptions.None);
+        //	foreach (var part in parms.Skip(1))
+        //	{
+        //		var retval = part.TakeWhile(s => char.IsLetterOrDigit(s));
+        //		yield return string.Concat(retval);
+        //	}
+        //}
 
 
-		protected override IEnumerable<SelectQuery.Column> GetSelectedColumns()
+        protected override IEnumerable<SelectQuery.Column> GetSelectedColumns()
 		{
 			if (NeedSkip && !SelectQuery.OrderBy.IsEmpty)
 				return AlternativeGetSelectedColumns(base.GetSelectedColumns);
