@@ -40,3 +40,4 @@ packages/**
 /Tests/Linq/UserConnectionStrings.xml
 *.runsettings
 *.playlist
+/.vs/linq2db4iSeries.4.5/v15/Server/sqlite3
