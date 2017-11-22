@@ -52,7 +52,10 @@ namespace Tests.Linq
 		public void Take5(string context)
 		{
 			using (var db = GetDataContext(context))
-				Assert.AreEqual(3, db.Child.Take(3).ToList().Count);
+			{
+				var actual = db.Child.Take(3);
+				Assert.AreEqual(3,actual.ToList().Count);
+			}
 		}
 
 		[Test, DataContextSource]
@@ -94,7 +97,10 @@ namespace Tests.Linq
 		public void Skip1(string context)
 		{
 			using (var db = GetDataContext(context))
-				AreEqual(Child.Skip(3), db.Child.Skip(3));
+			{
+				var actual = db.Child.Skip(3);
+				AreEqual(Child.Skip(3), actual);
+			}
 		}
 
 		[Test, DataContextSource]
@@ -279,9 +285,13 @@ namespace Tests.Linq
 		public void ElementAt1(string context)
 		{
 			using (var db = GetDataContext(context))
+			{
+				var actual = (from p in db.Parent where p.ParentID > 1 select p).ElementAt(3);
+
 				Assert.AreEqual(
-					(from p in    Parent where p.ParentID > 1 select p).ElementAt(3),
-					(from p in db.Parent where p.ParentID > 1 select p).ElementAt(3));
+					(from p in Parent where p.ParentID > 1 select p).ElementAt(3),
+					actual);
+			}
 		}
 
 		[Test, DataContextSource]

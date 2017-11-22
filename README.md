@@ -30,6 +30,8 @@ You will need to add a linq2db section to your app.config/web.config file in ord
 
 The data provider name (e.g. iSeriesProvider) is what you will use as the providerName in you connection string.
 
+You can also add MinVer="7.1.38" to target the newer SQL syntax for SKIP (OFFSET n ROWS) ony available from 7.1 PTF Level 38 and above. Ther is a similar constructor parameter in DB2iSeriesDataProvider. 
+
 You will need to provide valid iSeries connection strings at the very least specifying Data source, User Id and Password. e.g. Data Source={SERVER_NAME}; Persist Security Info=True;User ID={USER_ID};Password={PASSWORD};Library List={LIBRARY_LIST};Default Collection={DEFAULT_LIBRARY};Naming=1"
 
 The rest of the usage is exactly the same as Linq2DB. See https://github.com/linq2db/linq2db/blob/master/README.md for further examples.

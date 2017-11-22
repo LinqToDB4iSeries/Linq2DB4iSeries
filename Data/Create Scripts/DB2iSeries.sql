@@ -116,7 +116,7 @@ CREATE TABLE AllTypes(
 	, clobDataType             clob                    Default NULL
 	, dataLinkDataType         dataLink                Default NULL
 	, dateDataType             date                    Default NULL
-	, dbclobDataType           dbclob(100)             Default NULL
+	, dbclobDataType           dbclob(100)   CCSID 1200          Default NULL
 	, decfloat16DataType       decfloat(16)            Default NULL
 	, decfloat34DataType       decfloat(34)            Default NULL
 	, decimalDataType          decimal(30)             Default NULL
