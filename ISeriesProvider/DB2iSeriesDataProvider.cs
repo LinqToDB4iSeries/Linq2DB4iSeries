@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace LinqToDB.DataProvider.DB2iSeries
@@ -13,20 +14,31 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 	public class DB2iSeriesDataProvider : DynamicDataProviderBase
 	{
-		public DB2iSeriesDataProvider() : base(DB2iSeriesFactory.ProviderName, null)
-		{
-			SqlProviderFlags.AcceptsTakeAsParameter = false;
+	    private DB2iSeriesLevels minLevel;
+
+        public DB2iSeriesDataProvider() : this(DB2iSeriesLevels.Any)
+        {
+
+        }
+
+        public DB2iSeriesDataProvider(DB2iSeriesLevels minLevel) : base(DB2iSeriesFactory.ProviderName, null)
+        {
+            this.minLevel = minLevel;
+
+            SqlProviderFlags.AcceptsTakeAsParameter = false;
 			SqlProviderFlags.AcceptsTakeAsParameterIfSkip = true;
 			SqlProviderFlags.IsDistinctOrderBySupported = true;
 			SqlProviderFlags.CanCombineParameters = false;
 			SqlProviderFlags.IsParameterOrderDependent = true;
 
 			SetCharField("CHAR", (r, i) => r.GetString(i).TrimEnd());
+
 			_sqlOptimizer = new DB2iSeriesSqlOptimizer(SqlProviderFlags);
+
 		}
 
 		readonly DB2iSeriesSqlOptimizer _sqlOptimizer;
-		static Action<IDbDataParameter> _setBlob;
+	    static Action<IDbDataParameter> _setBlob;
 		DB2iSeriesBulkCopy _bulkCopy;
 
 		#region "overrides"
@@ -49,8 +61,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		}
 		public override ISqlBuilder CreateSqlBuilder()
 		{
-			return new DB2iSeriesSqlBuilder(GetSqlOptimizer(), SqlProviderFlags, MappingSchema.ValueToSqlConverter);
+			return minLevel == DB2iSeriesLevels.V7_1_38 ? 
+				new DB2iSeriesSqlBuilder7_2(GetSqlOptimizer(), SqlProviderFlags, MappingSchema.ValueToSqlConverter) : 
+				new DB2iSeriesSqlBuilder(GetSqlOptimizer(), SqlProviderFlags, MappingSchema.ValueToSqlConverter);
 		}
+
 		public override ISchemaProvider GetSchemaProvider()
 		{
 			return new DB2iSeriesSchemaProvider();

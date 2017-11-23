@@ -61,6 +61,7 @@
     <Compile Include="DB2iSeriesExpressions.cs" />
     <Compile Include="DB2iSeriesFactory.cs" />
     <Compile Include="DB2iSeriesIdentifierQuoteMode.cs" />
+    <Compile Include="DB2iSeriesLevels.cs" />
     <Compile Include="DB2iSeriesMappingSchema.cs" />
     <Compile Include="DB2iSeriesMerge.cs" />
     <Compile Include="DB2iSeriesMetadataReader.cs" />
@@ -68,6 +69,7 @@
     <Compile Include="DB2iSeriesNamingConvention.cs" />
     <Compile Include="DB2iSeriesSchemaProvider.cs" />
     <Compile Include="DB2iSeriesSqlBuilder.cs" />
+    <Compile Include="DB2iSeriesSqlBuilder7.2.cs" />
     <Compile Include="DB2iSeriesSqlOptimizer.cs" />
     <Compile Include="DB2iSeriesTools.cs" />
     <Compile Include="DB2iSeriesTypeCreator.cs" />

@@ -3,6 +3,7 @@ using System.Collections.Specialized;
 using System.Reflection;
 using LinqToDB.Configuration;
 using LinqToDB.Linq;
+using System.Linq;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
@@ -15,7 +16,17 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			DB2iSeriesExpressions.LoadExpressions();
 
-			return new DB2iSeriesDataProvider();
+		    var version = attributes.FirstOrDefault(_ => _.Name == "MinVer");
+		    if (version != null)
+		    {
+		        switch (version.Value)
+		        {
+		            case "7.1.38":
+		            return new DB2iSeriesDataProvider(DB2iSeriesLevels.V7_1_38);
+                }
+		    }
+
+            return new DB2iSeriesDataProvider(DB2iSeriesLevels.Any);
 		}
 	}
 }
