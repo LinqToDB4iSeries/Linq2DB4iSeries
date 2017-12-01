@@ -16,17 +16,20 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			DB2iSeriesExpressions.LoadExpressions();
 
-		    var version = attributes.FirstOrDefault(_ => _.Name == "MinVer");
-		    if (version != null)
+		    if (attributes != null)
 		    {
-		        switch (version.Value)
+		        var version = attributes.FirstOrDefault(_ => _.Name == "MinVer");
+		        if (version != null)
 		        {
-		            case "7.1.38":
-		            return new DB2iSeriesDataProvider(DB2iSeriesLevels.V7_1_38);
-                }
+		            switch (version.Value)
+		            {
+		                case "7.1.38":
+		                    return new DB2iSeriesDataProvider(DB2iSeriesLevels.V7_1_38);
+		            }
+		        }
 		    }
 
-            return new DB2iSeriesDataProvider(DB2iSeriesLevels.Any);
+		    return new DB2iSeriesDataProvider(DB2iSeriesLevels.Any);
 		}
 	}
 }

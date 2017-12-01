@@ -1,14 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace LinqToDB.DataProvider.DB2iSeries
+﻿namespace LinqToDB.DataProvider.DB2iSeries
 {
     using SqlProvider;
-    using SqlQuery;
-    using System.Data;
 
     public class DB2iSeriesSqlBuilder7_2 : DB2iSeriesSqlBuilder
     {
@@ -24,9 +16,21 @@ namespace LinqToDB.DataProvider.DB2iSeries
             }
         }
 
-	    protected override bool OffsetFirst { get; } = true;
+        protected override bool OffsetFirst
+        {
+            get
+            {
+                return true;
+            }
+        }
 
-	    protected override string LimitFormat { get; } = "FETCH FIRST {0} ROWS ONLY"; 
+        protected override string LimitFormat
+        {
+            get
+            {
+                return "FETCH FIRST {0} ROWS ONLY";
+            }
+        }
 
         protected override void BuildSql()
         {
