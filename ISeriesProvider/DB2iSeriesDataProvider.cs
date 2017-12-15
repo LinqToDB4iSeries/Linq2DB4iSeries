@@ -25,6 +25,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
         {
             this.minLevel = minLevel;
 
+            DB2iSeriesExpressions.LoadExpressions();
+
             SqlProviderFlags.AcceptsTakeAsParameter = false;
 			SqlProviderFlags.AcceptsTakeAsParameterIfSkip = true;
 			SqlProviderFlags.IsDistinctOrderBySupported = true;
@@ -34,10 +36,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetCharField("CHAR", (r, i) => r.GetString(i).TrimEnd());
 
 			_sqlOptimizer = new DB2iSeriesSqlOptimizer(SqlProviderFlags);
+        }
 
-		}
-
-		readonly DB2iSeriesSqlOptimizer _sqlOptimizer;
+        readonly DB2iSeriesSqlOptimizer _sqlOptimizer;
 	    static Action<IDbDataParameter> _setBlob;
 		DB2iSeriesBulkCopy _bulkCopy;
 

@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
 	<metadata>
 		<id>linq2db4iSeries</id>
-		<version>1.10.1.1</version>
+		<version>1.10.1.2</version>
 		<title>LINQ to DB provider for iSeries DB2</title>
 		<authors>Retail Assist Ltd</authors>
 		<owners />

@@ -14,8 +14,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public IDataProvider GetDataProvider(IEnumerable<NamedValue> attributes)
 		{
-			DB2iSeriesExpressions.LoadExpressions();
-
 		    if (attributes != null)
 		    {
 		        var version = attributes.FirstOrDefault(_ => _.Name == "MinVer");
