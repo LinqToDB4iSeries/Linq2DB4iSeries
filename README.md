@@ -30,11 +30,22 @@ You will need to add a linq2db section to your app.config/web.config file in ord
 
 The data provider name (e.g. iSeriesProvider) is what you will use as the providerName in you connection string.
 
-You can also add MinVer="7.1.38" to target the newer SQL syntax for SKIP (OFFSET n ROWS) ony available from 7.1 PTF Level 38 and above. Ther is a similar constructor parameter in DB2iSeriesDataProvider. 
-
 You will need to provide valid iSeries connection strings at the very least specifying Data source, User Id and Password. e.g. Data Source={SERVER_NAME}; Persist Security Info=True;User ID={USER_ID};Password={PASSWORD};Library List={LIBRARY_LIST};Default Collection={DEFAULT_LIBRARY};Naming=1"
 
 The rest of the usage is exactly the same as Linq2DB. See https://github.com/linq2db/linq2db/blob/master/README.md for further examples.
+
+## Options
+
+### Minimum DB2 Version
+The provider can create SQL compatible with V7.1 and above.  
+
+V7.1 PTF Level 38 introduced a proper sysntax for SKIP (OFFSET n ROWS). To have the provider generate this new syntax add MinVer="7.1.38" to the Provider or, if instantiating the provider in code set the parameter appropriatly.
+
+### GUIDs
+DB2 doesn't have a GUID type.  By default GUIDs will be stored as CHAR(16) FOR BIT DATA.  This works and is probably the most efficient however it is unreadable when queried directly.
+
+Setting MapGuidAsString="true" (or setting the parameter true in the constructor) will save the GUID in clear text. The underlying column should be set to VARCHAR(38) data type.
+
 
 ## Caveats
 

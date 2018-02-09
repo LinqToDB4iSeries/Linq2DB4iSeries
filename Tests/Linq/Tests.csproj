@@ -131,8 +131,8 @@
       <HintPath>..\..\..\..\..\packages\IBM.Data.DB2.iSeries.7.1.0\lib\IBM.Data.DB2.iSeries.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="linq2db, Version=1.10.1.0, Culture=neutral, PublicKeyToken=f19f8aed7feff67e, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\linq2db.1.10.1\lib\net45\linq2db.dll</HintPath>
+    <Reference Include="linq2db, Version=1.10.2.0, Culture=neutral, PublicKeyToken=f19f8aed7feff67e, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\linq2db.1.10.2\lib\net45\linq2db.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="MiniProfiler, Version=3.2.0.157, Culture=neutral, PublicKeyToken=b44f9351044011a3, processorArchitecture=MSIL">
@@ -282,6 +282,9 @@
   <ItemGroup>
     <Content Include="..\..\Data\Create Scripts\DB2iSeries.sql">
       <Link>Database\Create Scripts\DB2iSeries.sql</Link>
+    </Content>
+    <Content Include="..\..\Data\Create Scripts\DB2iSeriesGAS.sql">
+      <Link>Database\Create Scripts\DB2iSeriesGAS.sql</Link>
     </Content>
     <Content Include="DefaultDataProviders.txt" />
     <None Include="DefaultConnectionStrings.xml">

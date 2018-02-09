@@ -18,9 +18,12 @@ namespace Tests._Create
 	{
 		static void RunScript(string configString, string divider, string name, Action<IDbConnection> action = null)
 		{
+		
 			Console.WriteLine("=== " + name + " === \n");
 
-			var text = File.ReadAllText(@"..\..\..\..\Data\Create Scripts\" + name + ".sql");
+			var gas = configString.EndsWith("GAS", StringComparison.CurrentCultureIgnoreCase);
+
+			var text = File.ReadAllText(@"..\..\..\..\Data\Create Scripts\" + name + (gas ? "GAS" : "") + ".sql");
 
 			while (true)
 			{
@@ -175,7 +178,7 @@ namespace Tests._Create
 			}
 		}
 
-		[Test, IncludeDataContextSource("DB2.iSeries")]
+		[Test, DataContextSource(false)]
 		public void DB2iSeries(string ctx) { RunScript(ctx, "\nGO\n", "DB2iSeries"); }
 	}
 }

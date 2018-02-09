@@ -252,7 +252,7 @@ namespace Tests
 
 		static readonly List<string> _providers = new List<string>
 		{
-			"DB2.iSeries"
+			"DB2.iSeries", "DB2.iSeries.GAS"
 		};
 
 		[AttributeUsage(AttributeTargets.Method)]

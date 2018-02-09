@@ -144,10 +144,14 @@ namespace Tests.Linq
 		[Test, DataContextSource]
 		public void Guid1(string context)
 		{
-			using (var db = GetDataContext(context))
-				AreEqual(
-					from p in    Types where p.GuidValue == new Guid("D2F970C0-35AC-4987-9CD5-5BADB1757436") select p.GuidValue,
-					from p in db.Types where p.GuidValue == new Guid("D2F970C0-35AC-4987-9CD5-5BADB1757436") select p.GuidValue);
+		    using (var db = GetDataContext(context))
+		    {
+                AreEqual(
+		            from p in Types where p.GuidValue == new Guid("D2F970C0-35AC-4987-9CD5-5BADB1757436") select p.GuidValue,
+		            from p in db.Types
+		            where p.GuidValue == new Guid("D2F970C0-35AC-4987-9CD5-5BADB1757436")
+		            select p.GuidValue);
+		    }
 		}
 
 		[Test, DataContextSource]

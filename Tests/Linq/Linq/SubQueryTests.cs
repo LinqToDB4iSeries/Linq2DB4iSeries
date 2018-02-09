@@ -210,42 +210,6 @@ namespace Tests.Linq
 					select new { p.ParentID, c.ChildID });
 		}
 
-		//[Test, DataContextSource(ProviderName.Informix, ProviderName.MySql, ProviderName.Sybase, ProviderName.SapHana)]
-		//public void Contains1(string context)
-		//{
-		//	using (var db = GetDataContext(context))
-		//	{
-		//		var spam = (from p in Parent
-		//						where (from p1 in Parent where p1.Value1 == p.Value1 select p.ParentID).Take(3).Contains(p.ParentID)
-		//						select p);
-
-
-		//		var expected = (from p in Parent
-		//				   where (from p1 in Parent where p1.Value1 == p.Value1 select p.ParentID).Take(3).Contains(p.ParentID)
-		//				   select p).ToList();
-
-		//		var result = (from p in db.Parent
-		//				   where (from p1 in db.Parent where p1.Value1 == p.Value1 select p.ParentID).Take(3).Contains(p.ParentID)
-		//				   select p).ToList();
-
-		//		AreEqual(expected, result);
-		//	}
-			
-		//}
-
-		//[Test, DataContextSource(ProviderName.Informix, ProviderName.MySql, ProviderName.Sybase, ProviderName.SapHana)]
-		//public void Contains2(string context)
-		//{
-		//	using (var db = GetDataContext(context))
-		//		AreEqual(
-		//			from p in Parent
-		//			where (from p1 in    Parent where p1.Value1 == p.Value1 select p1.ParentID).Take(3).Contains(p.ParentID)
-		//			select p,
-		//			from p in db.Parent
-		//			where (from p1 in db.Parent where p1.Value1 == p.Value1 select p1.ParentID).Take(3).Contains(p.ParentID)
-		//			select p);
-		//}
-
 		[Test, DataContextSource(ProviderName.SqlCe)]
 		public void Count1(string context)
 		{

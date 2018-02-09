@@ -27,15 +27,22 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return string.Format("SYSIBM{0}SYSDUMMY1", seperator);
 		}
 
-		static readonly DB2iSeriesDataProvider _db2iSeriesDataProvider = new DB2iSeriesDataProvider();
+		static readonly DB2iSeriesDataProvider _db2iDataProvider = new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2, DB2iSeriesLevels.Any, false);
+		static readonly DB2iSeriesDataProvider _db2iDataProvider_gas = new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2_GAS, DB2iSeriesLevels.Any, true);
+		static readonly DB2iSeriesDataProvider _db2iDataProvider_73 = new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2_73, DB2iSeriesLevels.V7_1_38, false);
+		static readonly DB2iSeriesDataProvider _db2iDataProvider_73_gas = new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2_73_GAS, DB2iSeriesLevels.V7_1_38, true);
 
-		public static bool AutoDetectProvider { get; set; }
+		public static bool MapGuidAsString { get; set; }
+
+        public static bool AutoDetectProvider { get; set; }
 
 		static DB2iSeriesTools()
 		{
 			AutoDetectProvider = true;
-			DataConnection.AddDataProvider(DB2iSeriesFactory.ProviderName, _db2iSeriesDataProvider);
-			DataConnection.AddDataProvider(_db2iSeriesDataProvider);
+			DataConnection.AddDataProvider(DB2iSeriesProviderName.DB2, _db2iDataProvider);
+			DataConnection.AddDataProvider(DB2iSeriesProviderName.DB2_GAS, _db2iDataProvider_gas);
+			DataConnection.AddDataProvider(DB2iSeriesProviderName.DB2_73, _db2iDataProvider_73);
+			DataConnection.AddDataProvider(DB2iSeriesProviderName.DB2_73_GAS, _db2iDataProvider_73_gas);
 			DataConnection.AddProviderDetector(ProviderDetector);
 		}
 
@@ -45,7 +52,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			{
 				return null;
 			}
-			if (css.Name == DB2iSeriesFactory.ProviderName || new[] { DB2iSeriesFactory.ProviderName, AssemblyName }.Contains(css.ProviderName))
+
+			if (DB2iSeriesProviderName.AllNames.Contains(css.Name) || new[] { DB2iSeriesProviderName.DB2, AssemblyName }.Contains(css.ProviderName))
 			{
 				if (AutoDetectProvider)
 				{
@@ -58,7 +66,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						using (var conn = connectionCreator(cs))
 						{
 							conn.Open();
-							return _db2iSeriesDataProvider;
+
+							return GetDataProvider(css.Name);
 						}
 					}
 					catch (Exception)
@@ -69,9 +78,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return null;
 		}
 
-		public static IDataProvider GetDataProvider()
+		public static IDataProvider GetDataProvider(string name)
 		{
-			return _db2iSeriesDataProvider;
+			switch (name)
+			{
+				case DB2iSeriesProviderName.DB2_73: return _db2iDataProvider_73;
+				case DB2iSeriesProviderName.DB2_GAS: return _db2iDataProvider_gas;
+				case DB2iSeriesProviderName.DB2_73_GAS: return _db2iDataProvider_73_gas;
+				default: return _db2iDataProvider;
+			}
 		}
 
 		#region OnInitialized
@@ -125,19 +140,19 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		#region CreateDataConnection
 
-		public static DataConnection CreateDataConnection(string connectionString)
+		public static DataConnection CreateDataConnection(string connectionString, string providerName)
 		{
-			return new DataConnection(_db2iSeriesDataProvider, connectionString);
+			return new DataConnection(GetDataProvider(providerName), connectionString);
 		}
 
-		public static DataConnection CreateDataConnection(IDbConnection connection)
+		public static DataConnection CreateDataConnection(IDbConnection connection, string providerName)
 		{
-			return new DataConnection(_db2iSeriesDataProvider, connection);
+			return new DataConnection(GetDataProvider(providerName), connection);
 		}
 
-		public static DataConnection CreateDataConnection(IDbTransaction transaction)
+		public static DataConnection CreateDataConnection(IDbTransaction transaction, string providerName)
 		{
-			return new DataConnection(_db2iSeriesDataProvider, transaction);
+			return new DataConnection(GetDataProvider(providerName), transaction);
 		}
 
 		#endregion
