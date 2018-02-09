@@ -2,8 +2,9 @@
 using System.Linq;
 
 using LinqToDB;
-
+using LinqToDB.DataProvider.DB2iSeries;
 using NUnit.Framework;
+using Tests.Model;
 
 namespace Tests.Linq
 {
@@ -540,20 +541,25 @@ namespace Tests.Linq
 					from p in from t in db.Types select ((byte)t.ID).ToString() where p.Length > 0 select p);
 		}
 
-		[Test, DataContextSource]
-		public void GuidToString(string context)
+	    [Test, DataContextSource(false)]
+        public void GuidToString(string context)
 		{
-			using (var db = GetDataContext(context))
-				AreEqual(
-					from t in    Types where Sql.ConvertTo<string>.From(t.GuidValue) == "febe3eca-cb5f-40b2-ad39-2979d312afca" select t.GuidValue,
-					from t in db.Types where Sql.ConvertTo<string>.From(t.GuidValue) == "febe3eca-cb5f-40b2-ad39-2979d312afca" select t.GuidValue);
+		    using (var db = GetDataContext(context))
+		    {
+                AreEqual(
+		            from t in Types
+		            where Sql.ConvertTo<string>.From(t.GuidValue) == "febe3eca-cb5f-40b2-ad39-2979d312afca"
+		            select t.GuidValue,
+		            from t in db.Types
+		            where Sql.ConvertTo<string>.From(t.GuidValue) == "febe3eca-cb5f-40b2-ad39-2979d312afca"
+		            select t.GuidValue);
+		    }
 		}
+        #endregion
 
-		#endregion
+        #region Boolean
 
-		#region Boolean
-
-		[Test, DataContextSource]
+        [Test, DataContextSource]
 		public void ToBit1(string context)
 		{
 			using (var db = GetDataContext(context))

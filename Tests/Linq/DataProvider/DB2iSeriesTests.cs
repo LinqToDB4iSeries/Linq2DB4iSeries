@@ -24,9 +24,7 @@ namespace Tests.DataProvider
 	[TestFixture]
 	public class DB2iSeriesTests : TestBase
 	{
-		const string CurrentProvider = "DB2.iSeries";
-
-		[Test, IncludeDataContextSource(CurrentProvider)]
+		[Test, DataContextSource(false)]
 		public void TestParameters(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -146,7 +144,7 @@ namespace Tests.DataProvider
 		}
 
 
-		[Test, IncludeDataContextSource(CurrentProvider)]
+		[Test, DataContextSource(false)]
 		public void TestDataTypes(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -286,7 +284,7 @@ namespace Tests.DataProvider
 			TestNumeric<T?>(conn, (T?)null, dataType);
 		}
 
-		[Test, IncludeDataContextSource(CurrentProvider)]
+		[Test, DataContextSource(false)]
 		public void TestNumerics(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -333,7 +331,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(CurrentProvider)]
+		[Test, DataContextSource(false)]
 		public void TestDate(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -347,7 +345,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(CurrentProvider)]
+		[Test, DataContextSource(false)]
 		public void TestDateTime(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -363,7 +361,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(CurrentProvider)]
+		[Test, DataContextSource(false)]
 		public void TestTimeSpan(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -380,7 +378,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(CurrentProvider)]
+		[Test, DataContextSource(false)]
 		public void TestChar(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -414,7 +412,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(CurrentProvider)]
+		[Test, DataContextSource(false)]
 		public void TestString(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -443,7 +441,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(CurrentProvider)]
+		[Test, DataContextSource(false)]
 		public void TestBinary(string context)
 		{
 			// results are going to be bytes from EDCIDC character set
@@ -461,8 +459,8 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(CurrentProvider)]
-		public void TestGuid(string context)
+		[Test, IncludeDataContextSource(DB2iSeriesProviderName.DB2_73, DB2iSeriesProviderName.DB2)]
+		public void TestGuidBlob(string context)
 		{
 			using (var conn = new DataConnection(context))
 			{
@@ -481,7 +479,24 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(CurrentProvider)]
+
+	    [Test, IncludeDataContextSource(DB2iSeriesProviderName.DB2_73_GAS, DB2iSeriesProviderName.DB2_GAS)]
+	    public void TestGuidAsString(string context)
+	    {
+	        using (var conn = new DataConnection(context))
+	        {
+	            Assert.That(
+	                conn.Execute<Guid>("SELECT Cast('6F9619FF-8B86-D011-B42D-00C04FC964FF' as varchar(38))  FROM SYSIBM.SYSDUMMY1"),
+	                Is.EqualTo(new Guid("6F9619FF-8B86-D011-B42D-00C04FC964FF")));
+
+	            Assert.That(
+	                conn.Execute<Guid?>("SELECT Cast('6F9619FF-8B86-D011-B42D-00C04FC964FF' as varchar(38)) FROM SYSIBM.SYSDUMMY1"),
+	                Is.EqualTo(new Guid("6F9619FF-8B86-D011-B42D-00C04FC964FF")));
+	        }
+	    }
+
+
+        [Test, DataContextSource(false)]
 		public void TestXml(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -509,7 +524,7 @@ namespace Tests.DataProvider
 			BB,
 		}
 
-		[Test, IncludeDataContextSource(CurrentProvider)]
+		[Test, DataContextSource(false)]
 		public void TestEnum1(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -521,7 +536,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(CurrentProvider)]
+		[Test, DataContextSource(false)]
 		public void TestEnum2(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -629,19 +644,19 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(CurrentProvider)]
+		[Test, DataContextSource(false)]
 		public void BulkCopyMultipleRows(string context)
 		{
 			BulkCopyTest(context, BulkCopyType.MultipleRows, 5000, 10001);
 		}
 
-		[Test, IncludeDataContextSource(CurrentProvider)]
+		[Test, DataContextSource(false)]
 		public void BulkCopyProviderSpecific(string context)
 		{
 			Assert.Throws<System.NotImplementedException>(delegate { BulkCopyTest(context, BulkCopyType.ProviderSpecific, 50000, 100001); });
 		}
 
-		[Test, IncludeDataContextSource(CurrentProvider)]
+		[Test, DataContextSource(false)]
 		public void BulkCopyLinqTypesMultipleRows(string context)
 		{
 			using (var db = new DataConnection(context))
@@ -664,36 +679,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(CurrentProvider)]
-		public void BulkCopyLinqTypesProviderSpecific(string context)
-		{
-			using (var db = new DataConnection(context))
-			{
-				var ex = Assert.Throws<System.NotImplementedException>(() =>
-				{
-					db.BulkCopy(
-						new BulkCopyOptions { BulkCopyType = BulkCopyType.ProviderSpecific },
-						Enumerable.Range(0, 10).Select(n =>
-						new LinqDataTypes
-						{
-							ID = 4000 + n,
-							MoneyValue = 1000m + n,
-							DateTimeValue = new DateTime(2001, 1, 11, 1, 11, 21, 100),
-							BoolValue = true,
-							GuidValue = Guid.NewGuid(),
-							SmallIntValue = (short)n
-						}
-					));
-				});
-
-				db.GetTable<LinqDataTypes>().Delete(p => p.ID >= 4000);
-
-				Assert.IsNotNull(ex);
-			}
-		}
-
-
-		[Test, IncludeDataContextSource(CurrentProvider)]
+		[Test, DataContextSource(false)]
 		public void TestBinarySize(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -722,7 +708,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(CurrentProvider)]
+		[Test, DataContextSource(false)]
 		public void TestClobSize(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -756,7 +742,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(CurrentProvider)]
+		[Test, DataContextSource(false)]
 		public void TestTypes(string context)
 		{
 			dynamic int64Value = null;
@@ -830,7 +816,7 @@ namespace Tests.DataProvider
 
 		}
 
-		[Test, IncludeDataContextSource(CurrentProvider)]
+		[Test, DataContextSource(false)]
 		public void TestAny(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -843,7 +829,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(CurrentProvider)]
+		[Test, DataContextSource(false)]
 		public void TestOrderBySkipTake(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -858,7 +844,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(CurrentProvider)]
+		[Test, DataContextSource(false)]
 		public void TestOrderByDescendingSkipTake(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -873,7 +859,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, DataContextSource]
+		[Test, DataContextSource(false)]
 		public void CompareDate1(string context)
 		{
 			using (var db = GetDataContext(context))
@@ -886,7 +872,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, DataContextSource]
+		[Test, DataContextSource(false)]
 		public void CompareDate2(string context)
 		{
 			var dt = Types2[3].DateTimeValue;

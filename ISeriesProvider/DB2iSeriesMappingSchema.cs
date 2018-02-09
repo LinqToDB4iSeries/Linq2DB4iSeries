@@ -13,20 +13,27 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 	public class DB2iSeriesMappingSchema : MappingSchema
 	{
-		public DB2iSeriesMappingSchema() : this(DB2iSeriesFactory.ProviderName)
-		{
-		}
+	    private readonly bool mapGuidAsString;
+	    public DB2iSeriesMappingSchema() : this(DB2iSeriesProviderName.DB2)
+	    {
+	    }
 
-		static internal readonly DB2iSeriesMappingSchema Instance = new DB2iSeriesMappingSchema();
-		protected DB2iSeriesMappingSchema(string configuration) : base(configuration)
+		// static internal readonly DB2iSeriesMappingSchema Instance = new DB2iSeriesMappingSchema();
+		public DB2iSeriesMappingSchema(string configuration) : base(configuration)
 		{
-			SetValueToSqlConverter(typeof(Guid), (sb, dt, v) => ConvertGuidToSql(sb, (Guid)v));
-			SetDataType(typeof(string), new SqlDataType(DataType.NVarChar, typeof(string), 255));
+		    mapGuidAsString = configuration == DB2iSeriesProviderName.DB2_73_GAS || configuration == DB2iSeriesProviderName.DB2_GAS;
+
+		    if (!mapGuidAsString)
+		    {
+		        SetValueToSqlConverter(typeof(Guid), (sb, dt, v) => ConvertGuidToSql(sb, (Guid)v));
+            }
+
+		    SetDataType(typeof(string), new SqlDataType(DataType.NVarChar, typeof(string), 255));
 			SetValueToSqlConverter(typeof(string), (sb, dt, v) => ConvertStringToSql(sb, v.ToString()));
 			SetValueToSqlConverter(typeof(char), (sb, dt, v) => ConvertCharToSql(sb, (char)v));
 			SetValueToSqlConverter(typeof(DateTime), (sb, dt, v) => ConvertDateTimeToSql(sb, dt, (DateTime)v));
 
-			AddMetadataReader(new DB2iSeriesMetadataReader());
+			AddMetadataReader(new DB2iSeriesMetadataReader(configuration));
 			AddMetadataReader(new DB2iSeriesAttributeReader());
 		}
 
@@ -119,6 +126,5 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			  .Append(s.Substring(16, 16))
 			  .Append("' as char(16) for bit data)");
 		}
-
-	}
+    }
 }
