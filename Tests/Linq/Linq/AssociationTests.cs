@@ -1,10 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
 
 using LinqToDB;
 using LinqToDB.Mapping;
 
 using NUnit.Framework;
+
+using JetBrains.Annotations;
 
 #pragma warning disable 472 // The result of the expression is always the same since a value of this type is never equal to 'null'
 
@@ -184,14 +189,21 @@ namespace Tests.Linq
 		}
 
 		[Test, DataContextSource]
+		public async Task GroupBy2Async(string context)
+		{
+			using (var db = GetDataContext(context))
+				AreEqual(
+						   (from ch in Child group ch by ch.Parent1).ToList().Select(g => g.Key),
+					(await (from ch in db.Child group ch by ch.Parent1).ToListAsync()).Select(g => g.Key));
+		}
+
+		[Test, DataContextSource]
 		public void GroupBy3(string context)
 		{
 			using (var db = GetDataContext(context))
-			{
-				var val1 = from p in Parent group p by p.Types.DateTimeValue.Year into g select g.Key;
-				var val2 = from p in db.Parent group p by p.Types.DateTimeValue.Year into g select g.Key;
-				AreEqual(val1, val2);
-			}
+				AreEqual(
+					from p in Parent group p by p.Types.DateTimeValue.Year into g select g.Key,
+					from p in db.Parent group p by p.Types.DateTimeValue.Year into g select g.Key);
 		}
 
 		[Test, DataContextSource]
@@ -203,8 +215,7 @@ namespace Tests.Linq
 					from p in db.Types group p by p.DateTimeValue.Year into g select g.Key);
 		}
 
-
-		[Test, DataContextSource]
+		[Test, DataContextSource(ProviderName.SqlCe)]
 		public void StackOverflow2(string context)
 		{
 			using (var db = GetDataContext(context))
@@ -213,7 +224,7 @@ namespace Tests.Linq
 					from p in db.Parent5 where p.Children.Count != 0 select p);
 		}
 
-		[Test, DataContextSource]
+		[Test, DataContextSource(ProviderName.SqlCe)]
 		public void StackOverflow3(string context)
 		{
 			using (var db = GetDataContext(context))
@@ -222,7 +233,7 @@ namespace Tests.Linq
 					from p in db.Parent5 where p.Children.Count() != 0 select p);
 		}
 
-		[Test, DataContextSource]
+		[Test, DataContextSource(ProviderName.SqlCe)]
 		public void StackOverflow4(string context)
 		{
 			using (var db = GetDataContext(context))
@@ -265,22 +276,28 @@ namespace Tests.Linq
 		[Table("Parent")]
 		public class Top
 		{
-			[Column]
-			public int ParentID;
-			[Column]
-			public int? Value1;
+			[Column] public int ParentID;
+			[Column] public int? Value1;
 
 			[Association(ThisKey = "ParentID", OtherKey = "ParentID", CanBeNull = true)]
 			public Middle Middle { get; set; }
+
+			[Association(ExpressionPredicate = "MiddleGenericPredicate", CanBeNull = true)]
+			public Middle MiddleGeneric { get; set; }
+
+			public Middle MiddleRuntime { get; set; }
+
+			public IEnumerable<Middle> MiddlesRuntime { get; set; }
+
+			static Expression<Func<Top, Middle, bool>> MiddleGenericPredicate =>
+				(t, m) => t.ParentID == m.ParentID && m.ChildID > 1;
 		}
 
 		[Table(Name = "Child")]
 		public class Middle
 		{
-			[PrimaryKey]
-			public int ParentID;
-			[PrimaryKey]
-			public int ChildID;
+			[PrimaryKey] public int ParentID;
+			[PrimaryKey] public int ChildID;
 
 			[Association(ThisKey = "ChildID", OtherKey = "ChildID", CanBeNull = false)]
 			public Bottom Bottom { get; set; }
@@ -297,7 +314,7 @@ namespace Tests.Linq
 			public int GrandChildID;
 		}
 
-		[Test, DataContextSource(ProviderName.SQLite, ProviderName.Access)]
+		[Test, DataContextSource(ProviderName.SQLiteClassic, ProviderName.Access, ProviderName.SQLiteMS)]
 		public void TestTernary1(string context)
 		{
 			var ids = new[] { 1, 5 };
@@ -317,7 +334,7 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource(ProviderName.SQLite, ProviderName.Access)]
+		[Test, DataContextSource(ProviderName.SQLiteClassic, ProviderName.Access, ProviderName.SQLiteMS)]
 		public void TestTernary2(string context)
 		{
 			var ids = new[] { 1, 5 };
@@ -424,41 +441,44 @@ namespace Tests.Linq
 		[Test, DataContextSource]
 		public void Issue148Test(string context)
 		{
-			try
+			using (new AllowMultipleQuery())
+			using (var db = GetDataContext(context))
 			{
-				LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = true;
+				var q =
+					from n in db.Parent
+					select new
+					{
+						n.ParentID,
+						Children = n.Children.ToList(),
+						//Children = n.Children//.Select(t => t).ToList(),
+						//Children = n.Children.Where(t => 1 == 1).ToList().ToList(),
+					};
 
-				using (var db = GetDataContext(context))
-				{
-					var q =
-						from n in db.Parent
-						select new
-						{
-							n.ParentID,
-							Children = n.Children.ToList(),
-							//Children = n.Children//.Select(t => t).ToList(),
-							//Children = n.Children.Where(t => 1 == 1).ToList().ToList(),
-						};
+				var list = q.ToList();
 
-					var list = q.ToList();
-
-					Assert.That(list.Count, Is.GreaterThan(0));
-					Assert.That(list[0].Children, Is.Not.Null);
-				}
-			}
-			finally
-			{
-				LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = false;
+				Assert.That(list.Count, Is.GreaterThan(0));
+				Assert.That(list[0].Children, Is.Not.Null);
 			}
 		}
 
 		[Table("Parent")]
 		class Parent170
 		{
-			[Column]
-			public int ParentID;
-			[Column]
-			public int Value1;
+			[Column] public int ParentID;
+			[Column] public int Value1;
+
+			[Association(ThisKey = "ParentID", OtherKey = "Value1", CanBeNull = true)]
+			public Parent170 Parent;
+
+			[Association(ThisKey = "ParentID", OtherKey = "ParentID")]
+			public List<Child170> Children;
+		}
+
+		[Table("Child")]
+		class Child170
+		{
+			[Column] public int ParentID;
+			[Column] public int ChildID;
 
 			[Association(ThisKey = "ParentID", OtherKey = "Value1", CanBeNull = true)]
 			public Parent170 Parent;
@@ -475,13 +495,26 @@ namespace Tests.Linq
 			}
 		}
 
+		[Test, DataContextSource]
+		public void Issue170SelectManyTest(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var value = db.GetTable<Parent170>()
+					.SelectMany(x => x.Children)
+					.Where(x => x.Parent.Value1 == null)
+					.Select(x => (int?)x.Parent.Value1)
+					.First();
+
+				Assert.That(value, Is.Null);
+			}
+		}
+
 		[Table("Child")]
 		class StorageTestClass
 		{
-			[Column]
-			public int ParentID;
-			[Column]
-			public int ChildID;
+			[Column] public int ParentID;
+			[Column] public int ChildID;
 
 			Parent _parent;
 
@@ -502,6 +535,273 @@ namespace Tests.Linq
 
 				Assert.That(value.Parent, Is.Not.Null);
 			}
+		}
+
+		[Test, DataContextSource(ProviderName.SQLiteClassic, ProviderName.Access, ProviderName.SQLiteMS)]
+		public void TestGenericAssociation1(string context)
+		{
+			var ids = new[] { 1, 5 };
+
+			using (var db = GetDataContext(context))
+			{
+				var q =
+					from t in db.GetTable<Top>()
+					where ids.Contains(t.ParentID)
+					orderby t.ParentID
+					select t.MiddleGeneric == null ? null : t.MiddleGeneric.Bottom;
+
+				var list = q.ToList();
+
+				Assert.NotNull(list[0]);
+				Assert.Null(list[1]);
+			}
+		}
+
+		[Test, DataContextSource(ProviderName.SQLiteClassic, ProviderName.Access, ProviderName.SQLiteMS)]
+		public void TestGenericAssociationRuntime(string context)
+		{
+			var ids = new[] { 1, 5 };
+
+			var ms = new MappingSchema();
+			var mb = ms.GetFluentMappingBuilder();
+
+			mb.Entity<Top>()
+				.Association(t => t.MiddleRuntime, (t, m) => t.ParentID == m.ParentID && m.ChildID > 1);
+
+			using (var db = GetDataContext(context, ms))
+			{
+				var q =
+					from t in db.GetTable<Top>()
+					where ids.Contains(t.ParentID)
+					orderby t.ParentID
+					select t.MiddleRuntime == null ? null : t.MiddleRuntime.Bottom;
+
+				var list = q.ToList();
+
+				Assert.NotNull(list[0]);
+				Assert.Null(list[1]);
+			}
+		}
+
+		[Test, DataContextSource(ProviderName.SQLiteClassic, ProviderName.Access, ProviderName.SQLiteMS)]
+		public void TestGenericAssociationRuntimeMany(string context)
+		{
+			var ids = new[] { 1, 5 };
+
+			var ms = new MappingSchema();
+			var mb = ms.GetFluentMappingBuilder();
+
+			mb.Entity<Top>()
+				.Association(t => t.MiddlesRuntime, (t, m) => t.ParentID == m.ParentID && m.ChildID > 1);
+
+			using (var db = GetDataContext(context, ms))
+			{
+				var q =
+					from t in db.GetTable<Top>()
+					from m in t.MiddlesRuntime
+					where ids.Contains(t.ParentID)
+					orderby t.ParentID
+					select new { t, m };
+
+				var list = q.ToList();
+
+				Assert.AreEqual(1, list.Count());
+			}
+		}
+
+		[Test, DataContextSource]
+		public void TestGenericAssociation2(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+					from t in Parent
+					from g in t.GrandChildren.Where(m => m.ChildID > 22)
+					orderby g.ParentID
+					select t
+					,
+					from t in db.Parent
+					from g in t.GrandChildrenX
+					orderby g.ParentID
+					select t);
+			}
+		}
+
+		[Test, DataContextSource(ProviderName.SqlCe)]
+		public void TestGenericAssociation3(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+					from t in Parent
+					where t.GrandChildren.Count(m => m.ChildID > 22) > 1
+					orderby t.ParentID
+					select t
+					,
+					from t in db.Parent
+					where t.GrandChildrenX.Count > 1
+					orderby t.ParentID
+					select t);
+			}
+		}
+
+		[Test, DataContextSource]
+		public void TestGenericAssociation4(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+					from t in Parent
+					from g in t.Children.Where(m => Math.Abs(m.ChildID) > 3)
+					orderby g.ParentID
+					select t
+					,
+					from t in db.Parent
+					from g in t.ChildrenX
+					orderby g.ParentID
+					select t);
+			}
+		}
+
+		[Test, DataContextSource]
+		public void ExtensionTest1(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+				   Parent.SelectMany(_ => _.Children),
+				db.Parent.SelectMany(_ => _.Children()));
+
+			}
+		}
+
+		[Test, DataContextSource]
+		public void ExtensionTest11(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+				   Parent.SelectMany(_ => _.Children),
+				db.Parent.SelectMany(_ => AssociationExtension.Children(_)));
+			}
+		}
+
+		[Test, DataContextSource]
+		public void ExtensionTest2(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+				   Child.Select(_ => _.Parent),
+				db.Child.Select(_ => _.Parent()));
+			}
+		}
+
+		[Test, DataContextSource]
+		public void ExtensionTest21(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+				   Child.Select(_ => _.Parent),
+				db.Child.Select(_ => AssociationExtension.Parent(_)));
+
+			}
+		}
+
+		[Test, DataContextSource]
+		public void ExtensionTest3(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+				   Child.Select(_ => new { p = _.Parent }).Select(_ => _.p.ParentID),
+				db.Child.Select(_ => new { p = _.Parent() }).Select(_ => _.p.ParentID));
+
+			}
+		}
+
+		[Test, DataContextSource]
+		public void ExtensionTest4(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+				   Child.Select(_ => new { c = _, p = _.Parent }).Select(_ => _.c.Parent),
+				db.Child.Select(_ => new { c = _, p = _.Parent() }).Select(_ => _.c.Parent()));
+
+			}
+		}
+
+		[Test, DataContextSource]
+		public void QuerableExtensionTest1(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+				   Parent.SelectMany(_ => _.Children),
+				db.Parent.SelectMany(_ => _.QuerableChildren(db)));
+			}
+		}
+
+		[Test, DataContextSource]
+		public void QuerableExtensionTest11(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+				   Parent.SelectMany(_ => _.Children),
+				db.Parent.SelectMany(_ => AssociationExtension.QuerableChildren(_, db)));
+			}
+		}
+
+		[Test, DataContextSource]
+		public void QuerableExtensionTest2(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+				   Child.Select(_ => _.Parent),
+				db.Child.SelectMany(_ => _.QuerableParent(db)));
+			}
+		}
+
+		[Test, DataContextSource]
+		public void QuerableExtensionTest21(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+				   Child.Select(_ => _.Parent),
+				db.Child.SelectMany(_ => AssociationExtension.QuerableParent(_, db)));
+			}
+		}
+	}
+
+	public static class AssociationExtension
+	{
+		[Association(ThisKey = "ParentID", OtherKey = "ParentID")]
+		public static IEnumerable<Child> Children(this Parent parent)
+		{
+			throw new InvalidOperationException("Used only as Association helper");
+		}
+
+		[Association(ThisKey = "ParentID", OtherKey = "ParentID")]
+		public static IQueryable<Child> QuerableChildren(this Parent parent, IDataContext db)
+		{
+			return db.GetTable<Child>().Where(_ => _.ParentID == parent.ParentID);
+		}
+
+		[Association(ThisKey = "ParentID", OtherKey = "ParentID")]
+		public static Parent Parent(this Child child)
+		{
+			throw new InvalidOperationException("Used only as Association helper");
+		}
+
+		[Association(ThisKey = "ParentID", OtherKey = "ParentID")]
+		public static IQueryable<Parent> QuerableParent(this Child child, IDataContext db)
+		{
+			return db.GetTable<Parent>().Where(_ => _.ParentID == child.ParentID);
 		}
 	}
 }

@@ -17,6 +17,7 @@ using LinqToDB;
 using LinqToDB.Common;
 using LinqToDB.Data;
 using LinqToDB.Extensions;
+using LinqToDB.Linq;
 using LinqToDB.Mapping;
 
 #if !NETSTANDARD
@@ -821,14 +822,29 @@ namespace Tests
 
 		protected void AreEqual<T>(IEnumerable<T> expected, IEnumerable<T> result)
 		{
-			var resultList = result.ToList();
-			var expectedList = expected.ToList();
+			AreEqual(t => t, expected, result, EqualityComparer<T>.Default);
+		}
 
-			Assert.AreNotEqual(0, expectedList.Count);
-			Assert.AreEqual(expectedList.Count, resultList.Count, "Expected and result lists are different. Lenght: ");
+		protected void AreEqual<T>(IEnumerable<T> expected, IEnumerable<T> result, IEqualityComparer<T> comparer)
+		{
+			AreEqual(t => t, expected, result, comparer);
+		}
 
-			var exceptExpectedList = resultList.Except(expectedList).ToList();
-			var exceptResultList = expectedList.Except(resultList).ToList();
+		protected void AreEqual<T>(Func<T, T> fixSelector, IEnumerable<T> expected, IEnumerable<T> result)
+		{
+			AreEqual(fixSelector, expected, result, EqualityComparer<T>.Default);
+		}
+
+		protected void AreEqual<T>(Func<T, T> fixSelector, IEnumerable<T> expected, IEnumerable<T> result, IEqualityComparer<T> comparer)
+		{
+			var resultList = result.Select(fixSelector).ToList();
+			var expectedList = expected.Select(fixSelector).ToList();
+
+			Assert.AreNotEqual(0, expectedList.Count, "Expected list cannot be empty.");
+			Assert.AreEqual(expectedList.Count, resultList.Count, "Expected and result lists are different. Length: ");
+
+			var exceptExpectedList = resultList.Except(expectedList, comparer).ToList();
+			var exceptResultList = expectedList.Except(resultList, comparer).ToList();
 
 			var exceptExpected = exceptExpectedList.Count;
 			var exceptResult = exceptResultList.Count;
@@ -837,13 +853,13 @@ namespace Tests
 			if (exceptResult != 0 || exceptExpected != 0)
 				for (var i = 0; i < resultList.Count; i++)
 				{
-					Debug.WriteLine("{0} {1} --- {2}", Equals(expectedList[i], resultList[i]) ? " " : "-", expectedList[i], resultList[i]);
-					message.AppendFormat("{0} {1} --- {2}", Equals(expectedList[i], resultList[i]) ? " " : "-", expectedList[i], resultList[i]);
+					Debug.WriteLine("{0} {1} --- {2}", comparer.Equals(expectedList[i], resultList[i]) ? " " : "-", expectedList[i], resultList[i]);
+					message.AppendFormat("{0} {1} --- {2}", comparer.Equals(expectedList[i], resultList[i]) ? " " : "-", expectedList[i], resultList[i]);
 					message.AppendLine();
 				}
 
-			Assert.AreEqual(0, exceptExpected, "Expect Expected" + Environment.NewLine + message.ToString());
-			Assert.AreEqual(0, exceptResult, "Expect Result" + Environment.NewLine + message.ToString());
+			Assert.AreEqual(0, exceptExpected, $"Expected Was{Environment.NewLine}{message}");
+			Assert.AreEqual(0, exceptResult, $"Expect Result{Environment.NewLine}{message}");
 		}
 
 		protected void AreEqual<T>(IEnumerable<IEnumerable<T>> expected, IEnumerable<IEnumerable<T>> result)
@@ -852,7 +868,7 @@ namespace Tests
 			var expectedList = expected.ToList();
 
 			Assert.AreNotEqual(0, expectedList.Count);
-			Assert.AreEqual(expectedList.Count, resultList.Count, "Expected and result lists are different. Lenght: ");
+			Assert.AreEqual(expectedList.Count, resultList.Count, "Expected and result lists are different. Length: ");
 
 			for (var i = 0; i < resultList.Count; i++)
 			{
@@ -891,9 +907,44 @@ namespace Tests
 
 			Assert.AreEqual(string.Join("\n", ss), result.Trim('\r', '\n'));
 		}
+
+		protected List<LinqDataTypes> GetTypes(string context)
+		{
+			return DataCache<LinqDataTypes>.Get(context);
+		}
 	}
 
-	public static class Helpers
+    static class DataCache<T>
+        where T : class
+    {
+        static readonly Dictionary<string, List<T>> _dic = new Dictionary<string, List<T>>();
+        public static List<T> Get(string context)
+        {
+            lock (_dic)
+            {
+                context = context.Replace(".LinqService", "");
+
+                if (!_dic.TryGetValue(context, out var list))
+                {
+                    using (new DisableLogging())
+                    using (var db = new DataConnection(context))
+                    {
+                        list = db.GetTable<T>().ToList();
+                        _dic.Add(context, list);
+                    }
+                }
+
+                return list;
+            }
+        }
+
+        public static void Clear()
+        {
+            _dic.Clear();
+        }
+    }
+
+    public static class Helpers
 	{
 		public static string ToInvariantString<T>(this T data)
 		{
@@ -951,6 +1002,19 @@ namespace Tests
 		public void Dispose()
 		{
 			Configuration.Linq.OptimizeJoins = true;
+		}
+	}
+	public class WithoutComparasionNullCheck : IDisposable
+	{
+		public WithoutComparasionNullCheck()
+		{
+			Configuration.Linq.CompareNullsAsValues = false;
+		}
+
+		public void Dispose()
+		{
+			Configuration.Linq.CompareNullsAsValues = true;
+			Query.ClearCaches();
 		}
 	}
 

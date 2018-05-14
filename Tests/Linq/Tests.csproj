@@ -48,6 +48,7 @@
     <NoWarn>
     </NoWarn>
     <Prefer32Bit>false</Prefer32Bit>
+    <LangVersion>7.0</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -60,6 +61,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <NoWarn>649 429</NoWarn>
     <Prefer32Bit>false</Prefer32Bit>
+    <LangVersion>7.0</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug FW 3.5|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
@@ -76,6 +78,7 @@
     <CodeAnalysisRuleDirectories>;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
     <NoWarn>649 429</NoWarn>
     <Prefer32Bit>false</Prefer32Bit>
+    <LangVersion>7.0</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugMono|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
@@ -95,6 +98,7 @@
     <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
     <NoWarn>649 429</NoWarn>
     <Prefer32Bit>false</Prefer32Bit>
+    <LangVersion>7.0</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'ReleaseMono|AnyCPU'">
     <OutputPath>bin\ReleaseMono\</OutputPath>
@@ -112,6 +116,7 @@
     <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
     <NoWarn>649 429</NoWarn>
     <Prefer32Bit>false</Prefer32Bit>
+    <LangVersion>7.0</LangVersion>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject />
@@ -131,8 +136,8 @@
       <HintPath>..\..\..\..\..\packages\IBM.Data.DB2.iSeries.7.1.0\lib\IBM.Data.DB2.iSeries.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="linq2db, Version=1.10.2.0, Culture=neutral, PublicKeyToken=f19f8aed7feff67e, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\linq2db.1.10.2\lib\net45\linq2db.dll</HintPath>
+    <Reference Include="linq2db, Version=2.0.0.0, Culture=neutral, PublicKeyToken=e41013125f9e410a, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\linq2db.2.0.0-rc2\lib\net45\linq2db.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="MiniProfiler, Version=3.2.0.157, Culture=neutral, PublicKeyToken=b44f9351044011a3, processorArchitecture=MSIL">
@@ -181,18 +186,26 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Common\ChangeTypeTests.cs" />
-    <Compile Include="Common\ConvertTests.cs" />
-    <Compile Include="Common\DefaultValueTests.cs" />
     <Compile Include="DataProvider\DB2iSeriesTests.cs" />
     <Compile Include="DataProvider\DataProviderTestBase.cs" />
     <Compile Include="Data\TransactionTests.cs" />
     <Compile Include="ExpectedExceptionAttribute.cs" />
+    <Compile Include="Linq\CalculatedColumnTests.cs" />
+    <Compile Include="Linq\ComplexTests2.cs" />
+    <Compile Include="Linq\DynamicColumnsTests.cs" />
+    <Compile Include="Linq\EntityCreatedTests.cs" />
     <Compile Include="Linq\ExtensionTests.cs" />
     <Compile Include="Linq\FSharpTests.cs" />
     <Compile Include="Linq\InterfaceTests.cs" />
+    <Compile Include="Linq\JoinToLimitedTests.cs" />
+    <Compile Include="Linq\PreprocessorTests.cs" />
+    <Compile Include="Linq\QueryInheritanceTests.cs" />
+    <Compile Include="Linq\SqlExtensionTest.cs" />
     <Compile Include="Linq\VisualBasicTests.cs" />
     <Compile Include="TestProvName.cs" />
+    <Compile Include="TestUtils.cs" />
+    <Compile Include="Tools\ComparerBuilder.cs" />
+    <Compile Include="Update\BulkCopyTests.cs" />
     <Compile Include="Update\CreateTableTests.cs" />
     <Compile Include="Linq\QueryHintsTests.cs" />
     <Compile Include="Linq\AsyncTests.cs" />
@@ -203,22 +216,9 @@
     <Compile Include="Linq\ExplicitInterfaceTests.cs" />
     <Compile Include="Linq\ParameterTests.cs" />
     <Compile Include="Linq\AllAnyTests.cs" />
-    <Compile Include="Mapping\FluentMappingTests.cs" />
     <Compile Include="SchemaProvider\SchemaProviderTests.cs" />
     <Compile Include="Data\DataExtensionsTests.cs" />
     <Compile Include="Data\DataConnectionTests.cs" />
-    <Compile Include="Exceptions\ConvertTests.cs" />
-    <Compile Include="Linq\IdlTest.Additional.cs" />
-    <Compile Include="Mapping\MappingSchemaTests.cs" />
-    <Compile Include="Metadata\AttributeReaderTests.cs" />
-    <Compile Include="Metadata\XmlReaderTests.cs" />
-    <Compile Include="Reflection\TypeAccessorTests.cs" />
-    <Compile Include="Security\TestHelpers\PartialTrustClassCommand.cs" />
-    <Compile Include="Security\TestHelpers\PartialTrustCommand.cs" />
-    <Compile Include="Security\TestHelpers\PartialTrustFactAttribute.cs" />
-    <Compile Include="Security\TestHelpers\PartialTrustFixtureAttribute.cs" />
-    <Compile Include="Security\TestHelpers\PartialTrustSandbox.cs" />
-    <Compile Include="Security\PartialTrustTests.cs" />
     <Compile Include="Update\BatchTests.cs" />
     <Compile Include="Linq\CommonTests.cs" />
     <Compile Include="Linq\ConvertTests.cs" />
@@ -230,14 +230,15 @@
     <Compile Include="Linq\MultipleQueryTests.cs" />
     <Compile Include="Linq\CountTests.cs" />
     <Compile Include="Linq\DataServiceTests.cs" />
-    <Compile Include="Exceptions\CommonTests.cs" />
     <Compile Include="Exceptions\AggregationTests.cs" />
     <Compile Include="Exceptions\DmlTests.cs" />
     <Compile Include="Linq\GenerateTests.cs" />
-    <Compile Include="Linq\IdlTests.cs" />
     <Compile Include="Linq\L2SAttributeTests.cs" />
-    <Compile Include="Linq\ParserTests.cs" />
-    <Compile Include="Update\MergeTests.cs" />
+    <Compile Include="Update\CreateTempTableTests.cs" />
+    <Compile Include="Update\DropTableTest.cs" />
+    <Compile Include="Update\DynamicColumnsTest.cs" />
+    <Compile Include="Update\OldMergeTests.cs" />
+    <Compile Include="Update\TruncateTableTests.cs" />
     <Compile Include="Update\UpdateTests.cs" />
     <Compile Include="Update\DeleteTests.cs" />
     <Compile Include="Update\InsertTests.cs" />
@@ -269,9 +270,7 @@
     <Compile Include="TestBase.cs" />
     <Compile Include="Linq\WhereTests.cs" />
     <Compile Include="UserTests\ConverterInsertTests.cs" />
-    <Compile Include="UserTests\CreateDecimalTableColumnTests.cs" />
     <Compile Include="UserTests\FirstOrDefaultNullReferenceExceptionTests.cs" />
-    <Compile Include="UserTests\GenericsFilterTests.cs" />
     <Compile Include="UserTests\GroupBySubqueryTests.cs" />
     <Compile Include="UserTests\LetTests.cs" />
     <Compile Include="UserTests\SelectManyDeleteTests.cs" />

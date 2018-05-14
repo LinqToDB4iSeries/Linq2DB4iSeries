@@ -33,7 +33,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				where System_Table_Schema in('{0}')
 				 ", GetLibList(dataConnection));
 
-			Func<IDataReader, ColumnInfo> drf = (IDataReader dr) =>
+			ColumnInfo drf(IDataReader dr)
 			{
 				var ci = new ColumnInfo
 				{
@@ -47,14 +47,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				};
 				SetColumnParameters(ci, Convert.ToInt64(dr["Length"]), Convert.ToInt32(dr["Numeric_Scale"]));
 				return ci;
-			};
-			List<ColumnInfo> _list = dataConnection.Query(drf, sql).ToList();
-			return _list;
+			}
+
+			var list = dataConnection.Query(drf, sql).ToList();
+			return list;
 		}
 
-		protected override DataType GetDataType(string _dataType, string columnType, long? length, int? prec, int? scale)
+		protected override DataType GetDataType(string dataType, string columnType, long? length, int? prec, int? scale)
 		{
-			switch (_dataType)
+			switch (dataType)
 			{
 				case "BIGINT": return DataType.Int64;
 				case "BINARY": return DataType.Binary;
@@ -83,7 +84,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 		}
 
-		protected override List<ForeingKeyInfo> GetForeignKeys(DataConnection dataConnection)
+		protected override List<ForeignKeyInfo> GetForeignKeys(DataConnection dataConnection)
 		{
 			var sql = string.Format(@"
 		  Select ref.Constraint_Name 
@@ -103,20 +104,18 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		  ", GetLibList(dataConnection));
 
 			//And {GetSchemaFilter("col.TBCREATOR")}
-			Func<IDataReader, ForeingKeyInfo> drf = (IDataReader dr) =>
+			Func<IDataReader, ForeignKeyInfo> drf = (IDataReader dr) => new ForeignKeyInfo
 			{
-				return new ForeingKeyInfo
-				{
-					Name = dr["Constraint_Name"].ToString().TrimEnd(),
-					Ordinal = Converter.ChangeTypeTo<int>(dr["Ordinal_Position"]),
-					OtherColumn = dr["OtherColumn"].ToString().TrimEnd(),
-					OtherTableID = dataConnection.Connection.Database + "." + Convert.ToString(dr["OtherSchema"]).TrimEnd() + "." + Convert.ToString(dr["OtherTable"]).TrimEnd(),
-					ThisColumn = dr["ThisColumn"].ToString().TrimEnd(),
-					ThisTableID = dataConnection.Connection.Database + "." + Convert.ToString(dr["ThisSchema"]).TrimEnd() + "." + Convert.ToString(dr["ThisTable"]).TrimEnd()
-				};
+				Name = dr["Constraint_Name"].ToString().TrimEnd(),
+				Ordinal = Converter.ChangeTypeTo<int>(dr["Ordinal_Position"]),
+				OtherColumn = dr["OtherColumn"].ToString().TrimEnd(),
+				OtherTableID = dataConnection.Connection.Database + "." + Convert.ToString(dr["OtherSchema"]).TrimEnd() + "." + Convert.ToString(dr["OtherTable"]).TrimEnd(),
+				ThisColumn = dr["ThisColumn"].ToString().TrimEnd(),
+				ThisTableID = dataConnection.Connection.Database + "." + Convert.ToString(dr["ThisSchema"]).TrimEnd() + "." + Convert.ToString(dr["ThisTable"]).TrimEnd()
 			};
-			List<ForeingKeyInfo> _list = dataConnection.Query(drf, sql).ToList();
-			return _list;
+
+			var list = dataConnection.Query(drf, sql).ToList();
+			return list;
 		}
 
 		protected override List<PrimaryKeyInfo> GetPrimaryKeys(DataConnection dataConnection)
@@ -133,18 +132,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		  Order By cst.table_SCHEMA, cst.table_NAME, col.Ordinal_position
 		  ", GetLibList(dataConnection));
 
-			Func<IDataReader, PrimaryKeyInfo> drf = (IDataReader dr) =>
+			PrimaryKeyInfo drf(IDataReader dr) => new PrimaryKeyInfo
 			{
-				return new PrimaryKeyInfo
-				{
-					ColumnName = Convert.ToString(dr["Column_Name"]).TrimEnd(),
-					Ordinal = Converter.ChangeTypeTo<int>(dr["Ordinal_position"]),
-					PrimaryKeyName = Convert.ToString(dr["constraint_Name"]).TrimEnd(),
-					TableID = dataConnection.Connection.Database + "." + Convert.ToString(dr["table_SCHEMA"]).TrimEnd() + "." + Convert.ToString(dr["table_NAME"]).TrimEnd()
-				};
+				ColumnName = Convert.ToString(dr["Column_Name"]).TrimEnd(),
+				Ordinal = Converter.ChangeTypeTo<int>(dr["Ordinal_position"]),
+				PrimaryKeyName = Convert.ToString(dr["constraint_Name"]).TrimEnd(),
+				TableID = dataConnection.Connection.Database + "." + Convert.ToString(dr["table_SCHEMA"]).TrimEnd() + "." + Convert.ToString(dr["table_NAME"]).TrimEnd()
 			};
-			List<PrimaryKeyInfo> _list = dataConnection.Query(drf, sql).ToList();
-			return _list;
+
+			var list = dataConnection.Query(drf, sql).ToList();
+			return list;
 		}
 
 		protected override List<ProcedureInfo> GetProcedures(DataConnection dataConnection)
@@ -166,7 +163,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			//And {GetSchemaFilter("col.TBCREATOR")}
 			var defaultSchema = dataConnection.Execute<string>("select current_schema from sysibm.sysdummy1");
-			Func<IDataReader, ProcedureInfo> drf = (IDataReader dr) =>
+
+			ProcedureInfo drf(IDataReader dr)
 			{
 				return new ProcedureInfo
 				{
@@ -179,9 +177,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					ProcedureName = Convert.ToString(dr["Routine_Name"]).TrimEnd(),
 					SchemaName = Convert.ToString(dr["Routine_Schema"]).TrimEnd()
 				};
-			};
-			List<ProcedureInfo> _list = dataConnection.Query(drf, sql).ToList();
-			return _list;
+			}
+
+			var list = dataConnection.Query(drf, sql).ToList();
+			return list;
 		}
 
 		protected override List<ProcedureParameterInfo> GetProcedureParameters(DataConnection dataConnection)

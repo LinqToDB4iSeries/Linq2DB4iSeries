@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+
+#if !NETSTANDARD1_6 && !NETSTANDARD2_0
 using System.Windows.Forms;
+#endif
 
 using LinqToDB;
 using LinqToDB.Data;
@@ -50,8 +53,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 			{
-				var expected = from p in    Person select new { p.ID, p.FirstName };
-				var result   = from p in db.Person select new { p.ID, p.FirstName };
+				var expected = from p in Person select new { p.ID, p.FirstName };
+				var result = from p in db.Person select new { p.ID, p.FirstName };
 				Assert.IsTrue(result.ToList().SequenceEqual(expected));
 			}
 		}
@@ -59,7 +62,7 @@ namespace Tests.Linq
 		void NewParam(IQueryable<Person> table, int i)
 		{
 			var expected = from p in Person select new { i, p.ID, p.FirstName };
-			var result   = from p in table  select new { i, p.ID, p.FirstName };
+			var result = from p in table select new { i, p.ID, p.FirstName };
 
 			Assert.IsTrue(result.ToList().SequenceEqual(expected));
 		}
@@ -125,10 +128,10 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				TestJohn(db.Person
-					.Select(p => new        { PersonID = p.ID,       Name      = p.FirstName })
-					.Select(p => new Person { ID       = p.PersonID, FirstName = p.Name      })
-					.Select(p => new        { PersonID = p.ID,       Name      = p.FirstName })
-					.Select(p => new Person { ID       = p.PersonID, FirstName = p.Name      }));
+					.Select(p => new { PersonID = p.ID, Name = p.FirstName })
+					.Select(p => new Person { ID = p.PersonID, FirstName = p.Name })
+					.Select(p => new { PersonID = p.ID, Name = p.FirstName })
+					.Select(p => new Person { ID = p.PersonID, FirstName = p.Name }));
 		}
 
 		[Test, DataContextSource]
@@ -136,8 +139,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				TestJohn(db.Person
-					.Select(p1 => new        { p1 })
-					.Select(p2 => new        { p2 })
+					.Select(p1 => new { p1 })
+					.Select(p2 => new { p2 })
 					.Select(p3 => new Person { ID = p3.p2.p1.ID, FirstName = p3.p2.p1.FirstName }));
 		}
 
@@ -146,9 +149,9 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				TestJohn(db.Person
-					.Select(p1 => new        { p1 })
+					.Select(p1 => new { p1 })
 					.Select(p2 => new Person { ID = p2.p1.ID, FirstName = p2.p1.FirstName })
-					.Select(p3 => new        { p3 })
+					.Select(p3 => new { p3 })
 					.Select(p4 => new Person { ID = p4.p3.ID, FirstName = p4.p3.FirstName }));
 		}
 
@@ -157,10 +160,10 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				TestJohn(db.Person
-					.Select(p1 => new        { p1 })
+					.Select(p1 => new { p1 })
 					.Select(p2 => new Person { ID = p2.p1.ID, FirstName = p2.p1.FirstName })
 					.Select(p3 => p3)
-					.Select(p4 => new Person { ID = p4.ID,    FirstName = p4.FirstName }));
+					.Select(p4 => new Person { ID = p4.ID, FirstName = p4.FirstName }));
 		}
 
 		[Test, DataContextSource]
@@ -168,7 +171,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				TestJohn(db.Person
-					.Select(p1 => new        { ID = p1.ID + 1, p1.FirstName })
+					.Select(p1 => new { ID = p1.ID + 1, p1.FirstName })
 					.Select(p2 => new Person { ID = p2.ID - 1, FirstName = p2.FirstName }));
 		}
 
@@ -180,11 +183,11 @@ namespace Tests.Linq
 				var person = (
 
 					db.Person
-						.Select(p1 => new Person { ID = p1.ID * 2,           FirstName = p1.FirstName })
-						.Select(p2 => new        { ID = p2.ID / "22".Length, p2.FirstName })
+						.Select(p1 => new Person { ID = p1.ID * 2, FirstName = p1.FirstName })
+						.Select(p2 => new { ID = p2.ID / "22".Length, p2.FirstName })
 
 				).ToList().First(p => p.ID == 1);
-				Assert.AreEqual(1,      person.ID);
+				Assert.AreEqual(1, person.ID);
 				Assert.AreEqual("John", person.FirstName);
 			}
 		}
@@ -194,10 +197,10 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				TestJohn(db.Person
-					.Select(p1 => new        { ID = p1.ID - 1, p1.FirstName })
+					.Select(p1 => new { ID = p1.ID - 1, p1.FirstName })
 					.Select(p2 => new Person { ID = p2.ID + 1, FirstName = p2.FirstName })
 					.Select(p3 => p3)
-					.Select(p4 => new        { ID = p4.ID * "22".Length, p4.FirstName })
+					.Select(p4 => new { ID = p4.ID * "22".Length, p4.FirstName })
 					.Select(p5 => new Person { ID = p5.ID / 2, FirstName = p5.FirstName }));
 		}
 
@@ -206,9 +209,9 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				TestJohn(db.Person
-					.Select(p1 => new        { p1.ID, p1 })
-					.Select(p2 => new        { p2.ID, p2.p1, p2 })
-					.Select(p3 => new        { p3.ID, p3.p1.FirstName, p11 = p3.p2.p1, p3 })
+					.Select(p1 => new { p1.ID, p1 })
+					.Select(p2 => new { p2.ID, p2.p1, p2 })
+					.Select(p3 => new { p3.ID, p3.p1.FirstName, p11 = p3.p2.p1, p3 })
 					.Select(p4 => new Person { ID = p4.p11.ID, FirstName = p4.p3.p1.FirstName }));
 		}
 
@@ -226,7 +229,7 @@ namespace Tests.Linq
 
 				var selectCount = ((DataConnection)db).LastQuery
 					.Split(' ', '\t', '\n', '\r')
-					.Count(s => s.Equals("select", StringComparison.InvariantCultureIgnoreCase));
+					.Count(s => s.Equals("select", StringComparison.OrdinalIgnoreCase));
 
 				Assert.AreEqual(1, selectCount, "Why do we need \"select from select\"??");
 			}
@@ -244,13 +247,13 @@ namespace Tests.Linq
 					select new
 					{
 						p.ID,
-						FirstName  = p.FirstName  ?? "None",
+						FirstName = p.FirstName ?? "None",
 						MiddleName = p.MiddleName ?? "None"
 					}
 
 				).ToList().First();
 
-				Assert.AreEqual(1,      q.ID);
+				Assert.AreEqual(1, q.ID);
 				Assert.AreEqual("John", q.FirstName);
 				Assert.AreEqual("None", q.MiddleName);
 			}
@@ -268,17 +271,17 @@ namespace Tests.Linq
 					select new
 					{
 						p.ID,
-						FirstName  = p.MiddleName ?? p.FirstName  ?? "None",
-						LastName   = p.LastName   ?? p.FirstName  ?? "None",
+						FirstName = p.MiddleName ?? p.FirstName ?? "None",
+						LastName = p.LastName ?? p.FirstName ?? "None",
 						MiddleName = p.MiddleName ?? p.MiddleName ?? "None"
 					}
 
 				).ToList().First();
 
-				Assert.AreEqual(1,        q.ID);
-				Assert.AreEqual("John",   q.FirstName);
+				Assert.AreEqual(1, q.ID);
+				Assert.AreEqual("John", q.FirstName);
 				Assert.AreEqual("Pupkin", q.LastName);
-				Assert.AreEqual("None",   q.MiddleName);
+				Assert.AreEqual("None", q.MiddleName);
 			}
 		}
 
@@ -308,17 +311,17 @@ namespace Tests.Linq
 						select new
 						{
 							p.ID,
-							FirstName  = p.MiddleName ?? p.FirstName  ?? "None",
-							LastName   = p.LastName   ?? p.FirstName  ?? "None",
+							FirstName = p.MiddleName ?? p.FirstName ?? "None",
+							LastName = p.LastName ?? p.FirstName ?? "None",
 							MiddleName = p.MiddleName ?? p.MiddleName ?? "None"
 						}
 
 					).ToList().First();
 
-					Assert.AreEqual(1,        q.ID);
-					Assert.AreEqual("John",   q.FirstName);
+					Assert.AreEqual(1, q.ID);
+					Assert.AreEqual("John", q.FirstName);
 					Assert.AreEqual("Pupkin", q.LastName);
-					Assert.AreEqual("None",   q.MiddleName);
+					Assert.AreEqual("None", q.MiddleName);
 				}
 			}
 		}
@@ -328,8 +331,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from c in    Child
-					select Sql.AsSql((from ch in    Child where ch.ChildID == c.ChildID select ch.Parent.Value1).FirstOrDefault() ?? c.ChildID),
+					from c in Child
+					select Sql.AsSql((from ch in Child where ch.ChildID == c.ChildID select ch.Parent.Value1).FirstOrDefault() ?? c.ChildID),
 					from c in db.Child
 					select Sql.AsSql((from ch in db.Child where ch.ChildID == c.ChildID select ch.Parent.Value1).FirstOrDefault() ?? c.ChildID));
 		}
@@ -339,7 +342,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Parent select Sql.AsSql(p.Children.Max(c => (int?)c.ChildID) ?? p.Value1),
+					from p in Parent select Sql.AsSql(p.Children.Max(c => (int?)c.ChildID) ?? p.Value1),
 					from p in db.Parent select Sql.AsSql(p.Children.Max(c => (int?)c.ChildID) ?? p.Value1));
 		}
 
@@ -348,7 +351,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 			{
-				var q = from p in db.Person where p.ID == 1 select new { p.ID, FirstName  = "123" + p.FirstName + "456" };
+				var q = from p in db.Person where p.ID == 1 select new { p.ID, FirstName = "123" + p.FirstName + "456" };
 				var f = q.Where(p => p.FirstName == "123John456").ToList().First();
 				Assert.AreEqual(1, f.ID);
 			}
@@ -364,10 +367,11 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Parent select new { Max = GetList(p.ParentID).Max() },
+					from p in Parent select new { Max = GetList(p.ParentID).Max() },
 					from p in db.Parent select new { Max = GetList(p.ParentID).Max() });
 		}
 
+#if !NETSTANDARD1_6 && !NETSTANDARD2_0
 		[Test, DataContextSource]
 		public void ConstractClass(string context)
 		{
@@ -375,11 +379,12 @@ namespace Tests.Linq
 				db.Parent.Select(f =>
 					new ListViewItem(new[] { "", f.ParentID.ToString(), f.Value1.ToString() })
 					{
-						Checked    = true,
+						Checked = true,
 						ImageIndex = 0,
-						Tag        = f.ParentID
+						Tag = f.ParentID
 					}).ToList();
 		}
+#endif
 
 		static string ConvertString(string s, int? i, bool b, int n)
 		{
@@ -402,6 +407,8 @@ namespace Tests.Linq
 							ConvertString(m.Parent.ParentID.ToString(), m.ChildID, i % 2 == 0, i)).ToArray();
 
 				Assert.AreEqual("7.77.True.0", lines[0]);
+				Assert.AreEqual("6.66.False.1", lines[1]);
+				Assert.AreEqual("6.65.True.2", lines[2]);
 
 				q =
 					db.Child
@@ -432,11 +439,11 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from c in    Child select new { c.ChildID, ID = 0, ID1 = c.ParentID2.ParentID2, c.ParentID2.Value1, ID2 = c.ParentID },
+					from c in Child select new { c.ChildID, ID = 0, ID1 = c.ParentID2.ParentID2, c.ParentID2.Value1, ID2 = c.ParentID },
 					from c in db.Child select new { c.ChildID, ID = 0, ID1 = c.ParentID2.ParentID2, c.ParentID2.Value1, ID2 = c.ParentID });
 		}
 
-		[Table(Name="Person")]
+		[Table(Name = "Person")]
 		[ObjectFactory(typeof(Factory))]
 		public class TestPersonObject
 		{
@@ -452,7 +459,7 @@ namespace Tests.Linq
 				#endregion
 			}
 
-			public int    PersonID;
+			public int PersonID;
 			public string FirstName;
 		}
 
@@ -468,7 +475,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Person select p.Patient,
+					from p in Person select p.Patient,
 					from p in db.Person select p.Patient);
 		}
 
@@ -494,11 +501,11 @@ namespace Tests.Linq
 			}
 		}
 
-		[Table(Name="Parent")]
+		[Table(Name = "Parent")]
 		public class TestParent
 		{
-			[Column("ParentID")] public int  ParentID_;
-			[Column("Value1")]   public int? Value1_;
+			[Column("ParentID")] public int ParentID_;
+			[Column("Value1")] public int? Value1_;
 		}
 
 		[Test]
@@ -515,5 +522,99 @@ namespace Tests.Linq
 				Assert.That(sql.IndexOf("ParentID_"), Is.LessThan(0));
 			}
 		}
+
+		[Test, DataContextSource]
+		public void SelectComplex1(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var r = db.GetTable<ComplexPerson>().First(_ => _.ID == 1);
+
+				Assert.AreEqual("John", r.Name.FirstName);
+				Assert.IsNull(r.Name.MiddleName);
+				Assert.AreEqual("Pupkin", r.Name.LastName);
+			}
+		}
+
+		[Test, DataContextSource]
+		public void SelectComplex2(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var r = db.GetTable<ComplexPerson2>().First(_ => _.ID == 1);
+
+				Assert.AreEqual("John", r.Name.FirstName);
+				Assert.IsNull(r.Name.MiddleName);
+				Assert.AreEqual("Pupkin", r.Name.LastName);
+			}
+		}
+
+		[Test, DataContextSource]
+		public void SelectComplex3(string context)
+		{
+			var ms = new MappingSchema();
+			var b = ms.GetFluentMappingBuilder();
+
+			b
+				.Entity<ComplexPerson3>().HasTableName("Person")
+				.Property(_ => _.ID).HasColumnName("PersonID")
+				.Property(_ => _.Name.FirstName).HasColumnName("FirstName")
+				.Property(_ => _.Name.LastName).HasColumnName("LastName")
+				.Property(_ => _.Name.MiddleName).HasColumnName("MiddleName");
+
+			using (var db = GetDataContext(context, ms))
+			{
+				var r = db.GetTable<ComplexPerson3>().First(_ => _.ID == 1);
+
+				Assert.AreEqual("John", r.Name.FirstName);
+				Assert.IsNull(r.Name.MiddleName);
+				Assert.AreEqual("Pupkin", r.Name.LastName);
+			}
+		}
+
+		[Test, DataContextSource]
+		public void SelectNullableTest1(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				try
+				{
+					var e = new LinqDataTypes2() { ID = 1000, BoolValue = false };
+					db.Insert(e);
+
+					var e2 = db.Types2.First(_ => _.ID == 1000);
+
+					Assert.AreEqual(e, e2);
+				}
+				finally
+				{
+					db.Types2.Where(_ => _.ID == 1000).Delete();
+				}
+			}
+		}
+
+		[Test, DataContextSource()]
+		public void SelectNullableTest2(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				try
+				{
+					var en = new LinqDataTypes2() { ID = 1000, BoolValue = false };
+					db.Insert(en);
+
+					var e = new LinqDataTypes() { ID = 1000, BoolValue = false };
+
+					var e2 = db.Types.First(_ => _.ID == 1000);
+
+					Assert.AreEqual(e, e2);
+				}
+				finally
+				{
+					db.Types2.Where(_ => _.ID == 1000).Delete();
+				}
+			}
+		}
+
 	}
 }

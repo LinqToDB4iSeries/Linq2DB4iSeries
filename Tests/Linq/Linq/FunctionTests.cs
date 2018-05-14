@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 
 using LinqToDB;
 using LinqToDB.Linq;
+using LinqToDB.SqlQuery;
 
 using NUnit.Framework;
 
@@ -337,7 +338,28 @@ namespace Tests.Linq
 					   Parent.Select(p => p.Children.Where(c => c.ParentID > 2).Sum(c => c.ParentID * c.ChildID)),
 					db.Parent.Select(p => ChildCount(p)));
 		}
-		
+
+		[Test, DataContextSource]
+		public void CustomAggregate(string context)
+		{
+			using (var db = GetDataContext(context))
+				AreEqual(
+					from p in Parent
+					group p by p.ParentID into g
+					select new
+					{
+						sum1 = g.Sum(i => i.Value1) ?? 0,
+						sum2 = g.Sum(i => i.Value1) ?? 0,
+					},
+					from p in db.Parent
+					group p by p.ParentID into g
+					select new
+					{
+						sum1 = g.Sum(i => i.Value1) ?? 0,
+						sum2 = g.MySum(i => i.Value1) ?? 0,
+					});
+		}
+
 		[Test, DataContextSource]
 		public void GetValueOrDefault(string context)
 		{
@@ -411,10 +433,12 @@ namespace Tests.Linq
 			return person.LastName + ", " + person.FirstName;
 		}
 
-		[Sql.Function("SUM", ServerSideOnly = true)]
+		[Sql.Function("SUM", ServerSideOnly = true, IsAggregate = true, ArgIndices = new[] { 0 })]
 		public static TItem MySum<TSource, TItem>(this IEnumerable<TSource> src, Expression<Func<TSource, TItem>> value)
 		{
 			throw new InvalidOperationException();
 		}
+
 	}
+
 }

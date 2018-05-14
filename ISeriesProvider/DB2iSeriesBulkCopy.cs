@@ -89,8 +89,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return MultipleRowsCopy(dataConnection, options, source);
 		}
 
-		protected override BulkCopyRowsCopied MultipleRowsCopy2<T>(
-	DataConnection dataConnection, BulkCopyOptions options, bool enforceKeepIdentity, IEnumerable<T> source, string from)
+		protected override BulkCopyRowsCopied MultipleRowsCopy2<T>(DataConnection dataConnection, BulkCopyOptions options, IEnumerable<T> source, string from)
 		{
 			if((options.MaxBatchSize ?? int.MaxValue) > MAX_ALLOWABLE_BATCH_SIZE)
 			{
@@ -98,7 +97,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 
 			return MultipleRowsCopy2<T>(
-				new DB2iSeriesMultipleRowsHelper<T>(dataConnection, options, enforceKeepIdentity),
+				new DB2iSeriesMultipleRowsHelper<T>(dataConnection, options),
 				dataConnection,
 				options,
 				source,
@@ -112,7 +111,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				options.MaxBatchSize = MAX_ALLOWABLE_BATCH_SIZE;
 			}
 
-			return MultipleRowsCopy2(dataConnection, options, false, source, " FROM " + DB2iSeriesTools.iSeriesDummyTableName());
+			return MultipleRowsCopy2(dataConnection, options, source, " FROM " + DB2iSeriesTools.iSeriesDummyTableName());
 		}
 	}
 }

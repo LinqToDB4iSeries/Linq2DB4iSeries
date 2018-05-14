@@ -81,14 +81,14 @@ namespace Tests.Linq
 					.Distinct();
 
 				var expected = eids.Select(id =>
-					new 
+					new
 					{
 						id,
 						Count1 = Child.Where(p => p.ParentID == id).Count(),
 						Count2 = Child.Where(p => p.ParentID == id && p.ParentID == _testValue).Count(),
 					});
 
-				var rids   = db.Parent
+				var rids = db.Parent
 					.Where(p => ids.Contains(p.ParentID))
 					.Select(p => p.Value1 == null ? p.ParentID : p.ParentID + 1)
 					.Distinct();
@@ -111,7 +111,7 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 			{
 				var id = 2;
-				var b  = false;
+				var b = false;
 
 				var q = Child.Where(c => c.ParentID == id).OrderBy(c => c.ChildID);
 				q = b
@@ -121,9 +121,9 @@ namespace Tests.Linq
 				var gc = GrandChild;
 				var expected = q.Select(c => new
 				{
-					ID     = c.ChildID,
+					ID = c.ChildID,
 					c.ParentID,
-					Sum    = gc.Where(g => g.ChildID == c.ChildID && g.GrandChildID > 0).Sum(g => (int)g.ChildID * g.GrandChildID),
+					Sum = gc.Where(g => g.ChildID == c.ChildID && g.GrandChildID > 0).Sum(g => (int)g.ChildID * g.GrandChildID),
 					Count1 = gc.Count(g => g.ChildID == c.ChildID && g.GrandChildID > 0)
 				});
 
@@ -135,9 +135,9 @@ namespace Tests.Linq
 				var rgc = db.GrandChild;
 				var result = r.Select(c => new
 				{
-					ID     = c.ChildID,
+					ID = c.ChildID,
 					c.ParentID,
-					Sum    = rgc.Where(g => g.ChildID == c.ChildID && g.GrandChildID > 0).Sum(g => (int)g.ChildID * g.GrandChildID),
+					Sum = rgc.Where(g => g.ChildID == c.ChildID && g.GrandChildID > 0).Sum(g => (int)g.ChildID * g.GrandChildID),
 					Count1 = rgc.Count(g => g.ChildID == c.ChildID && g.GrandChildID > 0),
 				});
 
@@ -150,7 +150,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from c in    Child select new { Count =    GrandChild.Where(g => g.ChildID == c.ChildID).Count() },
+					from c in Child select new { Count = GrandChild.Where(g => g.ChildID == c.ChildID).Count() },
 					from c in db.Child select new { Count = db.GrandChild.Where(g => g.ChildID == c.ChildID).Count() });
 		}
 
@@ -159,7 +159,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 			{
-				var parent  =
+				var parent =
 					from p in db.Parent
 					where p.ParentID == 1
 					select p.ParentID;
@@ -171,7 +171,7 @@ namespace Tests.Linq
 
 				var chs1 = chilren.ToList();
 
-				parent  =
+				parent =
 					from p in db.Parent
 					where p.ParentID == 2
 					select p.ParentID;
@@ -210,6 +210,49 @@ namespace Tests.Linq
 					select new { p.ParentID, c.ChildID });
 		}
 
+		//[Test, DataContextSource]
+		public void SubSub201(string context)
+		{
+			using (var db = GetDataContext(context))
+				AreEqual(
+					from p1 in
+						from p2 in Parent
+						select new { p2, ID = p2.ParentID + 1 } into p3
+						where p3.ID > 0
+						select new { p2 = p3, ID = p3.ID + 1 }
+					where p1.ID > 0
+					select new
+					{
+						Count =
+						(
+							from c in p1.p2.p2.Children
+							select new { c, ID = c.ParentID + 1 } into c
+							where c.ID < p1.ID
+							select new { c.c, ID = c.c.ParentID + 1 } into c
+							where c.ID < p1.ID
+							select c
+						).FirstOrDefault()
+					},
+					from p1 in
+						from p2 in db.Parent
+						select new { p2, ID = p2.ParentID + 1 } into p3
+						where p3.ID > 0
+						select new { p2 = p3, ID = p3.ID + 1 }
+					where p1.ID > 0
+					select new
+					{
+						Count =
+						(
+							from c in p1.p2.p2.Children
+							select new { c, ID = c.ParentID + 1 } into c
+							where c.ID < p1.ID
+							select new { c.c, ID = c.c.ParentID + 1 } into c
+							where c.ID < p1.ID
+							select c
+						).FirstOrDefault()
+					});
+		}
+
 		[Test, DataContextSource(ProviderName.SqlCe)]
 		public void Count1(string context)
 		{
@@ -245,7 +288,7 @@ namespace Tests.Linq
 						select new Parent
 						{
 							ParentID = p.ParentID,
-							Value1   = p.Children.Where(t => t.ParentID > 0).Sum(t => t.ParentID) / 2,
+							Value1 = p.Children.Where(t => t.ParentID > 0).Sum(t => t.ParentID) / 2,
 						}
 					where p.Value1 > 1
 					select p,
@@ -254,7 +297,7 @@ namespace Tests.Linq
 						select new Parent
 						{
 							ParentID = p.ParentID,
-							Value1   = p.Children.Where(t => t.ParentID > 0).Sum(t => t.ParentID) / 2,
+							Value1 = p.Children.Where(t => t.ParentID > 0).Sum(t => t.ParentID) / 2,
 						}
 					where p.Value1 > 1
 					select p);

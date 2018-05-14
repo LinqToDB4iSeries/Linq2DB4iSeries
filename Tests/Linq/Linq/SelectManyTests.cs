@@ -17,7 +17,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					   Parent.SelectMany(p =>    Child),
+					   Parent.SelectMany(p => Child),
 					db.Parent.SelectMany(p => db.Child));
 		}
 
@@ -26,7 +26,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					   Parent.SelectMany(p =>    Child.SelectMany(t =>    GrandChild)),
+					   Parent.SelectMany(p => Child.SelectMany(t => GrandChild)),
 					db.Parent.SelectMany(p => db.Child.SelectMany(t => db.GrandChild)));
 		}
 
@@ -35,8 +35,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					   Parent.SelectMany(p =>    Child.Select(underscore => underscore.ParentID + 1)),
-					db.Parent.SelectMany(p => db.Child.Select(underscore => underscore.ParentID + 1)));
+					   Parent.SelectMany(p => Child.Select(x => x.ParentID + 1)),
+					db.Parent.SelectMany(p => db.Child.Select(x => x.ParentID + 1)));
 		}
 
 		[Test, DataContextSource]
@@ -44,8 +44,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					   Parent.SelectMany(p =>    Child.Select(underscore => underscore.ParentID + 1).Where(underscore => underscore > 1)),
-					db.Parent.SelectMany(p => db.Child.Select(underscore => underscore.ParentID + 1).Where(underscore => underscore > 1)));
+					   Parent.SelectMany(p => Child.Select(x => x.ParentID + 1).Where(x => x > 1)),
+					db.Parent.SelectMany(p => db.Child.Select(x => x.ParentID + 1).Where(x => x > 1)));
 		}
 
 		[Test, DataContextSource]
@@ -53,8 +53,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					   Parent.SelectMany(p =>    Child.Select(underscore => underscore.ParentID + 1).Where(underscore => p.ParentID == underscore)),
-					db.Parent.SelectMany(p => db.Child.Select(underscore => underscore.ParentID + 1).Where(underscore => p.ParentID == underscore)));
+					   Parent.SelectMany(p => Child.Select(x => x.ParentID + 1).Where(x => p.ParentID == x)),
+					db.Parent.SelectMany(p => db.Child.Select(x => x.ParentID + 1).Where(x => p.ParentID == x)));
 		}
 
 		[Test, DataContextSource(ProviderName.Access)]
@@ -71,8 +71,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					   Parent.SelectMany(p => p.Children.Select(underscore => underscore.ParentID + 1).Where(underscore => underscore > 1)),
-					db.Parent.SelectMany(p => p.Children.Select(underscore => underscore.ParentID + 1).Where(underscore => underscore > 1)));
+					   Parent.SelectMany(p => p.Children.Select(x => x.ParentID + 1).Where(x => x > 1)),
+					db.Parent.SelectMany(p => p.Children.Select(x => x.ParentID + 1).Where(x => x > 1)));
 		}
 
 		[Test, DataContextSource]
@@ -80,8 +80,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					   Parent.SelectMany(p => p.Children.Select(underscore => underscore.ParentID + 1).Where(underscore => underscore > 1 || underscore > 2)).Where(underscore => underscore > 0 || underscore > 3),
-					db.Parent.SelectMany(p => p.Children.Select(underscore => underscore.ParentID + 1).Where(underscore => underscore > 1 || underscore > 2)).Where(underscore => underscore > 0 || underscore > 3));
+					   Parent.SelectMany(p => p.Children.Select(x => x.ParentID + 1).Where(x => x > 1 || x > 2)).Where(x => x > 0 || x > 3),
+					db.Parent.SelectMany(p => p.Children.Select(x => x.ParentID + 1).Where(x => x > 1 || x > 2)).Where(x => x > 0 || x > 3));
 		}
 
 		[Test, DataContextSource(ProviderName.Access)]
@@ -89,8 +89,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					   Parent.SelectMany(p => p.Children.Select(underscore => underscore.ParentID + p.ParentID).Where(underscore => underscore > 1)),
-					db.Parent.SelectMany(p => p.Children.Select(underscore => underscore.ParentID + p.ParentID).Where(underscore => underscore > 1)));
+					   Parent.SelectMany(p => p.Children.Select(x => x.ParentID + p.ParentID).Where(x => x > 1)),
+					db.Parent.SelectMany(p => p.Children.Select(x => x.ParentID + p.ParentID).Where(x => x > 1)));
 		}
 
 		[Test, DataContextSource]
@@ -151,8 +151,8 @@ namespace Tests.Linq
 
 				TestJohn(db.Person
 					.SelectMany(p1 => q, (p1, p2) => new { p1, p2 })
-					.Where     (t => t.p1.ID == t.p2.ID && t.p1.ID == 1)
-					.Select    (t => new Person { ID = t.p1.ID, FirstName = t.p2.FirstName }));
+					.Where(t => t.p1.ID == t.p2.ID && t.p1.ID == 1)
+					.Select(t => new Person { ID = t.p1.ID, FirstName = t.p2.FirstName }));
 			}
 		}
 
@@ -162,8 +162,8 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 				TestJohn(db.Person
 					.SelectMany(p1 => db.Person.Select(p => p), (p1, p2) => new { p1, p2 })
-					.Where     (t => t.p1.ID == t.p2.ID && t.p1.ID == 1)
-					.Select    (t => new Person { ID = t.p1.ID, FirstName = t.p2.FirstName }));
+					.Where(t => t.p1.ID == t.p2.ID && t.p1.ID == 1)
+					.Select(t => new Person { ID = t.p1.ID, FirstName = t.p2.FirstName }));
 		}
 
 		[Test, DataContextSource]
@@ -171,11 +171,11 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				TestJohn(
-					from p1 in from p in db.Person select new { ID1 = p.ID, p.LastName  }
+					from p1 in from p in db.Person select new { ID1 = p.ID, p.LastName }
 					from p2 in from p in db.Person select new { ID2 = p.ID, p.FirstName }
-					from p3 in from p in db.Person select new { ID3 = p.ID, p.LastName  }
+					from p3 in from p in db.Person select new { ID3 = p.ID, p.LastName }
 					where p1.ID1 == p2.ID2 && p1.LastName == p3.LastName && p1.ID1 == 1
-					select new Person { ID = p1.ID1, FirstName = p2.FirstName, LastName = p3.LastName } );
+					select new Person { ID = p1.ID1, FirstName = p2.FirstName, LastName = p3.LastName });
 		}
 
 		[Test, DataContextSource]
@@ -187,7 +187,7 @@ namespace Tests.Linq
 					from p2 in from p in db.Person select p
 					from p3 in from p in db.Person select p
 					where p1.ID == p2.ID && p1.LastName == p3.LastName && p1.ID == 1
-					select new Person { ID = p1.ID, FirstName = p2.FirstName, LastName = p3.LastName } );
+					select new Person { ID = p1.ID, FirstName = p2.FirstName, LastName = p3.LastName });
 		}
 
 		[Test, DataContextSource]
@@ -228,7 +228,7 @@ namespace Tests.Linq
 
 				var person = list[0].p;
 
-				Assert.AreEqual(1,      person.ID);
+				Assert.AreEqual(1, person.ID);
 				Assert.AreEqual("John", person.FirstName);
 			}
 		}
@@ -239,7 +239,7 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 			{
 				var id = 1;
-				var q  = from p in db.Person where p.ID == id select p;
+				var q = from p in db.Person where p.ID == id select p;
 
 				TestJohn(
 					from p1 in db.Person
@@ -254,7 +254,7 @@ namespace Tests.Linq
 			var q1 = from p in db.Person where p.ID == 1 || p.ID == 2 select p;
 			var q2 = from p in db.Person where !(p.ID == 2) select p;
 
-			var q = 
+			var q =
 				from p1 in q1
 				from p2 in q2
 				where p1.ID == p2.ID
@@ -262,7 +262,7 @@ namespace Tests.Linq
 
 			foreach (var person in q)
 			{
-				Assert.AreEqual(1,      person.ID);
+				Assert.AreEqual(1, person.ID);
 				Assert.AreEqual("John", person.FirstName);
 			}
 		}
@@ -339,11 +339,11 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 				Assert.AreEqual(
 					(from p in Parent
-					from c in p.Children.Select(o => new { o.ChildID, p.ParentID }).DefaultIfEmpty()
-					select new { p.Value1, o = c }).Count(),
+					 from c in p.Children.Select(o => new { o.ChildID, p.ParentID }).DefaultIfEmpty()
+					 select new { p.Value1, o = c }).Count(),
 					(from p in db.Parent
-					from c in p.Children.Select(o => new { o.ChildID, p.ParentID }).DefaultIfEmpty()
-					select new { p.Value1, o = c }).AsEnumerable().Count());
+					 from c in p.Children.Select(o => new { o.ChildID, p.ParentID }).DefaultIfEmpty()
+					 select new { p.Value1, o = c }).AsEnumerable().Count());
 		}
 
 		[Test, DataContextSource]
@@ -351,8 +351,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Parent
-					from ch in (from c in    Child where p.ParentID == c.ParentID select c).DefaultIfEmpty()
+					from p in Parent
+					from ch in (from c in Child where p.ParentID == c.ParentID select c).DefaultIfEmpty()
 					select ch,
 					from p in db.Parent
 					from ch in (from c in db.Child where p.ParentID == c.ParentID select c).DefaultIfEmpty()
@@ -381,7 +381,7 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 				AreEqual(
 					from p in Parent
-					from ch in (from c in    Child where p.ParentID == c.ParentID select c).DefaultIfEmpty()
+					from ch in (from c in Child where p.ParentID == c.ParentID select c).DefaultIfEmpty()
 					select new { p.ParentID, ch }
 					,
 					from p in db.Parent
@@ -401,8 +401,8 @@ namespace Tests.Linq
 				Assert.AreEqual(
 					expected.Count(),
 					(from p in db.Parent
-					from c in p.Children.Select(o => new { o.ChildID, p.ParentID }).DefaultIfEmpty()
-					select new { p.Value1, n = c.ChildID + 1, o = c }).Count());
+					 from c in p.Children.Select(o => new { o.ChildID, p.ParentID }).DefaultIfEmpty()
+					 select new { p.Value1, n = c.ChildID + 1, o = c }).Count());
 		}
 
 		[Test, DataContextSource]
@@ -410,7 +410,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in 
+					from p in
 						from p in Parent
 						from g in p.GrandChildren
 						join c in Child on g.ChildID equals c.ChildID
@@ -418,7 +418,7 @@ namespace Tests.Linq
 						select c
 					join t in Person on p.ParentID equals t.ID
 					select p,
-					from p in 
+					from p in
 						from p in db.Parent
 						from g in p.GrandChildren
 						join c in db.Child on g.ChildID equals c.ChildID
@@ -451,15 +451,15 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 				Assert.AreEqual(
 					(from p in Parent
-					from g in p.GrandChildren
-					join c in db.Child on g.ChildID equals c.ChildID
-					join t in db.Types on c.ParentID equals t.ID
-					select c).Count(),
+					 from g in p.GrandChildren
+					 join c in db.Child on g.ChildID equals c.ChildID
+					 join t in db.Types on c.ParentID equals t.ID
+					 select c).Count(),
 					(from p in db.Parent
-					from g in p.GrandChildren
-					join c in db.Child on g.ChildID equals c.ChildID
-					join t in db.Types on c.ParentID equals t.ID
-					select c).Count());
+					 from g in p.GrandChildren
+					 join c in db.Child on g.ChildID equals c.ChildID
+					 join t in db.Types on c.ParentID equals t.ID
+					 select c).Count());
 		}
 
 		[Test, DataContextSource(ProviderName.Access)]
@@ -545,7 +545,7 @@ namespace Tests.Linq
 						join c in db.GrandChild on p.ParentID equals c.ParentID
 						select p
 					from g in p.GrandChildren
-					//from c in db.Parent2
+						//from c in db.Parent2
 					let r = g.Child
 					where
 						p.ParentID == g.ParentID
@@ -560,16 +560,16 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 			{
-				var q1 = db.Types.Where(_ => _.ID > 1).Where(_ => _.ID > 2);
+				var q1 = db.Types.Where(x => x.ID > 1).Where(x => x.ID > 2);
 
 				var q2 =
 					from p in db.Parent
 					join c in db.GrandChild on p.ParentID equals c.ParentID
-					join t in q1            on c.ParentID equals t.ID
+					join t in q1 on c.ParentID equals t.ID
 					where p.ParentID == 1
 					select p;
 
-				q2 = q2.Distinct().OrderBy(_ => _.ParentID);
+				q2 = q2.Distinct().OrderBy(x => x.ParentID);
 
 				var q3 =
 					from p in q2
@@ -580,7 +580,7 @@ namespace Tests.Linq
 						p.ParentID == g.ParentID && g.ParentID == c.ParentID
 					select r;
 
-				q3 = q3.Where(_ => _.ChildID == 1);
+				q3 = q3.Where(x => x.ChildID == 1);
 
 				q3.ToList();
 			}
@@ -609,6 +609,21 @@ namespace Tests.Linq
 
 				q3.ToList();
 			}
+		}
+
+		/////[Test, DataContextSource]
+		public void Test92(string context)
+		{
+			using (var db = GetDataContext(context))
+				AreEqual(
+					db.Parent
+						.SelectMany(c => c.Children, (c, p) => new { c, p, })
+						.Select(_ => new { _.c, p = new Child { ParentID = _.c.ParentID, ChildID = _.p.ChildID } })
+						.SelectMany(ch => ch.p.GrandChildren, (ch, t) => new { t, ch }),
+					db.Parent
+						.SelectMany(c => c.Children, (c, p) => new { c, p, })
+						.Select(_ => new { _.c, p = new Child { ParentID = _.c.ParentID, ChildID = _.p.ChildID } })
+						.SelectMany(ch => ch.p.GrandChildren, (ch, t) => new { t, ch }));
 		}
 	}
 }

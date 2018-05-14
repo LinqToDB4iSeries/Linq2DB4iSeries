@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 using LinqToDB;
 
@@ -7,6 +8,7 @@ using NUnit.Framework;
 
 namespace Tests.Linq
 {
+	using LinqToDB.Linq;
 	using Model;
 
 	[TestFixture]
@@ -52,10 +54,7 @@ namespace Tests.Linq
 		public void Take5(string context)
 		{
 			using (var db = GetDataContext(context))
-			{
-				var actual = db.Child.Take(3);
-				Assert.AreEqual(3,actual.ToList().Count);
-			}
+				Assert.AreEqual(3, db.Child.Take(3).ToList().Count);
 		}
 
 		[Test, DataContextSource]
@@ -63,8 +62,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 			{
-				var expected =    Child.OrderBy(c => c.ChildID).Take(3);
-				var result   = db.Child.OrderBy(c => c.ChildID).Take(3);
+				var expected = Child.OrderBy(c => c.ChildID).Take(3);
+				var result = db.Child.OrderBy(c => c.ChildID).Take(3);
 				Assert.IsTrue(result.ToList().SequenceEqual(expected));
 			}
 		}
@@ -97,10 +96,7 @@ namespace Tests.Linq
 		public void Skip1(string context)
 		{
 			using (var db = GetDataContext(context))
-			{
-				var actual = db.Child.Skip(3);
-				AreEqual(Child.Skip(3), actual);
-			}
+				AreEqual(Child.Skip(3), db.Child.Skip(3));
 		}
 
 		[Test, DataContextSource]
@@ -108,7 +104,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from ch in    Child where ch.ChildID > 3 || ch.ChildID < 4 select ch).Skip(3),
+					(from ch in Child where ch.ChildID > 3 || ch.ChildID < 4 select ch).Skip(3),
 					(from ch in db.Child where ch.ChildID > 3 || ch.ChildID < 4 select ch).Skip(3));
 		}
 
@@ -117,7 +113,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from ch in    Child where ch.ChildID >= 0 && ch.ChildID <= 100 select ch).Skip(3),
+					(from ch in Child where ch.ChildID >= 0 && ch.ChildID <= 100 select ch).Skip(3),
 					(from ch in db.Child where ch.ChildID >= 0 && ch.ChildID <= 100 select ch).Skip(3));
 		}
 
@@ -127,7 +123,7 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 			{
 				var expected = Child.OrderByDescending(c => c.ChildID).Skip(3);
-				var result   = db.Child.OrderByDescending(c => c.ChildID).Skip(3);
+				var result = db.Child.OrderByDescending(c => c.ChildID).Skip(3);
 				Assert.IsTrue(result.ToList().SequenceEqual(expected));
 			}
 		}
@@ -156,7 +152,7 @@ namespace Tests.Linq
 				AreEqual(Child.Skip(n), db.Child.Skip(() => n));
 		}
 
-		[Test, DataContextSource(ProviderName.SqlServer2000, ProviderName.Sybase, ProviderName.SQLite, ProviderName.Access)]
+		[Test, DataContextSource(ProviderName.SqlServer2000, ProviderName.Sybase, ProviderName.SQLiteClassic, ProviderName.SQLiteMS, ProviderName.Access)]
 		public void SkipCount(string context)
 		{
 			using (var db = GetDataContext(context))
@@ -170,8 +166,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 			{
-				var expected =    Child.OrderByDescending(c => c.ChildID).Skip(2).Take(5);
-				var result   = db.Child.OrderByDescending(c => c.ChildID).Skip(2).Take(5);
+				var expected = Child.OrderByDescending(c => c.ChildID).Skip(2).Take(5);
+				var result = db.Child.OrderByDescending(c => c.ChildID).Skip(2).Take(5);
 				Assert.IsTrue(result.ToList().SequenceEqual(expected));
 			}
 		}
@@ -181,8 +177,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 			{
-				var expected =    Child.OrderByDescending(c => c.ChildID).Take(7).Skip(2);
-				var result   = db.Child.OrderByDescending(c => c.ChildID).Take(7).Skip(2);
+				var expected = Child.OrderByDescending(c => c.ChildID).Take(7).Skip(2);
+				var result = db.Child.OrderByDescending(c => c.ChildID).Take(7).Skip(2);
 				Assert.IsTrue(result.ToList().SequenceEqual(expected));
 			}
 		}
@@ -193,18 +189,18 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 			{
 				var expected = Child.OrderBy(c => c.ChildID).Skip(1).Take(7).Skip(2);
-				var result   = db.Child.OrderBy(c => c.ChildID).Skip(1).Take(7).Skip(2);
+				var result = db.Child.OrderBy(c => c.ChildID).Skip(1).Take(7).Skip(2);
 				Assert.IsTrue(result.ToList().SequenceEqual(expected));
 			}
 		}
 
-		[Test, DataContextSource(ProviderName.SQLite, ProviderName.SqlServer2000, ProviderName.Sybase, ProviderName.Access)]
+		[Test, DataContextSource(ProviderName.SQLiteClassic, ProviderName.SQLiteMS, ProviderName.SqlServer2000, ProviderName.Sybase, ProviderName.Access)]
 		public void SkipTake4(string context)
 		{
 			using (var db = GetDataContext(context))
 			{
-				var expected =    Child.OrderByDescending(c => c.ChildID).Skip(1).Take(7).OrderBy(c => c.ChildID).Skip(2);
-				var result   = db.Child.OrderByDescending(c => c.ChildID).Skip(1).Take(7).OrderBy(c => c.ChildID).Skip(2);
+				var expected = Child.OrderByDescending(c => c.ChildID).Skip(1).Take(7).OrderBy(c => c.ChildID).Skip(2);
+				var result = db.Child.OrderByDescending(c => c.ChildID).Skip(1).Take(7).OrderBy(c => c.ChildID).Skip(2);
 				Assert.IsTrue(result.ToList().SequenceEqual(expected));
 			}
 		}
@@ -248,7 +244,7 @@ namespace Tests.Linq
 			AreEqual(q4, q2);
 		}
 
-		[Test, DataContextSource(ProviderName.SqlCe, ProviderName.SqlServer2000, ProviderName.Sybase, ProviderName.SQLite, ProviderName.Access)]
+		[Test, DataContextSource(ProviderName.SqlCe, ProviderName.SqlServer2000, ProviderName.Sybase, ProviderName.SQLiteClassic, ProviderName.SQLiteMS, ProviderName.Access)]
 		public void SkipTake6(string context)
 		{
 			using (var db = GetDataContext(context))
@@ -258,7 +254,7 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource(ProviderName.SqlCe, ProviderName.SqlServer2000, ProviderName.Sybase, ProviderName.SQLite, ProviderName.Access)]
+		[Test, DataContextSource(ProviderName.SqlCe, ProviderName.SqlServer2000, ProviderName.Sybase, ProviderName.SQLiteClassic, ProviderName.SQLiteMS, ProviderName.Access)]
 		public void SkipTakeCount(string context)
 		{
 			using (var db = GetDataContext(context))
@@ -285,13 +281,9 @@ namespace Tests.Linq
 		public void ElementAt1(string context)
 		{
 			using (var db = GetDataContext(context))
-			{
-				var actual = (from p in db.Parent where p.ParentID > 1 select p).ElementAt(3);
-
 				Assert.AreEqual(
 					(from p in Parent where p.ParentID > 1 select p).ElementAt(3),
-					actual);
-			}
+					(from p in db.Parent where p.ParentID > 1 select p).ElementAt(3));
 		}
 
 		[Test, DataContextSource]
@@ -300,8 +292,18 @@ namespace Tests.Linq
 			var n = 3;
 			using (var db = GetDataContext(context))
 				Assert.AreEqual(
-					(from p in    Parent where p.ParentID > 1 select p).ElementAt(n),
+					(from p in Parent where p.ParentID > 1 select p).ElementAt(n),
 					(from p in db.Parent where p.ParentID > 1 select p).ElementAt(() => n));
+		}
+
+		[Test, DataContextSource]
+		public async Task ElementAt2Async(string context)
+		{
+			var n = 3;
+			using (var db = GetDataContext(context))
+				Assert.AreEqual(
+						  (from p in Parent where p.ParentID > 1 select p).ElementAt(n),
+					await (from p in db.Parent where p.ParentID > 1 select p).ElementAtAsync(() => n));
 		}
 
 		[Test, DataContextSource]
@@ -309,7 +311,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				Assert.AreEqual(
-					(from p in    Parent where p.ParentID > 1 select p).ElementAtOrDefault(3),
+					(from p in Parent where p.ParentID > 1 select p).ElementAtOrDefault(3),
 					(from p in db.Parent where p.ParentID > 1 select p).ElementAtOrDefault(3));
 		}
 
@@ -326,8 +328,18 @@ namespace Tests.Linq
 			var n = 3;
 			using (var db = GetDataContext(context))
 				Assert.AreEqual(
-					(from p in    Parent where p.ParentID > 1 select p).ElementAtOrDefault(n),
+					(from p in Parent where p.ParentID > 1 select p).ElementAtOrDefault(n),
 					(from p in db.Parent where p.ParentID > 1 select p).ElementAtOrDefault(() => n));
+		}
+
+		[Test, DataContextSource]
+		public async Task ElementAtDefault3Async(string context)
+		{
+			var n = 3;
+			using (var db = GetDataContext(context))
+				Assert.AreEqual(
+						  (from p in Parent where p.ParentID > 1 select p).ElementAtOrDefault(n),
+					await (from p in db.Parent where p.ParentID > 1 select p).ElementAtOrDefaultAsync(() => n));
 		}
 
 		[Test, DataContextSource]
@@ -342,10 +354,29 @@ namespace Tests.Linq
 		public void ElementAtDefault5(string context)
 		{
 			using (var db = GetDataContext(context))
+				Assert.AreEqual(
+					Person.OrderBy(p => p.LastName).ElementAtOrDefault(3),
+					db.Person.OrderBy(p => p.LastName).ElementAtOrDefault(3));
+		}
+
+		[Test, DataContextSource(ProviderName.Sybase)]
+		public void TakeSkipJoin(string context)
+		{
+			using (var db = GetDataContext(context))
 			{
-				var expected = Person.ElementAtOrDefault(3);
-				var actual = db.Person.OrderBy(p=>p.ID).ElementAtOrDefault(3);
-				Assert.AreEqual(expected, actual);
+				var types = db.Types.ToList();
+
+				var q1 = types.Concat(types).Take(15);
+				var q2 = db.Types.Concat(db.Types).Take(15);
+
+				AreEqual(
+					from e in q1
+					from p in q1.Where(x => x.ID == e.ID).DefaultIfEmpty()
+					select new { e.ID, p.SmallIntValue },
+					from e in q2
+					from p in q2.Where(x => x.ID == e.ID).DefaultIfEmpty()
+					select new { e.ID, p.SmallIntValue }
+					);
 			}
 		}
 	}

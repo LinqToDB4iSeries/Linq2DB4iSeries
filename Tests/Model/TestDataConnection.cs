@@ -58,31 +58,6 @@ namespace Tests.Model
 			return GetTable<Parent>(this, (MethodInfo)MethodBase.GetCurrentMethod(), id);
 		}
 
-		public string GetSqlText(SelectQuery query)
-		{
-			var provider  = ((IDataContext)this).CreateSqlProvider();
-			var optimizer = ((IDataContext)this).GetSqlOptimizer  ();
-
-			//provider.SqlQuery = sql;
-
-			query = optimizer.Finalize(query);
-
-			var cc = provider.CommandCount(query);
-			var sb = new StringBuilder();
-
-			var commands = new string[cc];
-
-			for (var i = 0; i < cc; i++)
-			{
-				sb.Length = 0;
-
-				provider.BuildSql(i, query, sb);
-				commands[i] = sb.ToString();
-			}
-
-			return string.Join("\n\n", commands);
-		}
-
 		[ExpressionMethod("Expression9")]
 		public static IQueryable<Parent> GetParent9(ITestDataContext db, Child ch)
 		{

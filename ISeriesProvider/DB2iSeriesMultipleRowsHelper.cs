@@ -1,18 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
 	using Data;
 	using Mapping;
-	using SqlProvider;
 	using SqlQuery;
 
 	class DB2iSeriesMultipleRowsHelper<T> : MultipleRowsHelper<T>
 	{
-		public DB2iSeriesMultipleRowsHelper(DataConnection dataConnection, BulkCopyOptions options, bool enforceKeepIdentity) : base(dataConnection, options, enforceKeepIdentity)
+		public DB2iSeriesMultipleRowsHelper(DataConnection dataConnection, BulkCopyOptions options) : base(dataConnection, options)
 		{
             
 		}
@@ -73,7 +69,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				colType = DB2iSeriesMappingSchema.GetiSeriesType(actualType);
 			}
 
-			return string.Format("CAST({0} AS {1})", value, colType);
+			return $"CAST({value} AS {colType})";
 		}
 	}
 }

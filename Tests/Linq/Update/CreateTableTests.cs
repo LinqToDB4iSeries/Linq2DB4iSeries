@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 using LinqToDB;
 using LinqToDB.Data;
@@ -14,13 +15,13 @@ namespace Tests.xUpdate
 	{
 		class TestTable
 		{
-			public int       ID;
-			public string    Field1;
-			public string    Field2;
+			public int ID;
+			public string Field1;
+			public string Field2;
 			public DateTime? CreatedOn;
 		}
 
-		[Test, DataContextSource]
+		[Test, DataContextSource(ProviderName.OracleNative)]
 		public void CreateTable1(string context)
 		{
 			using (var db = GetDataContext(context))
@@ -33,18 +34,34 @@ namespace Tests.xUpdate
 						.Property(t => t.Field1)
 							.HasLength(50);
 
-				try
-				{
-					db.DropTable<TestTable>();
-				}
-				catch (Exception)
-				{
-				}
+				db.DropTable<TestTable>(throwExceptionIfNotExists: false);
 
 				var table = db.CreateTable<TestTable>();
 				var list = table.ToList();
 
 				db.DropTable<TestTable>();
+			}
+		}
+
+		[Test, DataContextSource(ProviderName.OracleNative)]
+		public async Task CreateTable1Async(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				db.MappingSchema.GetFluentMappingBuilder()
+					.Entity<TestTable>()
+						.Property(t => t.ID)
+							.IsIdentity()
+							.IsPrimaryKey()
+						.Property(t => t.Field1)
+							.HasLength(50);
+
+				await db.DropTableAsync<TestTable>(throwExceptionIfNotExists: false);
+
+				var table = await db.CreateTableAsync<TestTable>();
+				var list = await table.ToListAsync();
+
+				await db.DropTableAsync<TestTable>();
 			}
 		}
 
@@ -56,7 +73,7 @@ namespace Tests.xUpdate
 
 		enum FieldType2
 		{
-			[MapValue("A")]  Value1,
+			[MapValue("A")] Value1,
 			[MapValue("AA")] Value2,
 		}
 
@@ -69,13 +86,14 @@ namespace Tests.xUpdate
 		class TestEnumTable
 		{
 			public FieldType1 Field1;
-			[Column(DataType=DataType.Int32)]
+			[Column(DataType = DataType.Int32)]
 			public FieldType1? Field11;
 			public FieldType2? Field2;
-			[Column(DataType=DataType.Char, Length=2)]
+			[Column(DataType = DataType.Char, Length = 2)]
 			public FieldType2 Field21;
 			public FieldType3 Field3;
 		}
+
 
 		public enum jjj
 		{
@@ -88,10 +106,10 @@ namespace Tests.xUpdate
 		}
 		public class aa : base_aa
 		{
-			public int    bb { get; set; }
+			public int bb { get; set; }
 			public string cc { get; set; }
 		}
-		
+
 		public class qq
 		{
 			public int bb { get; set; }
@@ -109,7 +127,7 @@ namespace Tests.xUpdate
 						.Property(t => t.bb).IsPrimaryKey()
 						.Property(t => t.cc)
 						.Property(t => t.dd).IsNotColumn()
-					
+
 					.Entity<qq>()
 						.HasTableName("aa")
 						.Property(t => t.bb).IsPrimaryKey()
