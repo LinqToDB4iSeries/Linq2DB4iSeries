@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27703.2000
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{B4CC1DAB-FF2D-4247-9A46-B7DE236981BB}"
 	ProjectSection(SolutionItems) = preProject
@@ -39,6 +39,10 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Tests.FSharp", "Tests\FShar
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		AppVeyor|Any CPU = AppVeyor|Any CPU
+		AppVeyor|ARM = AppVeyor|ARM
+		AppVeyor|x64 = AppVeyor|x64
+		AppVeyor|x86 = AppVeyor|x86
 		Debug FW 3.5|Any CPU = Debug FW 3.5|Any CPU
 		Debug FW 3.5|ARM = Debug FW 3.5|ARM
 		Debug FW 3.5|x64 = Debug FW 3.5|x64
@@ -59,8 +63,20 @@ Global
 		ReleaseMono|ARM = ReleaseMono|ARM
 		ReleaseMono|x64 = ReleaseMono|x64
 		ReleaseMono|x86 = ReleaseMono|x86
+		Travis|Any CPU = Travis|Any CPU
+		Travis|ARM = Travis|ARM
+		Travis|x64 = Travis|x64
+		Travis|x86 = Travis|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{07997A18-86D3-47AC-A514-AB1B03E6AEC8}.AppVeyor|Any CPU.ActiveCfg = ReleaseMono|Any CPU
+		{07997A18-86D3-47AC-A514-AB1B03E6AEC8}.AppVeyor|Any CPU.Build.0 = ReleaseMono|Any CPU
+		{07997A18-86D3-47AC-A514-AB1B03E6AEC8}.AppVeyor|ARM.ActiveCfg = ReleaseMono|Any CPU
+		{07997A18-86D3-47AC-A514-AB1B03E6AEC8}.AppVeyor|ARM.Build.0 = ReleaseMono|Any CPU
+		{07997A18-86D3-47AC-A514-AB1B03E6AEC8}.AppVeyor|x64.ActiveCfg = ReleaseMono|Any CPU
+		{07997A18-86D3-47AC-A514-AB1B03E6AEC8}.AppVeyor|x64.Build.0 = ReleaseMono|Any CPU
+		{07997A18-86D3-47AC-A514-AB1B03E6AEC8}.AppVeyor|x86.ActiveCfg = ReleaseMono|Any CPU
+		{07997A18-86D3-47AC-A514-AB1B03E6AEC8}.AppVeyor|x86.Build.0 = ReleaseMono|Any CPU
 		{07997A18-86D3-47AC-A514-AB1B03E6AEC8}.Debug FW 3.5|Any CPU.ActiveCfg = Debug FW 3.5|Any CPU
 		{07997A18-86D3-47AC-A514-AB1B03E6AEC8}.Debug FW 3.5|Any CPU.Build.0 = Debug FW 3.5|Any CPU
 		{07997A18-86D3-47AC-A514-AB1B03E6AEC8}.Debug FW 3.5|ARM.ActiveCfg = Debug FW 3.5|Any CPU
@@ -94,6 +110,22 @@ Global
 		{07997A18-86D3-47AC-A514-AB1B03E6AEC8}.ReleaseMono|x64.Build.0 = ReleaseMono|Any CPU
 		{07997A18-86D3-47AC-A514-AB1B03E6AEC8}.ReleaseMono|x86.ActiveCfg = ReleaseMono|Any CPU
 		{07997A18-86D3-47AC-A514-AB1B03E6AEC8}.ReleaseMono|x86.Build.0 = ReleaseMono|Any CPU
+		{07997A18-86D3-47AC-A514-AB1B03E6AEC8}.Travis|Any CPU.ActiveCfg = ReleaseMono|Any CPU
+		{07997A18-86D3-47AC-A514-AB1B03E6AEC8}.Travis|Any CPU.Build.0 = ReleaseMono|Any CPU
+		{07997A18-86D3-47AC-A514-AB1B03E6AEC8}.Travis|ARM.ActiveCfg = ReleaseMono|Any CPU
+		{07997A18-86D3-47AC-A514-AB1B03E6AEC8}.Travis|ARM.Build.0 = ReleaseMono|Any CPU
+		{07997A18-86D3-47AC-A514-AB1B03E6AEC8}.Travis|x64.ActiveCfg = ReleaseMono|Any CPU
+		{07997A18-86D3-47AC-A514-AB1B03E6AEC8}.Travis|x64.Build.0 = ReleaseMono|Any CPU
+		{07997A18-86D3-47AC-A514-AB1B03E6AEC8}.Travis|x86.ActiveCfg = ReleaseMono|Any CPU
+		{07997A18-86D3-47AC-A514-AB1B03E6AEC8}.Travis|x86.Build.0 = ReleaseMono|Any CPU
+		{D527524F-EC92-465E-9CAE-86278121675A}.AppVeyor|Any CPU.ActiveCfg = ReleaseMono|Any CPU
+		{D527524F-EC92-465E-9CAE-86278121675A}.AppVeyor|Any CPU.Build.0 = ReleaseMono|Any CPU
+		{D527524F-EC92-465E-9CAE-86278121675A}.AppVeyor|ARM.ActiveCfg = ReleaseMono|Any CPU
+		{D527524F-EC92-465E-9CAE-86278121675A}.AppVeyor|ARM.Build.0 = ReleaseMono|Any CPU
+		{D527524F-EC92-465E-9CAE-86278121675A}.AppVeyor|x64.ActiveCfg = ReleaseMono|Any CPU
+		{D527524F-EC92-465E-9CAE-86278121675A}.AppVeyor|x64.Build.0 = ReleaseMono|Any CPU
+		{D527524F-EC92-465E-9CAE-86278121675A}.AppVeyor|x86.ActiveCfg = ReleaseMono|Any CPU
+		{D527524F-EC92-465E-9CAE-86278121675A}.AppVeyor|x86.Build.0 = ReleaseMono|Any CPU
 		{D527524F-EC92-465E-9CAE-86278121675A}.Debug FW 3.5|Any CPU.ActiveCfg = Debug FW 3.5|Any CPU
 		{D527524F-EC92-465E-9CAE-86278121675A}.Debug FW 3.5|Any CPU.Build.0 = Debug FW 3.5|Any CPU
 		{D527524F-EC92-465E-9CAE-86278121675A}.Debug FW 3.5|ARM.ActiveCfg = Debug FW 3.5|Any CPU
@@ -127,6 +159,22 @@ Global
 		{D527524F-EC92-465E-9CAE-86278121675A}.ReleaseMono|x64.Build.0 = ReleaseMono|Any CPU
 		{D527524F-EC92-465E-9CAE-86278121675A}.ReleaseMono|x86.ActiveCfg = ReleaseMono|Any CPU
 		{D527524F-EC92-465E-9CAE-86278121675A}.ReleaseMono|x86.Build.0 = ReleaseMono|Any CPU
+		{D527524F-EC92-465E-9CAE-86278121675A}.Travis|Any CPU.ActiveCfg = ReleaseMono|Any CPU
+		{D527524F-EC92-465E-9CAE-86278121675A}.Travis|Any CPU.Build.0 = ReleaseMono|Any CPU
+		{D527524F-EC92-465E-9CAE-86278121675A}.Travis|ARM.ActiveCfg = ReleaseMono|Any CPU
+		{D527524F-EC92-465E-9CAE-86278121675A}.Travis|ARM.Build.0 = ReleaseMono|Any CPU
+		{D527524F-EC92-465E-9CAE-86278121675A}.Travis|x64.ActiveCfg = ReleaseMono|Any CPU
+		{D527524F-EC92-465E-9CAE-86278121675A}.Travis|x64.Build.0 = ReleaseMono|Any CPU
+		{D527524F-EC92-465E-9CAE-86278121675A}.Travis|x86.ActiveCfg = ReleaseMono|Any CPU
+		{D527524F-EC92-465E-9CAE-86278121675A}.Travis|x86.Build.0 = ReleaseMono|Any CPU
+		{DBD530B2-745E-43DC-9821-A266BD7DD22A}.AppVeyor|Any CPU.ActiveCfg = Release|Any CPU
+		{DBD530B2-745E-43DC-9821-A266BD7DD22A}.AppVeyor|Any CPU.Build.0 = Release|Any CPU
+		{DBD530B2-745E-43DC-9821-A266BD7DD22A}.AppVeyor|ARM.ActiveCfg = Release|Any CPU
+		{DBD530B2-745E-43DC-9821-A266BD7DD22A}.AppVeyor|ARM.Build.0 = Release|Any CPU
+		{DBD530B2-745E-43DC-9821-A266BD7DD22A}.AppVeyor|x64.ActiveCfg = Release|Any CPU
+		{DBD530B2-745E-43DC-9821-A266BD7DD22A}.AppVeyor|x64.Build.0 = Release|Any CPU
+		{DBD530B2-745E-43DC-9821-A266BD7DD22A}.AppVeyor|x86.ActiveCfg = Release|Any CPU
+		{DBD530B2-745E-43DC-9821-A266BD7DD22A}.AppVeyor|x86.Build.0 = Release|Any CPU
 		{DBD530B2-745E-43DC-9821-A266BD7DD22A}.Debug FW 3.5|Any CPU.ActiveCfg = Debug|Any CPU
 		{DBD530B2-745E-43DC-9821-A266BD7DD22A}.Debug FW 3.5|Any CPU.Build.0 = Debug|Any CPU
 		{DBD530B2-745E-43DC-9821-A266BD7DD22A}.Debug FW 3.5|ARM.ActiveCfg = Debug|Any CPU
@@ -160,6 +208,22 @@ Global
 		{DBD530B2-745E-43DC-9821-A266BD7DD22A}.ReleaseMono|x64.Build.0 = Release|Any CPU
 		{DBD530B2-745E-43DC-9821-A266BD7DD22A}.ReleaseMono|x86.ActiveCfg = Release|Any CPU
 		{DBD530B2-745E-43DC-9821-A266BD7DD22A}.ReleaseMono|x86.Build.0 = Release|Any CPU
+		{DBD530B2-745E-43DC-9821-A266BD7DD22A}.Travis|Any CPU.ActiveCfg = Release|Any CPU
+		{DBD530B2-745E-43DC-9821-A266BD7DD22A}.Travis|Any CPU.Build.0 = Release|Any CPU
+		{DBD530B2-745E-43DC-9821-A266BD7DD22A}.Travis|ARM.ActiveCfg = Release|Any CPU
+		{DBD530B2-745E-43DC-9821-A266BD7DD22A}.Travis|ARM.Build.0 = Release|Any CPU
+		{DBD530B2-745E-43DC-9821-A266BD7DD22A}.Travis|x64.ActiveCfg = Release|Any CPU
+		{DBD530B2-745E-43DC-9821-A266BD7DD22A}.Travis|x64.Build.0 = Release|Any CPU
+		{DBD530B2-745E-43DC-9821-A266BD7DD22A}.Travis|x86.ActiveCfg = Release|Any CPU
+		{DBD530B2-745E-43DC-9821-A266BD7DD22A}.Travis|x86.Build.0 = Release|Any CPU
+		{3E19DA8D-056C-4F05-B976-698498311FC2}.AppVeyor|Any CPU.ActiveCfg = Release|Any CPU
+		{3E19DA8D-056C-4F05-B976-698498311FC2}.AppVeyor|Any CPU.Build.0 = Release|Any CPU
+		{3E19DA8D-056C-4F05-B976-698498311FC2}.AppVeyor|ARM.ActiveCfg = Release|Any CPU
+		{3E19DA8D-056C-4F05-B976-698498311FC2}.AppVeyor|ARM.Build.0 = Release|Any CPU
+		{3E19DA8D-056C-4F05-B976-698498311FC2}.AppVeyor|x64.ActiveCfg = Release|Any CPU
+		{3E19DA8D-056C-4F05-B976-698498311FC2}.AppVeyor|x64.Build.0 = Release|Any CPU
+		{3E19DA8D-056C-4F05-B976-698498311FC2}.AppVeyor|x86.ActiveCfg = Release|Any CPU
+		{3E19DA8D-056C-4F05-B976-698498311FC2}.AppVeyor|x86.Build.0 = Release|Any CPU
 		{3E19DA8D-056C-4F05-B976-698498311FC2}.Debug FW 3.5|Any CPU.ActiveCfg = Debug|Any CPU
 		{3E19DA8D-056C-4F05-B976-698498311FC2}.Debug FW 3.5|Any CPU.Build.0 = Debug|Any CPU
 		{3E19DA8D-056C-4F05-B976-698498311FC2}.Debug FW 3.5|ARM.ActiveCfg = Debug|Any CPU
@@ -200,6 +264,22 @@ Global
 		{3E19DA8D-056C-4F05-B976-698498311FC2}.ReleaseMono|x64.Build.0 = Release|Any CPU
 		{3E19DA8D-056C-4F05-B976-698498311FC2}.ReleaseMono|x86.ActiveCfg = Release|Any CPU
 		{3E19DA8D-056C-4F05-B976-698498311FC2}.ReleaseMono|x86.Build.0 = Release|Any CPU
+		{3E19DA8D-056C-4F05-B976-698498311FC2}.Travis|Any CPU.ActiveCfg = Release|Any CPU
+		{3E19DA8D-056C-4F05-B976-698498311FC2}.Travis|Any CPU.Build.0 = Release|Any CPU
+		{3E19DA8D-056C-4F05-B976-698498311FC2}.Travis|ARM.ActiveCfg = Release|Any CPU
+		{3E19DA8D-056C-4F05-B976-698498311FC2}.Travis|ARM.Build.0 = Release|Any CPU
+		{3E19DA8D-056C-4F05-B976-698498311FC2}.Travis|x64.ActiveCfg = Release|Any CPU
+		{3E19DA8D-056C-4F05-B976-698498311FC2}.Travis|x64.Build.0 = Release|Any CPU
+		{3E19DA8D-056C-4F05-B976-698498311FC2}.Travis|x86.ActiveCfg = Release|Any CPU
+		{3E19DA8D-056C-4F05-B976-698498311FC2}.Travis|x86.Build.0 = Release|Any CPU
+		{D11617AB-9F88-4C74-8ABD-F8580DB4B01B}.AppVeyor|Any CPU.ActiveCfg = ReleaseMono|Any CPU
+		{D11617AB-9F88-4C74-8ABD-F8580DB4B01B}.AppVeyor|Any CPU.Build.0 = ReleaseMono|Any CPU
+		{D11617AB-9F88-4C74-8ABD-F8580DB4B01B}.AppVeyor|ARM.ActiveCfg = ReleaseMono|Any CPU
+		{D11617AB-9F88-4C74-8ABD-F8580DB4B01B}.AppVeyor|ARM.Build.0 = ReleaseMono|Any CPU
+		{D11617AB-9F88-4C74-8ABD-F8580DB4B01B}.AppVeyor|x64.ActiveCfg = ReleaseMono|Any CPU
+		{D11617AB-9F88-4C74-8ABD-F8580DB4B01B}.AppVeyor|x64.Build.0 = ReleaseMono|Any CPU
+		{D11617AB-9F88-4C74-8ABD-F8580DB4B01B}.AppVeyor|x86.ActiveCfg = ReleaseMono|Any CPU
+		{D11617AB-9F88-4C74-8ABD-F8580DB4B01B}.AppVeyor|x86.Build.0 = ReleaseMono|Any CPU
 		{D11617AB-9F88-4C74-8ABD-F8580DB4B01B}.Debug FW 3.5|Any CPU.ActiveCfg = Debug FW 3.5|Any CPU
 		{D11617AB-9F88-4C74-8ABD-F8580DB4B01B}.Debug FW 3.5|Any CPU.Build.0 = Debug FW 3.5|Any CPU
 		{D11617AB-9F88-4C74-8ABD-F8580DB4B01B}.Debug FW 3.5|ARM.ActiveCfg = Debug FW 3.5|Any CPU
@@ -239,6 +319,22 @@ Global
 		{D11617AB-9F88-4C74-8ABD-F8580DB4B01B}.ReleaseMono|x64.Build.0 = ReleaseMono|Any CPU
 		{D11617AB-9F88-4C74-8ABD-F8580DB4B01B}.ReleaseMono|x86.ActiveCfg = ReleaseMono|Any CPU
 		{D11617AB-9F88-4C74-8ABD-F8580DB4B01B}.ReleaseMono|x86.Build.0 = ReleaseMono|Any CPU
+		{D11617AB-9F88-4C74-8ABD-F8580DB4B01B}.Travis|Any CPU.ActiveCfg = ReleaseMono|Any CPU
+		{D11617AB-9F88-4C74-8ABD-F8580DB4B01B}.Travis|Any CPU.Build.0 = ReleaseMono|Any CPU
+		{D11617AB-9F88-4C74-8ABD-F8580DB4B01B}.Travis|ARM.ActiveCfg = ReleaseMono|Any CPU
+		{D11617AB-9F88-4C74-8ABD-F8580DB4B01B}.Travis|ARM.Build.0 = ReleaseMono|Any CPU
+		{D11617AB-9F88-4C74-8ABD-F8580DB4B01B}.Travis|x64.ActiveCfg = ReleaseMono|Any CPU
+		{D11617AB-9F88-4C74-8ABD-F8580DB4B01B}.Travis|x64.Build.0 = ReleaseMono|Any CPU
+		{D11617AB-9F88-4C74-8ABD-F8580DB4B01B}.Travis|x86.ActiveCfg = ReleaseMono|Any CPU
+		{D11617AB-9F88-4C74-8ABD-F8580DB4B01B}.Travis|x86.Build.0 = ReleaseMono|Any CPU
+		{56109866-4005-4852-9F9A-19A7A8D3B369}.AppVeyor|Any CPU.ActiveCfg = Release|Any CPU
+		{56109866-4005-4852-9F9A-19A7A8D3B369}.AppVeyor|Any CPU.Build.0 = Release|Any CPU
+		{56109866-4005-4852-9F9A-19A7A8D3B369}.AppVeyor|ARM.ActiveCfg = Release|Any CPU
+		{56109866-4005-4852-9F9A-19A7A8D3B369}.AppVeyor|ARM.Build.0 = Release|Any CPU
+		{56109866-4005-4852-9F9A-19A7A8D3B369}.AppVeyor|x64.ActiveCfg = Release|Any CPU
+		{56109866-4005-4852-9F9A-19A7A8D3B369}.AppVeyor|x64.Build.0 = Release|Any CPU
+		{56109866-4005-4852-9F9A-19A7A8D3B369}.AppVeyor|x86.ActiveCfg = Release|Any CPU
+		{56109866-4005-4852-9F9A-19A7A8D3B369}.AppVeyor|x86.Build.0 = Release|Any CPU
 		{56109866-4005-4852-9F9A-19A7A8D3B369}.Debug FW 3.5|Any CPU.ActiveCfg = Debug|Any CPU
 		{56109866-4005-4852-9F9A-19A7A8D3B369}.Debug FW 3.5|Any CPU.Build.0 = Debug|Any CPU
 		{56109866-4005-4852-9F9A-19A7A8D3B369}.Debug FW 3.5|ARM.ActiveCfg = Debug|Any CPU
@@ -278,6 +374,14 @@ Global
 		{56109866-4005-4852-9F9A-19A7A8D3B369}.ReleaseMono|x64.Build.0 = Release|Any CPU
 		{56109866-4005-4852-9F9A-19A7A8D3B369}.ReleaseMono|x86.ActiveCfg = Release|Any CPU
 		{56109866-4005-4852-9F9A-19A7A8D3B369}.ReleaseMono|x86.Build.0 = Release|Any CPU
+		{56109866-4005-4852-9F9A-19A7A8D3B369}.Travis|Any CPU.ActiveCfg = Release|Any CPU
+		{56109866-4005-4852-9F9A-19A7A8D3B369}.Travis|Any CPU.Build.0 = Release|Any CPU
+		{56109866-4005-4852-9F9A-19A7A8D3B369}.Travis|ARM.ActiveCfg = Release|Any CPU
+		{56109866-4005-4852-9F9A-19A7A8D3B369}.Travis|ARM.Build.0 = Release|Any CPU
+		{56109866-4005-4852-9F9A-19A7A8D3B369}.Travis|x64.ActiveCfg = Release|Any CPU
+		{56109866-4005-4852-9F9A-19A7A8D3B369}.Travis|x64.Build.0 = Release|Any CPU
+		{56109866-4005-4852-9F9A-19A7A8D3B369}.Travis|x86.ActiveCfg = Release|Any CPU
+		{56109866-4005-4852-9F9A-19A7A8D3B369}.Travis|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -288,5 +392,8 @@ Global
 		{DBD530B2-745E-43DC-9821-A266BD7DD22A} = {B4CC1DAB-FF2D-4247-9A46-B7DE236981BB}
 		{D11617AB-9F88-4C74-8ABD-F8580DB4B01B} = {B4CC1DAB-FF2D-4247-9A46-B7DE236981BB}
 		{56109866-4005-4852-9F9A-19A7A8D3B369} = {B4CC1DAB-FF2D-4247-9A46-B7DE236981BB}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {334BAC6F-4ED5-494B-B055-50DEB133AE6A}
 	EndGlobalSection
 EndGlobal

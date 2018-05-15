@@ -869,78 +869,75 @@ namespace Tests.xUpdate
 			}
 		}
 
+		[Test, DataContextSource(ProviderName.OracleNative)]
+		public void InsertOrUpdate2(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				int id;
+				using (new DisableLogging())
+					id = Convert.ToInt32(db.Person.InsertWithIdentity(() => new Person
+					{
+						FirstName = "test",
+						LastName = "subject",
+						Gender = Gender.Unknown
+					}));
 
-		// TODO : for some reason the new Patient{} doesn't generate correct SQL
+				try
+				{
+					var records = db.Patient.InsertOrUpdate(
+						() => new Patient
+						{
+							PersonID = id,
+							Diagnosis = "negative"
+						},
+						p => new Patient
+						{
+						});
 
-		//[Test, DataContextSource(ProviderName.OracleNative)]
-		//public void InsertOrUpdate2(string context)
-		//{
-		//	using (var db = GetDataContext(context))
-		//	{
-		//		int id;
-		//		using (new DisableLogging())
-		//			id = Convert.ToInt32(db.Person.InsertWithIdentity(() => new Person
-		//			{
-		//				FirstName = "test",
-		//				LastName = "subject",
-		//				Gender = Gender.Unknown
-		//			}));
+					try
+					{
+						List<Patient> patients;
 
-		//		try
-		//		{
-		//			var records = db.Patient.InsertOrUpdate(
-		//				() => new Patient
-		//				{
-		//					PersonID = id,
-		//					Diagnosis = "negative"
-		//				},
-		//				p => new Patient
-		//				{
-		//				});
+						using (new DisableLogging())
+							patients = db.Patient.Where(p => p.PersonID == id).ToList();
 
-		//			try
-		//			{
-		//				List<Patient> patients;
+						Assert.AreEqual(1, records);
+						Assert.AreEqual(1, patients.Count);
+						Assert.AreEqual(id, patients[0].PersonID);
+						Assert.AreEqual("negative", patients[0].Diagnosis);
 
-		//				using (new DisableLogging())
-		//					patients = db.Patient.Where(p => p.PersonID == id).ToList();
+						records = db.Patient.InsertOrUpdate(
+							() => new Patient
+							{
+								PersonID = id,
+								Diagnosis = "positive"
+							},
+							p => new Patient
+							{
+							});
 
-		//				Assert.AreEqual(1, records);
-		//				Assert.AreEqual(1, patients.Count);
-		//				Assert.AreEqual(id, patients[0].PersonID);
-		//				Assert.AreEqual("negative", patients[0].Diagnosis);
+						using (new DisableLogging())
+							patients = db.Patient.Where(p => p.PersonID == id).ToList();
 
-		//				records = db.Patient.InsertOrUpdate(
-		//					() => new Patient
-		//					{
-		//						PersonID = id,
-		//						Diagnosis = "positive"
-		//					},
-		//					p => new Patient
-		//					{
-		//					});
-
-		//				using (new DisableLogging())
-		//					patients = db.Patient.Where(p => p.PersonID == id).ToList();
-
-		//				Assert.LessOrEqual(records, 0);
-		//				Assert.AreEqual(1, patients.Count);
-		//				Assert.AreEqual(id, patients[0].PersonID);
-		//				Assert.AreEqual("negative", patients[0].Diagnosis);
-		//			}
-		//			finally
-		//			{
-		//				using (new DisableLogging())
-		//					db.Patient.Delete(p => p.PersonID == id);
-		//			}
-		//		}
-		//		finally
-		//		{
-		//			using (new DisableLogging())
-		//				db.Person.Delete(p => p.ID == id);
-		//		}
-		//	}
-		//}
+						Assert.LessOrEqual(records, 0);
+						Assert.AreEqual(1, patients.Count);
+						Assert.AreEqual(id, patients[0].PersonID);
+						Assert.AreEqual("negative", patients[0].Diagnosis);
+					}
+					finally
+					{
+						using (new DisableLogging())
+							db.Patient.Delete(p => p.PersonID == id);
+					}
+				}
+				finally
+				{
+					using (new DisableLogging())
+						db.Person.Delete(p => p.ID == id);
+				}
+			}
+		}
 
 		[Test, DataContextSource]
 		public void InsertOrReplace1(string context)

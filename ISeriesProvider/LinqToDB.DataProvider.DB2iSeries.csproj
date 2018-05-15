@@ -67,6 +67,7 @@
     <Compile Include="DB2iSeriesLevels.cs" />
     <Compile Include="DB2iSeriesMappingSchema.cs" />
     <Compile Include="DB2iSeriesMerge.cs" />
+    <Compile Include="DB2iSeriesMergeBuilder.cs" />
     <Compile Include="DB2iSeriesMetadataReader.cs" />
     <Compile Include="DB2iSeriesMultipleRowsHelper.cs" />
     <Compile Include="DB2iSeriesNamingConvention.cs" />

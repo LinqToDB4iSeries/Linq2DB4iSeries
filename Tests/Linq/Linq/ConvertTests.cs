@@ -403,8 +403,7 @@ namespace Tests.Linq
         }
 
         [Test, DataContextSource(ProviderName.SQLiteClassic, ProviderName.SQLiteMS
-            , ProviderName.Access, ProviderName.Sybase ///////// TODO
-            )]
+            , ProviderName.Access, ProviderName.Sybase)]
         public void ToSqlTime(string context)
         {
             using (var db = GetDataContext(context))

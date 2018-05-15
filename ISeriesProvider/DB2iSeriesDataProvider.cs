@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
@@ -102,6 +104,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
             }
         }
 
+	    #region Merge
         public override int Merge<T>(DataConnection dataConnection, Expression<Func<T, bool>> deletePredicate, bool delete, IEnumerable<T> source, string tableName, string databaseName, string schemaName)
         {
             if (delete)
@@ -111,7 +114,25 @@ namespace LinqToDB.DataProvider.DB2iSeries
             return new DB2iSeriesMerge().Merge(dataConnection, deletePredicate, delete, source, tableName, databaseName, schemaName);
         }
 
-        protected override void OnConnectionTypeCreated(Type connectionType)
+	    public override Task<int> MergeAsync<T>(DataConnection dataConnection, Expression<Func<T, bool>> deletePredicate, bool delete, IEnumerable<T> source,
+		    string tableName, string databaseName, string schemaName, CancellationToken token)
+	    {
+		    if (delete)
+			    throw new LinqToDBException("DB2 MERGE statement does not support DELETE by source.");
+
+		    return new DB2iSeriesMerge().MergeAsync(dataConnection, deletePredicate, delete, source, tableName, databaseName, schemaName, token);
+	    }
+
+	    protected override BasicMergeBuilder<TTarget, TSource> GetMergeBuilder<TTarget, TSource>(
+		    DataConnection connection,
+		    IMergeable<TTarget, TSource> merge)
+	    {
+		    return new DB2iSeriesMergeBuilder<TTarget, TSource>(connection, merge);
+	    }
+
+	    #endregion
+
+		protected override void OnConnectionTypeCreated(Type connectionType)
         {
             DB2iSeriesTypes.ConnectionType = connectionType;
 

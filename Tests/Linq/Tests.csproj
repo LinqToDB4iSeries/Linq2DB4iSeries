@@ -140,13 +140,15 @@
       <HintPath>..\..\packages\linq2db.2.0.0-rc2\lib\net45\linq2db.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.SqlServer.Types, Version=14.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.SqlServer.Types.14.0.314.76\lib\net40\Microsoft.SqlServer.Types.dll</HintPath>
+    </Reference>
     <Reference Include="MiniProfiler, Version=3.2.0.157, Culture=neutral, PublicKeyToken=b44f9351044011a3, processorArchitecture=MSIL">
       <HintPath>..\..\packages\MiniProfiler.3.2.0.157\lib\net40\MiniProfiler.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="nunit.framework, Version=3.2.1.0, Culture=neutral, PublicKeyToken=2638cd05610744eb, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\NUnit.3.2.1\lib\net45\nunit.framework.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="nunit.framework, Version=3.9.0.0, Culture=neutral, PublicKeyToken=2638cd05610744eb, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\NUnit.3.9.0\lib\net45\nunit.framework.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Collections.Immutable">
@@ -202,6 +204,8 @@
     <Compile Include="Linq\QueryInheritanceTests.cs" />
     <Compile Include="Linq\SqlExtensionTest.cs" />
     <Compile Include="Linq\VisualBasicTests.cs" />
+    <Compile Include="SqlServerTypes\Loader.cs" />
+    <Compile Include="TestBase.cs" />
     <Compile Include="TestProvName.cs" />
     <Compile Include="TestUtils.cs" />
     <Compile Include="Tools\ComparerBuilder.cs" />
@@ -237,6 +241,8 @@
     <Compile Include="Update\CreateTempTableTests.cs" />
     <Compile Include="Update\DropTableTest.cs" />
     <Compile Include="Update\DynamicColumnsTest.cs" />
+    <Compile Include="Update\MergeTests.cs" />
+    <Compile Include="Update\MergeTests.OldApiMigratedTests.cs" />
     <Compile Include="Update\OldMergeTests.cs" />
     <Compile Include="Update\TruncateTableTests.cs" />
     <Compile Include="Update\UpdateTests.cs" />
@@ -267,7 +273,6 @@
     <Compile Include="Linq\SelectTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Linq\SelectScalarTests.cs" />
-    <Compile Include="TestBase.cs" />
     <Compile Include="Linq\WhereTests.cs" />
     <Compile Include="UserTests\ConverterInsertTests.cs" />
     <Compile Include="UserTests\FirstOrDefaultNullReferenceExceptionTests.cs" />
@@ -286,6 +291,19 @@
       <Link>Database\Create Scripts\DB2iSeriesGAS.sql</Link>
     </Content>
     <Content Include="DefaultDataProviders.txt" />
+    <Content Include="SqlServerTypes\readme.htm" />
+    <Content Include="SqlServerTypes\x64\msvcr120.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SqlServerTypes\x64\SqlServerSpatial140.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SqlServerTypes\x86\msvcr120.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SqlServerTypes\x86\SqlServerSpatial140.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <None Include="DefaultConnectionStrings.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -302,6 +320,10 @@
     <ProjectReference Include="..\..\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj">
       <Project>{3e19da8d-056c-4f05-b976-698498311fc2}</Project>
       <Name>LinqToDB.DataProvider.DB2iSeries</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Base\Tests.Base.csproj">
+      <Project>{c6248a4d-3e84-4fc3-aa50-1fb69f2ff864}</Project>
+      <Name>Tests.Base</Name>
     </ProjectReference>
     <ProjectReference Include="..\FSharp\Tests.FSharp.fsproj">
       <Project>{56109866-4005-4852-9f9a-19a7a8d3b369}</Project>

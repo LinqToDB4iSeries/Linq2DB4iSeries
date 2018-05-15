@@ -190,12 +190,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			Indent--;
 
 			AppendIndent().AppendLine(")");
-			AppendIndent().AppendLine("WHEN MATCHED THEN");
 
-			Indent++;
-			AppendIndent().AppendLine("UPDATE ");
-			BuildUpdateSet(insertOrUpdate.SelectQuery, insertOrUpdate.Update);
-			Indent--;
+			if (insertOrUpdate.Update.Items.Any())
+			{
+				AppendIndent().AppendLine("WHEN MATCHED THEN");
+
+				Indent++;
+				AppendIndent().AppendLine("UPDATE ");
+				BuildUpdateSet(insertOrUpdate.SelectQuery, insertOrUpdate.Update);
+				Indent--;
+			}
 
 			AppendIndent().AppendLine("WHEN NOT MATCHED THEN");
 
