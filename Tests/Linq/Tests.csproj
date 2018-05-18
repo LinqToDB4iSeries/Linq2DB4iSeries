@@ -137,7 +137,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="linq2db, Version=2.0.0.0, Culture=neutral, PublicKeyToken=e41013125f9e410a, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\linq2db.2.0.0-rc2\lib\net45\linq2db.dll</HintPath>
+      <HintPath>..\..\packages\linq2db.2.0.0\lib\net45\linq2db.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.SqlServer.Types, Version=14.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
@@ -243,6 +243,15 @@
     <Compile Include="Update\DynamicColumnsTest.cs" />
     <Compile Include="Update\MergeTests.cs" />
     <Compile Include="Update\MergeTests.OldApiMigratedTests.cs" />
+    <Compile Include="Update\MergeTests.Operations.Associations.cs" />
+    <Compile Include="Update\MergeTests.Operations.Combined.cs" />
+    <Compile Include="Update\MergeTests.Operations.Delete.cs" />
+    <Compile Include="Update\MergeTests.Operations.Insert.cs" />
+    <Compile Include="Update\MergeTests.Operations.LoadTests.cs" />
+    <Compile Include="Update\MergeTests.Operations.Parameters.cs" />
+    <Compile Include="Update\MergeTests.Operations.Update.cs" />
+    <Compile Include="Update\MergeTests.TargetSourceOn.cs" />
+    <Compile Include="Update\MergeTests.Types.cs" />
     <Compile Include="Update\OldMergeTests.cs" />
     <Compile Include="Update\TruncateTableTests.cs" />
     <Compile Include="Update\UpdateTests.cs" />
@@ -320,10 +329,6 @@
     <ProjectReference Include="..\..\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj">
       <Project>{3e19da8d-056c-4f05-b976-698498311fc2}</Project>
       <Name>LinqToDB.DataProvider.DB2iSeries</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Base\Tests.Base.csproj">
-      <Project>{c6248a4d-3e84-4fc3-aa50-1fb69f2ff864}</Project>
-      <Name>Tests.Base</Name>
     </ProjectReference>
     <ProjectReference Include="..\FSharp\Tests.FSharp.fsproj">
       <Project>{56109866-4005-4852-9f9a-19a7a8d3b369}</Project>

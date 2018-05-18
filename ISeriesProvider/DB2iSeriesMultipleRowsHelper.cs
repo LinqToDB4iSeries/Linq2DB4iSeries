@@ -8,10 +8,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 	class DB2iSeriesMultipleRowsHelper<T> : MultipleRowsHelper<T>
 	{
-		public DB2iSeriesMultipleRowsHelper(DataConnection dataConnection, BulkCopyOptions options) : base(dataConnection, options)
+		public DB2iSeriesMultipleRowsHelper(DataConnection dataConnection, BulkCopyOptions options) 
+		    : base(dataConnection, options)
 		{
-            
-		}
+        }
 
 		public override void BuildColumns(object item, Func<ColumnDescriptor, bool> skipConvert = null)
 		{
@@ -46,7 +46,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 					// wrap the parameter with a cast
 					var dbType = value == null ? columnType : DataConnection.MappingSchema.GetDataType(value.GetType());
-					var nameWithCast = NameWithCast(dbType, "@" + dataParameter.Name);
+					var casttype = ((DB2iSeriesSqlBuilder) SqlBuilder).GetTypeForCast(dbType.Type);
+					var nameWithCast = $"CAST(@{dataParameter.Name} AS {casttype})";  
 
 					StringBuilder.Append(nameWithCast);
 				}
@@ -55,21 +56,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 
 			StringBuilder.Length--;
-		}
-
-		private string NameWithCast(SqlDataType dataType, string value)
-		{
-			string colType = "CHAR";
-
-
-			if (dataType != null)
-			{
-				var actualType = SqlDataType.GetDataType(dataType.Type);
-
-				colType = DB2iSeriesMappingSchema.GetiSeriesType(actualType);
-			}
-
-			return $"CAST({value} AS {colType})";
 		}
 	}
 }

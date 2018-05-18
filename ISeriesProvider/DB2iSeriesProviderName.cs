@@ -16,6 +16,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public const string DB2_73_GAS = "DB2.iSeries.73.GAS";
 
-		public static string[] AllNames = {DB2, DB2_73, DB2_73_GAS, DB2_GAS};
+		public static string[] AllNames = {DB2, DB2_GAS, DB2_73, DB2_73_GAS};
 	}
 }

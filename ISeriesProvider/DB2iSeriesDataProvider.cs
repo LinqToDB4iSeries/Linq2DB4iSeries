@@ -37,12 +37,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
             SqlProviderFlags.CanCombineParameters = false;
             SqlProviderFlags.IsParameterOrderDependent = true;
 
+			if(mapGuidAsString)
+				SqlProviderFlags.CustomFlags.Add(DB2iSeriesTools.MapGuidAsString);
+
             SetCharField("CHAR", (r, i) => r.GetString(i).TrimEnd());
 
             _sqlOptimizer = new DB2iSeriesSqlOptimizer(SqlProviderFlags);
         }
 
- 
         
         readonly DB2iSeriesSqlOptimizer _sqlOptimizer;
         static Action<IDbDataParameter> _setBlob;
@@ -54,6 +56,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
         protected override string ConnectionTypeName { get { return DB2iSeriesTools.ConnectionTypeName; } }
         protected override string DataReaderTypeName { get { return DB2iSeriesTools.DataReaderTypeName; } }
         public string DummyTableName { get { return DB2iSeriesTools.iSeriesDummyTableName(); } }
+
+		
 
         public override BulkCopyRowsCopied BulkCopy<T>(DataConnection dataConnection, BulkCopyOptions options, IEnumerable<T> source)
         {

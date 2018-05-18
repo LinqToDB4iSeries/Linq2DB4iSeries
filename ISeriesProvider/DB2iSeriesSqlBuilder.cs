@@ -14,10 +14,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	public class DB2iSeriesSqlBuilder : BasicSqlBuilder
 	{
 		public static DB2iSeriesIdentifierQuoteMode IdentifierQuoteMode = DB2iSeriesIdentifierQuoteMode.None;
+	    protected readonly bool mapGuidAsString;
 
-		public DB2iSeriesSqlBuilder(ISqlOptimizer sqlOptimizer, SqlProviderFlags sqlProviderFlags, ValueToSqlConverter valueToSqlConverter)
+		public DB2iSeriesSqlBuilder(ISqlOptimizer sqlOptimizer, SqlProviderFlags sqlProviderFlags,
+			ValueToSqlConverter valueToSqlConverter)
 			: base(sqlOptimizer, sqlProviderFlags, valueToSqlConverter)
 		{
+			this.mapGuidAsString = sqlProviderFlags.CustomFlags.Contains(DB2iSeriesTools.MapGuidAsString);
 		}
 
 		protected override string LimitFormat(SelectQuery selectQuery) => selectQuery.Select.SkipValue == null ? " FETCH FIRST {0} ROWS ONLY" : null;
@@ -53,14 +56,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				}
 				else if (expr is SqlValue && ((SqlValue)expr).Value == null)
 				{
-					string colType = "CHAR";
-
-					if (expr.SystemType != null)
-					{
-						var actualType = SqlDataType.GetDataType(expr.SystemType);
-
-						colType = DB2iSeriesMappingSchema.GetiSeriesType(actualType);
-					}
+					var colType = GetTypeForCast(expr.SystemType);
 
 					expr = new SqlExpression(expr.SystemType, "Cast({0} as {1})", Precedence.Primary, expr, new SqlExpression(colType, Precedence.Primary));
 				}
@@ -75,6 +71,61 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			{
 				StringBuilder.Append(" THEN 1 ELSE 0 END");
 			}
+		}
+
+		public string GetiSeriesType(SqlDataType dataType)
+		{
+			switch (dataType.DataType)
+			{
+				case DataType.Variant:
+				case DataType.Binary:
+					return $"BINARY({(dataType.Length == 0 ? 1 : dataType.Length)})";
+				case DataType.Int64:
+					return "BIGINT";
+				case DataType.Blob:
+					return $"BLOB({(dataType.Length == 0 ? 1 : dataType.Length)})";
+				case DataType.VarBinary:
+					return $"VARBINARY({(dataType.Length == 0 ? 1 : dataType.Length)})";
+				case DataType.Char: return "CHAR";
+				case DataType.Date: return "DATE";
+				case DataType.Decimal: return "DECIMAL";
+				case DataType.Double: return "DOUBLE";
+				case DataType.Int32: return "INTEGER";
+				case DataType.Single: return "REAL";
+				case DataType.Int16:
+				case DataType.Boolean:
+					return "SMALLINT";
+				case DataType.Time:
+				case DataType.DateTimeOffset:
+					return "TIME";
+				case DataType.Timestamp:
+				case DataType.DateTime:
+				case DataType.DateTime2:
+					return "TIMESTAMP";
+				case DataType.VarChar:
+					return $"VARCHAR({(dataType.Length == 0 ? 1 : dataType.Length)})";
+				case DataType.NVarChar:
+					return $"NVARCHAR({(dataType.Length == 0 ? 1 : dataType.Length)})";
+				case DataType.Guid:
+					return mapGuidAsString ? "CHAR(32)" : "char(16) for bit data";
+				default:
+					return dataType.DataType.ToString();
+			}
+		}
+
+
+		public string GetTypeForCast(Type dataType)
+		{
+			string colType = "CHAR";
+
+			if (dataType != null)
+			{
+				var actualType = SqlDataType.GetDataType(dataType);
+
+				colType = GetiSeriesType(actualType);
+			}
+
+			return colType;
 		}
 
 		protected override void BuildCommand(SqlStatement selectQuery, int commandNumber) =>
@@ -111,9 +162,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected override void BuildFromClause(SqlStatement statement, SelectQuery selectQuery)
 		{
-			// TODO : use Extension method when SqlExtensions class is changed to public
-			//if (!statement.IsUpdate())
-			if (statement != null && statement.QueryType != QueryType.Update)
+			if (!statement.IsUpdate())
 				base.BuildFromClause(statement, selectQuery);
 		}
 
@@ -143,7 +192,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				if (expr is SqlParameter || expr is SqlValue)
 				{
 					var exprType = SqlDataType.GetDataType(expr.SystemType);
-					var asType = DB2iSeriesMappingSchema.GetiSeriesType(exprType);
+					var asType = GetiSeriesType(exprType);
 
 					StringBuilder.Append("CAST(");
 					BuildExpression(expr, false, false);

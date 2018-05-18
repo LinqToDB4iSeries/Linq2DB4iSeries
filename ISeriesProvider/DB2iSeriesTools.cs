@@ -20,6 +20,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public const string ConnectionTypeName = AssemblyName + ".iDB2Connection, " + AssemblyName;
 		public const string DataReaderTypeName = AssemblyName + ".iDB2DataReader, " + AssemblyName;
 		public const string IdentityColumnSql = "identity_val_local()";
+		public const string MapGuidAsString = "MapGuidAsString";
 
 		public static string iSeriesDummyTableName(DB2iSeriesNamingConvention naming = DB2iSeriesNamingConvention.System)
 		{
@@ -32,9 +33,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		static readonly DB2iSeriesDataProvider _db2iDataProvider_73 = new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2_73, DB2iSeriesLevels.V7_1_38, false);
 		static readonly DB2iSeriesDataProvider _db2iDataProvider_73_gas = new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2_73_GAS, DB2iSeriesLevels.V7_1_38, true);
 
-		public static bool MapGuidAsString { get; set; }
-
-        public static bool AutoDetectProvider { get; set; }
+		public static bool AutoDetectProvider { get; set; }
 
 		static DB2iSeriesTools()
 		{

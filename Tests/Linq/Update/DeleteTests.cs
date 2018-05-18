@@ -233,6 +233,8 @@ namespace Tests.xUpdate
 			{
 				try
 				{
+					db.DropTable<Person>(tableName, schemaName: schemaName, throwExceptionIfNotExists: false);
+
 					var table = db.CreateTable<Person>(tableName, schemaName: schemaName);
 
 					Assert.AreEqual(tableName, table.TableName);
@@ -276,6 +278,8 @@ namespace Tests.xUpdate
 			{
 				try
 				{
+					db.DropTable<Person>(tableName, schemaName: schemaName, throwExceptionIfNotExists: false);
+
 					var table = await db.CreateTableAsync<Person>(tableName, schemaName: schemaName);
 
 					Assert.AreEqual(tableName, table.TableName);

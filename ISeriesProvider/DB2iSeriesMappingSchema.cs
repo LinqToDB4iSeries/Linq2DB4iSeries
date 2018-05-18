@@ -12,18 +12,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	using SqlQuery;
 
 	public class DB2iSeriesMappingSchema : MappingSchema
-	{
-	    private readonly bool mapGuidAsString;
+    { 
 	    public DB2iSeriesMappingSchema() : this(DB2iSeriesProviderName.DB2)
 	    {
 	    }
 
-		// static internal readonly DB2iSeriesMappingSchema Instance = new DB2iSeriesMappingSchema();
 		public DB2iSeriesMappingSchema(string configuration) : base(configuration)
-		{
-		    mapGuidAsString = configuration == DB2iSeriesProviderName.DB2_73_GAS || configuration == DB2iSeriesProviderName.DB2_GAS;
-
-		    if (!mapGuidAsString)
+        { 
+		    if (configuration != DB2iSeriesProviderName.DB2_GAS)
 		    {
 		        SetValueToSqlConverter(typeof(Guid), (sb, dt, v) => ConvertGuidToSql(sb, (Guid)v));
             }
@@ -36,45 +32,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			AddMetadataReader(new DB2iSeriesMetadataReader(configuration));
 			AddMetadataReader(new DB2iSeriesAttributeReader());
 		}
-
-		public static string GetiSeriesType(SqlDataType dataType)
-		{
-			switch (dataType.DataType)
-			{
-				case DataType.Variant:
-				case DataType.Binary:
-					return string.Format("BINARY({0})", (dataType.Length == 0 ? 1 : dataType.Length));
-				case DataType.Int64:
-					return "BIGINT";
-				case DataType.Blob:
-					return string.Format("BLOB({0})", (dataType.Length == 0 ? 1 : dataType.Length));
-				case DataType.VarBinary:
-					return string.Format("VARBINARY({0})", (dataType.Length == 0 ? 1 : dataType.Length));
-				case DataType.Char: return "CHAR";
-				case DataType.Date: return "DATE";
-				case DataType.Decimal: return "DECIMAL";
-				case DataType.Double: return "DOUBLE";
-				case DataType.Int32: return "INTEGER";
-				case DataType.Single: return "REAL";
-				case DataType.Int16:
-				case DataType.Boolean:
-					return "SMALLINT";
-				case DataType.Time:
-				case DataType.DateTimeOffset:
-					return "TIME";
-				case DataType.Timestamp:
-				case DataType.DateTime:
-				case DataType.DateTime2:
-					return "TIMESTAMP";
-				case DataType.VarChar:
-					return string.Format("VARCHAR({0})", (dataType.Length == 0 ? 1 : dataType.Length));
-				case DataType.NVarChar:
-					return string.Format("NVARCHAR({0})", (dataType.Length == 0 ? 1 : dataType.Length));
-				default:
-					return dataType.DataType.ToString();
-			}
-		}
-
 
 		private static void AppendConversion(StringBuilder stringBuilder, int value)
 		{

@@ -5,9 +5,10 @@
 
     public class DB2iSeriesSqlBuilder7_2 : DB2iSeriesSqlBuilder
     {
-        public DB2iSeriesSqlBuilder7_2(ISqlOptimizer sqlOptimizer, SqlProviderFlags sqlProviderFlags, ValueToSqlConverter valueToSqlConverter) : base(sqlOptimizer, sqlProviderFlags, valueToSqlConverter)
-        {
-        }
+		public DB2iSeriesSqlBuilder7_2(ISqlOptimizer sqlOptimizer, SqlProviderFlags sqlProviderFlags, ValueToSqlConverter valueToSqlConverter)
+	        : base(sqlOptimizer, sqlProviderFlags, valueToSqlConverter)
+	    {
+	    }
 
 		protected override string OffsetFormat(SelectQuery selectQuery) => "OFFSET {0} ROWS";
 

@@ -9,43 +9,35 @@ using System.Linq;
 namespace LinqToDB.DataProvider.DB2iSeries
 {
 
-    public class DB2iSeriesFactory : IDataProviderFactory
-    {
-        public IDataProvider GetDataProvider(IEnumerable<NamedValue> attributes)
-        {
-            if (attributes == null)
-            {
-                return new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2, DB2iSeriesLevels.Any, false);
-            }
+	public class DB2iSeriesFactory : IDataProviderFactory
+	{
+		public IDataProvider GetDataProvider(IEnumerable<NamedValue> attributes)
+		{
+			if (attributes == null)
+			{
+				return new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2, DB2iSeriesLevels.Any, false);
+			}
 
-            var attribs = attributes.ToList();
+			var attribs = attributes.ToList();
 
-            var mapGuidAsString = false;
+			var mapGuidAsString = false;
 
-            var attrib = attribs.FirstOrDefault(_ => _.Name == "MapGuidAsString");
+			var attrib = attribs.FirstOrDefault(_ => _.Name == DB2iSeriesTools.MapGuidAsString);
 
-            if (attrib != null)
-            {
-                bool.TryParse(attrib.Value, out mapGuidAsString);
-            }
+			if (attrib != null)
+			{
+				bool.TryParse(attrib.Value, out mapGuidAsString);
+			}
 
-            var version = attribs.FirstOrDefault(_ => _.Name == "MinVer");
-            if (version != null && version.Value == "7.1.38")
-            {
-                if (mapGuidAsString)
-                {
-                    return new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2_73_GAS, DB2iSeriesLevels.V7_1_38, true);
-                }
+			var version = attribs.FirstOrDefault(_ => _.Name == "MinVer");
+			var level = version != null && version.Value == "7.1.38" ? DB2iSeriesLevels.V7_1_38 : DB2iSeriesLevels.Any;
 
-                return new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2_73, DB2iSeriesLevels.V7_1_38, false);
-            }
+			if (mapGuidAsString)
+			{
+				return new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2_GAS, level, true);
+			}
 
-            if (mapGuidAsString)
-            {
-                return new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2_GAS, DB2iSeriesLevels.Any, true);
-            }
-
-            return new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2, DB2iSeriesLevels.Any, false);
-        }
-    }
+			return new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2, level, false);
+		}
+	}
 }
