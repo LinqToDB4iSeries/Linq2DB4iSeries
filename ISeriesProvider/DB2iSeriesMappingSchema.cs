@@ -32,7 +32,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetValueToSqlConverter(typeof(DateTime), (sb, dt, v) => ConvertDateTimeToSql(sb, dt, (DateTime)v));
 
 			AddMetadataReader(new DB2iSeriesMetadataReader(configuration));
+#if !NETSTANDARD2_0
 			AddMetadataReader(new DB2iSeriesAttributeReader());
+#endif
 		}
 
 		private static void AppendConversion(StringBuilder stringBuilder, int value)
