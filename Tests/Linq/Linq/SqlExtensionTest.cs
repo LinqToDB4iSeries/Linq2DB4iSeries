@@ -1,4 +1,4 @@
-﻿//TODO : get working - new tests
+﻿// TODO : Should get these working
 
 //using System;
 //using System.Globalization;
@@ -9,37 +9,10 @@
 
 //namespace Tests.Linq
 //{
-//	using PN = ProviderName;
+//	//using PN = ProviderName;
 
 //	public static class TestedExtensions
 //	{
-//		class DatePartBuilder : Sql.IExtensionCallBuilder
-//		{
-//			public void Build(Sql.ISqExtensionBuilder builder)
-//			{
-//				string partStr;
-//				var part = builder.GetValue<Sql.DateParts>("part");
-//				switch (part)
-//				{
-//					case Sql.DateParts.Year: partStr = "year"; break;
-//					case Sql.DateParts.Quarter: partStr = "quarter"; break;
-//					case Sql.DateParts.Month: partStr = "month"; break;
-//					case Sql.DateParts.DayOfYear: partStr = "dayofyear"; break;
-//					case Sql.DateParts.Day: partStr = "day"; break;
-//					case Sql.DateParts.Week: partStr = "week"; break;
-//					case Sql.DateParts.WeekDay: partStr = "weekday"; break;
-//					case Sql.DateParts.Hour: partStr = "hour"; break;
-//					case Sql.DateParts.Minute: partStr = "minute"; break;
-//					case Sql.DateParts.Second: partStr = "second"; break;
-//					case Sql.DateParts.Millisecond: partStr = "millisecond"; break;
-//					default:
-//						throw new ArgumentOutOfRangeException();
-//				}
-
-//				builder.AddExpression("part", partStr);
-//			}
-//		}
-
 //		class DatePartBuilderDB2 : Sql.IExtensionCallBuilder
 //		{
 //			public void Build(Sql.ISqExtensionBuilder builder)
@@ -67,7 +40,7 @@
 //			}
 //		}
 
-		
+
 //		[Sql.Extension("", ServerSideOnly = false, BuilderType = typeof(DatePartBuilderDB2))] // TODO: Not checked
 //		public static int? DatePart(this Sql.ISqlExtension ext, Sql.DateParts part, [ExprParameter] DateTime? date)
 //		{
@@ -101,9 +74,12 @@
 //		public void DatePartYear(string context)
 //		{
 //			using (var db = GetDataContext(context))
-//				AreEqual(
-//					from t in Types select Sql.Ext.DatePart(Sql.DateParts.Year, t.DateTimeValue),
-//					from t in db.Types select Sql.AsSql(Sql.Ext.DatePart(Sql.DateParts.Year, t.DateTimeValue)));
+//			{
+//				var expected = from t in Types select Sql.Ext.DatePart(Sql.DateParts.Year, t.DateTimeValue);
+//				var actual = from t in db.Types select Sql.AsSql(Sql.Ext.DatePart(Sql.DateParts.Year, t.DateTimeValue));
+//				var spm = actual.ToList();
+//				AreEqual(expected, actual);
+//			}
 //		}
 
 //		[Test, DataContextSource]

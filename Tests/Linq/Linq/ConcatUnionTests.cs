@@ -549,41 +549,6 @@ namespace Tests.Linq
             }
         }
 
-        // TODO: [Test, DataContextSource]
-        public void AssociationUnion1(string context)
-        {
-            using (var db = GetDataContext(context))
-                AreEqual(
-                    from c in Child.Union(Child)
-                    let p = c.Parent
-                    select p.ParentID,
-                    from c in db.Child.Union(db.Child)
-                    let p = c.Parent
-                    select p.ParentID);
-        }
-
-        // TODO: [Test, DataContextSource]
-        public void AssociationUnion2(string context)
-        {
-            using (var db = GetDataContext(context))
-                AreEqual(
-                    from c in Child.Union(Child)
-                    select c.Parent.ParentID,
-                    from c in db.Child.Union(db.Child)
-                    select c.Parent.ParentID);
-        }
-
-        // TODO: [Test, DataContextSource]
-        public void AssociationConcat2(string context)
-        {
-            using (var db = GetDataContext(context))
-                AreEqual(
-                    from c in Child.Concat(Child)
-                    select c.Parent.ParentID,
-                    from c in db.Child.Concat(db.Child)
-                    select c.Parent.ParentID);
-        }
-
         [Test, DataContextSource, Category("WindowsOnly")]
         public void ConcatToString(string context)
         {

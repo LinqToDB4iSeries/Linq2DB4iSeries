@@ -350,7 +350,7 @@ namespace Tests.xUpdate
 			}
 		}
 
-        //TODO : active issue
+        // TODO :active issue in Linq2Db
 		//[ActiveIssue(896, Details = "Selects 10 columns instead of 6. Also see InsertFromCrossJoinedSourceQuery2Workaround for workaround")]
 		//[Test, MergeDataContextSource]
 		public void InsertFromCrossJoinedSourceQuery2(string context)
@@ -473,10 +473,10 @@ namespace Tests.xUpdate
 			}
 		}
 
-        // TODO : active issue
-		//[ActiveIssue(896, Details = "Regression from 1.x: Member 'TestMapping1.Fake' is not a table column.")]
-		//[Test, MergeDataContextSource]
-		public void InsertFromCrossJoinedSourceQuery3(string context)
+	    // TODO :active issue in Linq2Db
+        //[ActiveIssue(896, Details = "Regression from 1.x: Member 'TestMapping1.Fake' is not a table column.")]
+        //[Test, MergeDataContextSource]
+        public void InsertFromCrossJoinedSourceQuery3(string context)
 		{
 			using (var db = new TestDataConnection(context))
 			using (db.BeginTransaction())
@@ -1512,8 +1512,7 @@ namespace Tests.xUpdate
 		}
 		#endregion
 
-        // TODO : fails with db2i
-		//[Test, MergeDataContextSource]//(ProviderName.Sybase)]
+		[Test, MergeDataContextSource]//(ProviderName.Sybase)]
 		public void CrossJoinedSourceWithSingleFieldSelection(string context)
 		{
 			using (var db = new TestDataConnection(context))
@@ -1547,7 +1546,8 @@ namespace Tests.xUpdate
 					})
 					.Merge();
 
-				var result = db.GetTable<CrossJoinResult>().OrderBy(x => x.Id).ThenBy(x => x.RightId).ToList();
+                // DB2i sorts nulls last so retrieve the entire list, then sort 
+				var result = db.GetTable<CrossJoinResult>().ToList().OrderBy(x => x.Id).ThenBy(x => x.RightId).ToList();
 
 				AssertRowCount(4, rows, context);
 

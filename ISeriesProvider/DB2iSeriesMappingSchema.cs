@@ -24,7 +24,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		        SetValueToSqlConverter(typeof(Guid), (sb, dt, v) => ConvertGuidToSql(sb, (Guid)v));
             }
 
-		    SetDataType(typeof(string), new SqlDataType(DataType.NVarChar, typeof(string), 255));
+	        ColumnNameComparer = StringComparer.OrdinalIgnoreCase;
+
+			SetDataType(typeof(string), new SqlDataType(DataType.NVarChar, typeof(string), 255));
 			SetValueToSqlConverter(typeof(string), (sb, dt, v) => ConvertStringToSql(sb, v.ToString()));
 			SetValueToSqlConverter(typeof(char), (sb, dt, v) => ConvertCharToSql(sb, (char)v));
 			SetValueToSqlConverter(typeof(DateTime), (sb, dt, v) => ConvertDateTimeToSql(sb, dt, (DateTime)v));

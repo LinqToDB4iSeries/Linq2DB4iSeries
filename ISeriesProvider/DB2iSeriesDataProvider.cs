@@ -40,7 +40,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			if(mapGuidAsString)
 				SqlProviderFlags.CustomFlags.Add(DB2iSeriesTools.MapGuidAsString);
 
-            SetCharField("CHAR", (r, i) => r.GetString(i).TrimEnd());
+            SetCharField("CHAR", (r, i) => r.GetString(i).TrimEnd(' '));
+            SetCharField("NCHAR", (r, i) => r.GetString(i).TrimEnd(' '));
 
             _sqlOptimizer = new DB2iSeriesSqlOptimizer(SqlProviderFlags);
         }
