@@ -35,7 +35,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				Linq.Expressions.M(() => Sql.ConvertTo<String>.From((Decimal)0)),
 				Linq.Expressions.N(() => Linq.Expressions.L<Decimal, String>((Decimal p) => Sql.TrimLeft(Sql.Convert<string, Decimal>(p), '0'))));
 
-		    if (providerName == DB2iSeriesProviderName.DB2 || providerName == DB2iSeriesProviderName.DB2_73)
+		    if (providerName == DB2iSeriesProviderName.DB2)
 		    {
 		        LinqToDB.Linq.Expressions.MapMember(
 		            providerName,

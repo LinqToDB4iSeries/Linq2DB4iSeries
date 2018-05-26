@@ -1,16 +1,18 @@
 ﻿using System;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
 using LinqToDB;
 using LinqToDB.Data;
 using LinqToDB.DataProvider.SqlServer;
+using LinqToDB.Extensions;
 
 namespace Tests.Model
 {
 	public class NorthwindDB : DataConnection
 	{
-		public NorthwindDB() : base("Northwind")
+		public NorthwindDB(string configurationString) : base(configurationString)
 		{
 		}
 
@@ -28,8 +30,6 @@ namespace Tests.Model
 		public ITable<Northwind.Supplier>            Supplier            { get { return GetTable<Northwind.Supplier>();            } }
 		public ITable<Northwind.Territory>           Territory           { get { return GetTable<Northwind.Territory>();           } }
 		
-//#if !MONO
-		
 		public class FreeTextKey<T>
 		{
 			public T   Key;
@@ -39,9 +39,12 @@ namespace Tests.Model
 		[FreeTextTableExpression]
 		public ITable<FreeTextKey<TKey>> FreeTextTable<TTable,TKey>(string field, string text)
 		{
+			var methodInfo = typeof(NorthwindDB).GetMethod("FreeTextTable", new [] {typeof(string), typeof(string)})
+				.MakeGenericMethod(typeof(TTable), typeof(TKey));
+
 			return GetTable<FreeTextKey<TKey>>(
 				this,
-				((MethodInfo)(MethodBase.GetCurrentMethod())).MakeGenericMethod(typeof(TTable), typeof(TKey)),
+				methodInfo,
 				field,
 				text);
 		}
@@ -49,20 +52,28 @@ namespace Tests.Model
 		[FreeTextTableExpression]
 		public ITable<FreeTextKey<TKey>> FreeTextTable<TTable,TKey>(Expression<Func<TTable,string>> fieldSelector, string text)
 		{
+			var methodInfo = typeof(NorthwindDB).GetMethods()
+				.Where(_ =>  _.Name == "FreeTextTable")
+				.Where(_ => _.GetParameters().Length == 2)
+				.Where(_ => _.GetParameters().First().ParameterType.IsGenericTypeEx()) 
+				.Single()
+				.MakeGenericMethod(typeof(TTable), typeof(TKey));
+
 			return GetTable<FreeTextKey<TKey>>(
 				this,
-				((MethodInfo)(MethodBase.GetCurrentMethod())).MakeGenericMethod(typeof(TTable), typeof(TKey)),
+				methodInfo,
 				fieldSelector,
 				text);
 		}
 
-//#endif
-
 		[Sql.TableExpression("{0} {1} WITH (UPDLOCK)")]
 		public ITable<T> WithUpdateLock<T>()
-			where T : class 
+			where T : class
 		{
-			return GetTable<T>(this, ((MethodInfo)(MethodBase.GetCurrentMethod())).MakeGenericMethod(typeof(T)));
+			var methodInfo = typeof(NorthwindDB).GetMethod("WithUpdateLock")
+				.MakeGenericMethod(typeof(T));
+
+			return GetTable<T>(this, methodInfo);
 		}
 	}
 }

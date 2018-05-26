@@ -55,7 +55,7 @@ namespace Tests.Linq
 
 				var list = q.ToList();
 
-				Assert.AreEqual   (8, list.Count);
+				Assert.AreEqual(8, list.Count);
 				Assert.AreNotEqual(0, list.OrderBy(c => c.Key.ParentID).First().ToList().Count);
 			}
 		}
@@ -102,12 +102,12 @@ namespace Tests.Linq
 				AreEqual(
 					from ch in GrandChild
 					group ch by new { ch.ParentID, ch.ChildID } into g
-					group g  by new { g.Key.ParentID }          into g
+					group g by new { g.Key.ParentID } into g
 					select g.Key
 					,
 					from ch in db.GrandChild
 					group ch by new { ch.ParentID, ch.ChildID } into g
-					group g  by new { g.Key.ParentID }          into g
+					group g by new { g.Key.ParentID } into g
 					select g.Key);
 		}
 
@@ -116,11 +116,11 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 			{
-				var q    = db.GrandChild.GroupBy(ch => new { ch.ParentID, ch.ChildID }, ch => ch.GrandChildID);
+				var q = db.GrandChild.GroupBy(ch => new { ch.ParentID, ch.ChildID }, ch => ch.GrandChildID);
 				var list = q.ToList();
 
 				Assert.AreNotEqual(0, list[0].Count());
-				Assert.AreEqual   (8, list.Count);
+				Assert.AreEqual(8, list.Count);
 			}
 		}
 
@@ -131,7 +131,7 @@ namespace Tests.Linq
 			{
 				var q = db.GrandChild
 					.GroupBy(ch => new { ch.ParentID, ch.ChildID }, ch => ch.GrandChildID)
-					.Select (gr => new { gr.Key.ParentID, gr.Key.ChildID });
+					.Select(gr => new { gr.Key.ParentID, gr.Key.ChildID });
 
 				var list = q.ToList();
 				Assert.AreEqual(8, list.Count);
@@ -143,7 +143,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 			{
-				var q = db.GrandChild.GroupBy(ch => new { ch.ParentID, ch.ChildID }, (g,ch) => g.ChildID);
+				var q = db.GrandChild.GroupBy(ch => new { ch.ParentID, ch.ChildID }, (g, ch) => g.ChildID);
 
 				var list = q.ToList();
 				Assert.AreEqual(8, list.Count);
@@ -155,7 +155,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 			{
-				var q    = db.GrandChild.GroupBy(ch => new { ch.ParentID, ch.ChildID }, ch => ch.GrandChildID,  (g,ch) => g.ChildID);
+				var q = db.GrandChild.GroupBy(ch => new { ch.ParentID, ch.ChildID }, ch => ch.GrandChildID, (g, ch) => g.ChildID);
 				var list = q.ToList();
 
 				Assert.AreEqual(8, list.Count);
@@ -167,8 +167,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 			{
-				var expected = (from ch in    Child group ch by ch.ParentID into g select g).ToList().OrderBy(p => p.Key).ToList();
-				var result   = (from ch in db.Child group ch by ch.ParentID into g select g).ToList().OrderBy(p => p.Key).ToList();
+				var expected = (from ch in Child group ch by ch.ParentID into g select g).ToList().OrderBy(p => p.Key).ToList();
+				var result = (from ch in db.Child group ch by ch.ParentID into g select g).ToList().OrderBy(p => p.Key).ToList();
 
 				AreEqual(expected[0], result[0]);
 				AreEqual(expected.Select(p => p.Key), result.Select(p => p.Key));
@@ -190,7 +190,7 @@ namespace Tests.Linq
 				var list1 = q1.AsEnumerable().OrderBy(_ => _.Key.ChildID).ToList();
 				var list2 = q2.AsEnumerable().OrderBy(_ => _.Key.ChildID).ToList();
 
-				Assert.AreEqual(list1.Count,       list2.Count);
+				Assert.AreEqual(list1.Count, list2.Count);
 				Assert.AreEqual(list1[0].ToList(), list2[0].ToList());
 			}
 		}
@@ -201,7 +201,7 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 			{
 				var q = db.GrandChild
-					.GroupBy(ch => new { ParentID = ch.ParentID + 1, ch.ChildID }, (g,ch) => g.ChildID);
+					.GroupBy(ch => new { ParentID = ch.ParentID + 1, ch.ChildID }, (g, ch) => g.ChildID);
 
 				var list = q.ToList();
 				Assert.AreEqual(8, list.Count);
@@ -214,11 +214,28 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 			{
 				var q = db.GrandChild
-					.GroupBy(ch => new { ParentID = ch.ParentID + 1, ch.ChildID }, ch => ch.ChildID, (g,ch) => g.ChildID);
+					.GroupBy(ch => new { ParentID = ch.ParentID + 1, ch.ChildID }, ch => ch.ChildID, (g, ch) => g.ChildID);
 
 				var list = q.ToList();
 				Assert.AreEqual(8, list.Count);
 			}
+		}
+
+		//[Test, DataContextSource]
+		public void Simple14(string context)
+		{
+			using (var db = GetDataContext(context))
+				AreEqual(
+					from p in Parent
+					select
+						from c in p.Children
+						group c by c.ParentID into g
+						select g.Key,
+					from p in db.Parent
+					select
+						from c in p.Children
+						group c by c.ParentID into g
+						select g.Key);
 		}
 
 		[Test, DataContextSource]
@@ -238,7 +255,7 @@ namespace Tests.Linq
 		class GroupByInfo
 		{
 			public GroupByInfo Prev;
-			public object      Field;
+			public object Field;
 
 			public override bool Equals(object obj)
 			{
@@ -316,12 +333,14 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from ch in Child select new { ParentID = ch.ParentID + 1 } into ch
+					from ch in Child
+					select new { ParentID = ch.ParentID + 1 } into ch
 					where ch.ParentID > n
 					group ch by ch into g
 					select g.Key
 					,
-					from ch in db.Child select new { ParentID = ch.ParentID + 1 } into ch
+					from ch in db.Child
+					select new { ParentID = ch.ParentID + 1 } into ch
 					where ch.ParentID > n
 					group ch by ch into g
 					select g.Key);
@@ -450,11 +469,13 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from ch in Child select new { ParentID = ch.ParentID + 1 } into ch
+					from ch in Child
+					select new { ParentID = ch.ParentID + 1 } into ch
 					group ch.ParentID by ch into g
 					select g.Key
 					,
-					from ch in db.Child select new { ParentID = ch.ParentID + 1 } into ch
+					from ch in db.Child
+					select new { ParentID = ch.ParentID + 1 } into ch
 					group ch.ParentID by ch into g
 					select g.Key);
 		}
@@ -465,7 +486,7 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 				AreEqual(
 					from p in Parent
-					join c in 
+					join c in
 						from c in Child
 						where c.ParentID == 1
 						select c
@@ -475,7 +496,7 @@ namespace Tests.Linq
 					select new { gg.Key }
 					,
 					from p in db.Parent
-					join c in 
+					join c in
 						from c in db.Child
 						where c.ParentID == 1
 						select c
@@ -496,14 +517,16 @@ namespace Tests.Linq
 					(
 						from ch in Child
 						group ch by ch.ParentID > 2 ? ch.ParentID > 3 ? "1" : "2" : "3"
-						into g select g
+						into g
+						select g
 					).ToList().OrderBy(p => p.Key).ToList();
 
 				var result =
 					(
 						from ch in db.Child
 						group ch by ch.ParentID > 2 ? ch.ParentID > 3 ? "1" : "2" : "3"
-						into g select g
+						into g
+						select g
 					).ToList().OrderBy(p => p.Key).ToList();
 
 				AreEqual(expected[0], result[0]);
@@ -520,7 +543,8 @@ namespace Tests.Linq
 						from ch in
 							from ch in Child
 							group ch by ch.ParentID > 2 ? ch.ParentID > 3 ? "1" : "2" : "3"
-							into g select g
+							into g
+							select g
 						select ch.Key + "2"
 					where p == "22"
 					select p
@@ -529,7 +553,8 @@ namespace Tests.Linq
 						from ch in
 							from ch in db.Child
 							group ch by ch.ParentID > 2 ? ch.ParentID > 3 ? "1" : "2" : "3"
-							into g select g
+							into g
+							select g
 						select ch.Key + "2"
 					where p == "22"
 					select p);
@@ -646,12 +671,14 @@ namespace Tests.Linq
 				AreEqual(
 					from ch in
 						from ch in Child select new { ParentID = ch.ParentID + 1, ch.ChildID }
-					where ch.ParentID + 1 > n group ch by ch into g
+					where ch.ParentID + 1 > n
+					group ch by ch into g
 					select g.Sum(p => p.ParentID - 3)
 					,
 					from ch in
 						from ch in db.Child select new { ParentID = ch.ParentID + 1, ch.ChildID }
-					where ch.ParentID + 1 > n group ch by ch into g
+					where ch.ParentID + 1 > n
+					group ch by ch into g
 					select g.Sum(p => p.ParentID - 3));
 		}
 
@@ -660,7 +687,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from ch in    Child group ch.ParentID by ch.ChildID into g select new { Max = g.Max() },
+					from ch in Child group ch.ParentID by ch.ChildID into g select new { Max = g.Max() },
 					from ch in db.Child group ch.ParentID by ch.ChildID into g select new { Max = g.Max() });
 		}
 
@@ -669,7 +696,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from  ch in Child
+					from ch in Child
 					group ch by ch.ParentID into g
 					select new
 					{
@@ -679,7 +706,7 @@ namespace Tests.Linq
 						Max = g.Max(c => c.ChildID),
 						Avg = (int)g.Average(c => c.ChildID),
 					},
-					from  ch in db.Child
+					from ch in db.Child
 					group ch by ch.ParentID into g
 					select new
 					{
@@ -696,7 +723,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from  ch in Child
+					from ch in Child
 					group ch by ch.ParentID into g
 					select new
 					{
@@ -706,7 +733,7 @@ namespace Tests.Linq
 						Avg = (int)g.Select(c => c.ChildID).Average(),
 						Cnt = g.Count()
 					},
-					from  ch in db.Child
+					from ch in db.Child
 					group ch by ch.ParentID into g
 					select new
 					{
@@ -723,24 +750,24 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from  ch in Child
+					from ch in Child
 					where ch.ChildID > 30
 					group ch by ch.ParentID into g
 					select new
 					{
-						Sum =      g.Select(c => c.ChildID).Where(_ => _ > 30).Sum(),
-						Min =      g.Select(c => c.ChildID).Where(_ => _ > 30).Min(),
-						Max =      g.Select(c => c.ChildID).Where(_ => _ > 30).Max(),
+						Sum = g.Select(c => c.ChildID).Where(_ => _ > 30).Sum(),
+						Min = g.Select(c => c.ChildID).Where(_ => _ > 30).Min(),
+						Max = g.Select(c => c.ChildID).Where(_ => _ > 30).Max(),
 						Avg = (int)g.Select(c => c.ChildID).Where(_ => _ > 30).Average(),
 					},
-					from  ch in db.Child
+					from ch in db.Child
 					where ch.ChildID > 30
 					group ch by ch.ParentID into g
 					select new
 					{
-						Sum =      g.Select(c => c.ChildID).Where(_ => _ > 30).Sum(),
-						Min =      g.Select(c => c.ChildID).Where(_ => _ > 30).Min(),
-						Max =      g.Select(c => c.ChildID).Where(_ => _ > 30).Max(),
+						Sum = g.Select(c => c.ChildID).Where(_ => _ > 30).Sum(),
+						Min = g.Select(c => c.ChildID).Where(_ => _ > 30).Min(),
+						Max = g.Select(c => c.ChildID).Where(_ => _ > 30).Max(),
 						Avg = (int)g.Select(c => c.ChildID).Where(_ => _ > 30).Average(),
 					});
 		}
@@ -750,21 +777,45 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from  ch in Child
+					from ch in Child
 					group ch by ch.ParentID into g
 					select new
 					{
 						Count = g.Count(_ => _.ChildID > 30),
-						Sum   = g.Where(_ => _.ChildID > 30).Sum(c => c.ChildID),
+						Sum = g.Where(_ => _.ChildID > 30).Sum(c => c.ChildID),
 					},
-					from  ch in db.Child
+					from ch in db.Child
 					group ch by ch.ParentID into g
 					select new
 					{
 						Count = g.Count(_ => _.ChildID > 30),
-						Sum   = g.Where(_ => _.ChildID > 30).Sum(c => c.ChildID),
+						Sum = g.Where(_ => _.ChildID > 30).Sum(c => c.ChildID),
 					});
 		}
+
+		[Test, DataContextSource(ProviderName.SqlCe)]
+		public void Aggregates5(string context)
+		{
+			using (var db = GetDataContext(context))
+				AreEqual(
+					from ch in Child
+					group ch by ch.ParentID into g
+					select new
+					{
+						Count1 = g.Count(c => c.ChildID > 30),
+						Count2 = g.Select(c => c.ChildID).Where(_ => _ > 30).Count(),
+						Count3 = g.Count()
+					},
+					from ch in db.Child
+					group ch by ch.ParentID into g
+					select new
+					{
+						Count1 = g.Count(c => c.ChildID > 30),
+						Count2 = g.Select(c => c.ChildID).Where(_ => _ > 30).Count(),
+						Count3 = g.Count()
+					});
+		}
+
 
 		[Test, DataContextSource]
 		public void SelectMax(string context)
@@ -786,19 +837,19 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 				AreEqual(
 					from ch in Child
-						join max in
-							from ch1 in Child
-							group ch1 by ch1.ParentID into g
-							select g.Max(c => c.ChildID)
-						on ch.ChildID equals max
+					join max in
+						from ch1 in Child
+						group ch1 by ch1.ParentID into g
+						select g.Max(c => c.ChildID)
+					on ch.ChildID equals max
 					select ch
 					,
 					from ch in db.Child
-						join max in
-							from ch1 in db.Child
-							group ch1 by ch1.ParentID into g
-							select g.Max(c => c.ChildID)
-						on ch.ChildID equals max
+					join max in
+						from ch1 in db.Child
+						group ch1 by ch1.ParentID into g
+						select g.Max(c => c.ChildID)
+					on ch.ChildID equals max
 					select ch);
 		}
 
@@ -855,13 +906,13 @@ namespace Tests.Linq
 			{
 				var expected =
 					from p in Parent
-						join c in Child on p.ParentID equals c.ParentID
+					join c in Child on p.ParentID equals c.ParentID
 					where c.ChildID > 20
 					select p;
 
 				var result =
 					from p in db.Parent
-						join c in db.Child on p.ParentID equals c.ParentID
+					join c in db.Child on p.ParentID equals c.ParentID
 					where c.ChildID > 20
 					select p;
 
@@ -882,46 +933,42 @@ namespace Tests.Linq
 		public void Max4(string context)
 		{
 			using (var db = GetDataContext(context))
-			{
-
-				var expected = from t1 in Types
-							   join t2 in
-								   from sub in Types
-								   where
-									   sub.ID == 1 &&
-									   sub.DateTimeValue <= DateTime.Today
-								   group sub by new
-								   {
-									   sub.ID
-								   } into g
-								   select new
-								   {
-									   g.Key.ID,
-									   DateTimeValue = g.Max(p => p.DateTimeValue)
-								   }
-							   on new { t1.ID, t1.DateTimeValue } equals new { t2.ID, t2.DateTimeValue }
-							   select t1.MoneyValue;
-
-				var actual = from t1 in db.Types
-								 join t2 in
-									 from sub in db.Types
-									 where
-										 sub.ID == 1 &&
-										 sub.DateTimeValue <= DateTime.Today
-									 group sub by new
-									 {
-										 sub.ID
-									 } into g
-									 select new
-									 {
-										 g.Key.ID,
-										 DateTimeValue = g.Max(p => p.DateTimeValue)
-									 }
-								 on new { t1.ID, t1.DateTimeValue } equals new { t2.ID, t2.DateTimeValue }
-								 select t1.MoneyValue;
-
-				Assert.AreEqual(expected, actual);
-			}
+				Assert.AreEqual(
+					from t1 in Types
+					join t2 in
+						from sub in Types
+						where
+							sub.ID == 1 &&
+							sub.DateTimeValue <= DateTime.Today
+						group sub by new
+						{
+							sub.ID
+						} into g
+						select new
+						{
+							g.Key.ID,
+							DateTimeValue = g.Max(p => p.DateTimeValue)
+						}
+					on new { t1.ID, t1.DateTimeValue } equals new { t2.ID, t2.DateTimeValue }
+					select t1.MoneyValue,
+					from t1 in db.Types
+					join t2 in
+						from sub in db.Types
+						where
+							sub.ID == 1 &&
+							sub.DateTimeValue <= DateTime.Today
+						group sub by new
+						{
+							sub.ID
+						} into g
+						select new
+						{
+							g.Key.ID,
+							DateTimeValue = g.Max(p => p.DateTimeValue)
+						}
+					on new { t1.ID, t1.DateTimeValue } equals new { t2.ID, t2.DateTimeValue }
+					select t1.MoneyValue
+					);
 		}
 
 		[Test, DataContextSource]
@@ -930,7 +977,7 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 				Assert.AreEqual(
 					(int)db.Child.Average(c => c.ChildID),
-					(int)   Child.Average(c => c.ChildID));
+					(int)Child.Average(c => c.ChildID));
 		}
 
 		[Test, DataContextSource]
@@ -938,7 +985,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				Assert.AreEqual(
-					(int)   Child.Select(c => c.ChildID).Average(),
+					(int)Child.Select(c => c.ChildID).Average(),
 					(int)db.Child.Select(c => c.ChildID).Average());
 		}
 
@@ -1190,17 +1237,17 @@ namespace Tests.Linq
 					(from ch in Child
 					 group ch by ch.ParentID into g
 					 select new
-						 {
-							 Max1 = g.Select(ch => ch.ChildID              ).Max(),
-							 Max2 = g.Select(ch => ch.ChildID + ch.ParentID).Max()
-						 }),
+					 {
+						 Max1 = g.Select(ch => ch.ChildID).Max(),
+						 Max2 = g.Select(ch => ch.ChildID + ch.ParentID).Max()
+					 }),
 					(from ch in db.Child
 					 group ch by ch.ParentID into g
 					 select new
-						 {
-							 Max1 = g.Select(ch => ch.ChildID              ).Max(),
-							 Max2 = g.Select(ch => ch.ChildID + ch.ParentID).Max()
-						 }));
+					 {
+						 Max1 = g.Select(ch => ch.ChildID).Max(),
+						 Max2 = g.Select(ch => ch.ChildID + ch.ParentID).Max()
+					 }));
 		}
 
 		[Test, DataContextSource(ProviderName.SqlCe)]
@@ -1266,6 +1313,20 @@ namespace Tests.Linq
 					select g.Max());
 		}
 
+		//[Test, DataContextSource]
+		public void Scalar51(string context)
+		{
+			using (var db = GetDataContext(context))
+				AreEqual(
+					from ch in Child
+					group ch by ch.ParentID into g
+					select g.Max()
+					,
+					from ch in db.Child
+					group ch by ch.ParentID into g
+					select g.Max());
+		}
+
 		[Test, DataContextSource(ProviderName.SqlCe)]
 		public void Scalar6(string context)
 		{
@@ -1289,11 +1350,11 @@ namespace Tests.Linq
 				AreEqual(
 					(from ch in Child
 					 group ch by ch.ParentID into g
-					 select new { max = g.Select(ch => ch.ChildID).Max()}).Select(id => id.max)
+					 select new { max = g.Select(ch => ch.ChildID).Max() }).Select(id => id.max)
 					 ,
 					(from ch in db.Child
 					 group ch by ch.ParentID into g
-					 select new { max = g.Select(ch => ch.ChildID).Max()}).Select(id => id.max));
+					 select new { max = g.Select(ch => ch.ChildID).Max() }).Select(id => id.max));
 		}
 
 		[Test, DataContextSource]
@@ -1302,12 +1363,12 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 				AreEqual(
 					(from ch in Child
-					group ch by ch.ParentID into g
-					select new { max = g.Max(ch => ch.ChildID)}).Select(id => id.max)
+					 group ch by ch.ParentID into g
+					 select new { max = g.Max(ch => ch.ChildID) }).Select(id => id.max)
 					,
 					(from ch in db.Child
-					group ch by ch.ParentID into g
-					select new { max = g.Max(ch => ch.ChildID)}).Select(id => id.max));
+					 group ch by ch.ParentID into g
+					 select new { max = g.Max(ch => ch.ChildID) }).Select(id => id.max));
 		}
 
 		[Test, DataContextSource(ProviderName.SqlCe)]
@@ -1348,7 +1409,7 @@ namespace Tests.Linq
 						group p by p.ParentID into g
 						select new
 						{
-							ID  = g.Key,
+							ID = g.Key,
 							Max = g.Max(t => t.Value1)
 						}
 					group t by t.ID into g
@@ -1363,7 +1424,7 @@ namespace Tests.Linq
 						group p by p.ParentID into g
 						select new
 						{
-							ID  = g.Key,
+							ID = g.Key,
 							Max = g.Max(t => t.Value1)
 						}
 					group t by t.ID into g
@@ -1384,7 +1445,7 @@ namespace Tests.Linq
 					group p by p.ParentID into g
 					select new
 					{
-						ID  = g.Key,
+						ID = g.Key,
 						Max = g.Max(t => t.Value1)
 					} into t
 					group t by t.ID into g
@@ -1398,7 +1459,7 @@ namespace Tests.Linq
 					group p by p.ParentID into g
 					select new
 					{
-						ID  = g.Key,
+						ID = g.Key,
 						Max = g.Max(t => t.Value1)
 					} into t
 					group t by t.ID into g
@@ -1427,7 +1488,7 @@ namespace Tests.Linq
 			{
 				AreEqual(
 					from parent in Parent
-					from child  in Person
+					from child in Person
 					where child.ID == parent.ParentID
 					let data = new
 					{
@@ -1441,7 +1502,7 @@ namespace Tests.Linq
 						Count = groupedData.Count()
 					},
 					from parent in db.Parent
-					from child  in db.Person
+					from child in db.Person
 					where child.ID == parent.ParentID
 					let data = new
 					{
@@ -1504,12 +1565,87 @@ namespace Tests.Linq
 		}
 
 		[Test, DataContextSource]
+		public void GroupByDate1(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+					from t in Types
+					group t by new { t.DateTimeValue.Month, t.DateTimeValue.Year } into grp
+					select new
+					{
+						Total = grp.Sum(_ => _.MoneyValue),
+						year = grp.Key.Year,
+						month = grp.Key.Month
+					},
+					from t in db.Types
+					group t by new { t.DateTimeValue.Month, t.DateTimeValue.Year } into grp
+					select new
+					{
+						Total = grp.Sum(_ => _.MoneyValue),
+						year = grp.Key.Year,
+						month = grp.Key.Month
+					});
+			}
+		}
+
+		[Test, DataContextSource]
+		public void GroupByDate2(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+					from t in Types2
+					group t by new { t.DateTimeValue.Value.Month, t.DateTimeValue.Value.Year } into grp
+					select new
+					{
+						Total = grp.Sum(_ => _.MoneyValue),
+						year = grp.Key.Year,
+						month = grp.Key.Month
+					},
+					from t in db.Types2
+					group t by new { t.DateTimeValue.Value.Month, t.DateTimeValue.Value.Year } into grp
+					select new
+					{
+						Total = grp.Sum(_ => _.MoneyValue),
+						year = grp.Key.Year,
+						month = grp.Key.Month
+					});
+			}
+		}
+
+		[Test, DataContextSource]
+		public void GroupByDate3(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+					from t in Types2
+					group t by new { Date = Sql.MakeDateTime(t.DateTimeValue.Value.Year, t.DateTimeValue.Value.Month, 1) } into grp
+					select new
+					{
+						Total = grp.Sum(_ => _.MoneyValue),
+						year = grp.Key.Date.Value.Year,
+						month = grp.Key.Date.Value.Month
+					},
+					from t in db.Types2
+					group t by new { Date = Sql.MakeDateTime(t.DateTimeValue.Value.Year, t.DateTimeValue.Value.Month, 1) } into grp
+					select new
+					{
+						Total = grp.Sum(_ => _.MoneyValue),
+						year = grp.Key.Date.Value.Year,
+						month = grp.Key.Date.Value.Month
+					});
+			}
+		}
+
+		[Test, DataContextSource]
 		public void GroupByCount(string context)
 		{
 			using (var db = GetDataContext(context))
 			{
 				Assert.AreEqual(
-					(from t in    Child group t by t.ParentID into gr select new { gr.Key, List = gr.ToList() }).Count(),
+					(from t in Child group t by t.ParentID into gr select new { gr.Key, List = gr.ToList() }).Count(),
 					(from t in db.Child group t by t.ParentID into gr select new { gr.Key, List = gr.ToList() }).Count());
 			}
 		}
@@ -1538,12 +1674,11 @@ namespace Tests.Linq
 		[Test, DataContextSource]
 		public void FirstGroupBy(string context)
 		{
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = true;
-
+			using (new AllowMultipleQuery())
 			using (var db = GetDataContext(context))
 			{
 				Assert.AreEqual(
-					(from t in    Child group t by t.ParentID into gr select gr.OrderByDescending(g => g.ChildID).First()).AsEnumerable().OrderBy(t => t.ChildID),
+					(from t in Child group t by t.ParentID into gr select gr.OrderByDescending(g => g.ChildID).First()).AsEnumerable().OrderBy(t => t.ChildID),
 					(from t in db.Child group t by t.ParentID into gr select gr.OrderByDescending(g => g.ChildID).First()).AsEnumerable().OrderBy(t => t.ChildID));
 			}
 		}
@@ -1553,6 +1688,43 @@ namespace Tests.Linq
 			public int ParentID;
 			public int ChildID;
 			public int RandValue;
+		}
+
+		//////[Test, DataContextSource(ProviderName.Informix, ProviderName.Sybase)]
+		public void GroupByCustomEntity1(string context)
+		{
+			var rand = new Random().Next(5);
+			//var rand = new Random();
+
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+					from e in
+						from c in Child
+						select new ChildEntity
+						{
+							RandValue = rand//.Next(5)
+							,
+							ParentID = c.ParentID,
+						}
+					group e by new { e.ParentID, e.RandValue } into g
+					select new
+					{
+						Count = g.Count()
+					},
+					from e in
+						from c in db.Child
+						select new ChildEntity
+						{
+							RandValue = rand,
+							ParentID = c.ParentID,
+						}
+					group e by new { e.ParentID, e.RandValue } into g
+					select new
+					{
+						Count = g.Count()
+					});
+			}
 		}
 
 		static int GetID(int id)
@@ -1573,7 +1745,7 @@ namespace Tests.Linq
 						select new ChildEntity
 						{
 							RandValue = GetID(rand),
-							ParentID  = c.ParentID,
+							ParentID = c.ParentID,
 						}
 					group e by new { e.ParentID, e.RandValue } into g
 					select new
@@ -1585,13 +1757,104 @@ namespace Tests.Linq
 						select new ChildEntity
 						{
 							RandValue = GetID(rand),
-							ParentID  = c.ParentID,
+							ParentID = c.ParentID,
 						}
 					group e by new { e.ParentID, e.RandValue } into g
 					select new
 					{
 						Count = g.Count()
 					});
+			}
+		}
+
+		[Test, DataContextSource(ProviderName.Access)]
+		public void JoinGroupBy1(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+					from c in Child
+					from g in c.GrandChildren
+					group c by g.ParentID into gc
+					select gc.Key
+					,
+					from c in db.Child
+					from g in c.GrandChildren
+					group c by g.ParentID into gc
+					select gc.Key
+				);
+			}
+		}
+
+		[Test, DataContextSource(ProviderName.Access)]
+		public void JoinGroupBy2(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+					from c in Child
+					from g in c.Parent.Children
+					group g by g.ParentID into gc
+					select gc.Key
+					,
+					from c in db.Child
+					from g in c.Parent.Children
+					group g by g.ParentID into gc
+					select gc.Key
+				);
+			}
+		}
+
+		[Test, DataContextSource]
+		public void GroupByGuard(string context)
+		{
+			using (new AllowMultipleQuery())
+			using (new GuardGrouping())
+			using (var db = GetDataContext(context))
+			{
+				// group on client
+				var dictionary1 = db.Person
+					.AsEnumerable()
+					.GroupBy(_ => _.Gender)
+					.ToDictionary(_ => _.Key, _ => _.ToList());
+
+				var dictionary2 = Person
+					.AsEnumerable()
+					.GroupBy(_ => _.Gender)
+					.ToDictionary(_ => _.Key, _ => _.ToList());
+
+				Assert.AreEqual(dictionary2.Count, dictionary1.Count);
+				Assert.AreEqual(dictionary2.First().Value.Count, dictionary1.First().Value.Count);
+
+				var list =
+				(
+					from p in db.Person
+					group p by p.Gender into gr
+					select new { gr.Key, Count = gr.Count() }
+				)
+				.ToDictionary(_ => _.Key);
+
+				Assert.Throws<LinqToDBException>(() =>
+				{
+					// group on server
+					db.Person
+						.GroupBy(_ => _.Gender)
+						.ToDictionary(_ => _.Key, _ => _.ToList());
+				});
+
+				Assert.Throws<LinqToDBException>(() =>
+				{
+					db.Person
+						.GroupBy(_ => _)
+						.ToDictionary(_ => _.Key, _ => _.ToList());
+				});
+
+				Assert.Throws<LinqToDBException>(() =>
+				{
+					db.Person
+						.GroupBy(_ => _)
+						.ToList();
+				});
 			}
 		}
 	}

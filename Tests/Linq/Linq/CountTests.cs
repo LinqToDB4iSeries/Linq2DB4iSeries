@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-
+using System.Threading.Tasks;
 using LinqToDB;
 using LinqToDB.Mapping;
 
@@ -23,6 +23,15 @@ namespace Tests.Linq
 		}
 
 		[Test, DataContextSource]
+		public async Task Count1Async(string context)
+		{
+			using (var db = GetDataContext(context))
+				Assert.AreEqual(
+							 Parent.Count(),
+					await db.Parent.CountAsync());
+		}
+
+		[Test, DataContextSource]
 		public void Count2(string context)
 		{
 			using (var db = GetDataContext(context))
@@ -32,11 +41,20 @@ namespace Tests.Linq
 		}
 
 		[Test, DataContextSource]
+		public async Task Count2Async(string context)
+		{
+			using (var db = GetDataContext(context))
+				Assert.AreEqual(
+							 Parent.Count(p => p.ParentID > 2),
+					await db.Parent.CountAsync(p => p.ParentID > 2));
+		}
+
+		[Test, DataContextSource]
 		public void Count3(string context)
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Parent select p.Children.Count(),
+					from p in Parent select p.Children.Count(),
 					from p in db.Parent select p.Children.Count());
 		}
 
@@ -45,7 +63,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Parent select    Child.Count(),
+					from p in Parent select Child.Count(),
 					from p in db.Parent select db.Child.Count());
 		}
 
@@ -54,7 +72,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				Assert.AreEqual(
-					(from ch in    Child group ch by ch.ParentID).Count(),
+					(from ch in Child group ch by ch.ParentID).Count(),
 					(from ch in db.Child group ch by ch.ParentID).Count());
 		}
 
@@ -63,7 +81,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				Assert.AreEqual(
-					(from ch in    Child group ch by ch.ParentID).Count(g => g.Key > 2),
+					(from ch in Child group ch by ch.ParentID).Count(g => g.Key > 2),
 					(from ch in db.Child group ch by ch.ParentID).Count(g => g.Key > 2));
 		}
 
@@ -72,7 +90,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Parent where p.Children.Count > 2 select p,
+					from p in Parent where p.Children.Count > 2 select p,
 					from p in db.Parent where p.Children.Count > 2 select p);
 		}
 
@@ -111,7 +129,7 @@ namespace Tests.Linq
 					group ch by ch.ParentID into g
 					select new
 					{
-						ID1 = g.Max  (ch => ch.ChildID),
+						ID1 = g.Max(ch => ch.ChildID),
 						ID2 = g.Count(ch => ch.ChildID > 20) + 1,
 						ID3 = g.Count(ch => ch.ChildID > 20),
 						ID4 = g.Count(ch => ch.ChildID > 10),
@@ -120,7 +138,7 @@ namespace Tests.Linq
 					group ch by ch.ParentID into g
 					select new
 					{
-						ID1 = g.Max  (ch => ch.ChildID),
+						ID1 = g.Max(ch => ch.ChildID),
 						ID2 = g.Count(ch => ch.ChildID > 20) + 1,
 						ID3 = g.Count(ch => ch.ChildID > 20),
 						ID4 = g.Count(ch => ch.ChildID > 10),
@@ -209,7 +227,7 @@ namespace Tests.Linq
 					select new
 					{
 						g.Key.ParentID,
-						ChildMin   = g.Min(p => p.ChildID),
+						ChildMin = g.Min(p => p.ChildID),
 						ChildCount = g.Count(p => p.ChildID > 25)
 					},
 					from ch in
@@ -219,7 +237,7 @@ namespace Tests.Linq
 					select new
 					{
 						g.Key.ParentID,
-						ChildMin   = g.Min(p => p.ChildID),
+						ChildMin = g.Min(p => p.ChildID),
 						ChildCount = g.Count(p => p.ChildID > 25)
 					});
 		}
@@ -230,7 +248,7 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 			{
 				var expected = Child.Count();
-				var result   = db.Child.Count();
+				var result = db.Child.Count();
 				Assert.AreEqual(expected, result);
 			}
 		}
@@ -244,7 +262,7 @@ namespace Tests.Linq
 					group ch by ch.ParentID into g
 					select new
 					{
-						ID1 = g.Max  (ch => ch.ChildID),
+						ID1 = g.Max(ch => ch.ChildID),
 						ID2 = g.Count(ch => ch.ChildID > 20) + 1,
 						ID3 = g.Count(ch => ch.ChildID > 20),
 						ID4 = g.Count(ch => ch.ChildID > 10),
@@ -253,7 +271,7 @@ namespace Tests.Linq
 					group ch by ch.ParentID into g
 					select new
 					{
-						ID1 = g.Max  (ch => ch.ChildID),
+						ID1 = g.Max(ch => ch.ChildID),
 						ID2 = g.Count(ch => ch.ChildID > 20) + 1,
 						ID3 = g.Count(ch => ch.ChildID > 20),
 						ID4 = g.Count(ch => ch.ChildID > 10),
@@ -265,7 +283,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				Assert.AreEqual(
-					(from ch in    Child group ch by ch.ParentID).Count(),
+					(from ch in Child group ch by ch.ParentID).Count(),
 					(from ch in db.Child group ch by ch.ParentID).Count());
 		}
 
@@ -279,14 +297,14 @@ namespace Tests.Linq
 					select new
 					{
 						ID1 = g.Count(),
-						ID2 = g.Max  (ch => ch.ChildID),
+						ID2 = g.Max(ch => ch.ChildID),
 					},
 					from ch in db.Child
 					group ch by ch.ParentID into g
 					select new
 					{
 						ID1 = g.Count(),
-						ID2 = g.Max  (ch => ch.ChildID),
+						ID2 = g.Max(ch => ch.ChildID),
 					});
 		}
 
@@ -468,7 +486,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Parent select new { Count =    Parent.Count(p1 => p1.ParentID == p.ParentID) },
+					from p in Parent select new { Count = Parent.Count(p1 => p1.ParentID == p.ParentID) },
 					from p in db.Parent select new { Count = db.Parent.Count(p1 => p1.ParentID == p.ParentID) });
 		}
 
@@ -477,11 +495,11 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Parent select new { Count =    Parent.Where(p1 => p1.ParentID == p.ParentID).Count() },
+					from p in Parent select new { Count = Parent.Where(p1 => p1.ParentID == p.ParentID).Count() },
 					from p in db.Parent select new { Count = db.Parent.Where(p1 => p1.ParentID == p.ParentID).Count() });
 		}
 
-		[Test, DataContextSource(ProviderName.SqlCe, ProviderName.SQLite, ProviderName.Sybase)]
+		[Test, DataContextSource(ProviderName.SqlCe, ProviderName.SQLiteClassic, ProviderName.SQLiteMS, ProviderName.Sybase)]
 		public void SubQuery6(string context)
 		{
 			using (var db = GetDataContext(context))
@@ -495,7 +513,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Parent select    Child.Count(c => c.Parent == p),
+					from p in Parent select Child.Count(c => c.Parent == p),
 					from p in db.Parent select db.Child.Count(c => c.Parent == p));
 		}
 
@@ -504,8 +522,17 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				Assert.AreEqual(
-					   Parent.Max(p =>    Child.Count(c => c.Parent.ParentID == p.ParentID)),
+					   Parent.Max(p => Child.Count(c => c.Parent.ParentID == p.ParentID)),
 					db.Parent.Max(p => db.Child.Count(c => c.Parent.ParentID == p.ParentID)));
+		}
+
+		[Test, DataContextSource]
+		public async Task SubQueryMax1Async(string context)
+		{
+			using (var db = GetDataContext(context))
+				Assert.AreEqual(
+							 Parent.Max(p => Child.Count(c => c.Parent.ParentID == p.ParentID)),
+					await db.Parent.MaxAsync(p => db.Child.Count(c => c.Parent.ParentID == p.ParentID)));
 		}
 
 		[Test, DataContextSource]
@@ -554,7 +581,7 @@ namespace Tests.Linq
 					{
 						Count1 = gc1.Count(),
 						Count2 = gg1.Count()
-					} ,
+					},
 					from p in db.Parent
 					join c in db.Child on p.ParentID equals c.ParentID into gc
 					join g in db.GrandChild on p.ParentID equals g.ParentID into gg
@@ -623,7 +650,7 @@ namespace Tests.Linq
 		class Child2
 		{
 			[Column] public int? ParentID;
-			[Column] public int  ChildID;
+			[Column] public int ChildID;
 
 			[Association(ThisKey = "ParentID", OtherKey = "ParentID")]
 			public Parent Parent;

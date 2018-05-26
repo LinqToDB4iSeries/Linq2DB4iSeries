@@ -20,6 +20,17 @@ namespace Tests.Linq
 					db.Child.Except(db.Child.Where(p => p.ParentID == 3)));
 		}
 
+		//[Test, DataContextSource]
+		public void Except2(string context)
+		{
+			var ids = new[] { 1, 2 };
+
+			using (var db = GetDataContext(context))
+				Assert.AreEqual(
+					   Child.Where(c => c.GrandChildren.Select(_ => _.ParentID ?? 0).Except(ids).Count() == 0),
+					db.Child.Where(c => c.GrandChildren.Select(_ => _.ParentID ?? 0).Except(ids).Count() == 0));
+		}
+
 		[Test, DataContextSource]
 		public void Intersect(string context)
 		{
@@ -205,7 +216,6 @@ namespace Tests.Linq
 					from p in db.Parent1 where arr.Contains(p) select p);
 		}
 
-
 		void TestContains(ITestDataContext db, Parent1 parent)
 		{
 			Assert.AreEqual(
@@ -219,7 +229,8 @@ namespace Tests.Linq
 			var ps = Parent1.OrderBy(p => p.ParentID).Take(2).ToArray();
 
 			using (var db = GetDataContext(context))
-				Array.ForEach(ps, p => TestContains(db, p));
+				foreach (var p in ps)
+					TestContains(db, p);
 		}
 
 		[Test, DataContextSource]

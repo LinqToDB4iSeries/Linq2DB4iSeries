@@ -31,20 +31,27 @@ namespace Tests.Data
 
 			using (var conn = new DataConnection())
 			{
-				string param = DB2iSeriesMappingSchema.GetiSeriesType(SqlDataType.GetDataType(typeof(byte[])));
-				string sql = string.Format("SELECT cast(@P as {0}){1}", param, TestBase.GetDummyFrom(conn.DataProvider));
+			    var param = ParamType(conn, SqlDataType.GetDataType(typeof(byte[])));
+			    var sql = $"SELECT cast(@P as {param}){Base.Helpers.GetDummyFrom(conn.DataProvider)}";
 				Assert.That(conn.Execute<byte[]>(sql, new { p = arr1 }), Is.EqualTo(arr1));
 				Assert.That(conn.Execute<byte[]>(sql, new { p = arr2 }), Is.EqualTo(arr2));
 			}
 		}
 
-		[Test]
+	    private static string ParamType(DataConnection conn, SqlDataType type)
+	    {
+	        var bldr = (DB2iSeriesSqlBuilder) conn.DataProvider.CreateSqlBuilder();
+	        var param = bldr.GetiSeriesType(type);
+	        return param;
+	    }
+
+	    [Test]
 		public void TestObject4()
 		{
 			using (var conn = new DataConnection())
 			{
-				string param = DB2iSeriesMappingSchema.GetiSeriesType(new LinqToDB.SqlQuery.SqlDataType(DataType.Int64));
-				string sql = string.Format("SELECT cast(@P as {0}){1}", param, TestBase.GetDummyFrom(conn.DataProvider));
+			    var param = ParamType(conn, new SqlDataType(DataType.Int64));
+                var sql = $"SELECT cast(@P as {param}){Base.Helpers.GetDummyFrom(conn.DataProvider)}";
 				Assert.That(conn.Execute<int>(sql, new { p = 1 }), Is.EqualTo(1));
 			}
 		}
@@ -54,8 +61,8 @@ namespace Tests.Data
 		{
 			using (var conn = new DataConnection())
 			{
-				string param = DB2iSeriesMappingSchema.GetiSeriesType(new LinqToDB.SqlQuery.SqlDataType(DataType.Int64));
-				string sql = string.Format("SELECT cast(@P as {0}){1}", param, TestBase.GetDummyFrom(conn.DataProvider));
+			    var param = ParamType(conn, new SqlDataType(DataType.Int64));
+                var sql = $"SELECT cast(@P as {param}){Base.Helpers.GetDummyFrom(conn.DataProvider)}";
 
 				var res = conn.Execute<string>(
 					sql,
@@ -86,8 +93,8 @@ namespace Tests.Data
 		{
 			using (var conn = new DataConnection())
 			{
-				string param = DB2iSeriesMappingSchema.GetiSeriesType(new LinqToDB.SqlQuery.SqlDataType(DataType.Int64));
-				string sql = string.Format("SELECT cast(@P as {0}){1}", param, TestBase.GetDummyFrom(conn.DataProvider));
+			    var param = ParamType(conn, new SqlDataType(DataType.Int64));
+                string sql = $"SELECT cast(@P as {param}){Base.Helpers.GetDummyFrom(conn.DataProvider)}";
 
 				Assert.That(conn.Execute<string>(
 					sql,
@@ -127,8 +134,8 @@ namespace Tests.Data
 
 			using (var conn = new DataConnection().AddMappingSchema(ms))
 			{
-				string param = DB2iSeriesMappingSchema.GetiSeriesType(new LinqToDB.SqlQuery.SqlDataType(DataType.Int64));
-				string sql = string.Format("SELECT cast(@P as {0}){1}", param, TestBase.GetDummyFrom(conn.DataProvider));
+			    var param = ParamType(conn, new SqlDataType(DataType.Int64));
+                string sql = $"SELECT cast(@P as {param}){Base.Helpers.GetDummyFrom(conn.DataProvider)}";
 
 				var n = conn.Execute<long>(sql, new { p = new TwoValues { Value1 = 1, Value2 = 2 } });
 
@@ -145,8 +152,8 @@ namespace Tests.Data
 
 			using (var conn = new DataConnection().AddMappingSchema(ms))
 			{
-				string param = DB2iSeriesMappingSchema.GetiSeriesType(new LinqToDB.SqlQuery.SqlDataType(DataType.Int64));
-				string sql = string.Format("SELECT cast(@P as {0}){1}", param, TestBase.GetDummyFrom(conn.DataProvider));
+			    var param = ParamType(conn, new SqlDataType(DataType.Int64));
+                string sql = $"SELECT cast(@P as {param}){Base.Helpers.GetDummyFrom(conn.DataProvider)}";
 
 				var n = conn.Execute<long?>(sql, new { p = (TwoValues)null });
 
@@ -169,8 +176,8 @@ namespace Tests.Data
 
 			using (var conn = new DataConnection().AddMappingSchema(ms))
 			{
-				string param = DB2iSeriesMappingSchema.GetiSeriesType(new LinqToDB.SqlQuery.SqlDataType(DataType.Int64));
-				string sql = string.Format("SELECT cast(@P as {0}){1}", param, TestBase.GetDummyFrom(conn.DataProvider));
+			    var param = ParamType(conn, new SqlDataType(DataType.Int64));
+                string sql = $"SELECT cast(@P as {param}){Base.Helpers.GetDummyFrom(conn.DataProvider)}";
 
 				var n = conn.Execute<long?>(sql, new { p = (TwoValues)null });
 

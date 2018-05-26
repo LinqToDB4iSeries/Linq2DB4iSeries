@@ -78,6 +78,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return new T[] { };
 		}
 
+		public MemberInfo[] GetDynamicColumns(Type type)
+		{
+			return new MemberInfo[] { };
+		}
+
 		public T[] GetAttributes<T>(Type type, bool inherit = true) where T : Attribute
 		{
 			return new T[] { };

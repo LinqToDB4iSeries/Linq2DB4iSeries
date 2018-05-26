@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using LinqToDB;
 using LinqToDB.Data;
+using LinqToDB.SqlQuery;
 
 using NUnit.Framework;
 
 namespace Tests.Linq
 {
+	using LinqToDB.Tools;
 	using Model;
 
 	[TestFixture]
@@ -109,5 +112,69 @@ namespace Tests.Linq
 				}
 			}
 		}
+
+		[Test, DataContextSource]
+		public async Task FirstAsyncTest(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var person = await db.Person.FirstAsync(p => p.ID == 1);
+
+				Assert.That(person.ID, Is.EqualTo(1));
+			}
+		}
+
+		[Test, DataContextSource]
+		public async Task ContainsAsyncTest(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var p = new Person { ID = 1 };
+
+				var r = await db.Person.ContainsAsync(p);
+
+				Assert.That(r, Is.True);
+			}
+		}
+
+		[Test, DataContextSource]
+		public async Task TestFirstOrDefault(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var param = 4;
+				var resultQuery =
+					from o in db.Parent
+					where Sql.Ext.In(o.ParentID, -1, -2, -3) || o.ParentID == param
+					select o;
+
+				var zz = await resultQuery.FirstOrDefaultAsync();
+			}
+		}
+	}
+
+	class MyItemBuilder : Sql.IExtensionCallBuilder
+	{
+		public void Build(Sql.ISqExtensionBuilder builder)
+		{
+			var values = builder.GetValue<System.Collections.IEnumerable>("values");
+			builder.Query.IsParameterDependent = true;
+
+			foreach (var value in values)
+			{
+				var param = new SqlParameter(value?.GetType() ?? typeof(int?), "p", value);
+				builder.AddParameter("values", param);
+			}
+		}
+	}
+
+	public static class MySqlExtensions
+	{
+		[Sql.Extension("{field} IN ({values, ', '})", IsPredicate = true, BuilderType = typeof(MyItemBuilder))]
+		public static bool In<T>(this Sql.ISqlExtension ext, [ExprParameter] T field, params T[] values)
+		{
+			throw new NotImplementedException();
+		}
 	}
 }
+

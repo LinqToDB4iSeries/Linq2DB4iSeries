@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+#if !NOIMMUTABLE
 using System.Collections.Immutable;
+#endif
 using System.Linq;
 
 using LinqToDB;
@@ -13,235 +15,241 @@ using Tests.Model;
 
 namespace Tests.Linq
 {
-	[TestFixture]
-	public class LoadWithTests : TestBase
-	{
-		[Test, DataContextSource]
-		public void LoadWith1(string context)
-		{
-			using (var db = GetDataContext(context))
-			{
-				var q =
-					from t in db.Child.LoadWith(p => p.Parent)
-					select t;
+    [TestFixture]
+    public class LoadWithTests : TestBase
+    {
+        [Test, DataContextSource]
+        public void LoadWith1(string context)
+        {
+            using (var db = GetDataContext(context))
+            {
+                var q =
+                    from t in db.Child.LoadWith(p => p.Parent)
+                    select t;
 
-				var ch = q.First();
+                var ch = q.First();
 
-				Assert.IsNotNull(ch.Parent);
-			}
-		}
+                Assert.IsNotNull(ch.Parent);
+            }
+        }
 
-		[Test, DataContextSource]
-		public void LoadWith2(string context)
-		{
-			using (var db = GetDataContext(context))
-			{
-				var q =
-					from t in db.GrandChild.LoadWith(p => p.Child.Parent)
-					select t;
+        [Test, DataContextSource]
+        public void LoadWith2(string context)
+        {
+            using (var db = GetDataContext(context))
+            {
+                var q =
+                    from t in db.GrandChild.LoadWith(p => p.Child.Parent)
+                    select t;
 
-				var ch = q.First();
+                var ch = q.First();
 
-				Assert.IsNotNull(ch.Child);
-				Assert.IsNotNull(ch.Child.Parent);
-			}
-		}
+                Assert.IsNotNull(ch.Child);
+                Assert.IsNotNull(ch.Child.Parent);
+            }
+        }
 
-		[Test, DataContextSource]
-		public void LoadWith3(string context)
-		{
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = true;
+        [Test, DataContextSource]
+        public void LoadWith3(string context)
+        {
+            using (new AllowMultipleQuery())
+            using (var db = GetDataContext(context))
+            {
+#if !NOIMMUTABLE
+                db.MappingSchema.SetConvertExpression<IEnumerable<Child>, ImmutableList<Child>>(
+                    t => ImmutableList.Create(t.ToArray()));
+#endif
 
-			using (var db = GetDataContext(context))
-			{
-				db.MappingSchema.SetConvertExpression<IEnumerable<Child>,ImmutableList<Child>>(
-					t => ImmutableList.Create(t.ToArray()));
+                var q =
+                    from p in db.Parent.LoadWith(p => p.Children3)
+                    select new
+                    {
+                        p.GrandChildren.Count,
+                        p
+                    };
 
-				var q =
-					from p in db.Parent.LoadWith(p => p.Children3)
-					select new
-					{
-						p.GrandChildren.Count,
-						p
-					};
+                var ch = q.ToList().Select(t => t.p).SelectMany(p => p.Children3).FirstOrDefault();
 
-				var ch = q.ToList().Select(t => t.p).SelectMany(p => p.Children3).FirstOrDefault();
+                Assert.IsNotNull(ch);
+            }
+        }
 
-				Assert.IsNotNull(ch);
-			}
+        class EnumerableToImmutableListConvertProvider<T> : IGenericInfoProvider
+        {
+            public void SetInfo(MappingSchema mappingSchema)
+            {
+#if !NOIMMUTABLE
+                mappingSchema.SetConvertExpression<IEnumerable<T>, ImmutableList<T>>(
+                    t => ImmutableList.Create(t.ToArray()));
+#endif
+            }
+        }
 
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = false;
-		}
+        [Test, DataContextSource]
+        public void LoadWith4(string context)
+        {
+            MappingSchema.Default.SetGenericConvertProvider(typeof(EnumerableToImmutableListConvertProvider<>));
 
-		class EnumerableToImmutableListConvertProvider<T> : IGenericInfoProvider
-		{
-			public void SetInfo(MappingSchema mappingSchema)
-			{
-				mappingSchema.SetConvertExpression<IEnumerable<T>,ImmutableList<T>>(
-					t => ImmutableList.Create(t.ToArray()));
-			}
-		}
+            using (new AllowMultipleQuery())
+            using (var db = GetDataContext(context))
+            {
+                var q =
+                    from p in db.Parent.LoadWith(p => p.Children3)
+                    select new
+                    {
+                        p.GrandChildren.Count,
+                        p
+                    };
 
-		[Test, DataContextSource]
-		public void LoadWith4(string context)
-		{
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = true;
+                var ch = q.ToList().Select(t => t.p).SelectMany(p => p.Children3).FirstOrDefault();
 
-			MappingSchema.Default.SetGenericConvertProvider(typeof(EnumerableToImmutableListConvertProvider<>));
+                Assert.IsNotNull(ch);
+            }
+        }
 
-			using (var db = GetDataContext(context))
-			{
-				var q =
-					from p in db.Parent.LoadWith(p => p.Children3)
-					select new
-					{
-						p.GrandChildren.Count,
-						p
-					};
+        [Test, DataContextSource]
+        public void LoadWith5(string context)
+        {
+            using (new AllowMultipleQuery())
+            using (var db = GetDataContext(context))
+            {
+                var q =
+                    from p in db.Parent.LoadWith(p => p.Children.First().GrandChildren[0].Child.Parent)
+                    select new
+                    {
+                        p.GrandChildren.Count,
+                        p
+                    };
 
-				var ch = q.ToList().Select(t => t.p).SelectMany(p => p.Children3).FirstOrDefault();
+                var ch = q.ToList().Select(t => t.p).SelectMany(p => p.Children).SelectMany(p => p.GrandChildren).FirstOrDefault();
 
-				Assert.IsNotNull(ch);
-			}
+                Assert.IsNotNull(ch);
+                Assert.IsNotNull(ch.Child);
+                Assert.IsNotNull(ch.Child.Parent);
+            }
+        }
 
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = false;
-		}
+        [Test, DataContextSource]
+        public void LoadWith6(string context)
+        {
+            using (new AllowMultipleQuery())
+            using (var db = GetDataContext(context))
+            {
+                var q =
+                    from p in db.Child.LoadWith(p => p.GrandChildren2[0].Child.Parent)
+                    select new
+                    {
+                        p.GrandChildren.Count,
+                        p
+                    };
 
-		[Test, DataContextSource]
-		public void LoadWith5(string context)
-		{
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = true;
+                var ch = q.ToList().Select(t => t.p).SelectMany(p => p.GrandChildren2).FirstOrDefault();
 
-			using (var db = GetDataContext(context))
-			{
-				var q =
-					from p in db.Parent.LoadWith(p => p.Children.First().GrandChildren[0].Child.Parent)
-					select new
-					{
-						p.GrandChildren.Count,
-						p
-					};
+                Assert.IsNotNull(ch);
+                Assert.IsNotNull(ch.Child);
+                Assert.IsNotNull(ch.Child.Parent);
+            }
+        }
 
-				var ch = q.ToList().Select(t => t.p).SelectMany(p => p.Children).SelectMany(p => p.GrandChildren).FirstOrDefault();
+        [Test, DataContextSource]
+        public void LoadWith7(string context)
+        {
+            using (new AllowMultipleQuery())
+            using (var db = GetDataContext(context))
+            {
+                var q =
+                    from p in db.Child.LoadWith(p => p.GrandChildren2[0].Child.Parent)
+                    select new
+                    {
+                        p.GrandChildren.Count,
+                        p
+                    };
 
-				Assert.IsNotNull(ch);
-				Assert.IsNotNull(ch.Child);
-				Assert.IsNotNull(ch.Child.Parent);
-			}
+                var ch = q.Select(t => t.p).SelectMany(p => p.GrandChildren2).FirstOrDefault();
 
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = false;
-		}
+                Assert.IsNotNull(ch);
+                Assert.IsNotNull(ch.Child);
+                Assert.IsNotNull(ch.Child.Parent);
+            }
+        }
 
-		[Test, DataContextSource]
-		public void LoadWith6(string context)
-		{
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = true;
+        [Test, DataContextSource(ProviderName.Access)]
+        public void LoadWith8(string context)
+        {
+            using (new AllowMultipleQuery())
+            using (var db = GetDataContext(context))
+            {
+                var q =
+                    from p in db.GrandChild.LoadWith(p => p.Child.GrandChildren[0].Child.Parent)
+                    select p;
 
-			using (var db = GetDataContext(context))
-			{
-				var q =
-					from p in db.Child.LoadWith(p => p.GrandChildren2[0].Child.Parent)
-					select new
-					{
-						p.GrandChildren.Count,
-						p
-					};
+                var ch = q.SelectMany(p => p.Child.GrandChildren).FirstOrDefault();
 
-				var ch = q.ToList().Select(t => t.p).SelectMany(p => p.GrandChildren2).FirstOrDefault();
+                Assert.IsNotNull(ch);
+                Assert.IsNotNull(ch.Child);
+                Assert.IsNotNull(ch.Child.Parent);
+            }
+        }
 
-				Assert.IsNotNull(ch);
-				Assert.IsNotNull(ch.Child);
-				Assert.IsNotNull(ch.Child.Parent);
-			}
+        [Test, DataContextSource(ProviderName.Access)]
+        public void LoadWith9(string context)
+        {
+            using (new AllowMultipleQuery())
+            using (var db = GetDataContext(context))
+            {
+                var q =
+                    from p in db.GrandChild.LoadWith(p => p.Child.GrandChildren)
+                    select p;
 
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = false;
-		}
+                var ch = q.SelectMany(p => p.Child.GrandChildren).FirstOrDefault();
 
-		[Test, DataContextSource]
-		public void LoadWith7(string context)
-		{
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = true;
+                Assert.IsNotNull(ch);
+                Assert.IsNull(ch.Child);
+            }
+        }
 
-			using (var db = GetDataContext(context))
-			{
-				var q =
-					from p in db.Child.LoadWith(p => p.GrandChildren2[0].Child.Parent)
-					select new
-					{
-						p.GrandChildren.Count,
-						p
-					};
+        [Test, DataContextSource(ProviderName.Access)]
+        //#if !NETSTANDARD1_6
+        //		[Timeout(15000)]
+        //#endif
+        public void LoadWith10(string context)
+        {
+            using (new AllowMultipleQuery())
+            using (var db = GetDataContext(context))
+            {
+                var q =
+                    from p in db.Parent.LoadWith(p => p.Children)
+                    where p.ParentID < 2
+                    select p;
 
-				var ch = q.Select(t => t.p).SelectMany(p => p.GrandChildren2).FirstOrDefault();
+                for (var i = 0; i < 100; i++)
+                {
+                    var list = q.ToList();
+                }
+            }
+        }
 
-				Assert.IsNotNull(ch);
-				Assert.IsNotNull(ch.Child);
-				Assert.IsNotNull(ch.Child.Parent);
-			}
+        [Test, DataContextSource(ProviderName.Access)]
+        public void LoadWith11(string context)
+        {
+            LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = true;
 
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = false;
-		}
+            using (var db = GetDataContext(context))
+            {
+                var q =
+                    from p in db.Parent.LoadWith(p => p.Children).LoadWith(p => p.GrandChildren)
+                    where p.ParentID < 2
+                    select p;
 
-		[Test, DataContextSource(ProviderName.Access)]
-		public void LoadWith8(string context)
-		{
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = true;
-
-			using (var db = GetDataContext(context))
-			{
-				var q =
-					from p in db.GrandChild.LoadWith(p => p.Child.GrandChildren[0].Child.Parent)
-					select p;
-
-				var ch = q.SelectMany(p => p.Child.GrandChildren).FirstOrDefault();
-
-				Assert.IsNotNull(ch);
-				Assert.IsNotNull(ch.Child);
-				Assert.IsNotNull(ch.Child.Parent);
-			}
-
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = false;
-		}
-
-		[Test, DataContextSource(ProviderName.Access)]
-		public void LoadWith9(string context)
-		{
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = true;
-
-			using (var db = GetDataContext(context))
-			{
-				var q =
-					from p in db.GrandChild.LoadWith(p => p.Child.GrandChildren)
-					select p;
-
-				var ch = q.SelectMany(p => p.Child.GrandChildren).FirstOrDefault();
-
-				Assert.IsNotNull(ch);
-				Assert.IsNull   (ch.Child);
-			}
-
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = false;
-		}
-
-		[Test, DataContextSource(ProviderName.Access)]
-		public void LoadWith10(string context)
-		{
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = true;
-
-			using (var db = GetDataContext(context))
-			{
-				var q =
-					from p in db.Parent.LoadWith(p => p.Children)
-					where p.ParentID < 2
-					select p;
-
-				for (var i = 0; i < 100; i++)
-				{
-					var list = q.ToList();
-				}
-			}
-
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = false;
-		}
-	}
+                foreach (var parent in q)
+                {
+                    Assert.IsNotNull(parent.Children);
+                    Assert.IsNotNull(parent.GrandChildren);
+                    Assert.IsNotEmpty(parent.Children);
+                    Assert.IsNotEmpty(parent.GrandChildren);
+                    Assert.IsNull(parent.Children3);
+                }
+            }
+        }
+    }
 }

@@ -17,7 +17,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from ch in    Child select ch.ParentID).Distinct(),
+					(from ch in Child select ch.ParentID).Distinct(),
 					(from ch in db.Child select ch.ParentID).Distinct());
 		}
 
@@ -26,7 +26,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p in    Parent select p.Value1 ?? p.ParentID % 2).Distinct(),
+					(from p in Parent select p.Value1 ?? p.ParentID % 2).Distinct(),
 					(from p in db.Parent select p.Value1 ?? p.ParentID % 2).Distinct());
 		}
 
@@ -35,7 +35,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p in    Parent select new { Value = p.Value1 ?? p.ParentID % 2, p.Value1 }).Distinct(),
+					(from p in Parent select new { Value = p.Value1 ?? p.ParentID % 2, p.Value1 }).Distinct(),
 					(from p in db.Parent select new { Value = p.Value1 ?? p.ParentID % 2, p.Value1 }).Distinct());
 		}
 
@@ -44,7 +44,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p in    Parent select new Parent { ParentID = p.Value1 ?? p.ParentID % 2, Value1 = p.Value1 }).Distinct(),
+					(from p in Parent select new Parent { ParentID = p.Value1 ?? p.ParentID % 2, Value1 = p.Value1 }).Distinct(),
 					(from p in db.Parent select new Parent { ParentID = p.Value1 ?? p.ParentID % 2, Value1 = p.Value1 }).Distinct());
 		}
 
@@ -55,7 +55,7 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p in    Parent select new Parent { ParentID = p.Value1 ?? p.ParentID % 2, Value1 = id + 1 }).Distinct(),
+					(from p in Parent select new Parent { ParentID = p.Value1 ?? p.ParentID % 2, Value1 = id + 1 }).Distinct(),
 					(from p in db.Parent select new Parent { ParentID = p.Value1 ?? p.ParentID % 2, Value1 = id + 1 }).Distinct());
 		}
 
@@ -66,7 +66,7 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p in    Parent select new Parent { ParentID = p.Value1 ?? p.ParentID + id % 2, Value1 = id + 1 }).Distinct(),
+					(from p in Parent select new Parent { ParentID = p.Value1 ?? p.ParentID + id % 2, Value1 = id + 1 }).Distinct(),
 					(from p in db.Parent select new Parent { ParentID = p.Value1 ?? p.ParentID + id % 2, Value1 = id + 1 }).Distinct());
 		}
 
@@ -77,13 +77,13 @@ namespace Tests.Linq
 			{
 				var expected =
 					from p in Parent
-						join c in Child on p.ParentID equals c.ParentID
+					join c in Child on p.ParentID equals c.ParentID
 					where c.ChildID > 20
 					select p;
 
 				var result =
 					from p in db.Parent
-						join c in db.Child on p.ParentID equals c.ParentID
+					join c in db.Child on p.ParentID equals c.ParentID
 					where c.ChildID > 20
 					select p;
 
@@ -98,13 +98,13 @@ namespace Tests.Linq
 			{
 				var expected =
 					from p in Parent
-						join c in Child on p.ParentID equals c.ParentID
+					join c in Child on p.ParentID equals c.ParentID
 					where c.ChildID > 20
 					select p;
 
 				var result =
 					from p in db.Parent
-						join c in db.Child on p.ParentID equals c.ParentID
+					join c in db.Child on p.ParentID equals c.ParentID
 					where c.ChildID > 20
 					select p;
 
@@ -112,12 +112,12 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource(ProviderName.Sybase, ProviderName.SQLite)]
+		[Test, DataContextSource(ProviderName.Sybase, ProviderName.SQLiteClassic, ProviderName.SQLiteMS)]
 		public void TakeDistinct(string context)
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from ch in    Child orderby ch.ParentID select ch.ParentID).Take(4).Distinct(),
+					(from ch in Child orderby ch.ParentID select ch.ParentID).Take(4).Distinct(),
 					(from ch in db.Child orderby ch.ParentID select ch.ParentID).Take(4).Distinct());
 		}
 
@@ -128,6 +128,25 @@ namespace Tests.Linq
 				AreEqual(
 					   Child.Select(ch => ch.ParentID).Distinct().OrderBy(ch => ch),
 					db.Child.Select(ch => ch.ParentID).Distinct().OrderBy(ch => ch));
+		}
+
+		[Test, DataContextSource]
+		public void DistinctJoin(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var q1 = GetTypes(context);
+				var q2 = db.Types.Select(x => new LinqDataTypes { ID = x.ID, SmallIntValue = x.SmallIntValue }).Distinct();
+
+				AreEqual(
+					from e in q1
+					from p in q1.Where(x => x.ID == e.ID).DefaultIfEmpty()
+					select new { e.ID, p.SmallIntValue },
+					from e in q2
+					from p in q2.Where(x => x.ID == e.ID).DefaultIfEmpty()
+					select new { e.ID, p.SmallIntValue }
+					);
+			}
 		}
 	}
 }

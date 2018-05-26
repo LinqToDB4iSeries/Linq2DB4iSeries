@@ -8,7 +8,6 @@ using LinqToDB.Mapping;
 
 using NUnit.Framework;
 
-#pragma warning disable 0649
 
 namespace Tests.Linq
 {
@@ -22,7 +21,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Person where new[] { Gender.Male }.Contains(p.Gender) select p,
+					from p in Person where new[] { Gender.Male }.Contains(p.Gender) select p,
 					from p in db.Person where new[] { Gender.Male }.Contains(p.Gender) select p);
 		}
 
@@ -31,7 +30,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Person where p.Gender == Gender.Male select p,
+					from p in Person where p.Gender == Gender.Male select p,
 					from p in db.Person where p.Gender == Gender.Male select p);
 		}
 
@@ -42,7 +41,7 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Person where p.Gender == gender select p,
+					from p in Person where p.Gender == gender select p,
 					from p in db.Person where p.Gender == gender select p);
 		}
 
@@ -53,7 +52,7 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Person where p.Gender != fm select p,
+					from p in Person where p.Gender != fm select p,
 					from p in db.Person where p.Gender != fm select p);
 		}
 
@@ -62,7 +61,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Parent4 where p.Value1 == TypeValue.Value1 select p,
+					from p in Parent4 where p.Value1 == TypeValue.Value1 select p,
 					from p in db.Parent4 where p.Value1 == TypeValue.Value1 select p);
 		}
 
@@ -72,7 +71,7 @@ namespace Tests.Linq
 			var value = ConvertTo<TypeValue>.From(1);
 
 			Assert.AreEqual(TypeValue.Value1, value);
-			Assert.AreEqual(10,               (int)value);
+			Assert.AreEqual(10, (int)value);
 		}
 
 		[Test, DataContextSource]
@@ -80,7 +79,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Parent4 where p.Value1 == TypeValue.Value3 select p,
+					from p in Parent4 where p.Value1 == TypeValue.Value3 select p,
 					from p in db.Parent4 where p.Value1 == TypeValue.Value3 select p);
 		}
 
@@ -89,12 +88,14 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Parent4
-					join c in    Child on p.ParentID equals c.ParentID
-					where p.Value1 == TypeValue.Value1 select p,
+					from p in Parent4
+					join c in Child on p.ParentID equals c.ParentID
+					where p.Value1 == TypeValue.Value1
+					select p,
 					from p in db.Parent4
 					join c in db.Child on p.ParentID equals c.ParentID
-					where p.Value1 == TypeValue.Value1 select p);
+					where p.Value1 == TypeValue.Value1
+					select p);
 		}
 
 		[Test, DataContextSource]
@@ -117,7 +118,7 @@ namespace Tests.Linq
 		[Table("Parent")]
 		class TestParent
 		{
-			[Column] public int       ParentID;
+			[Column] public int ParentID;
 			[Column] public TestValue Value1;
 		}
 
@@ -158,13 +159,13 @@ namespace Tests.Linq
 			[MapValue("O")] Other,
 		}
 
-		[Table("Person", IsColumnAttributeRequired=false)]
+		[Table("Person", IsColumnAttributeRequired = false)]
 		public class Person9
 		{
-			public int     PersonID;
-			public string  FirstName;
-			public string  LastName;
-			public string  MiddleName;
+			public int PersonID;
+			public string FirstName;
+			public string LastName;
+			public string MiddleName;
 			public Gender9 Gender;
 		}
 
@@ -178,7 +179,7 @@ namespace Tests.Linq
 		[Table("Parent")]
 		public class ParentObject
 		{
-			[Column]                      public int   ParentID;
+			[Column] public int ParentID;
 			[Column("Value1", ".Value1")] public Inner Value = new Inner();
 
 			public class Inner
@@ -209,13 +210,13 @@ namespace Tests.Linq
 			}
 		}
 
-		[Table(Name="Child")]
+		[Table(Name = "Child")]
 		public class ChildObject
 		{
 			[Column] public int ParentID;
 			[Column] public int ChildID;
 
-			[Association(ThisKey="ParentID", OtherKey="ParentID")]
+			[Association(ThisKey = "ParentID", OtherKey = "ParentID")]
 			public ParentObject Parent;
 		}
 
@@ -234,19 +235,20 @@ namespace Tests.Linq
 			public int MyValue;
 		}
 
-		[Table(Name="Parent")]
+		[Table(Name = "Parent")]
 		class MyParent
 		{
 			[Column] public MyInt ParentID;
-			[Column] public int?  Value1;
+			[Column] public int? Value1;
 		}
 
 		class MyMappingSchema : MappingSchema
 		{
 			public MyMappingSchema()
 			{
-				SetConvertExpression<int,MyInt>          (n => new MyInt { MyValue = n });
-				SetConvertExpression<MyInt,DataParameter>(n => new DataParameter { Value = n.MyValue });
+				SetConvertExpression<Int64, MyInt>(n => new MyInt { MyValue = (int)n });
+				SetConvertExpression<Int32, MyInt>(n => new MyInt { MyValue = n });
+				SetConvertExpression<MyInt, DataParameter>(n => new DataParameter { Value = n.MyValue });
 			}
 		}
 
@@ -324,7 +326,7 @@ namespace Tests.Linq
 		[Table("Parent")]
 		class MyParent1
 		{
-			[Column] public int  ParentID;
+			[Column] public int ParentID;
 			[Column] public int? Value1;
 
 			public string Value2 { get { return "1"; } }
@@ -337,7 +339,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					              Parent    .Select(p => new { p.ParentID,   Value2 = "1" }),
+								  Parent.Select(p => new { p.ParentID, Value2 = "1" }),
 					db.GetTable<MyParent1>().Select(p => new { p.ParentID, p.Value2 }));
 		}
 
@@ -346,7 +348,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					              Parent    .Select(p => new { p.ParentID,          Length = 1 }),
+								  Parent.Select(p => new { p.ParentID, Length = 1 }),
 					db.GetTable<MyParent1>().Select(p => new { p.ParentID, p.Value2.Length }));
 		}
 
@@ -355,13 +357,13 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					              Parent    .Select(p => new { p.ParentID, Value = 2            }),
+								  Parent.Select(p => new { p.ParentID, Value = 2 }),
 					db.GetTable<MyParent1>().Select(p => new { p.ParentID, Value = p.GetValue() }));
 		}
 
-		public class     Entity    { public int Id { get; set; } }
+		public class Entity { public int Id { get; set; } }
 		public interface IDocument { int Id { get; set; } }
-		public class     Document : Entity, IDocument { }
+		public class Document : Entity, IDocument { }
 
 		[Test]
 		public void TestMethod()
@@ -385,10 +387,40 @@ namespace Tests.Linq
 		public void Issue171Test(string context)
 		{
 			using (var db = GetDataContext(context))
-			db.GetTable<Table171>()
-				.Where (t => t.Gender == Gender.Male)
-				.Select(t => new { value = (int)t.Gender })
-				.ToList();
+				db.GetTable<Table171>()
+					.Where(t => t.Gender == Gender.Male)
+					.Select(t => new { value = (int)t.Gender })
+					.ToList();
+		}
+
+		[Table("Child")]
+		interface IChild
+		{
+			[Column]
+			int ChildID { get; set; }
+		}
+
+		[Test, DataContextSource]
+		public void TestInterfaceMapping1(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var results = db.GetTable<IChild>().Where(c => c.ChildID == 32).Count();
+
+				Assert.AreEqual(1, results);
+			}
+		}
+
+		[Test, DataContextSource]
+		public void TestInterfaceMapping2(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var results = db.GetTable<IChild>().Where(c => c.ChildID == 32).Select(_ => new { _.ChildID }).ToList();
+
+				Assert.AreEqual(1, results.Count);
+				Assert.AreEqual(32, results[0].ChildID);
+			}
 		}
 	}
 }

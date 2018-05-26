@@ -21,9 +21,20 @@ namespace Tests._Create
 		
 			Console.WriteLine("=== " + name + " === \n");
 
-			var gas = configString.EndsWith("GAS", StringComparison.CurrentCultureIgnoreCase);
+			var gas = configString.Contains(".GAS");
+			var ver73 = configString.Contains(".73");
 
-			var text = File.ReadAllText(@"..\..\..\..\Data\Create Scripts\" + name + (gas ? "GAS" : "") + ".sql");
+			name += gas ? "GAS" : "";
+
+			//var text = File.ReadAllText(@"..\..\..\..\Data\Create Scripts\" + name + (gas ? "GAS" : "") + ".sql");
+
+			var scriptFolder = Path.Combine(Path.GetFullPath("."), "Database", "Create Scripts");
+			Console.WriteLine("Script folder exists: {1}; {0}", scriptFolder, Directory.Exists(scriptFolder));
+
+			var sqlFileName = Path.GetFullPath(Path.Combine(scriptFolder, Path.ChangeExtension(name, "sql")));
+			Console.WriteLine("Sql file exists: {1}; {0}", sqlFileName, File.Exists(sqlFileName));
+
+			var text = File.ReadAllText(sqlFileName);
 
 			while (true)
 			{

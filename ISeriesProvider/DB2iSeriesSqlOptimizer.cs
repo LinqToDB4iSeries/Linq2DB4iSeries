@@ -18,22 +18,23 @@
 			}
 		}
 
-		public override SelectQuery Finalize(SelectQuery selectQuery)
-		{
-			(new QueryVisitor()).Visit(selectQuery.Select, SetQueryParameter);
+	    public override SqlStatement Finalize(SqlStatement statement)
+	    {
+			if (statement.SelectQuery != null)
+				(new QueryVisitor()).Visit(statement.SelectQuery.Select, SetQueryParameter);
 
+	        statement = base.Finalize(statement);
 
-			selectQuery = base.Finalize(selectQuery);
-			switch (selectQuery.QueryType)
-			{
-				case QueryType.Delete:
-					return GetAlternativeDelete(selectQuery);
-				case QueryType.Update:
-					return GetAlternativeUpdate(selectQuery);
-				default:
-					return selectQuery;
-			}
-		}
+	        switch (statement.QueryType)
+	        {
+	            case QueryType.Delete:
+	                return GetAlternativeDelete((SqlDeleteStatement)statement);
+	            case QueryType.Update:
+	                return GetAlternativeUpdate((SqlUpdateStatement)statement);
+	            default:
+	                return statement;
+	        }
+        }
 
 		public override ISqlExpression ConvertExpression(ISqlExpression expr)
 		{
@@ -170,14 +171,14 @@
 			var query = (SelectQuery)func.Parameters[0];
 
             if (query.Select.Columns.Count == 0)
-				query.Select.Columns.Add(new SelectQuery.Column(query, new SqlExpression("'.'")));
+				query.Select.Columns.Add(new SqlColumn(query, new SqlExpression("'.'")));
 
 			query.Select.Take(1, null);
 
-			var sc = new SelectQuery.SearchCondition();
+			var sc = new SqlSearchCondition();
 
 			sc.Conditions.Add(
-				new SelectQuery.Condition(false, new SelectQuery.Predicate.IsNull(query, true)));
+				new SqlCondition(false, new SqlPredicate.IsNull(query, true)));
 
 			return sc;
 		}

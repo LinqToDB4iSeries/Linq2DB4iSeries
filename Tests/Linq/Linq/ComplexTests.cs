@@ -23,37 +23,37 @@ namespace Tests.Linq
 			{
 				var q1 =
 					from gc1 in GrandChild
-						join max in
-							from gch in GrandChild
-							group gch by gch.ChildID into g
-							select g.Max(c => c.GrandChildID)
-						on gc1.GrandChildID equals max
+					join max in
+						from gch in GrandChild
+						group gch by gch.ChildID into g
+						select g.Max(c => c.GrandChildID)
+					on gc1.GrandChildID equals max
 					select gc1;
 
 				var expected =
 					from ch in Child
-						join p   in Parent on ch.ParentID equals p.ParentID
-						join gc2 in q1     on p.ParentID  equals gc2.ParentID into g
-						from gc3 in g.DefaultIfEmpty()
+					join p in Parent on ch.ParentID equals p.ParentID
+					join gc2 in q1 on p.ParentID equals gc2.ParentID into g
+					from gc3 in g.DefaultIfEmpty()
 					where gc3 == null || !new[] { 111, 222 }.Contains(gc3.GrandChildID.Value)
 					select new { p.ParentID, gc3 };
 
 				var q2 =
 					from gc1 in db.GrandChild
-						join max in
-							from gch in db.GrandChild
-							group gch by gch.ChildID into g
-							select g.Max(c => c.GrandChildID)
-						on gc1.GrandChildID equals max
+					join max in
+						from gch in db.GrandChild
+						group gch by gch.ChildID into g
+						select g.Max(c => c.GrandChildID)
+					on gc1.GrandChildID equals max
 					select gc1;
 
 				var result =
 					from ch in db.Child
-						join p   in db.Parent on ch.ParentID equals p.ParentID
-						join gc2 in q2        on p.ParentID  equals gc2.ParentID into g
-						from gc3 in g.DefaultIfEmpty()
-				where gc3 == null || !new[] { 111, 222 }.Contains(gc3.GrandChildID.Value)
-				select new { p.ParentID, gc3 };
+					join p in db.Parent on ch.ParentID equals p.ParentID
+					join gc2 in q2 on p.ParentID equals gc2.ParentID into g
+					from gc3 in g.DefaultIfEmpty()
+					where gc3 == null || !new[] { 111, 222 }.Contains(gc3.GrandChildID.Value)
+					select new { p.ParentID, gc3 };
 
 				AreEqual(expected, result);
 			}
@@ -66,47 +66,47 @@ namespace Tests.Linq
 			{
 				var q1 =
 					from gc in GrandChild
-						join max in
-							from gch in GrandChild
-							group gch by gch.ChildID into g
-							select g.Max(c => c.GrandChildID)
-						on gc.GrandChildID equals max
+					join max in
+						from gch in GrandChild
+						group gch by gch.ChildID into g
+						select g.Max(c => c.GrandChildID)
+					on gc.GrandChildID equals max
 					select gc;
 
 				var expected =
 					from ch in Child
-						join p  in Parent on ch.ParentID equals p.ParentID
-						join gc in q1     on p.ParentID  equals gc.ParentID into g
-						from gc in g.DefaultIfEmpty()
+					join p in Parent on ch.ParentID equals p.ParentID
+					join gc in q1 on p.ParentID equals gc.ParentID into g
+					from gc in g.DefaultIfEmpty()
 					where gc == null || gc.GrandChildID != 111 && gc.GrandChildID != 222
 					select new
 					{
-						Parent       = p,
+						Parent = p,
 						GrandChildID = gc,
-						Value        = GetValue(gc != null ? gc.ChildID : int.MaxValue)
+						Value = GetValue(gc != null ? gc.ChildID : int.MaxValue)
 					};
 
 				var q2 =
 					from gc in db.GrandChild
-						join max in
-							from gch in db.GrandChild
-							group gch by gch.ChildID into g
-							select g.Max(c => c.GrandChildID)
-						on gc.GrandChildID equals max
+					join max in
+						from gch in db.GrandChild
+						group gch by gch.ChildID into g
+						select g.Max(c => c.GrandChildID)
+					on gc.GrandChildID equals max
 					select gc;
 
 				var result =
 					from ch in db.Child
-						join p  in db.Parent on ch.ParentID equals p.ParentID
-						join gc in q2        on p.ParentID  equals gc.ParentID into g
-						from gc in g.DefaultIfEmpty()
-				where gc == null || gc.GrandChildID != 111 && gc.GrandChildID != 222
-				select new
-				{
-					Parent       = p,
-					GrandChildID = gc,
-					Value        = GetValue(gc != null ? gc.ChildID : int.MaxValue)
-				};
+					join p in db.Parent on ch.ParentID equals p.ParentID
+					join gc in q2 on p.ParentID equals gc.ParentID into g
+					from gc in g.DefaultIfEmpty()
+					where gc == null || gc.GrandChildID != 111 && gc.GrandChildID != 222
+					select new
+					{
+						Parent = p,
+						GrandChildID = gc,
+						Value = GetValue(gc != null ? gc.ChildID : int.MaxValue)
+					};
 
 				AreEqual(expected, result);
 			}
@@ -117,42 +117,42 @@ namespace Tests.Linq
 			return value ?? 777;
 		}
 
-		[Test, DataContextSource(ProviderName.SQLite, ProviderName.Access)]
+		[Test, DataContextSource(ProviderName.SQLiteClassic, ProviderName.SQLiteMS, ProviderName.Access)]
 		public void Contains3(string context)
 		{
 			using (var db = GetDataContext(context))
 			{
 				var q1 =
 					from gc in GrandChild1
-						join max in
-							from gch in GrandChild1
-							group gch by gch.ChildID into g
-							select g.Max(c => c.GrandChildID)
-						on gc.GrandChildID equals max
+					join max in
+						from gch in GrandChild1
+						group gch by gch.ChildID into g
+						select g.Max(c => c.GrandChildID)
+					on gc.GrandChildID equals max
 					select gc;
 
 				var expected =
 					from ch in Child
-						join p  in Parent on ch.ParentID equals p.ParentID
-						join gc in q1     on p.ParentID  equals gc.ParentID into g
-						from gc in g.DefaultIfEmpty()
+					join p in Parent on ch.ParentID equals p.ParentID
+					join gc in q1 on p.ParentID equals gc.ParentID into g
+					from gc in g.DefaultIfEmpty()
 					where gc == null || !new[] { 111, 222 }.Contains(gc.GrandChildID.Value)
 					select new { p.ParentID, gc };
 
 				var q2 =
 					from gc in db.GrandChild1
-						join max in
-							from gch in db.GrandChild1
-							group gch by gch.ChildID into g
-							select g.Max(c => c.GrandChildID)
-						on gc.GrandChildID equals max
+					join max in
+						from gch in db.GrandChild1
+						group gch by gch.ChildID into g
+						select g.Max(c => c.GrandChildID)
+					on gc.GrandChildID equals max
 					select gc;
 
 				var result =
 					from ch in db.Child
-						join p  in db.Parent on ch.ParentID equals p.ParentID
-						join gc in q2        on p.ParentID  equals gc.ParentID into g
-						from gc in g.DefaultIfEmpty()
+					join p in db.Parent on ch.ParentID equals p.ParentID
+					join gc in q2 on p.ParentID equals gc.ParentID into g
+					from gc in g.DefaultIfEmpty()
 					where gc == null || !new[] { 111, 222 }.Contains(gc.GrandChildID.Value)
 					select new { p.ParentID, gc };
 
@@ -160,44 +160,68 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource(ProviderName.SQLite, ProviderName.Access)]
+		[Test, DataContextSource(ProviderName.SQLiteClassic, ProviderName.SQLiteMS, ProviderName.Access)]
 		public void Contains4(string context)
 		{
 			using (var db = GetDataContext(context))
 			{
 				var q1 =
 					from gc in GrandChild1
-						join max in
-							from gch in GrandChild1
-							group gch by gch.ChildID into g
-							select g.Max(c => c.GrandChildID)
-						on gc.GrandChildID equals max
+					join max in
+						from gch in GrandChild1
+						group gch by gch.ChildID into g
+						select g.Max(c => c.GrandChildID)
+					on gc.GrandChildID equals max
 					select gc;
 
 				var expected =
 					from ch in Child
-						join gc in q1 on ch.Parent.ParentID equals gc.ParentID into g
-						from gc in g.DefaultIfEmpty()
+					join gc in q1 on ch.Parent.ParentID equals gc.ParentID into g
+					from gc in g.DefaultIfEmpty()
 					where gc == null || !new[] { 111, 222 }.Contains(gc.GrandChildID.Value)
 					select new { ch.Parent, gc };
 
 				var q2 =
 					from gc in db.GrandChild1
-						join max in
-							from gch in db.GrandChild1
-							group gch by gch.ChildID into g
-							select g.Max(c => c.GrandChildID)
-						on gc.GrandChildID equals max
+					join max in
+						from gch in db.GrandChild1
+						group gch by gch.ChildID into g
+						select g.Max(c => c.GrandChildID)
+					on gc.GrandChildID equals max
 					select gc;
 
 				var result =
 					from ch in db.Child
-						join gc in q2 on ch.Parent.ParentID equals gc.ParentID into g
-						from gc in g.DefaultIfEmpty()
-				where gc == null || !new[] { 111, 222 }.Contains(gc.GrandChildID.Value)
-				select new { ch.Parent, gc };
+					join gc in q2 on ch.Parent.ParentID equals gc.ParentID into g
+					from gc in g.DefaultIfEmpty()
+					where gc == null || !new[] { 111, 222 }.Contains(gc.GrandChildID.Value)
+					select new { ch.Parent, gc };
 
 				AreEqual(expected, result);
+			}
+		}
+
+		[Test, DataContextSource(ProviderName.Access, ProviderName.SqlServer2000, ProviderName.Sybase)]
+		public void Contains5(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+					   Child.Where(c => Parent.Skip(1).Take(100).Select(p => p.ParentID).Contains(c.ParentID)),
+					db.Child.Where(c => db.Parent.Skip(1).Take(100).Select(p => p.ParentID).Contains(c.ParentID))
+					);
+			}
+		}
+
+		[Test, DataContextSource(ProviderName.Access)]
+		public void Contains6(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+					   Child.Where(c => Parent.Select(p => p.ParentID).Contains(c.ParentID)),
+					db.Child.Where(c => db.Parent.Select(p => p.ParentID).Contains(c.ParentID))
+					);
 			}
 		}
 
@@ -208,8 +232,8 @@ namespace Tests.Linq
 			{
 				var q1 =
 					from p in Parent
-						join c in Child      on p.ParentID equals c.ParentID
-						join g in GrandChild on p.ParentID equals g.ParentID
+					join c in Child on p.ParentID equals c.ParentID
+					join g in GrandChild on p.ParentID equals g.ParentID
 					select new { p, c, g };
 
 				var expected =
@@ -226,8 +250,8 @@ namespace Tests.Linq
 
 				var q2 =
 					from p in db.Parent
-						join c in db.Child      on p.ParentID equals c.ParentID
-						join g in db.GrandChild on p.ParentID equals g.ParentID
+					join c in db.Child on p.ParentID equals c.ParentID
+					join g in db.GrandChild on p.ParentID equals g.ParentID
 					select new { p, c, g };
 
 				var result =
@@ -242,14 +266,14 @@ namespace Tests.Linq
 					)
 					select x;
 
-					AreEqual(expected, result);
+				AreEqual(expected, result);
 			}
 		}
 
 		public class MyObject
 		{
 			public Parent Parent;
-			public Child  Child;
+			public Child Child;
 		}
 
 		IQueryable<MyObject> GetData(ITestDataContext db, int id)
@@ -280,8 +304,8 @@ namespace Tests.Linq
 		[Test]
 		public void ExpressionTest2()
 		{
-			Expression<Func<Parent,bool>> pred1 = _=>_.ParentID == 1;
-			Expression<Func<Parent,bool>> pred2 = _=>_.Value1   == 1 || _.Value1 == null;
+			Expression<Func<Parent, bool>> pred1 = _ => _.ParentID == 1;
+			Expression<Func<Parent, bool>> pred2 = _ => _.Value1 == 1 || _.Value1 == null;
 
 			var param = Expression.Parameter(typeof(Parent), "x");
 			var final = Expression.Lambda<Func<Parent, bool>>(
@@ -307,22 +331,22 @@ namespace Tests.Linq
 
 		[Table("GrandChild")]
 		[Column("GrandChildID", "Id")]
-		[Column("ChildID",      "InnerEnity.Id")]
-		[Column("ParentID",     "InnerEntityType")]
+		[Column("ChildID", "InnerEnity.Id")]
+		[Column("ParentID", "InnerEntityType")]
 		public class LookupEntity : Entity
 		{
-			public Entity         InnerEnity      { get; set; }
+			public Entity InnerEnity { get; set; }
 			public TestEntityType InnerEntityType { get; set; }
 		}
 
-		[Table(Name="GrandChild")]
+		[Table(Name = "GrandChild")]
 		[Column("GrandChildID", "Id")]
-		[Column("ChildID",      "Owner.Id")]
-		[Column("ParentID",     "EntityType")]
+		[Column("ChildID", "Owner.Id")]
+		[Column("ParentID", "EntityType")]
 		public class TestEntityBase : Entity
 		{
 			public TestEntityType EntityType { get; set; }
-			public SuperAccount   Owner      { get; set; }
+			public SuperAccount Owner { get; set; }
 		}
 
 		public class TestEntity : TestEntityBase, IEnumerable<object>
@@ -354,11 +378,11 @@ namespace Tests.Linq
 
 		[Table("GrandChild")]
 		[Column("GrandChildID", "Id")]
-		[Column("ParentID",     "Type")]
+		[Column("ParentID", "Type")]
 		public class SuperAccount : Entity, IEnumerable<object>
 		{
-			public List<Entity>     InnerAccounts { get; set; }
-			public SuperAccountType Type          { get; set; }
+			public List<Entity> InnerAccounts { get; set; }
+			public SuperAccountType Type { get; set; }
 
 			#region IEnumerable<object> Members
 

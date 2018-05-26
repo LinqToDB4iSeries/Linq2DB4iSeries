@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
@@ -35,12 +37,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
             SqlProviderFlags.CanCombineParameters = false;
             SqlProviderFlags.IsParameterOrderDependent = true;
 
-            SetCharField("CHAR", (r, i) => r.GetString(i).TrimEnd());
+			if(mapGuidAsString)
+				SqlProviderFlags.CustomFlags.Add(DB2iSeriesTools.MapGuidAsString);
+
+            SetCharField("CHAR", (r, i) => r.GetString(i).TrimEnd(' '));
+            SetCharField("NCHAR", (r, i) => r.GetString(i).TrimEnd(' '));
 
             _sqlOptimizer = new DB2iSeriesSqlOptimizer(SqlProviderFlags);
         }
 
- 
         
         readonly DB2iSeriesSqlOptimizer _sqlOptimizer;
         static Action<IDbDataParameter> _setBlob;
@@ -48,15 +53,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         #region "overrides"
 
-        public override string ConnectionNamespace { get { return ""; } }
-        protected override string ConnectionTypeName { get { return DB2iSeriesTools.ConnectionTypeName; } }
-        protected override string DataReaderTypeName { get { return DB2iSeriesTools.DataReaderTypeName; } }
-        public string DummyTableName { get { return DB2iSeriesTools.iSeriesDummyTableName(); } }
+        public override string ConnectionNamespace => "";
+        protected override string ConnectionTypeName => DB2iSeriesTools.ConnectionTypeName;
+        protected override string DataReaderTypeName => DB2iSeriesTools.DataReaderTypeName;
+        public string DummyTableName => DB2iSeriesTools.iSeriesDummyTableName();
 
         public override BulkCopyRowsCopied BulkCopy<T>(DataConnection dataConnection, BulkCopyOptions options, IEnumerable<T> source)
         {
             if (_bulkCopy == null)
-                _bulkCopy = new DB2iSeriesBulkCopy(GetConnectionType());
+                _bulkCopy = new DB2iSeriesBulkCopy();
 
             return _bulkCopy.BulkCopy(
               options.BulkCopyType == BulkCopyType.Default ? DB2iSeriesTools.DefaultBulkCopyType : options.BulkCopyType,
@@ -92,16 +97,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		    public static readonly DB2iSeriesMappingSchema StringGuidMappingSchema = new DB2iSeriesMappingSchema(DB2iSeriesProviderName.DB2_GAS);
 	    }
 
-		public override MappingSchema MappingSchema
-        {
-            get
-            {
-	            return mapGuidAsString
-		            ? MappingSchemaInstance.StringGuidMappingSchema
-		            : MappingSchemaInstance.BlobGuidMappingSchema;
-            }
-        }
+		public override MappingSchema MappingSchema => mapGuidAsString
+		    ? MappingSchemaInstance.StringGuidMappingSchema
+		    : MappingSchemaInstance.BlobGuidMappingSchema;
 
+        #region Merge
         public override int Merge<T>(DataConnection dataConnection, Expression<Func<T, bool>> deletePredicate, bool delete, IEnumerable<T> source, string tableName, string databaseName, string schemaName)
         {
             if (delete)
@@ -111,7 +111,25 @@ namespace LinqToDB.DataProvider.DB2iSeries
             return new DB2iSeriesMerge().Merge(dataConnection, deletePredicate, delete, source, tableName, databaseName, schemaName);
         }
 
-        protected override void OnConnectionTypeCreated(Type connectionType)
+	    public override Task<int> MergeAsync<T>(DataConnection dataConnection, Expression<Func<T, bool>> deletePredicate, bool delete, IEnumerable<T> source,
+		    string tableName, string databaseName, string schemaName, CancellationToken token)
+	    {
+		    if (delete)
+			    throw new LinqToDBException("DB2 MERGE statement does not support DELETE by source.");
+
+		    return new DB2iSeriesMerge().MergeAsync(dataConnection, deletePredicate, delete, source, tableName, databaseName, schemaName, token);
+	    }
+
+	    protected override BasicMergeBuilder<TTarget, TSource> GetMergeBuilder<TTarget, TSource>(
+		    DataConnection connection,
+		    IMergeable<TTarget, TSource> merge)
+	    {
+		    return new DB2iSeriesMergeBuilder<TTarget, TSource>(connection, merge);
+	    }
+
+	    #endregion
+
+		protected override void OnConnectionTypeCreated(Type connectionType)
         {
             DB2iSeriesTypes.ConnectionType = connectionType;
 

@@ -44,11 +44,11 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 				AreEqual(
 					Parent
-						.Select(p => new { children1 = p.Children. Where(c => c.ParentID > 1)  })
+						.Select(p => new { children1 = p.Children.Where(c => c.ParentID > 1) })
 						.Select(t => new { children2 = t.children1.Where(c => c.ParentID < 10) })
 						.Select(t => t.children2.Sum(c => c.ChildID)),
 					db.Parent
-						.Select(p => new { children1 = p.Children. Where(c => c.ParentID > 1)  })
+						.Select(p => new { children1 = p.Children.Where(c => c.ParentID > 1) })
 						.Select(t => new { children2 = t.children1.Where(c => c.ParentID < 10) })
 						.Select(t => t.children2.Sum(c => c.ChildID)));
 		}
@@ -59,11 +59,11 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 				AreEqual(
 					Parent
-						.Select(p => p.Children. Where(c => c.ParentID > 1))
+						.Select(p => p.Children.Where(c => c.ParentID > 1))
 						.Select(t => t.Where(c => c.ParentID < 10))
 						.Select(t => t.Sum(c => c.ChildID)),
 					db.Parent
-						.Select(p => p.Children. Where(c => c.ParentID > 1))
+						.Select(p => p.Children.Where(c => c.ParentID > 1))
 						.Select(t => t.Where(c => c.ParentID < 10))
 						.Select(t => t.Sum(c => c.ChildID)));
 		}
@@ -119,6 +119,45 @@ namespace Tests.Linq
 					select children2.Sum(c => c.ChildID));
 		}
 
+		//[Test, DataContextSource]
+		public void Where4(string context)
+		{
+			using (var db = GetDataContext(context))
+				AreEqual(
+					   Parent
+						.Select(p => new { p, children1 = p.Children.Where(c => c.ParentID > 1) })
+						.Where(t => t.children1.Any()),
+					db.Parent
+						.Select(p => new { p, children1 = p.Children.Where(c => c.ParentID > 1) })
+						.Where(t => t.children1.Any()));
+		}
+
+		//[Test, DataContextSource]
+		public void Where5(string context)
+		{
+			using (var db = GetDataContext(context))
+				AreEqual(
+					   Parent
+						.Select(p => new { children1 = p.Children.Where(c => c.ParentID > 1) })
+						.Where(t => t.children1.Any()),
+					db.Parent
+						.Select(p => new { children1 = p.Children.Where(c => c.ParentID > 1) })
+						.Where(t => t.children1.Any()));
+		}
+
+		//[Test, DataContextSource]
+		public void Where6(string context)
+		{
+			using (var db = GetDataContext(context))
+				AreEqual(
+					   Parent
+						.Select(p => p.Children.Where(c => c.ParentID > 1))
+						.Where(t => t.Any()),
+					db.Parent
+						.Select(p => p.Children.Where(c => c.ParentID > 1))
+						.Where(t => t.Any()));
+		}
+
 		[Test, DataContextSource]
 		public void Any1(string context)
 		{
@@ -160,7 +199,20 @@ namespace Tests.Linq
 						.Any());
 		}
 
-	
+		//[Test, DataContextSource]
+		public void Any4(string context)
+		{
+			using (var db = GetDataContext(context))
+				Assert.AreEqual(
+					   Parent
+						.Select(p => new { children1 = p.Children.Where(c => c.ParentID > 1) })
+						.Where(p => p.children1.Any())
+						.Any(),
+					db.Parent
+						.Select(p => new { children1 = p.Children.Where(c => c.ParentID > 1) })
+						.Where(p => p.children1.Any())
+						.Any());
+		}
 
 		[Test, DataContextSource(ProviderName.SqlCe, ProviderName.Informix, ProviderName.Sybase, ProviderName.SapHana)]
 		public void LetTest1(string context)
@@ -217,42 +269,7 @@ namespace Tests.Linq
 		[Test, DataContextSource(ProviderName.Informix, ProviderName.Sybase, ProviderName.SapHana)]
 		public void LetTest4(string context)
 		{
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = true;
-
-			using (var db = GetDataContext(context))
-			{
-				var val1 = from p in Parent
-						   let ch1 = Child.Where(c => c.ParentID == p.ParentID)
-						   let ch2 = ch1.Where(c => c.ChildID > -100)
-						   select new
-						   {
-							   Any = ch2.Any(),
-							   Count = ch2.Count(),
-							   First1 = ch2.FirstOrDefault(c => c.ParentID > 0),
-							   First2 = ch2.FirstOrDefault()
-						   };
-				var val2 = from p in db.Parent
-						   let ch1 = db.Child.Where(c => c.ParentID == p.ParentID)
-						   let ch2 = ch1.Where(c => c.ChildID > -100)
-						   select new
-						   {
-							   Any = ch2.Any(),
-							   Count = ch2.Count(),
-							   First1 = ch2.FirstOrDefault(c => c.ParentID > 0),
-							   First2 = ch2.FirstOrDefault()
-						   };
-
-				AreEqual(val1,val2);
-			}
-
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = false;
-		}
-
-		[Test, DataContextSource(ProviderName.Informix, ProviderName.Sybase, ProviderName.SapHana)]
-		public void LetTest5(string context)
-		{
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = true;
-
+			using (new AllowMultipleQuery())
 			using (var db = GetDataContext(context))
 			{
 				AreEqual(
@@ -261,8 +278,39 @@ namespace Tests.Linq
 					let ch2 = ch1.Where(c => c.ChildID > -100)
 					select new
 					{
-						Any    = ch2.Any(),
-						Count  = ch2.Count(),
+						Any = ch2.Any(),
+						Count = ch2.Count(),
+						First1 = ch2.FirstOrDefault(c => c.ParentID > 0),
+						First2 = ch2.FirstOrDefault()
+					}
+					,
+					from p in db.Parent
+					let ch1 = db.Child.Where(c => c.ParentID == p.ParentID)
+					let ch2 = ch1.Where(c => c.ChildID > -100)
+					select new
+					{
+						Any = ch2.Any(),
+						Count = ch2.Count(),
+						First1 = ch2.FirstOrDefault(c => c.ParentID > 0),
+						First2 = ch2.FirstOrDefault()
+					});
+			}
+		}
+
+		[Test, DataContextSource(ProviderName.Informix, ProviderName.Sybase, ProviderName.SapHana)]
+		public void LetTest5(string context)
+		{
+			using (new AllowMultipleQuery())
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+					from p in Parent
+					let ch1 = Child.Where(c => c.ParentID == p.ParentID)
+					let ch2 = ch1.Where(c => c.ChildID > -100)
+					select new
+					{
+						Any = ch2.Any(),
+						Count = ch2.Count(),
 						First1 = ch2.FirstOrDefault(c => c.ParentID > 0) == null ? 0 : ch2.FirstOrDefault(c => c.ParentID > 0).ParentID,
 						First2 = ch2.FirstOrDefault()
 					}
@@ -272,22 +320,20 @@ namespace Tests.Linq
 					let ch2 = ch1.Where(c => c.ChildID > -100)
 					select new
 					{
-						Any    = ch2.Any(),
-						Count  = ch2.Count(),
+						Any = ch2.Any(),
+						Count = ch2.Count(),
 						First1 = ch2.FirstOrDefault(c => c.ParentID > 0).ParentID,
 						First2 = ch2.FirstOrDefault()
 					});
 			}
-
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = false;
 		}
 
 		[Test, DataContextSource(ProviderName.Informix, ProviderName.Sybase, ProviderName.SapHana)]
 		public void LetTest6(string context)
 		{
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery     = true;
 			//LinqToDB.Common.Configuration.Linq.GenerateExpressionTest = true;
 
+			using (new AllowMultipleQuery())
 			using (var db = GetDataContext(context))
 				AreEqual(
 					(
@@ -297,8 +343,8 @@ namespace Tests.Linq
 						select new
 						{
 							p.ParentID,
-							Any    = ch2.Any(),
-							Count  = ch2.Count(),
+							Any = ch2.Any(),
+							Count = ch2.Count(),
 							First1 = ch2.FirstOrDefault(c => c.ParentID > 0) == null ? 0 : ch2.FirstOrDefault(c => c.ParentID > 0).ParentID,
 							First2 = ch2.FirstOrDefault()
 						}
@@ -311,21 +357,18 @@ namespace Tests.Linq
 						select new
 						{
 							p.ParentID,
-							Any    = ch2.Any(),
-							Count  = ch2.Count(),
+							Any = ch2.Any(),
+							Count = ch2.Count(),
 							First1 = ch2.FirstOrDefault(c => c.ParentID > 0).ParentID,
 							First2 = ch2.FirstOrDefault()
 						}
 					).Where(t => t.ParentID > 0));
-
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = false;
 		}
 
 		[Test, DataContextSource(ProviderName.Informix, ProviderName.Sybase, ProviderName.SapHana)]
 		public void LetTest7(string context)
 		{
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = true;
-
+			using (new AllowMultipleQuery())
 			using (var db = GetDataContext(context))
 				AreEqual(
 					(
@@ -335,8 +378,8 @@ namespace Tests.Linq
 						select new
 						{
 							p.ParentID,
-							Any    = ch2.Any(),
-							Count  = ch2.Count(),
+							Any = ch2.Any(),
+							Count = ch2.Count(),
 							First1 = ch2.FirstOrDefault(c => c.ParentID > 0) == null ? 0 : ch2.FirstOrDefault(c => c.ParentID > 0).ParentID,
 							First2 = ch2.FirstOrDefault()
 						}
@@ -349,55 +392,49 @@ namespace Tests.Linq
 						select new
 						{
 							p.ParentID,
-							Any    = ch2.Any(),
-							Count  = ch2.Count(),
+							Any = ch2.Any(),
+							Count = ch2.Count(),
 							First1 = ch2.FirstOrDefault(c => c.ParentID > 0).ParentID,
 							First2 = ch2.FirstOrDefault()
 						}
 					).Where(t => t.ParentID > 0).Take(5000));
-
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = false;
 		}
 
 		[Test, DataContextSource]
 		public void LetTest8(string context)
 		{
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = true;
-
+			using (new AllowMultipleQuery())
 			using (var db = GetDataContext(context))
 				AreEqual(
 					from p in Parent
 					let ch1 = Child.Where(c => c.ParentID == p.ParentID)
 					let ch2 = ch1.Where(c => c.ChildID > -100)
-					let ch3	= ch2.FirstOrDefault(c => c.ParentID > 0)
+					let ch3 = ch2.FirstOrDefault(c => c.ParentID > 0)
 					select new
 					{
 						First1 = ch3 == null ? 0 : ch3.ParentID,
-						Any    = ch2.Any(),
-						Count  = ch2.Count(),
+						Any = ch2.Any(),
+						Count = ch2.Count(),
 						First2 = ch2.FirstOrDefault()
 					}
 					,
 					from p in db.Parent
 					let ch1 = db.Child.Where(c => c.ParentID == p.ParentID)
 					let ch2 = ch1.Where(c => c.ChildID > -100)
-					let ch3	= ch2.FirstOrDefault(c => c.ParentID > 0)
+					let ch3 = ch2.FirstOrDefault(c => c.ParentID > 0)
 					select new
 					{
 						First1 = ch3 == null ? 0 : ch3.ParentID,
-						Any    = ch2.Any(),
-						Count  = ch2.Count(),
+						Any = ch2.Any(),
+						Count = ch2.Count(),
 						First2 = ch2.FirstOrDefault()
 					});
-
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = false;
 		}
 
 		[Test, DataContextSource]
 		public void LetTest9(string context)
 		{
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = true;
-
+			using (new AllowMultipleQuery())
 			using (var db = GetDataContext(context))
 				AreEqual(
 					(
@@ -417,15 +454,12 @@ namespace Tests.Linq
 							First = ch1.FirstOrDefault()
 						}
 					).Take(10));
-
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = false;
 		}
 
 		[Test, DataContextSource]
 		public void LetTest10(string context)
 		{
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = true;
-
+			using (new AllowMultipleQuery())
 			using (var db = GetDataContext(context))
 				Assert.AreEqual(
 					(
@@ -445,15 +479,12 @@ namespace Tests.Linq
 							First = ch1.FirstOrDefault()
 						}
 					).Any());
-
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = false;
 		}
 
 		[Test, DataContextSource]
 		public void LetTest11(string context)
 		{
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = true;
-
+			using (new AllowMultipleQuery())
 			using (var db = GetDataContext(context))
 				AreEqual(
 					from p in Parent
@@ -473,8 +504,6 @@ namespace Tests.Linq
 						First1 = ch1 == null ? 0 : ch1.ParentID,
 						First2 = ch2.FirstOrDefault()
 					});
-
-			LinqToDB.Common.Configuration.Linq.AllowMultipleQuery = false;
 		}
 	}
 }

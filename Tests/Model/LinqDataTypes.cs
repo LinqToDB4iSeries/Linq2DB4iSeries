@@ -2,19 +2,20 @@
 using System.Data.Linq;
 
 using LinqToDB.Mapping;
+using LinqToDB;
 
 namespace Tests.Model
 {
 	public class LinqDataTypes : IEquatable<LinqDataTypes>, IComparable
 	{
-		public int ID;
-		public decimal MoneyValue;
+		public int      ID;
+		public decimal  MoneyValue;
 		public DateTime DateTimeValue;
-		public bool BoolValue;
-		public Guid GuidValue;
-		public Binary BinaryValue;
-		public short SmallIntValue;
-		public string StringValue;
+		public bool     BoolValue;
+		public Guid     GuidValue;
+		public Binary   BinaryValue;
+		public short    SmallIntValue;
+		public string   StringValue;
 
 		public override bool Equals(object obj)
 		{
@@ -26,17 +27,17 @@ namespace Tests.Model
 			if (ReferenceEquals(null, other)) return false;
 			if (ReferenceEquals(this, other)) return true;
 			return
-				other.ID == ID &&
-				other.MoneyValue == MoneyValue &&
-				other.BoolValue == BoolValue &&
-				other.GuidValue == GuidValue &&
-				other.SmallIntValue == SmallIntValue &&
-				other.DateTimeValue.Date == DateTimeValue.Date &&
-				other.DateTimeValue.Hour == DateTimeValue.Hour &&
+				other.ID                   == ID                   &&
+				other.MoneyValue           == MoneyValue           &&
+				other.BoolValue            == BoolValue            &&
+				other.GuidValue            == GuidValue            &&
+				other.SmallIntValue        == SmallIntValue        &&
+				other.DateTimeValue.Date   == DateTimeValue.Date   &&
+				other.DateTimeValue.Hour   == DateTimeValue.Hour   &&
 				other.DateTimeValue.Minute == DateTimeValue.Minute &&
 				other.DateTimeValue.Second == DateTimeValue.Second &&
 				(
-					other.StringValue == StringValue ||
+					other.StringValue                            == StringValue ||
 					string.IsNullOrWhiteSpace(other.StringValue) == string.IsNullOrWhiteSpace(StringValue)
 				)
 				;
@@ -52,12 +53,12 @@ namespace Tests.Model
 			return ID - ((LinqDataTypes)obj).ID;
 		}
 
-		public static bool operator ==(LinqDataTypes left, LinqDataTypes right)
+		public static bool operator == (LinqDataTypes left, LinqDataTypes right)
 		{
 			return Equals(left, right);
 		}
 
-		public static bool operator !=(LinqDataTypes left, LinqDataTypes right)
+		public static bool operator != (LinqDataTypes left, LinqDataTypes right)
 		{
 			return !Equals(left, right);
 		}
@@ -71,26 +72,19 @@ namespace Tests.Model
 	[Table("LinqDataTypes")]
 	public class LinqDataTypes2 : IEquatable<LinqDataTypes2>, IComparable
 	{
-		[PrimaryKey]
-		public int ID;
-		[Column]
-		public decimal MoneyValue;
-		[Column]
-		public DateTime? DateTimeValue;
-		[Column]
-		public DateTime? DateTimeValue2;
-		[Column]
-		public bool? BoolValue;
-		[Column]
-		public Guid? GuidValue;
-		[Column]
-		public short? SmallIntValue;
-		[Column]
-		public int? IntValue;
-		[Column]
-		public long? BigIntValue;
-		[Column]
-		public string StringValue;
+		[PrimaryKey]                                    public int       ID;
+		[Column]                                        public decimal   MoneyValue;
+		// type it explicitly for sql server, because SQL Server 2005+ provider maps DateTime .Net type to DataType.DateTime2 by default
+		[Column(DataType = DataType.DateTime,  Configuration = ProviderName.SqlServer)]
+		[Column(DataType = DataType.DateTime2, Configuration = ProviderName.Oracle)]
+		[Column]                                        public DateTime? DateTimeValue;
+		[Column]                                        public DateTime? DateTimeValue2;
+		[Column]                                        public bool?     BoolValue;
+		[Column]                                        public Guid?     GuidValue;
+		[Column]                                        public short?    SmallIntValue;
+		[Column]                                        public int?      IntValue;
+		[Column]                                        public long?     BigIntValue;
+		[Column]                                        public string    StringValue;
 
 		public override bool Equals(object obj)
 		{
@@ -102,16 +96,16 @@ namespace Tests.Model
 			if (ReferenceEquals(null, other)) return false;
 			if (ReferenceEquals(this, other)) return true;
 			return
-				other.ID == ID &&
- 				other.MoneyValue == MoneyValue &&
- 				other.BoolValue == BoolValue &&
- 				other.GuidValue == GuidValue &&
-				other.StringValue == StringValue &&
+				other.ID                     == ID                     &&
+				other.MoneyValue             == MoneyValue             &&
+				other.BoolValue              == BoolValue              &&
+				other.GuidValue              == GuidValue              &&
+				other.StringValue            == StringValue            &&
 				other.DateTimeValue.HasValue == DateTimeValue.HasValue &&
 				(other.DateTimeValue == null ||
 				(
-					other.DateTimeValue.Value.Date == DateTimeValue.Value.Date &&
-					other.DateTimeValue.Value.Hour == DateTimeValue.Value.Hour &&
+					other.DateTimeValue.Value.Date   == DateTimeValue.Value.Date   &&
+					other.DateTimeValue.Value.Hour   == DateTimeValue.Value.Hour   &&
 					other.DateTimeValue.Value.Minute == DateTimeValue.Value.Minute &&
 					other.DateTimeValue.Value.Second == DateTimeValue.Value.Second
 				));

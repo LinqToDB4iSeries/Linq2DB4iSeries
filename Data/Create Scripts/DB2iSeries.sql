@@ -97,6 +97,66 @@ CREATE TABLE LinqDataTypes(
 	StringValue    VARCHAR(50) Default NULL
 )
 GO
+
+DROP TABLE TestMerge1
+GO
+DROP TABLE  TestMerge2 
+GO
+
+CREATE TABLE  TestMerge1 
+(
+     Id        INTEGER            PRIMARY KEY  not null,
+     Field1    INTEGER                            ,
+     Field2    INTEGER                            ,
+     Field3    INTEGER                            ,
+     Field4    INTEGER                            ,
+     Field5    INTEGER                            ,
+
+     FieldInt64       BIGINT                      ,
+     FieldBoolean     SMALLINT                    ,
+     FieldString      VARCHAR(20)                 ,
+     FieldNString     NVARCHAR(20)                ,
+     FieldChar        CHAR(1)                     ,
+     FieldNChar       NCHAR(1)                    ,
+     FieldFloat       REAL                        ,
+     FieldDouble      DOUBLE                      ,
+     FieldDateTime    TIMESTAMP(3)                ,
+     FieldBinary      VARCHAR(20)  FOR BIT DATA       ,
+     FieldGuid        CHAR(16)     FOR BIT DATA       ,
+     FieldDecimal     DECIMAL(24, 10)             ,
+     FieldDate        DATE                        ,
+     FieldTime        TIME                        ,
+     FieldEnumString  VARCHAR(20)                 ,
+     FieldEnumNumber  INT                    
+)
+GO
+CREATE TABLE  TestMerge2 
+(
+     Id        INTEGER            PRIMARY KEY not null,
+     Field1    INTEGER                            ,
+     Field2    INTEGER                            ,
+     Field3    INTEGER                            ,
+     Field4    INTEGER                            ,
+     Field5    INTEGER                            ,
+
+     FieldInt64       BIGINT                      ,
+     FieldBoolean     SMALLINT                    ,
+     FieldString      VARCHAR(20)                 ,
+     FieldNString     NVARCHAR(20)                ,
+     FieldChar        CHAR(1)                     ,
+     FieldNChar       NCHAR(1)                    ,
+     FieldFloat       REAL                        ,
+     FieldDouble      DOUBLE                      ,
+     FieldDateTime    TIMESTAMP(3)                ,
+     FieldBinary      VARCHAR(20)  FOR BIT DATA       ,
+     FieldGuid        CHAR(16)     FOR BIT DATA       ,
+     FieldDecimal     DECIMAL(24, 10)             ,
+     FieldDate        DATE                        ,
+     FieldTime        TIME                        ,
+     FieldEnumString  VARCHAR(20)                 ,
+     FieldEnumNumber  INT                      
+)
+GO
 DROP TABLE TestIdentity
 GO
 CREATE TABLE TestIdentity (
@@ -214,4 +274,13 @@ BEGIN
 
 	OPEN C1;
 END
+GO
+
+DROP TABLE KeepIdentityTest
+GO
+
+CREATE TABLE KeepIdentityTest (
+	ID    INTEGER  GENERATED ALWAYS AS IDENTITY PRIMARY KEY not null,
+	Value INTEGER  
+)
 GO

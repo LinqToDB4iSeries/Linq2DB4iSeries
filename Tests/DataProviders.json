@@ -1,0 +1,57 @@
+﻿//
+// This file defines data providers and connection strings used by default for all users.
+// Copy this file as UserDataProviders.json and specify providers and connection strings you need to work on.
+// UserDataProviders.json is in .gitignore and it is not committed to the repository.
+//
+// For example:
+//
+//		{
+//			"LocalConnectionStrings":
+//			{
+//				"Connections" :
+//				{
+//					"SqlAzure.2012" :
+//					{
+//						"Provider"         : "System.Data.SqlClient",
+//						"ConnectionString" : "Server=tcp:aiae6kk6yl.database.windows.net,1433;Database=TestData;User ID=TestUser@aiae6kk6yl;Password=xxx;Trusted_Connection=False;Encrypt=True;"
+//					},
+//				}
+//			}
+//		}
+//
+{
+	"NET45" :
+	{
+		"DefaultConfiguration" : "DB2.iSeries",
+		"Providers"            :
+		[
+			"DB2.iSeries",
+			"DB2.iSeries.GAS",
+			"DB2.iSeries.73",
+			"DB2.iSeries.73.GAS"
+		],
+		"Connections"          :
+		{
+			"DB2.iSeries" : 
+			{ 
+				"Provider"         : "DB2.iSeries",    
+				"ConnectionString" : "Data Source={ISERIES}; Persist Security Info=True;User ID={USERNAME};Password={PASSWORD};Library List=LINQ2DB;Default Collection=LINQ2DB;Naming=1" 
+			},
+			"DB2.iSeries.GAS" : 
+			{ 
+				"Provider"         : "DB2.iSeries.GAS",    
+				"ConnectionString" : "Data Source={ISERIES}; Persist Security Info=True;User ID={USERNAME};Password={PASSWORD};Library List=LINQ2DBGAS;Default Collection=LINQ2DBGAS;Naming=1" 
+			},
+			"DB2.iSeries.73" : 
+			{ 
+				"Provider"         : "DB2.iSeries.73",    
+				"ConnectionString" : "Data Source={ISERIES}; Persist Security Info=True;User ID={USERNAME};Password={PASSWORD};Library List=LINQ2DB73;Default Collection=LINQ2DB73;Naming=1" 
+			},
+			"DB2.iSeries.73.GAS" : 
+			{ 
+				"Provider"         : "DB2.iSeries.73.GAS",    
+				"ConnectionString" : "Data Source={ISERIES}; Persist Security Info=True;User ID={USERNAME};Password={PASSWORD};Library List=LINQ2DB73G;Default Collection=LINQ2DB73G;Naming=1" 
+			}
+		}
+	}
+}

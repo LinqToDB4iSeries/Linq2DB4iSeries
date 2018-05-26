@@ -5,7 +5,9 @@ using LinqToDB;
 using LinqToDB.Data;
 
 using NUnit.Framework;
+
 using Tests.Model;
+
 
 namespace Tests.Linq
 {
@@ -15,7 +17,7 @@ namespace Tests.Linq
 		[Test, DataContextSource]
 		public void InlineParameter(string context)
 		{
-			using (var  db = GetDataContext(context))
+			using (var db = GetDataContext(context))
 			{
 				db.InlineParameters = true;
 
@@ -42,11 +44,10 @@ namespace Tests.Linq
 			}
 		}
 
-
 		[Test, DataContextSource]
 		public void CharAsSqlParameter4(string context)
 		{
-			using (var  db = GetDataContext(context))
+			using (var db = GetDataContext(context))
 			{
 				var s1 = "\x1-\x2-\x3";
 				var s2 = db.Select(() => Sql.ToSql(s1));
@@ -56,37 +57,25 @@ namespace Tests.Linq
 		}
 
 		[Test, DataContextSource(false)]
-		public void ExposeSqlStringParameter(string context)
+		public void SqlStringParameter(string context)
 		{
 			using (var db = new DataConnection(context))
 			{
-				var p   = "abc";
-				var sql = db.GetTable<Person>().Where(t => t.FirstName == p).ToString();
+				var p = "John";
+				var person1 = db.GetTable<Person>().Where(t => t.FirstName == p).Single();
 
-				Console.WriteLine(sql);
+				p = "Tester";
+				var person2 = db.GetTable<Person>().Where(t => t.FirstName == p).Single();
 
-				Assert.That(sql, Contains.Substring("(3)"));
+				Assert.That(person1.FirstName, Is.EqualTo("John"));
+				Assert.That(person2.FirstName, Is.EqualTo("Tester"));
 			}
 		}
 
 		class AllTypes
 		{
 			public decimal DecimalDataType;
-			public byte[]  BinaryDataType;
-		}
-
-		[Test, DataContextSource(false)]
-		public void ExposeSqlDecimalParameter(string context)
-		{
-			using (var db = new DataConnection(context))
-			{
-				var p   = 123.456m;
-				var sql = db.GetTable<AllTypes>().Where(t => t.DecimalDataType == p).ToString();
-
-				Console.WriteLine(sql);
-
-				Assert.That(sql, Contains.Substring("(6,3)"));
-			}
+			public byte[] BinaryDataType;
 		}
 
 		[Test, DataContextSource(false)]
@@ -94,7 +83,7 @@ namespace Tests.Linq
 		{
 			using (var db = new DataConnection(context))
 			{
-				var p   = new byte[] { 0, 1, 2 };
+				var p = new byte[] { 0, 1, 2 };
 				var sql = db.GetTable<AllTypes>().Where(t => t.BinaryDataType == p).ToString();
 
 				Console.WriteLine(sql);

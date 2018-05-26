@@ -45,5 +45,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			return Array<T>.Empty;
 		}
-    }
+
+		public MemberInfo[] GetDynamicColumns(Type type)
+		{
+			return new MemberInfo[] { };
+		}
+	}
 }

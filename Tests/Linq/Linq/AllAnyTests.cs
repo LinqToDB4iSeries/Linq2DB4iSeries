@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Linq.Expressions;
-
+using System.Threading.Tasks;
 using LinqToDB;
 
 using NUnit.Framework;
@@ -18,7 +18,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					   Parent.Where(p =>    Child.Where(c => c.ParentID == p.ParentID).Any(c => c.ParentID > 3)),
+					   Parent.Where(p => Child.Where(c => c.ParentID == p.ParentID).Any(c => c.ParentID > 3)),
 					db.Parent.Where(p => db.Child.Where(c => c.ParentID == p.ParentID).Any(c => c.ParentID > 3)));
 		}
 
@@ -27,7 +27,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					   Parent.Where(p =>    Child.Where(c => c.ParentID == p.ParentID).Any()),
+					   Parent.Where(p => Child.Where(c => c.ParentID == p.ParentID).Any()),
 					db.Parent.Where(p => db.Child.Where(c => c.ParentID == p.ParentID).Any()));
 		}
 
@@ -55,7 +55,7 @@ namespace Tests.Linq
 			return p.Children.Any(c => c.ParentID > 0 && c.ParentID > 3);
 		}
 
-		static Expression<Func<Parent,bool>> SelectAnyExpression()
+		static Expression<Func<Parent, bool>> SelectAnyExpression()
 		{
 			return p => p.Children.Any(c => c.ParentID > 0 && c.ParentID > 3);
 		}
@@ -108,7 +108,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Parent select    Child.Select(c => c.Parent).Any(c => c == p),
+					from p in Parent select Child.Select(c => c.Parent).Any(c => c == p),
 					from p in db.Parent select db.Child.Select(c => c.Parent).Any(c => c == p));
 		}
 
@@ -117,14 +117,14 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in 
+					from p in
 						from p in Parent
 						from g in p.GrandChildren
 						join c in Child on g.ChildID equals c.ChildID
 						select c
 					where !p.GrandChildren.Any(x => x.ParentID < 0)
 					select p,
-					from p in 
+					from p in
 						from p in db.Parent
 						from g in p.GrandChildren
 						join c in db.Child on g.ChildID equals c.ChildID
@@ -138,14 +138,14 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in 
+					from p in
 						from p in Parent
 						from g in p.GrandChildren
 						join c in Child on g.ChildID equals c.ChildID
 						select p
 					where !p.GrandChildren.Any(x => x.ParentID < 0)
 					select p,
-					from p in 
+					from p in
 						from p in db.Parent
 						from g in p.GrandChildren
 						join c in db.Child on g.ChildID equals c.ChildID
@@ -159,7 +159,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in 
+					from p in
 						from p in Parent
 						from g in p.GrandChildren
 						join c in Child on g.ChildID equals c.ChildID
@@ -167,7 +167,7 @@ namespace Tests.Linq
 						select c
 					where !p.GrandChildren.Any(x => x.ParentID < 0)
 					select p,
-					from p in 
+					from p in
 						from p in db.Parent
 						from g in p.GrandChildren
 						join c in db.Child on g.ChildID equals c.ChildID
@@ -182,7 +182,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in             Parent    where             Child.   Any(c => p.ParentID == c.ParentID && c.ChildID > 3) select p,
+					from p in Parent where Child.Any(c => p.ParentID == c.ParentID && c.ChildID > 3) select p,
 					from p in db.GetTable<Parent>() where db.GetTable<Child>().Any(c => p.ParentID == c.ParentID && c.ChildID > 3) select p);
 		}
 
@@ -191,7 +191,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					   Parent.Where(p =>    Child.Where(c => c.ParentID == p.ParentID).All(c => c.ParentID > 3)),
+					   Parent.Where(p => Child.Where(c => c.ParentID == p.ParentID).All(c => c.ParentID > 3)),
 					db.Parent.Where(p => db.Child.Where(c => c.ParentID == p.ParentID).All(c => c.ParentID > 3)));
 		}
 
@@ -223,6 +223,15 @@ namespace Tests.Linq
 		}
 
 		[Test, DataContextSource]
+		public async Task All4Async(string context)
+		{
+			using (var db = GetDataContext(context))
+				Assert.AreEqual(
+					Child.All(c => c.ParentID > 3),
+					await db.Child.AllAsync(c => c.ParentID > 3));
+		}
+
+		[Test, DataContextSource]
 		public void All5(string context)
 		{
 			int n = 3;
@@ -238,8 +247,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from c in    Parent
-					where    Child.Where(o => o.Parent == c).All(o =>    Child.Where(e => o == e).Any(e => e.ChildID > 10))
+					from c in Parent
+					where Child.Where(o => o.Parent == c).All(o => Child.Where(e => o == e).Any(e => e.ChildID > 10))
 					select c,
 					from c in db.Parent
 					where db.Child.Where(o => o.Parent == c).All(o => db.Child.Where(e => o == e).Any(e => e.ChildID > 10))

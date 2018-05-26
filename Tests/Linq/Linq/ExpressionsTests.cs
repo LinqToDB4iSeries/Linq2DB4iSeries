@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-
+using System.Threading.Tasks;
 using LinqToDB;
 using LinqToDB.Linq;
 
@@ -20,7 +20,7 @@ namespace Tests.Linq
 		[Test, DataContextSource]
 		public void MapMember1(string context)
 		{
-			Expressions.MapMember<Parent,int>(p => Count1(p), p => p.Children.Count(c => c.ChildID > 0));
+			Expressions.MapMember<Parent, int>(p => Count1(p), p => p.Children.Count(c => c.ChildID > 0));
 
 			using (var db = GetDataContext(context))
 				AreEqual(Parent.Select(p => Count1(p)), db.Parent.Select(p => Count1(p)));
@@ -31,7 +31,7 @@ namespace Tests.Linq
 		[Test, DataContextSource]
 		public void MapMember2(string context)
 		{
-			Expressions.MapMember<Parent,int,int>((p,id) => Count2(p, id), (p, id) => p.Children.Count(c => c.ChildID > id));
+			Expressions.MapMember<Parent, int, int>((p, id) => Count2(p, id), (p, id) => p.Children.Count(c => c.ChildID > id));
 
 			using (var db = GetDataContext(context))
 				AreEqual(Parent.Select(p => Count2(p, 1)), db.Parent.Select(p => Count2(p, 1)));
@@ -42,7 +42,7 @@ namespace Tests.Linq
 		[Test, DataContextSource(ProviderName.SqlCe)]
 		public void MapMember3(string context)
 		{
-			Expressions.MapMember<Parent,int,int>((p,id) => Count3(p, id), (p, id) => p.Children.Count(c => c.ChildID > id) + 2);
+			Expressions.MapMember<Parent, int, int>((p, id) => Count3(p, id), (p, id) => p.Children.Count(c => c.ChildID > id) + 2);
 
 			var n = 2;
 
@@ -56,9 +56,9 @@ namespace Tests.Linq
 			return (_count4Expression ?? (_count4Expression = Count4Expression().Compile()))(p, id, n);
 		}
 
-		static Func<Parent,int,int,int> _count4Expression;
+		static Func<Parent, int, int, int> _count4Expression;
 
-		static Expression<Func<Parent,int,int,int>> Count4Expression()
+		static Expression<Func<Parent, int, int, int>> Count4Expression()
 		{
 			return (p, id, n) => p.Children.Count(c => c.ChildID > id) + n;
 		}
@@ -80,9 +80,9 @@ namespace Tests.Linq
 			return (_count5Expression ?? (_count5Expression = Count5Expression().Compile()))(db, p, n);
 		}
 
-		static Func<ITestDataContext,Parent,int,int> _count5Expression;
+		static Func<ITestDataContext, Parent, int, int> _count5Expression;
 
-		static Expression<Func<ITestDataContext,Parent,int,int>> Count5Expression()
+		static Expression<Func<ITestDataContext, Parent, int, int>> Count5Expression()
 		{
 			return (db, p, n) => Sql.AsSql(db.Child.Where(c => c.ParentID == p.ParentID).Count() + n);
 		}
@@ -104,9 +104,9 @@ namespace Tests.Linq
 			return (_count6Expression ?? (_count6Expression = Count6Expression().Compile()))(c, p);
 		}
 
-		static Func<ITable<Child>,Parent,int> _count6Expression;
+		static Func<ITable<Child>, Parent, int> _count6Expression;
 
-		static Expression<Func<ITable<Child>,Parent,int>> Count6Expression()
+		static Expression<Func<ITable<Child>, Parent, int>> Count6Expression()
 		{
 			return (ch, p) => ch.Where(c => c.ParentID == p.ParentID).Count();
 		}
@@ -126,9 +126,9 @@ namespace Tests.Linq
 			return (_count7Expression ?? (_count7Expression = Count7Expression().Compile()))(ch, p, n);
 		}
 
-		static Func<ITable<Child>,Parent,int,int> _count7Expression;
+		static Func<ITable<Child>, Parent, int, int> _count7Expression;
 
-		static Expression<Func<ITable<Child>,Parent,int,int>> Count7Expression()
+		static Expression<Func<ITable<Child>, Parent, int, int>> Count7Expression()
 		{
 			return (ch, p, n) => Sql.AsSql(ch.Where(c => c.ParentID == p.ParentID).Count() + n);
 		}
@@ -158,7 +158,7 @@ namespace Tests.Linq
 				select p;
 		}
 
-		[Test, DataContextSource]
+		[Test, DataContextSource(ProviderName.SQLiteMS)]
 		public void MethodExpression8(string context)
 		{
 			using (var db = GetDataContext(context))
@@ -177,56 +177,19 @@ namespace Tests.Linq
 					select ch);
 		}
 
-		[Test]
-		public void MethodExpression9()
-		{
-			using (var db = new TestDataConnection())
-				AreEqual(
-					from ch in Child
-					from p in
-						from p in Parent
-						where p.ParentID == ch.ChildID / 10
-						select p
-					where ch.ParentID == p.ParentID
-					select ch
-					,
-					from ch in db.Child
-					from p in TestDataConnection.GetParent9(db, ch)
-					where ch.ParentID == p.ParentID
-					select ch);
-		}
-
-		[Test]
-		public void MethodExpression10()
-		{
-			using (var db = new TestDataConnection())
-				AreEqual(
-					from ch in Child
-					from p in
-						from p in Parent
-						where p.ParentID == ch.ChildID / 10
-						select p
-					where ch.ParentID == p.ParentID
-					select ch
-					,
-					from ch in db.Child
-					from p in db.GetParent10(ch)
-					where ch.ParentID == p.ParentID
-					select ch);
-		}
-
 		[ExpressionMethod("GetBoolExpression1")]
 		static bool GetBool1<T>(T obj)
 		{
 			throw new InvalidOperationException();
 		}
 
-		static Expression<Func<T,bool>> GetBoolExpression1<T>()
+		static Expression<Func<T, bool>> GetBoolExpression1<T>()
 			where T : class
 		{
 			return obj => obj != null;
 		}
 
+#if !MONO
 		[Test]
 		public void TestGenerics1()
 		{
@@ -240,6 +203,7 @@ namespace Tests.Linq
 				q.ToList();
 			}
 		}
+#endif
 
 		[ExpressionMethod("GetBoolExpression2_{0}")]
 		static bool GetBool2<T>(T obj)
@@ -247,7 +211,7 @@ namespace Tests.Linq
 			throw new InvalidOperationException();
 		}
 
-		static Expression<Func<Parent,bool>> GetBoolExpression2_Parent()
+		static Expression<Func<Parent, bool>> GetBoolExpression2_Parent()
 		{
 			return obj => obj != null;
 		}
@@ -274,7 +238,7 @@ namespace Tests.Linq
 				throw new InvalidOperationException();
 			}
 
-			static Expression<Func<Parent,bool>> GetBoolExpression3()
+			static Expression<Func<Parent, bool>> GetBoolExpression3()
 			{
 				return obj => obj != null;
 			}
@@ -300,7 +264,7 @@ namespace Tests.Linq
 			throw new InvalidOperationException();
 		}
 
-		static Expression<Func<Parent,IEnumerable<GrandChild>>> AssociationExpression()
+		static Expression<Func<Parent, IEnumerable<GrandChild>>> AssociationExpression()
 		{
 			return parent => parent.Children.SelectMany(gc => gc.GrandChildren);
 		}
@@ -317,18 +281,36 @@ namespace Tests.Linq
 					select GrandChildren(p).Count());
 		}
 
+		[Test, DataContextSource]
+		public async Task AssociationMethodExpressionAsync(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var list = await db.Parent.ToListAsync();
+
+				AreEqual(
+					from p in Parent
+					select p.Children.SelectMany(gc => gc.GrandChildren).Count()
+					,
+					await (
+						from p in db.Parent
+						select GrandChildren(p).Count()
+					).ToListAsync());
+			}
+		}
+
 		[Test]
 		public void ParameterlessExpression()
 		{
 			using (var db = new TestDataConnection())
 			{
 				var parameter = Expression.Parameter(typeof(Parent));
-				var selector  = Expression.Lambda(parameter, parameter);
-				var table     = db.Parent;
-				var exp       = Expression.Call(
+				var selector = Expression.Lambda(parameter, parameter);
+				var table = db.Parent;
+				var exp = Expression.Call(
 					typeof(Queryable),
 					"Select",
-					new [] { typeof(Parent), typeof(Parent) },
+					new[] { typeof(Parent), typeof(Parent) },
 					table.Expression,
 					selector);
 
@@ -340,16 +322,16 @@ namespace Tests.Linq
 			}
 		}
 
-//		[ExpressionMethod("AssociationExpression")]
-//		static IEnumerable<GrandChild> GrandChildren(Parent p)
-//		{
-//			throw new InvalidOperationException();
-//		}
-//
-//		static Expression<Func<Parent,IEnumerable<GrandChild>>> AssociationExpression()
-//		{
-//			return parent => parent.Children.SelectMany(gc => gc.GrandChildren);
-//		}
+		//		[ExpressionMethod("AssociationExpression")]
+		//		static IEnumerable<GrandChild> GrandChildren(Parent p)
+		//		{
+		//			throw new InvalidOperationException();
+		//		}
+		//
+		//		static Expression<Func<Parent,IEnumerable<GrandChild>>> AssociationExpression()
+		//		{
+		//			return parent => parent.Children.SelectMany(gc => gc.GrandChildren);
+		//		}
 
 		[ExpressionMethod("MyWhereImpl")]
 		static IQueryable<TSource> MyWhere<TSource>(IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
@@ -357,7 +339,7 @@ namespace Tests.Linq
 			return source.Where(predicate);
 		}
 
-		static Expression<Func<IQueryable<TSource>,Expression<Func<TSource,bool>>,IQueryable<TSource>>> MyWhereImpl<TSource>()
+		static Expression<Func<IQueryable<TSource>, Expression<Func<TSource, bool>>, IQueryable<TSource>>> MyWhereImpl<TSource>()
 		{
 			return (source, predicate) => source.Where(predicate);
 		}
@@ -406,6 +388,19 @@ namespace Tests.Linq
 			}
 		}
 
+		[Test, DataContextSource]
+		public void ToLowerInvariantTest(string context)
+		{
+			Expressions.MapMember((string s) => s.ToLowerInvariant(), (string s) => s.ToLower());
+
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+					   Doctor.Where(p => p.Taxonomy.ToLowerInvariant() == "psychiatry").Select(p => p.Taxonomy.ToLower()),
+					db.Doctor.Where(p => p.Taxonomy.ToLowerInvariant() == "psychiatry").Select(p => p.Taxonomy.ToLower()));
+			}
+		}
+
 		/*
 		[Test, DataContextSource]
 		public void LeftJoinTest3(string context)
@@ -420,18 +415,40 @@ namespace Tests.Linq
 			}
 		}
 		*/
+
+		[Test, DataContextSource]
+		public void AssociationTest(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+					   Parent.SelectMany(p => p.Children.SelectMany(c => c.GrandChildren)),
+					db.Parent.SelectMany(p => p.GrandChildren2));
+			}
+		}
+
+		[Test, DataContextSource]
+		public void AssociationTest2(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				AreEqual(
+					   Parent.SelectMany(p => p.Children.Where(c => c.ChildID == 22).SelectMany(c => c.GrandChildren)),
+					db.Parent.SelectMany(p => p.GrandChildrenByID(22)));
+			}
+		}
 	}
 
 	static class ExpressionTestExtensions
 	{
-		public class LeftJoinInfo<TOuter,TInner>
+		public class LeftJoinInfo<TOuter, TInner>
 		{
 			public TOuter Outer;
 			public TInner Inner;
 		}
 
 		[ExpressionMethod("LeftJoinImpl")]
-		public static IQueryable<LeftJoinInfo<TOuter,TInner>> LeftJoin<TOuter, TInner, TKey>(
+		public static IQueryable<LeftJoinInfo<TOuter, TInner>> LeftJoin<TOuter, TInner, TKey>(
 			this IQueryable<TOuter> outer,
 			IEnumerable<TInner> inner,
 			Expression<Func<TOuter, TKey>> outerKeySelector,
@@ -439,20 +456,20 @@ namespace Tests.Linq
 		{
 			return outer
 				.GroupJoin(inner, outerKeySelector, innerKeySelector, (o, gr) => new { o, gr })
-				.SelectMany(t => t.gr.DefaultIfEmpty(), (o,i) => new LeftJoinInfo<TOuter,TInner> { Outer = o.o, Inner = i });
+				.SelectMany(t => t.gr.DefaultIfEmpty(), (o, i) => new LeftJoinInfo<TOuter, TInner> { Outer = o.o, Inner = i });
 		}
 
 		static Expression<Func<
 			IQueryable<TOuter>,
 			IEnumerable<TInner>,
-			Expression<Func<TOuter,TKey>>,
-			Expression<Func<TInner,TKey>>,
-			IQueryable<LeftJoinInfo<TOuter,TInner>>>>
+			Expression<Func<TOuter, TKey>>,
+			Expression<Func<TInner, TKey>>,
+			IQueryable<LeftJoinInfo<TOuter, TInner>>>>
 			LeftJoinImpl<TOuter, TInner, TKey>()
 		{
-			return (outer,inner,outerKeySelector,innerKeySelector) => outer
+			return (outer, inner, outerKeySelector, innerKeySelector) => outer
 				.GroupJoin(inner, outerKeySelector, innerKeySelector, (o, gr) => new { o, gr })
-				.SelectMany(t => t.gr.DefaultIfEmpty(), (o,i) => new LeftJoinInfo<TOuter,TInner> { Outer = o.o, Inner = i });
+				.SelectMany(t => t.gr.DefaultIfEmpty(), (o, i) => new LeftJoinInfo<TOuter, TInner> { Outer = o.o, Inner = i });
 		}
 
 		/*

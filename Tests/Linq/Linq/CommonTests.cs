@@ -31,7 +31,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Parent from ch in                         Child                select p,
+					from p in Parent from ch in Child select p,
 					from p in db.Parent from ch in ((IEnumerable<Child>)db.Child).AsQueryable() select p);
 		}
 
@@ -40,7 +40,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Parent select new { Value = p.Value1 != null ? p.Value1 : 100 },
+					from p in Parent select new { Value = p.Value1 != null ? p.Value1 : 100 },
 					from p in db.Parent select new { Value = p.Value1 != null ? p.Value1 : 100 });
 		}
 
@@ -49,7 +49,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Parent select new { Value = p.Value1 ?? 100 },
+					from p in Parent select new { Value = p.Value1 ?? 100 },
 					from p in db.Parent select new { Value = p.Value1 ?? 100 });
 		}
 
@@ -60,7 +60,7 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Parent select ch ?? new Child { ParentID = p.ParentID },
+					from p in Parent select ch ?? new Child { ParentID = p.ParentID },
 					from p in db.Parent select ch ?? new Child { ParentID = p.ParentID });
 		}
 
@@ -69,7 +69,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Parent select p.Value1 != null ? p.Value1 : 100,
+					from p in Parent select p.Value1 != null ? p.Value1 : 100,
 					from p in db.Parent select p.Value1 != null ? p.Value1 : 100);
 		}
 
@@ -78,7 +78,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Parent select p.Value1 ?? 100,
+					from p in Parent select p.Value1 ?? 100,
 					from p in db.Parent select p.Value1 ?? 100);
 		}
 
@@ -87,7 +87,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Parent select (p.Value1 ?? 100) + 50,
+					from p in Parent select (p.Value1 ?? 100) + 50,
 					from p in db.Parent select (p.Value1 ?? 100) + 50);
 		}
 
@@ -101,7 +101,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Parent select p.Value1 ?? GetDefault1(),
+					from p in Parent select p.Value1 ?? GetDefault1(),
 					from p in db.Parent select p.Value1 ?? GetDefault1());
 		}
 
@@ -115,7 +115,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Parent select p.Value1 ?? GetDefault2(p.ParentID),
+					from p in Parent select p.Value1 ?? GetDefault2(p.ParentID),
 					from p in db.Parent select p.Value1 ?? GetDefault2(p.ParentID));
 		}
 
@@ -124,7 +124,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Person
+					from p in Person
 					where
 						(p.FirstName == null ? (bool?)null : (bool?)p.FirstName.StartsWith("Jo")) == null ?
 							false :
@@ -143,7 +143,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Person select p.FirstName.Length,
+					from p in Person select p.FirstName.Length,
 					from p in db.Person select p.FirstName.Length);
 		}
 
@@ -152,7 +152,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Person select p.FirstName.Length + "".Length,
+					from p in Person select p.FirstName.Length + "".Length,
 					from p in db.Person select p.FirstName.Length + "".Length);
 		}
 
@@ -276,7 +276,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Person select new { Name = !string.IsNullOrEmpty(p.FirstName) ? p.FirstName : !string.IsNullOrEmpty(p.MiddleName) ? p.MiddleName : p.LastName },
+					from p in Person select new { Name = !string.IsNullOrEmpty(p.FirstName) ? p.FirstName : !string.IsNullOrEmpty(p.MiddleName) ? p.MiddleName : p.LastName },
 					from p in db.Person select new { Name = !string.IsNullOrEmpty(p.FirstName) ? p.FirstName : !string.IsNullOrEmpty(p.MiddleName) ? p.MiddleName : p.LastName });
 		}
 
@@ -285,7 +285,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Person select new { Name = !p.FirstName.IsNullOrEmpty() ? p.FirstName : !p.MiddleName.IsNullOrEmpty() ? p.MiddleName : p.LastName },
+					from p in Person select new { Name = !p.FirstName.IsNullOrEmpty() ? p.FirstName : !p.MiddleName.IsNullOrEmpty() ? p.MiddleName : p.LastName },
 					from p in db.Person select new { Name = !p.FirstName.IsNullOrEmpty() ? p.FirstName : !p.MiddleName.IsNullOrEmpty() ? p.MiddleName : p.LastName });
 		}
 
@@ -294,7 +294,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Person where string.Concat(p.FirstName, " I") == "John I" select p.FirstName,
+					from p in Person where string.Concat(p.FirstName, " I") == "John I" select p.FirstName,
 					from p in db.Person where string.Concat(p.FirstName, " I") == "John I" select p.FirstName);
 		}
 
@@ -303,7 +303,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Person where string.Concat(p.FirstName, " ", 1) == "John 1" select p.FirstName,
+					from p in Person where string.Concat(p.FirstName, " ", 1) == "John 1" select p.FirstName,
 					from p in db.Person where string.Concat(p.FirstName, " ", 1) == "John 1" select p.FirstName);
 		}
 
@@ -312,7 +312,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Person where string.Concat(p.FirstName, " ", 1, 2) == "John 12" select p.FirstName,
+					from p in Person where string.Concat(p.FirstName, " ", 1, 2) == "John 12" select p.FirstName,
 					from p in db.Person where string.Concat(p.FirstName, " ", 1, 2) == "John 12" select p.FirstName);
 		}
 
@@ -327,7 +327,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Person where p.ID == (int)PersonID.Person1 select p,
+					from p in Person where p.ID == (int)PersonID.Person1 select p,
 					from p in db.Person where p.ID == (int)PersonID.Person1 select p);
 		}
 
@@ -338,7 +338,7 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in    Person where p.ID == (int)id select p,
+					from p in Person where p.ID == (int)id select p,
 					from p in db.Person where p.ID == (int)id select p);
 		}
 
@@ -395,8 +395,8 @@ namespace Tests.Linq
 
 				var qe2 =
 					from p in Parent
-						join tt in qe1 on p.ParentID equals tt.ParentID into gr
-						from tt in gr.DefaultIfEmpty()
+					join tt in qe1 on p.ParentID equals tt.ParentID into gr
+					from tt in gr.DefaultIfEmpty()
 					select new { p.ParentID };
 
 				var qr1 =
@@ -415,8 +415,8 @@ namespace Tests.Linq
 
 				var qr2 =
 					from p in db.Parent
-						join tt in qr1 on p.ParentID equals tt.ParentID into gr
-						from tt in gr.DefaultIfEmpty()
+					join tt in qr1 on p.ParentID equals tt.ParentID into gr
+					from tt in gr.DefaultIfEmpty()
 					select new { p.ParentID };
 
 				AreEqual(qe2, qr2);
@@ -429,24 +429,24 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 				AreEqual(
 					from p in Parent
-						join tt in
-							from t in Child
-							group t by t.ParentID into gr
-							select new { ParentID = gr.Key, Sum = gr.Sum(i => i.ChildID) } into tt
-							where tt.Sum != 0
-							select tt
-						on p.ParentID equals tt.ParentID into gr
-						from tt in gr.DefaultIfEmpty()
+					join tt in
+						from t in Child
+						group t by t.ParentID into gr
+						select new { ParentID = gr.Key, Sum = gr.Sum(i => i.ChildID) } into tt
+						where tt.Sum != 0
+						select tt
+					on p.ParentID equals tt.ParentID into gr
+					from tt in gr.DefaultIfEmpty()
 					select p.ParentID,
 					from p in db.Parent
-						join tt in
-							from t in db.Child
-							group t by t.ParentID into gr
-							select new { ParentID = gr.Key, Sum = gr.Sum(i => i.ChildID) } into tt
-							where tt.Sum != 0
-							select tt
-						on p.ParentID equals tt.ParentID into gr
-						from tt in gr.DefaultIfEmpty()
+					join tt in
+						from t in db.Child
+						group t by t.ParentID into gr
+						select new { ParentID = gr.Key, Sum = gr.Sum(i => i.ChildID) } into tt
+						where tt.Sum != 0
+						select tt
+					on p.ParentID equals tt.ParentID into gr
+					from tt in gr.DefaultIfEmpty()
 					select p.ParentID);
 		}
 
@@ -520,7 +520,7 @@ namespace Tests.Linq
 		class User
 		{
 			public string FirstName;
-			public int?   Status;
+			public int? Status;
 		}
 
 		// https://github.com/linq2db/linq2db/issues/191
@@ -530,7 +530,7 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 			{
 				string firstName = null;
-				int?   status    = null;
+				int? status = null;
 
 				var str = db.GetTable<User>()
 					.Where(user =>
