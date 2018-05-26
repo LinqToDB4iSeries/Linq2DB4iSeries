@@ -147,26 +147,21 @@ namespace Tests
 			    switch (provider.Value.Provider)
 			    {
 			        case TestProvName.DB2i:
-                        DataConnection.AddDataProvider(
-                            TestProvName.DB2i, 
-                            new DB2iSeriesDataProvider(TestProvName.DB2i, DB2iSeriesLevels.Any, false));
-
-			            DataConnection.AddOrSetConfiguration(
-			                TestProvName.DB2i, 
-			                provider.Value.ConnectionString,
-			                TestProvName.DB2i);
-                        break;
 			        case TestProvName.DB2iGAS :
-			            DataConnection.AddDataProvider(
-			                TestProvName.DB2iGAS,
-			                new DB2iSeriesDataProvider(TestProvName.DB2iGAS, DB2iSeriesLevels.Any, true));
+			        case TestProvName.DB2i73GAS:
+					case TestProvName.DB2i73:
+                   DataConnection.AddDataProvider(
+						    provider.Value.Provider,
+						    new DB2iSeriesDataProvider(provider.Value.Provider,
+							    provider.Value.Provider.Contains(".73") ? DB2iSeriesLevels.V7_1_38 : DB2iSeriesLevels.Any,
+							    provider.Value.Provider.Contains(".GAS")));
 
-                        DataConnection.AddOrSetConfiguration(
-                            TestProvName.DB2iGAS, 
-                            provider.Value.ConnectionString, 
-                            TestProvName.DB2iGAS);
-			            break;
-                    default:
+					    DataConnection.AddOrSetConfiguration(
+						    provider.Value.Provider,
+						    provider.Value.ConnectionString,
+						    provider.Value.Provider);
+					    break;
+					default:
 			            DataConnection.AddOrSetConfiguration(
 			                provider.Key,
 			                provider.Value.ConnectionString,
@@ -285,6 +280,8 @@ namespace Tests
 			ProviderName.SQLiteClassic,
 		    TestProvName.DB2i,
 		    TestProvName.DB2iGAS,
+			TestProvName.DB2i73,
+			TestProvName.DB2i73GAS,
 #endif
 			ProviderName.Firebird,
 			ProviderName.SqlServer2008,

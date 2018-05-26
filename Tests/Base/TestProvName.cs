@@ -13,6 +13,8 @@ namespace Tests
 		public const string NorthwindSQLiteMS = "Northwind.SQLite.MS";
 		public const string DB2i              = "DB2.iSeries";
 		public const string DB2iGAS           = "DB2.iSeries.GAS";
+		public const string DB2i73            = "DB2.iSeries.73";
+		public const string DB2i73GAS         = "DB2.iSeries.73.GAS";
 
 		/// <summary>
 		/// Fake provider, which doesn't execute any real queries. Could be used for tests, that shouldn't be affected

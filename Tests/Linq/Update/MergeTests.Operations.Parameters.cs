@@ -70,7 +70,9 @@ namespace Tests.xUpdate
                 {
                     case DB2iSeriesProviderName.DB2:
                     case DB2iSeriesProviderName.DB2_GAS:
-                        parametersCount = 5;
+                    case DB2iSeriesProviderName.DB2_73:
+                    case DB2iSeriesProviderName.DB2_73_GAS:
+						parametersCount = 5;
                         break;
                     case ProviderName.DB2:
                         parametersCount = 1;
@@ -141,7 +143,9 @@ namespace Tests.xUpdate
                 {
                     case DB2iSeriesProviderName.DB2:
                     case DB2iSeriesProviderName.DB2_GAS:
-                        parametersCount = 4;
+                    case DB2iSeriesProviderName.DB2_73:
+                    case DB2iSeriesProviderName.DB2_73_GAS:
+						parametersCount = 4;
                         break;
                     case ProviderName.DB2:
                         parametersCount = 1;

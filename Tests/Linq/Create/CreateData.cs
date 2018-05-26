@@ -21,7 +21,8 @@ namespace Tests._Create
 		
 			Console.WriteLine("=== " + name + " === \n");
 
-			var gas = configString.EndsWith("GAS", StringComparison.CurrentCultureIgnoreCase);
+			var gas = configString.Contains(".GAS");
+			var ver73 = configString.Contains(".73");
 
 			name += gas ? "GAS" : "";
 

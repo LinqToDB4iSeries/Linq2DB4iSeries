@@ -61,7 +61,9 @@ namespace Tests.xUpdate
             [Column(IsColumn = false, Configuration = ProviderName.DB2)]
             [Column(IsColumn = false, Configuration = DB2iSeriesProviderName.DB2)]
             [Column(IsColumn = false, Configuration = DB2iSeriesProviderName.DB2_GAS)]
-            [Column(IsColumn = false, Configuration = ProviderName.SqlServer2000)]
+            [Column(IsColumn = false, Configuration = DB2iSeriesProviderName.DB2_73)]
+            [Column(IsColumn = false, Configuration = DB2iSeriesProviderName.DB2_73_GAS)]
+			[Column(IsColumn = false, Configuration = ProviderName.SqlServer2000)]
             [Column(IsColumn = false, Configuration = ProviderName.SqlServer2005)]
             [Column(IsColumn = false, Configuration = ProviderName.SqlCe)]
             [Column(IsColumn = false, Configuration = ProviderName.Informix)]
@@ -117,12 +119,16 @@ namespace Tests.xUpdate
 
             [Column("FieldEnumString", DataType = DataType.NVarChar, Configuration = DB2iSeriesProviderName.DB2)]
             [Column("FieldEnumString", DataType = DataType.NVarChar, Configuration = DB2iSeriesProviderName.DB2_GAS)]
-            [Column("FieldEnumString")]
+            [Column("FieldEnumString", DataType = DataType.NVarChar, Configuration = DB2iSeriesProviderName.DB2_73)]
+            [Column("FieldEnumString", DataType = DataType.NVarChar, Configuration = DB2iSeriesProviderName.DB2_73_GAS)]
+			[Column("FieldEnumString")]
             public StringEnum? FieldEnumString;
 
             [Column("FieldEnumNumber", DataType = DataType.Int32, Configuration = DB2iSeriesProviderName.DB2)]
             [Column("FieldEnumNumber", DataType = DataType.Int32, Configuration = DB2iSeriesProviderName.DB2_GAS)]
-            [Column("FieldEnumNumber")]
+			[Column("FieldEnumNumber", DataType = DataType.Int32, Configuration = DB2iSeriesProviderName.DB2_73)]
+            [Column("FieldEnumNumber", DataType = DataType.Int32, Configuration = DB2iSeriesProviderName.DB2_73_GAS)]
+			[Column("FieldEnumNumber")]
             public NumberEnum? FieldEnumNumber;
         }
 
@@ -138,7 +144,9 @@ namespace Tests.xUpdate
             [MapValue("\b", Configuration = ProviderName.DB2)]
             [MapValue("\b", Configuration = DB2iSeriesProviderName.DB2)]
             [MapValue("\b", Configuration = DB2iSeriesProviderName.DB2_GAS)]
-            [MapValue("\0")]
+            [MapValue("\b", Configuration = DB2iSeriesProviderName.DB2_73)]
+            [MapValue("\b", Configuration = DB2iSeriesProviderName.DB2_73_GAS)]
+			[MapValue("\0")]
             Value2,
             [MapValue("_", Configuration = ProviderName.Oracle)]
             [MapValue("_", Configuration = ProviderName.OracleManaged)]
@@ -623,7 +631,9 @@ namespace Tests.xUpdate
                     case ProviderName.DB2:
                     case DB2iSeriesProviderName.DB2:
                     case DB2iSeriesProviderName.DB2_GAS:
-                    case ProviderName.Access:
+                    case DB2iSeriesProviderName.DB2_73:
+                    case DB2iSeriesProviderName.DB2_73_GAS:
+					case ProviderName.Access:
                     case ProviderName.SapHana:
                         expected = TimeSpan.FromTicks((expected.Value.Ticks / 10000000) * 10000000);
                         break;
