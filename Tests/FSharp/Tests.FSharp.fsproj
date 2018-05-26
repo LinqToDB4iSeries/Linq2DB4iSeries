@@ -27,7 +27,6 @@
 
 
 	<ItemGroup>
-		<None Include="linq2db.Tests.snk" />
 		<Compile Include="AssemblyInfo.fs" />
 		<Compile Include="Models.fs" />
 		<Compile Include="WhereTest.fs" />
@@ -36,16 +35,13 @@
 		<Compile Include="MappingSchema.fs" />
 	</ItemGroup>
 
-
-	<ItemGroup />
-
 	<ItemGroup>
 		<ProjectReference Include="..\Base\Tests.Base.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <PackageReference Update="FSharp.Core" Version="4.3.4" />
-	 
+	  <PackageReference Update="System.ValueTuple" Version="4.3.1" />
 	</ItemGroup>
 	<!-- To modify your build process, add your task inside one of the targets below and uncomment it.
 			 Other similar extension points exist, see Microsoft.Common.targets.

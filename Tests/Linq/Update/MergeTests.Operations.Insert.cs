@@ -350,9 +350,8 @@ namespace Tests.xUpdate
 			}
 		}
 
-        // TODO :active issue in Linq2Db
-		//[ActiveIssue(896, Details = "Selects 10 columns instead of 6. Also see InsertFromCrossJoinedSourceQuery2Workaround for workaround")]
-		//[Test, MergeDataContextSource]
+		[ActiveIssue(896, Details = "Selects 10 columns instead of 6. Also see InsertFromCrossJoinedSourceQuery2Workaround for workaround")]
+		[Test, MergeDataContextSource]
 		public void InsertFromCrossJoinedSourceQuery2(string context)
 		{
 			using (var db = new TestDataConnection(context))
@@ -473,9 +472,8 @@ namespace Tests.xUpdate
 			}
 		}
 
-	    // TODO :active issue in Linq2Db
-        //[ActiveIssue(896, Details = "Regression from 1.x: Member 'TestMapping1.Fake' is not a table column.")]
-        //[Test, MergeDataContextSource]
+        [ActiveIssue(896, Details = "Regression from 1.x: Member 'TestMapping1.Fake' is not a table column.")]
+        [Test, MergeDataContextSource]
         public void InsertFromCrossJoinedSourceQuery3(string context)
 		{
 			using (var db = new TestDataConnection(context))

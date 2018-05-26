@@ -1,96 +1,94 @@
-﻿// TODO : sort out these as they require the changes to TestBase to add the DataSourcesAttribute
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
-//using System;
-//using System.Collections.Generic;
-//using System.Linq;
+using LinqToDB;
 
-//using LinqToDB;
+using NUnit.Framework;
 
-//using NUnit.Framework;
+namespace Tests.Linq
+{
+    using Model;
 
-//namespace Tests.Linq
-//{
-//	using Model;
+    [TestFixture, Parallelizable(ParallelScope.None)]
+    public class EntityCreatedTests : TestBase
+    {
+        int _entitiesCreated;
+        bool _checkEntityIdentity;
 
-//	[TestFixture, Parallelizable(ParallelScope.None)]
-//	public class EntityCreatedTests : TestBase
-//	{
-//		int _entitiesCreated;
-//		bool _checkEntityIdentity;
+        readonly Dictionary<int, Parent> _parents = new Dictionary<int, Parent>();
 
-//		readonly Dictionary<int, Parent> _parents = new Dictionary<int, Parent>();
+        ITestDataContext GetEntityCreatedContext(string configString)
+        {
+            _entitiesCreated = 0;
+            _checkEntityIdentity = false;
+            _parents.Clear();
 
-//		ITestDataContext GetEntityCreatedContext(string configString)
-//		{
-//			_entitiesCreated = 0;
-//			_checkEntityIdentity = false;
-//			_parents.Clear();
+            var ctx = GetDataContext(configString);
 
-//			var ctx = GetDataContext(configString);
+            ((IEntityServices)ctx).OnEntityCreated += EntityCreated;
 
-//			((IEntityServices)ctx).OnEntityCreated += EntityCreated;
+            return ctx;
+        }
 
-//			return ctx;
-//		}
+        void EntityCreated(EntityCreatedEventArgs args)
+        {
+            if (_checkEntityIdentity && args.Entity is Parent p)
+            {
+                if (_parents.TryGetValue(p.ParentID, out var pr))
+                {
+                    args.Entity = pr;
+                    return;
+                }
 
-//		void EntityCreated(EntityCreatedEventArgs args)
-//		{
-//			if (_checkEntityIdentity && args.Entity is Parent p)
-//			{
-//				if (_parents.TryGetValue(p.ParentID, out var pr))
-//				{
-//					args.Entity = pr;
-//					return;
-//				}
+                _parents[p.ParentID] = p;
+            }
 
-//				_parents[p.ParentID] = p;
-//			}
+            _entitiesCreated++;
+        }
 
-//			_entitiesCreated++;
-//		}
+        [Test]
+        public void EntityCreatedTest0([DataSources] string configString)
+        {
+            using (var db = GetDataContext(configString))
+            {
+                var list = db.Parent.Take(5).ToList();
+            }
+        }
 
-//		[Test]
-//		public void EntityCreatedTest0([DataSources] string configString)
-//		{
-//			using (var db = GetDataContext(configString))
-//			{
-//				var list = db.Parent.Take(5).ToList();
-//			}
-//		}
+        [Test]
+        public void EntityCreatedTest1([DataSources] string configString)
+        {
+            using (var db = GetEntityCreatedContext(configString))
+            {
+                var list = db.Parent.Take(5).ToList();
 
-//		[Test]
-//		public void EntityCreatedTest1([DataSources] string configString)
-//		{
-//			using (var db = GetEntityCreatedContext(configString))
-//			{
-//				var list = db.Parent.Take(5).ToList();
+                Assert.That(_entitiesCreated, Is.EqualTo(5));
+            }
+        }
 
-//				Assert.That(_entitiesCreated, Is.EqualTo(5));
-//			}
-//		}
+        [Test]
+        public void EntityCreatedTest2([DataSources] string configString)
+        {
+            using (var db = GetEntityCreatedContext(configString))
+            {
+                var list = db.Child.Select(c => new { c, c.Parent, a = new { c } }).Take(1).ToList();
 
-//		[Test]
-//		public void EntityCreatedTest2([DataSources] string configString)
-//		{
-//			using (var db = GetEntityCreatedContext(configString))
-//			{
-//				var list = db.Child.Select(c => new { c, c.Parent, a = new { c } }).Take(1).ToList();
+                Assert.That(_entitiesCreated, Is.EqualTo(2));
+            }
+        }
 
-//				Assert.That(_entitiesCreated, Is.EqualTo(2));
-//			}
-//		}
+        [Test]
+        public void EntityCreatedTest3([DataSources] string configString, [Values(false, true)] bool checkEntityIdentity)
+        {
+            using (var db = GetEntityCreatedContext(configString))
+            {
+                _checkEntityIdentity = checkEntityIdentity;
 
-//		[Test]
-//		public void EntityCreatedTest3([DataSources] string configString, [Values(false, true)] bool checkEntityIdentity)
-//		{
-//			using (var db = GetEntityCreatedContext(configString))
-//			{
-//				_checkEntityIdentity = checkEntityIdentity;
+                var list = db.Child.Where(c => c.Parent.ParentID == 3).Select(c => c.Parent).ToList();
 
-//				var list = db.Child.Where(c => c.Parent.ParentID == 3).Select(c => c.Parent).ToList();
-
-//				Assert.That(_entitiesCreated, Is.EqualTo(checkEntityIdentity ? 1 : 3));
-//			}
-//		}
-//	}
-//}
+                Assert.That(_entitiesCreated, Is.EqualTo(checkEntityIdentity ? 1 : 3));
+            }
+        }
+    }
+}

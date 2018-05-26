@@ -6,6 +6,8 @@
 		<NoWarn>$(NoWarn);CS0649;CS0429</NoWarn>
 		<AssemblyName>linq2db.Tests.Base</AssemblyName>
 		<Configurations>Debug;Release</Configurations>
+		<SignAssembly>false</SignAssembly>
+		<DelaySign>false</DelaySign>
 	</PropertyGroup>
 
 	<ItemGroup>
