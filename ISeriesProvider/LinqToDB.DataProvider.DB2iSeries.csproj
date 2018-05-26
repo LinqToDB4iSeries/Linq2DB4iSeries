@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFrameworks>net45;netstandard2.0;netcoreapp2.0</TargetFrameworks>
+		<TargetFrameworks>net45</TargetFrameworks>
 		<Configurations>Debug;Release</Configurations>
 		<SignAssembly>true</SignAssembly>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -23,20 +23,18 @@
 		<PackageReleaseNotes></PackageReleaseNotes>
 		<PackageLicenseUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries/blob/master/MIT-LICENSE.txt</PackageLicenseUrl>
 		<PackageProjectUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries</PackageProjectUrl>
-		<PackageIconUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries/blob/master/NuGet/linq2db4iSeries.png</PackageIconUrl>
+		<PackageIconUrl>https://raw.githubusercontent.com/LinqToDB4iSeries/Linq2DB4iSeries/master/NuGet/linq2db2i.png</PackageIconUrl>
 		<PackageTags>linq;linq2db;LinqToDB;ORM;database;DB;SQL;DB2;IBM;iSeries</PackageTags>
 		<NeutralLanguage>en-GB</NeutralLanguage>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<PackageId>linq2db4iSeries</PackageId>
 	</PropertyGroup>
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net45|AnyCPU'">
+	<PropertyGroup>
 	  <LangVersion>7.1</LangVersion>
 	</PropertyGroup>
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net45|AnyCPU'">
-	  <LangVersion>7.1</LangVersion>
-	</PropertyGroup>
+	
   
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net40' OR '$(TargetFramework)' == 'net45' OR '$(TargetFramework)' == 'net451' ">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
 		<Reference Include="IBM.Data.DB2.iSeries">
 		  <HintPath>..\Redist\IBM.Data.DB2.iSeries.dll</HintPath>
 		</Reference>
@@ -46,20 +44,13 @@
 		<Reference Include="System.Data.Services" />
 		<Reference Include="System.Data.DataSetExtensions" />
 	</ItemGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.0'">
-    <DefineConstants>$(DefineConstants);NETSTANDARD2_0</DefineConstants>
-  </PropertyGroup>
+	
   
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' ==  'netcoreapp2.0' ">
-    <Reference Include="IBM.Data.DB2.iSeries">
-      <HintPath>..\Redist\IBM.Data.DB2.iSeries.dll</HintPath>
-    </Reference>
-    <Compile Remove="DB2iSeriesAttributeReader.cs" />
+  <ItemGroup>
+    <None Remove="Compile.bat" />
   </ItemGroup>
-  
+   
 	<ItemGroup>
-		<None Include="Compile.bat" />
 		<None Include="LinqToDB.DB2iSeries.snk" />
 	</ItemGroup>
 	<ItemGroup>

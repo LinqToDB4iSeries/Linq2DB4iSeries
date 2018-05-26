@@ -2,28 +2,19 @@
 	<!--<Import Project="..\..\Build\linq2db.Default.props" />-->
 
 	<PropertyGroup>
-		<TargetFrameworks>net452;netcoreapp2.0</TargetFrameworks>
+		<TargetFrameworks>net452</TargetFrameworks>
 		<NoWarn>$(NoWarn);CS0649;CS0429</NoWarn>
 		<AssemblyName>linq2db.Tests</AssemblyName>
-		<Configurations>Debug;Release;NET.45;CORE.2</Configurations>
+		<Configurations>Debug;Release</Configurations>
 	</PropertyGroup>
 
-	<PropertyGroup Condition=" '$(Configuration)' == 'NET.45' ">
-		<TargetFrameworks>net452</TargetFrameworks>
-		<DefineConstants>DEBUG;TRACE</DefineConstants>
-		<DebugSymbols>true</DebugSymbols>
-		<DebugType>full</DebugType>
-		<Optimize>false</Optimize>
-	</PropertyGroup>
 
-	<PropertyGroup Condition=" '$(Configuration)' == 'CORE.2' ">
-		<TargetFrameworks>netcoreapp2.0</TargetFrameworks>
-		<DefineConstants>DEBUG;TRACE</DefineConstants>
-		<DebugSymbols>true</DebugSymbols>
-		<DebugType>full</DebugType>
-		<Optimize>false</Optimize>
-	</PropertyGroup>
-
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+  </PropertyGroup>
 
 	<ItemGroup>
 		<Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
@@ -40,7 +31,7 @@
 		<ProjectReference Include="..\Model\Tests.Model.csproj" />
 		<ProjectReference Include="..\Base\Tests.Base.csproj" />
 		<ProjectReference Include="..\VisualBasic\Tests.VisualBasic.vbproj" />
-
+		
 		<PackageReference Include="System.Collections.Immutable" Version="1.4.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
     <!--<PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.2" Condition=" '$(TargetFramework)' != 'net40' " />-->
@@ -58,8 +49,6 @@
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'net452' ">
-		
-
 		<Reference Include="Microsoft.CSharp" />
 		<Reference Include="System" />
 		<Reference Include="System.Configuration" />
@@ -79,21 +68,6 @@
 	  <PackageReference Include="MiniProfiler" Version="3.2.0.157" />
 	</ItemGroup>
 
-
-	<!-- .NET Standard -->
-
-	<PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
-		<DefineConstants>$(DefineConstants);NETSTANDARD2_0</DefineConstants>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='CORE.2|net452|AnyCPU'">
-	  <LangVersion>7.1</LangVersion>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='NET.45|net452|AnyCPU'">
-	  <LangVersion>7.1</LangVersion>
-	</PropertyGroup>
-
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net452|AnyCPU'">
 	  <LangVersion>7.1</LangVersion>
 	</PropertyGroup>
@@ -101,43 +75,6 @@
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net452|AnyCPU'">
 	  <LangVersion>7.1</LangVersion>
 	</PropertyGroup>
-
-	<ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
-		
-	</ItemGroup>
-
-	<ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
-		<PackageReference Include="Microsoft.CSharp" Version="4.4.1" />
-		<PackageReference Include="System.Diagnostics.TraceSource" Version="4.3.0" />
-		<PackageReference Include="Microsoft.Extensions.DependencyModel" Version="2.0.4" />
-		<PackageReference Include="System.ComponentModel.Annotations" Version="4.4.1" />
-		<PackageReference Include="System.ComponentModel.TypeConverter" Version="4.3.0" />
-		<PackageReference Include="System.Data.Common" Version="4.3.0" />
-		<PackageReference Include="System.Dynamic.Runtime" Version="4.3.0" />
-		<PackageReference Include="System.Linq.Queryable" Version="4.3.0" />
-		<PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
-		<PackageReference Include="System.Runtime.InteropServices.WindowsRuntime" Version="4.3.0" />
-		<PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
-		<PackageReference Include="System.Threading.Thread" Version="4.3.0" />
-		<PackageReference Include="System.Xml.XmlDocument" Version="4.3.0" />
-		<PackageReference Include="System.Data.SqlClient" Version="4.4.2" />
-		<PackageReference Include="System.Net.NetworkInformation" Version="4.3.0" />
-
-		<PackageReference Include="Microsoft.DotNet.InternalAbstractions" Version="1.0.0" />
-
-		<Compile Remove="DataProvider\AccessTests.cs" />
-		<Compile Remove="DataProvider\DB2Tests.cs" />
-		<Compile Remove="DataProvider\SybaseTests.cs" />
-		<Compile Remove="DataProvider\SapHanaTests.cs" />
-		<Compile Remove="DataProvider\InformixTests.cs" />
-		<Compile Remove="DataProvider\SqlServerTypesTests.cs" />
-		<Compile Remove="Data\MiniProfilerTests.cs" />
-		<Compile Remove="Linq\DataServiceTests.cs" />
-		<Compile Remove="Metadata\AttributeReaderTests.cs" />
-		<Compile Remove="Metadata\XmlReaderTests.cs" />
-		<Compile Remove="**\PartialTrust*.cs" />
-		<Compile Remove="Linq\FSharpTests.cs" />
-	</ItemGroup>
 
 	<ItemGroup>
 	  <Reference Include="IBM.Data.DB2.iSeries">

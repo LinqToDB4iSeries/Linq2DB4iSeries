@@ -2,7 +2,7 @@
 	<!--<Import Project="..\..\Build\linq2db.Default.props" />-->
 
 	<PropertyGroup>
-		<TargetFrameworks>net452;netcoreapp2.0</TargetFrameworks>
+		<TargetFrameworks>net452</TargetFrameworks>
 		<NoWarn>$(NoWarn);CS0649;CS0429</NoWarn>
 		<AssemblyName>linq2db.Tests.Base</AssemblyName>
 		<Configurations>Debug;Release</Configurations>
@@ -46,13 +46,6 @@
 		<Reference Include="System.Windows.Forms" />
 	</ItemGroup>
 
-
-	<!-- .NET Standard -->
-
-	<PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
-		<DefineConstants>$(DefineConstants);NETSTANDARD2_0</DefineConstants>
-	</PropertyGroup>
-
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net452|AnyCPU'">
 	  <LangVersion>7.1</LangVersion>
 	</PropertyGroup>
@@ -60,39 +53,6 @@
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net452|AnyCPU'">
 	  <LangVersion>7.1</LangVersion>
 	</PropertyGroup>
-
-	<ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
-		<PackageReference Include="Microsoft.CSharp" Version="4.4.1" />
-		<PackageReference Include="System.Diagnostics.TraceSource" Version="4.3.0" />
-		<PackageReference Include="Microsoft.Extensions.DependencyModel" Version="2.0.4" />
-		<PackageReference Include="System.ComponentModel.Annotations" Version="4.4.1" />
-		<PackageReference Include="System.ComponentModel.TypeConverter" Version="4.3.0" />
-		<PackageReference Include="System.Data.Common" Version="4.3.0" />
-		<PackageReference Include="System.Dynamic.Runtime" Version="4.3.0" />
-		<PackageReference Include="System.Linq.Queryable" Version="4.3.0" />
-		<PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
-		<PackageReference Include="System.Runtime.InteropServices.WindowsRuntime" Version="4.3.0" />
-		<PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
-		<PackageReference Include="System.Threading.Thread" Version="4.3.0" />
-		<PackageReference Include="System.Xml.XmlDocument" Version="4.3.0" />
-		<PackageReference Include="System.Net.NetworkInformation" Version="4.3.0" />
-
-		<PackageReference Include="Microsoft.DotNet.InternalAbstractions" Version="1.0.0" />
-
-		<Compile Remove="DataProvider\AccessTests.cs" />
-		<Compile Remove="DataProvider\DB2Tests.cs" />
-		<Compile Remove="DataProvider\SybaseTests.cs" />
-		<Compile Remove="DataProvider\SapHanaTests.cs" />
-		<Compile Remove="DataProvider\InformixTests.cs" />
-		<Compile Remove="DataProvider\OracleTests.cs" />
-		<Compile Remove="DataProvider\SqlServerTypesTests.cs" />
-		<Compile Remove="Data\MiniProfilerTests.cs" />
-		<Compile Remove="Linq\DataServiceTests.cs" />
-		<Compile Remove="Metadata\AttributeReaderTests.cs" />
-		<Compile Remove="Metadata\XmlReaderTests.cs" />
-		<Compile Remove="**\PartialTrust*.cs" />
-		<Compile Remove="Linq\FSharpTests.cs" />
-	</ItemGroup>
 
 	<ItemGroup>
 	  <Folder Include="Properties\" />
