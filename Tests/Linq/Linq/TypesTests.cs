@@ -106,7 +106,7 @@ namespace Tests.Linq
                     from p in from t in db.Types select new { t.MoneyValue, b = !t.BoolValue } where p.b select p.MoneyValue);
         }
 
-        [Test, DataContextSource]
+        [Test, DataContextSource(false)]
         public void BoolResult1(string context)
         {
             using (var db = GetDataContext(context))
@@ -115,7 +115,7 @@ namespace Tests.Linq
                     from p in db.Person select new { p.Patient, IsPatient = p.Patient != null });
         }
 
-        [Test, DataContextSource]
+        [Test, DataContextSource(false)]
         public void BoolResult2(string context)
         {
             using (var db = GetDataContext(context))
@@ -124,7 +124,7 @@ namespace Tests.Linq
                     from p in db.Person select new { IsPatient = Sql.AsSql(p.Patient != null) });
         }
 
-        [Test, DataContextSource]
+        [Test, DataContextSource(false)]
         public void BoolResult3(string context)
         {
             using (var db = GetDataContext(context))

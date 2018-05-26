@@ -26,13 +26,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NuGet", "NuGet", "{BAE16247
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LinqToDB.DataProvider.DB2iSeries", "ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj", "{3E19DA8D-056C-4F05-B976-698498311FC2}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests.Base", "NewTests\Base\Tests.Base.csproj", "{D938B88E-CD22-4FF4-989E-A84B414DFEAE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests.Base", "Tests\Base\Tests.Base.csproj", "{D938B88E-CD22-4FF4-989E-A84B414DFEAE}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests.Model", "NewTests\Model\Tests.Model.csproj", "{06EB7055-1B80-4D28-ABA3-64226076E1DE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests.Model", "Tests\Model\Tests.Model.csproj", "{06EB7055-1B80-4D28-ABA3-64226076E1DE}"
 EndProject
-Project("{778DAE3C-4631-46EA-AA77-85C1314464D9}") = "Tests.VisualBasic", "NewTests\VisualBasic\Tests.VisualBasic.vbproj", "{A93E6644-5E4D-40F3-B557-52A9066B5940}"
+Project("{778DAE3C-4631-46EA-AA77-85C1314464D9}") = "Tests.VisualBasic", "Tests\VisualBasic\Tests.VisualBasic.vbproj", "{A93E6644-5E4D-40F3-B557-52A9066B5940}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NewTests", "NewTests\Linq\NewTests.csproj", "{0C570479-D628-47BF-BC2B-3EFE244CDA67}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests\Linq\Tests.csproj", "{0C570479-D628-47BF-BC2B-3EFE244CDA67}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

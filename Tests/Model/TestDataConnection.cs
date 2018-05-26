@@ -6,26 +6,45 @@ using System.Text;
 
 using LinqToDB;
 using LinqToDB.Data;
+using LinqToDB.DataProvider;
+using LinqToDB.Mapping;
 using LinqToDB.SqlQuery;
 
 namespace Tests.Model
 {
 	public class TestDataConnection : DataConnection, ITestDataContext
 	{
+		//static int _counter;
+
 		public TestDataConnection(string configString)
 			: base(configString)
 		{
+//			if (configString == ProviderName.SqlServer2008 && ++_counter > 1000)
+//				OnClosing += TestDataConnection_OnClosing;
 		}
 
-		public TestDataConnection()
-#if MONO
-			: base(ProviderName.SqlServer2008)
-#else
-			//: base(ProviderName.SQLite)
-			: base("DB2.iSeries")
-#endif
+	    public TestDataConnection()
 		{
-			
+		}
+
+		static object _sync = new object();
+
+//		[Table("AllTypes")]
+//		class AllTypes
+//		{
+//			[Column("ID")] public int ID;
+//		}
+
+		void TestDataConnection_OnClosing(object sender, EventArgs e)
+		{
+//			lock (_sync)
+//			using (var db = new DataConnection(ProviderName.SqlServer2008))
+//			{
+//				var n = db.GetTable<AllTypes>().Count();
+//				if (n == 0)
+//				{
+//				}
+//			}
 		}
 
 		public ITable<Person>                 Person                 { get { return GetTable<Person>();                 } }
@@ -49,13 +68,40 @@ namespace Tests.Model
 		public ITable<LinqDataTypes>          Types                  { get { return GetTable<LinqDataTypes>();          } }
 		public ITable<LinqDataTypes2>         Types2                 { get { return GetTable<LinqDataTypes2>();         } }
 		public ITable<TestIdentity>           TestIdentity           { get { return GetTable<TestIdentity>();           } }
-		public ITable<InheritanceParentBase> InheritanceParent { get { return GetTable<InheritanceParentBase>(); } }
-		public ITable<InheritanceChildBase> InheritanceChild { get { return GetTable<InheritanceChildBase>(); } }
+		public ITable<InheritanceParentBase>  InheritanceParent      { get { return GetTable<InheritanceParentBase>();  } }
+		public ITable<InheritanceChildBase>   InheritanceChild       { get { return GetTable<InheritanceChildBase>();   } }
 
 		[Sql.TableFunction(Name="GetParentByID")]
 		public ITable<Parent> GetParentByID(int? id)
 		{
-			return GetTable<Parent>(this, (MethodInfo)MethodBase.GetCurrentMethod(), id);
+			var methodInfo = (typeof(TestDataConnection)).GetMethod("GetParentByID", new [] {typeof(int?)});
+
+			return GetTable<Parent>(this, methodInfo, id);
+		}
+
+		public string GetSqlText(SelectQuery query)
+		{
+			var provider  = ((IDataContext)this).CreateSqlProvider();
+			var optimizer = ((IDataContext)this).GetSqlOptimizer  ();
+
+			//provider.SqlQuery = sql;
+
+			var statement = (SqlSelectStatement)optimizer.Finalize(new SqlSelectStatement(query));
+
+			var cc = provider.CommandCount(statement);
+			var sb = new StringBuilder();
+
+			var commands = new string[cc];
+
+			for (var i = 0; i < cc; i++)
+			{
+				sb.Length = 0;
+
+				provider.BuildSql(i, statement, sb);
+				commands[i] = sb.ToString();
+			}
+
+			return string.Join("\n\n", commands);
 		}
 
 		[ExpressionMethod("Expression9")]

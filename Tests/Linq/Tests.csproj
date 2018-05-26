@@ -1,147 +1,152 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <Configurations>Debug;Release;</Configurations>
-    <AssemblyName>linq2db.Tests</AssemblyName>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>linq2db.Tests.snk</AssemblyOriginatorKeyFile>
-    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
-    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
-    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
-    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
-    <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug</OutputPath>
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>3</WarningLevel>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <NoWarn />
-    <Prefer32Bit>false</Prefer32Bit>
-    <LangVersion>7.0</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;FW4</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <PlatformTarget>x86</PlatformTarget>
-    <NoWarn>649 429</NoWarn>
-    <Prefer32Bit>false</Prefer32Bit>
-    <LangVersion>7.0</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30729</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{07997A18-86D3-47AC-A514-AB1B03E6AEC8}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Tests</RootNamespace>
-    <AssemblyName>linq2db.Tests</AssemblyName>
-    <TargetFramework>net452</TargetFramework>
-    <FileAlignment>512</FileAlignment>
-    <FileUpgradeFlags />
-    <OldToolsVersion>3.5</OldToolsVersion>
-    <UpgradeBackupLocation />
-    <IsWebBootstrapper>false</IsWebBootstrapper>
-    <TargetFrameworkProfile />
-    <PublishUrl>publish\</PublishUrl>
-    <Install>true</Install>
-    <InstallFrom>Disk</InstallFrom>
-    <UpdateEnabled>false</UpdateEnabled>
-    <UpdateMode>Foreground</UpdateMode>
-    <UpdateInterval>7</UpdateInterval>
-    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
-    <UpdatePeriodically>false</UpdatePeriodically>
-    <UpdateRequired>false</UpdateRequired>
-    <MapFileExtensions>true</MapFileExtensions>
-    <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <UseApplicationTrust>false</UseApplicationTrust>
-    <BootstrapperEnabled>true</BootstrapperEnabled>
-    <NuGetPackageImportStamp />
-    <StartupObject />
-    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>linq2db.Tests.snk</AssemblyOriginatorKeyFile>
-    <PostBuildEvent>
-      if not exist "$(TargetDir)x86" md "$(TargetDir)x86"
+	<!--<Import Project="..\..\Build\linq2db.Default.props" />-->
 
-    </PostBuildEvent>
-  </PropertyGroup>
-  <PropertyGroup>
-    <PostBuildEvent>
-      if not exist "$(TargetDir)x86" md "$(TargetDir)x86"
-    </PostBuildEvent>
-  </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj" />
-    <ProjectReference Include="..\..\NewTests\Base\Tests.Base.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="linq2db" Version="2.0.0" />
-    <PackageReference Include="Microsoft.Bcl.Immutable" Version="1.0.34" />
-    <PackageReference Include="Microsoft.SqlServer.Types" Version="14.0.314.76" />
-    <PackageReference Include="MiniProfiler" Version="3.2.0.157" />
-    <PackageReference Include="NUnit" Version="3.10.1" />
-    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.108" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="Accessibility" />
-    <Reference Include="IBM.Data.DB2.iSeries">
-      <HintPath>..\..\Redist\IBM.Data.DB2.iSeries.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.ComponentModel.DataAnnotations" />
-    <Reference Include="System.Configuration" />
-    <Reference Include="System.Data.Linq" />
-    <Reference Include="System.Data.Services" />
-    <Reference Include="System.ServiceModel" />
-    <Reference Include="System.Transactions" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Data.DataSetExtensions" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="DefaultConnectionStrings.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="UserConnectionStrings.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="App.config">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="linq2db.Tests.snk" />
-    <Content Include="..\..\Data\Create Scripts\DB2iSeries.sql">
-      <Link>Database\Create Scripts\DB2iSeries.sql</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\..\Data\Create Scripts\DB2iSeriesGAS.sql">
-      <Link>Database\Create Scripts\DB2iSeriesGAS.sql</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="DefaultDataProviders.txt" />
-    <Content Include="SqlServerTypes\readme.htm" />
-    <Content Include="SqlServerTypes\x64\msvcr120.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="SqlServerTypes\x64\SqlServerSpatial140.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="SqlServerTypes\x86\msvcr120.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="SqlServerTypes\x86\SqlServerSpatial140.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
+	<PropertyGroup>
+		<TargetFrameworks>net452;netcoreapp2.0</TargetFrameworks>
+		<NoWarn>$(NoWarn);CS0649;CS0429</NoWarn>
+		<AssemblyName>linq2db.Tests</AssemblyName>
+		<Configurations>Debug;Release;NET.45;CORE.2</Configurations>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" '$(Configuration)' == 'NET.45' ">
+		<TargetFrameworks>net452</TargetFrameworks>
+		<DefineConstants>DEBUG;TRACE</DefineConstants>
+		<DebugSymbols>true</DebugSymbols>
+		<DebugType>full</DebugType>
+		<Optimize>false</Optimize>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" '$(Configuration)' == 'CORE.2' ">
+		<TargetFrameworks>netcoreapp2.0</TargetFrameworks>
+		<DefineConstants>DEBUG;TRACE</DefineConstants>
+		<DebugSymbols>true</DebugSymbols>
+		<DebugType>full</DebugType>
+		<Optimize>false</Optimize>
+	</PropertyGroup>
+
+
+	<ItemGroup>
+		<Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
+
+		<None Include="..\..\Data\*">
+			<Link>Database/%(FileName)%(Extension)</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Include="..\..\Data\Create Scripts\*">
+			<Link>Database/Create Scripts/%(FileName)%(Extension)</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<ProjectReference Include="..\..\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj" />
+		<ProjectReference Include="..\Model\Tests.Model.csproj" />
+		<ProjectReference Include="..\Base\Tests.Base.csproj" />
+		<ProjectReference Include="..\VisualBasic\Tests.VisualBasic.vbproj" />
+
+		<PackageReference Include="System.Collections.Immutable" Version="1.4.0" />
+		<PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <!--<PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.2" Condition=" '$(TargetFramework)' != 'net40' " />-->
+		<PackageReference Include="NUnit" Version="3.10.1" />
+		<PackageReference Include="NUnit3TestAdapter" Version="3.10.0" />
+		<PackageReference Include="Mono.Cecil" Version="0.10.0" />
+		<PackageReference Include="Humanizer.Core" Version="2.2.0" />
+	</ItemGroup>
+
+
+	<!-- .NET Framework -->
+
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net452'">
+		<PlatformTarget>x86</PlatformTarget>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net452' ">
+		
+
+		<Reference Include="Microsoft.CSharp" />
+		<Reference Include="System" />
+		<Reference Include="System.Configuration" />
+		<Reference Include="System.Core" />
+		<Reference Include="System.Data.DataSetExtensions" />
+		<Reference Include="System.Data.Linq" />
+		<Reference Include="System.Data.Services" />
+		<Reference Include="System.Threading.Tasks" />
+		<Reference Include="System.ServiceModel" />
+		<Reference Include="System.Web.Services" />
+		<Reference Include="System.Xml.Linq" />
+		<Reference Include="System.Data" />
+		<Reference Include="System.Xml" />
+		<Reference Include="System.Runtime.Serialization" />
+		<Reference Include="System.Windows.Forms" />
+
+	  <PackageReference Include="MiniProfiler" Version="3.2.0.157" />
+	</ItemGroup>
+
+
+	<!-- .NET Standard -->
+
+	<PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
+		<DefineConstants>$(DefineConstants);NETSTANDARD2_0</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='CORE.2|net452|AnyCPU'">
+	  <LangVersion>7.1</LangVersion>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='NET.45|net452|AnyCPU'">
+	  <LangVersion>7.1</LangVersion>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net452|AnyCPU'">
+	  <LangVersion>7.1</LangVersion>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net452|AnyCPU'">
+	  <LangVersion>7.1</LangVersion>
+	</PropertyGroup>
+
+	<ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
+		
+	</ItemGroup>
+
+	<ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
+		<PackageReference Include="Microsoft.CSharp" Version="4.4.1" />
+		<PackageReference Include="System.Diagnostics.TraceSource" Version="4.3.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyModel" Version="2.0.4" />
+		<PackageReference Include="System.ComponentModel.Annotations" Version="4.4.1" />
+		<PackageReference Include="System.ComponentModel.TypeConverter" Version="4.3.0" />
+		<PackageReference Include="System.Data.Common" Version="4.3.0" />
+		<PackageReference Include="System.Dynamic.Runtime" Version="4.3.0" />
+		<PackageReference Include="System.Linq.Queryable" Version="4.3.0" />
+		<PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
+		<PackageReference Include="System.Runtime.InteropServices.WindowsRuntime" Version="4.3.0" />
+		<PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
+		<PackageReference Include="System.Threading.Thread" Version="4.3.0" />
+		<PackageReference Include="System.Xml.XmlDocument" Version="4.3.0" />
+		<PackageReference Include="System.Data.SqlClient" Version="4.4.2" />
+		<PackageReference Include="System.Net.NetworkInformation" Version="4.3.0" />
+
+		<PackageReference Include="Microsoft.DotNet.InternalAbstractions" Version="1.0.0" />
+
+		<Compile Remove="DataProvider\AccessTests.cs" />
+		<Compile Remove="DataProvider\DB2Tests.cs" />
+		<Compile Remove="DataProvider\SybaseTests.cs" />
+		<Compile Remove="DataProvider\SapHanaTests.cs" />
+		<Compile Remove="DataProvider\InformixTests.cs" />
+		<Compile Remove="DataProvider\SqlServerTypesTests.cs" />
+		<Compile Remove="Data\MiniProfilerTests.cs" />
+		<Compile Remove="Linq\DataServiceTests.cs" />
+		<Compile Remove="Metadata\AttributeReaderTests.cs" />
+		<Compile Remove="Metadata\XmlReaderTests.cs" />
+		<Compile Remove="**\PartialTrust*.cs" />
+		<Compile Remove="Linq\FSharpTests.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Reference Include="IBM.Data.DB2.iSeries">
+	    <HintPath>..\..\Redist\IBM.Data.DB2.iSeries.dll</HintPath>
+	  </Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="DataProvider\" />
+	</ItemGroup>
+
 </Project>

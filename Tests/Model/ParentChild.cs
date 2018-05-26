@@ -18,13 +18,13 @@ namespace Tests.Model
 
 	public interface IParent
 	{
-		int ParentID { get; }
-		int? Value1 { get; }
+		int  ParentID { get; }
+		int? Value1   { get; }
 	}
 
 	public class Parent : IEquatable<Parent>, IComparable
 	{
-		public int ParentID;
+		public int  ParentID;
 		public int? Value1;
 
 		[Association(ThisKey = "ParentID", OtherKey = "ParentID")]
@@ -81,21 +81,21 @@ namespace Tests.Model
 		static Expression<Func<Parent, Child, bool>> ChildrenPredicate =>
 			(t, m) => Math.Abs(m.ChildID) > 3;
 
-		[Association(ThisKey = "ParentID", OtherKey = "ParentID", ExpressionPredicate = "GrandChildrenPredicate", CanBeNull = true)]
+		[Association(ThisKey = "ParentID", OtherKey = "ParentID", ExpressionPredicate = "GrandChildrenPredicate" , CanBeNull = true)]
 		public List<GrandChild> GrandChildrenX { get; set; }
 
-		static Expression<Func<Parent, GrandChild, bool>> GrandChildrenPredicate =>
+		static Expression<Func<Parent,GrandChild, bool>> GrandChildrenPredicate =>
 			(t, m) => m.ChildID > 22;
 
 		[ExpressionMethod("GrandChildren2Impl")]
 		public IEnumerable<GrandChild> GrandChildren2 { get; set; }
 
-		static Expression<Func<Parent, ITestDataContext, IEnumerable<GrandChild>>> GrandChildren2Impl()
+		static Expression<Func<Parent,ITestDataContext,IEnumerable<GrandChild>>> GrandChildren2Impl()
 		{
-			return (p, db) =>
-				//				from gc in db.GrandChild
-				//				where p.ParentID == gc.ParentID
-				//				select gc;
+			return (p,db) =>
+//				from gc in db.GrandChild
+//				where p.ParentID == gc.ParentID
+//				select gc;
 				p.Children.SelectMany(c => c.GrandChildren);
 		}
 
@@ -105,9 +105,9 @@ namespace Tests.Model
 			throw new NotImplementedException();
 		}
 
-		static Expression<Func<Parent, int, ITestDataContext, IEnumerable<GrandChild>>> GrandChildrenByIDImpl()
+		static Expression<Func<Parent,int,ITestDataContext,IEnumerable<GrandChild>>> GrandChildrenByIDImpl()
 		{
-			return (p, id, db) =>
+			return (p,id,db) =>
 				from gc in db.GrandChild
 				where p.ParentID == gc.ParentID && gc.ChildID == id
 				select gc;
@@ -120,7 +120,7 @@ namespace Tests.Model
 		[PrimaryKey] public int ChildID;
 
 		[Association(ThisKey = "ParentID", OtherKey = "ParentID")]
-		public Parent Parent;
+		public Parent  Parent;
 
 		[Association(ThisKey = "ParentID", OtherKey = "ParentID", CanBeNull = false)]
 		public Parent1 Parent1;
@@ -174,7 +174,7 @@ namespace Tests.Model
 		{
 			if (ReferenceEquals(null, obj)) return false;
 			if (ReferenceEquals(this, obj)) return true;
-			if (obj.GetType() != typeof(GrandChild)) return false;
+			if (obj.GetType() != typeof (GrandChild)) return false;
 
 			return Equals((GrandChild)obj);
 		}
@@ -193,7 +193,7 @@ namespace Tests.Model
 			{
 				var result = ParentID.HasValue ? ParentID.Value : 0;
 
-				result = (result * 397) ^ (ChildID.HasValue ? ChildID.Value : 0);
+				result = (result * 397) ^ (ChildID.     HasValue ? ChildID.     Value : 0);
 				result = (result * 397) ^ (GrandChildID.HasValue ? GrandChildID.Value : 0);
 
 				return result;
@@ -201,15 +201,15 @@ namespace Tests.Model
 		}
 	}
 
-	[Table(Name = "Parent")]
+	[Table(Name="Parent")]
 	public class Parent3 : IEquatable<Parent3>, IComparable
 	{
-		[Column("ParentID")] public int ParentID2 { get; set; }
-		[Column] public int? Value1 { get; set; }
+		[Column("ParentID")] public int  ParentID2 { get; set; }
+		[Column]             public int? Value1    { get; set; }
 
 		public override bool Equals(object obj)
 		{
-			if (obj.GetType() != typeof(Parent3)) return false;
+			if (obj.GetType() != typeof (Parent3)) return false;
 			return Equals((Parent3)obj);
 		}
 
@@ -234,10 +234,9 @@ namespace Tests.Model
 	[Table("Parent")]
 	public class Parent4 : IEquatable<Parent4>, IComparable
 	{
-		[Column] public int ParentID;
+		[Column] public int       ParentID;
 		public TypeValue _Value1;
-		[Column]
-		public TypeValue Value1
+		[Column] public TypeValue Value1
 		{
 			get { return _Value1; }
 			set
@@ -253,7 +252,7 @@ namespace Tests.Model
 
 		public override bool Equals(object obj)
 		{
-			if (obj.GetType() != typeof(Parent4)) return false;
+			if (obj.GetType() != typeof (Parent4)) return false;
 			return Equals((Parent4)obj);
 		}
 
@@ -283,7 +282,7 @@ namespace Tests.Model
 	[Table(Name = "Parent", IsColumnAttributeRequired = false)]
 	public class Parent5 : IEquatable<Parent5>, IComparable
 	{
-		public int ParentID;
+		public int  ParentID;
 		public int? Value1;
 
 		[Association(ThisKey = "ParentID", OtherKey = "Value1", CanBeNull = true)]
@@ -320,15 +319,15 @@ namespace Tests.Model
 	[Table("Parent")]
 	public class Parent1 : IEquatable<Parent1>, IComparable
 	{
-		[PrimaryKey] public int ParentID;
-		[Column] public int? Value1;
+		[PrimaryKey] public int  ParentID;
+		[Column]     public int? Value1;
 
 		[Association(ThisKey = "ParentID", OtherKey = "ParentID")]
 		public List<Child> Children;
 
 		public override bool Equals(object obj)
 		{
-			if (obj.GetType() != typeof(Parent1)) return false;
+			if (obj.GetType() != typeof (Parent1)) return false;
 			return Equals((Parent1)obj);
 		}
 
@@ -350,10 +349,10 @@ namespace Tests.Model
 		}
 	}
 
-	[Table(Name = "GrandChild", IsColumnAttributeRequired = false)]
+	[Table(Name="GrandChild", IsColumnAttributeRequired=false)]
 	public class GrandChild1 : IEquatable<GrandChild1>
 	{
-		public int ParentID;
+		public int  ParentID;
 		public int? ChildID;
 		public int? GrandChildID;
 
@@ -367,7 +366,7 @@ namespace Tests.Model
 		{
 			if (ReferenceEquals(null, obj)) return false;
 			if (ReferenceEquals(this, obj)) return true;
-			if (obj.GetType() != typeof(GrandChild1)) return false;
+			if (obj.GetType() != typeof (GrandChild1)) return false;
 
 			return Equals((GrandChild1)obj);
 		}
@@ -386,7 +385,7 @@ namespace Tests.Model
 			{
 				var result = ParentID;
 
-				result = (result * 397) ^ (ChildID.HasValue ? ChildID.Value : 0);
+				result = (result * 397) ^ (ChildID.     HasValue ? ChildID.     Value : 0);
 				result = (result * 397) ^ (GrandChildID.HasValue ? GrandChildID.Value : 0);
 
 				return result;
@@ -398,10 +397,10 @@ namespace Tests.Model
 
 	#region Inheritance
 
-	[Table(Name = "Parent", IsColumnAttributeRequired = false)]
+	[Table(Name="Parent", IsColumnAttributeRequired=false)]
 	[InheritanceMapping(Code = null, Type = typeof(ParentInheritanceNull))]
-	[InheritanceMapping(Code = 1, Type = typeof(ParentInheritance1))]
-	[InheritanceMapping(Type = typeof(ParentInheritanceValue), IsDefault = true)]
+	[InheritanceMapping(Code = 1,    Type = typeof(ParentInheritance1))]
+	[InheritanceMapping(             Type = typeof(ParentInheritanceValue), IsDefault = true)]
 	public abstract class ParentInheritanceBase : IEquatable<ParentInheritanceBase>, IComparable
 	{
 		[PrimaryKey]
@@ -485,13 +484,13 @@ namespace Tests.Model
 
 	#region Inheritance2
 
-	[Table(Name = "Parent")]
+	[Table(Name="Parent")]
 	[InheritanceMapping(Code = null, Type = typeof(ParentInheritanceBase2))]
-	[InheritanceMapping(Code = 1, Type = typeof(ParentInheritance12))]
-	[InheritanceMapping(Code = 2, Type = typeof(ParentInheritance12))]
+	[InheritanceMapping(Code = 1,    Type = typeof(ParentInheritance12))]
+	[InheritanceMapping(Code = 2,    Type = typeof(ParentInheritance12))]
 	public class ParentInheritanceBase2
 	{
-		[Column(IsPrimaryKey = true)] public int ParentID;
+		[Column(IsPrimaryKey=true)] public int ParentID;
 
 		[Association(ThisKey = "ParentID", OtherKey = "ParentID")]
 		public List<Child> Children;
@@ -507,9 +506,9 @@ namespace Tests.Model
 
 	#region Inheritance3
 
-	[Table(Name = "Parent")]
-	[InheritanceMapping(Code = 1, Type = typeof(ParentInheritance13))]
-	[InheritanceMapping(Code = 2, Type = typeof(ParentInheritance13))]
+	[Table(Name="Parent")]
+	[InheritanceMapping(Code = 1,    Type = typeof(ParentInheritance13))]
+	[InheritanceMapping(Code = 2,    Type = typeof(ParentInheritance13))]
 	public abstract class ParentInheritanceBase3
 	{
 		[PrimaryKey]
@@ -535,12 +534,12 @@ namespace Tests.Model
 		Value2 = 2
 	}
 
-	[Table(Name = "Parent")]
+	[Table(Name="Parent")]
 	[InheritanceMapping(Code = (int)Parent4Type.Value1, Type = typeof(ParentInheritance14))]
 	[InheritanceMapping(Code = (int)Parent4Type.Value2, Type = typeof(ParentInheritance24))]
 	public abstract class ParentInheritanceBase4
 	{
-		[Column(IsPrimaryKey = true)]
+		[Column(IsPrimaryKey=true)]
 		public int ParentID;
 
 		public abstract Parent4Type Value1 { get; }
@@ -569,10 +568,10 @@ namespace Tests.Model
 			_ctx = ctx;
 		}
 
-		[Sql.TableFunction(Name = "GetParentByID")]
+		[Sql.TableFunction(Name="GetParentByID")]
 		public ITable<Parent> GetParentByID(int? id)
 		{
-			var methodInfo = typeof(Functions).GetMethod("GetParentByID", new[] { typeof(int?) });
+			var methodInfo = typeof(Functions).GetMethod("GetParentByID", new [] {typeof(int?)});
 
 			return _ctx.GetTable<Parent>(this, methodInfo, id);
 		}

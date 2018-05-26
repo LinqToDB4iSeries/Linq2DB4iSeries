@@ -31,7 +31,7 @@ namespace Tests.Data
 		{
 			using (var dbm = new DataConnection())
 			{
-				var gender = dbm.Execute<Gender>(string.Format("select 'M'{0}", TestBase.GetDummyFrom(dbm.DataProvider)));
+				var gender = dbm.Execute<Gender>(string.Format("select 'M'{0}", Base.Helpers.GetDummyFrom(dbm.DataProvider)));
 
 				Assert.That(gender, Is.EqualTo(Gender.Male));
 			}
