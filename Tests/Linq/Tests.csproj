@@ -1,6 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net45</TargetFramework>
     <Configurations>Debug;Release;</Configurations>
     <AssemblyName>linq2db.Tests</AssemblyName>
     <SignAssembly>true</SignAssembly>
@@ -48,7 +47,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Tests</RootNamespace>
     <AssemblyName>linq2db.Tests</AssemblyName>
-    <TargetFramework>net45</TargetFramework>
+    <TargetFramework>net452</TargetFramework>
     <FileAlignment>512</FileAlignment>
     <FileUpgradeFlags />
     <OldToolsVersion>3.5</OldToolsVersion>
@@ -86,9 +85,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj" />
-    <ProjectReference Include="..\FSharp\Tests.FSharp.fsproj" />
-    <ProjectReference Include="..\Model\Tests.Model.csproj" />
-    <ProjectReference Include="..\VisualBasic\Tests.VisualBasic.vbproj" />
+    <ProjectReference Include="..\..\NewTests\Base\Tests.Base.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="linq2db" Version="2.0.0" />

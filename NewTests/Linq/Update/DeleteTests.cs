@@ -1,0 +1,316 @@
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
+using LinqToDB;
+using LinqToDB.Data;
+
+using NUnit.Framework;
+
+#region ReSharper disable
+// ReSharper disable ConvertToConstant.Local
+#endregion
+
+namespace Tests.xUpdate
+{
+	using Model;
+
+	[TestFixture]
+	public class DeleteTests : TestBase
+	{
+		[Test, DataContextSource]
+		public void Delete1(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var parent = new Parent1 { ParentID = 1001, Value1 = 1001 };
+
+				db.Delete(parent);
+				db.Insert(parent);
+
+				try
+				{
+					Assert.AreEqual(1, db.Parent.Count(p => p.ParentID == parent.ParentID));
+					Assert.AreEqual(1, db.Parent.Delete(p => p.ParentID == parent.ParentID));
+					Assert.AreEqual(0, db.Parent.Count(p => p.ParentID == parent.ParentID));
+				}
+				finally
+				{
+					db.Delete(parent);
+				}
+			}
+		}
+
+		[Test, DataContextSource]
+		public void Delete2(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var parent = new Parent1 { ParentID = 1001, Value1 = 1001 };
+
+				db.Delete(parent);
+				db.Insert(parent);
+
+				try
+				{
+					Assert.AreEqual(1, db.Parent.Count(p => p.ParentID == parent.ParentID));
+					Assert.AreEqual(1, db.Parent.Where(p => p.ParentID == parent.ParentID).Delete());
+					Assert.AreEqual(0, db.Parent.Count(p => p.ParentID == parent.ParentID));
+				}
+				finally
+				{
+					db.Delete(parent);
+				}
+			}
+		}
+
+		[Test, DataContextSource(ProviderName.Informix)]
+		public void Delete3(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				try
+				{
+					db.Child.Delete(c => new[] { 1001, 1002 }.Contains(c.ChildID));
+
+					db.Child.Insert(() => new Child { ParentID = 1, ChildID = 1001 });
+					db.Child.Insert(() => new Child { ParentID = 1, ChildID = 1002 });
+
+					Assert.AreEqual(3, db.Child.Count(c => c.ParentID == 1));
+					Assert.AreEqual(2, db.Child.Where(c => c.Parent.ParentID == 1 && new[] { 1001, 1002 }.Contains(c.ChildID)).Delete());
+					Assert.AreEqual(1, db.Child.Count(c => c.ParentID == 1));
+				}
+				finally
+				{
+					db.Child.Delete(c => new[] { 1001, 1002 }.Contains(c.ChildID));
+				}
+			}
+		}
+
+		[Test, DataContextSource(ProviderName.Informix)]
+		public void Delete4(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				try
+				{
+					db.GrandChild1.Delete(gc => new[] { 1001, 1002 }.Contains(gc.GrandChildID.Value));
+
+					db.GrandChild.Insert(() => new GrandChild { ParentID = 1, ChildID = 1, GrandChildID = 1001 });
+					db.GrandChild.Insert(() => new GrandChild { ParentID = 1, ChildID = 2, GrandChildID = 1002 });
+
+					Assert.AreEqual(3, db.GrandChild1.Count(gc => gc.ParentID == 1));
+					Assert.AreEqual(2, db.GrandChild1.Where(gc => gc.Parent.ParentID == 1 && new[] { 1001, 1002 }.Contains(gc.GrandChildID.Value)).Delete());
+					Assert.AreEqual(1, db.GrandChild1.Count(gc => gc.ParentID == 1));
+				}
+				finally
+				{
+					db.GrandChild1.Delete(gc => new[] { 1001, 1002 }.Contains(gc.GrandChildID.Value));
+				}
+			}
+		}
+
+		[Test, DataContextSource]
+		public void Delete5(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var values = new[] { 1001, 1002 };
+
+				db.Parent.Delete(x => x.ParentID > 1000);
+
+				try
+				{
+					db.Parent.Delete(x => x.ParentID > 1000);
+				}
+				finally
+				{
+					db.Parent.Insert(() => new Parent { ParentID = values[0], Value1 = 1 });
+					db.Parent.Insert(() => new Parent { ParentID = values[1], Value1 = 1 });
+
+					Assert.AreEqual(2, db.Parent.Count(x => x.ParentID > 1000));
+					Assert.AreEqual(2, db.Parent.Delete(x => values.Contains(x.ParentID)));
+					Assert.AreEqual(0, db.Parent.Count(x => x.ParentID > 1000));
+				}
+			}
+		}
+
+		[Test, DataContextSource(false, ProviderName.Informix)]
+		public void AlterDelete(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var q =
+					from p in db.Parent
+					join ch in db.Child on p.ParentID equals ch.ParentID into lj1
+					from ch in lj1.DefaultIfEmpty()
+					where ch != null && ch.ParentID == -1 || ch == null && p.ParentID == -1
+					select p;
+
+				q.Delete();
+
+				var sql = ((DataConnection)db).LastQuery;
+
+				if (sql.Contains("EXISTS"))
+					Assert.That(sql.IndexOf("(("), Is.GreaterThan(0));
+			}
+		}
+
+		string ContainsJoin1Impl(TestDataConnection db, int[] arr)
+		{
+			var id = 1000;
+
+			(
+				from p in db.Parent
+				join c in db.Child on p.ParentID equals c.ParentID
+				where c.ParentID == id && !arr.Contains(c.ChildID)
+				select p
+			).Delete();
+
+			return db.LastQuery;
+		}
+
+		[Test, DataContextSource(false, ProviderName.Informix)]
+		public void ContainsJoin1(string context)
+		{
+			using (var db = new TestDataConnection(context))
+			{
+				db.Child.Delete(c => c.ParentID >= 1000);
+				db.Parent.Delete(c => c.ParentID >= 1000);
+
+				try
+				{
+					var id = 1000;
+
+					db.Insert(new Parent { ParentID = id });
+
+					for (var i = 0; i < 3; i++)
+						db.Insert(new Child { ParentID = id, ChildID = 1000 + i });
+
+					var sql1 = ContainsJoin1Impl(db, new[] { 1000, 1001 });
+					var sql2 = ContainsJoin1Impl(db, new[] { 1002 });
+
+					Assert.That(sql1, Is.Not.EqualTo(sql2));
+				}
+				finally
+				{
+					db.Child.Delete(c => c.ParentID >= 1000);
+					db.Parent.Delete(c => c.ParentID >= 1000);
+				}
+			}
+		}
+
+		[Test, DataContextSource(false, ProviderName.Informix)]
+		public void MultipleDelete(string context)
+		{
+			using (var db = new TestDataConnection(context))
+			{
+				db.Parent.Delete(c => c.ParentID >= 1000);
+
+				try
+				{
+					var list = new[] { new Parent { ParentID = 1000 }, new Parent { ParentID = 1001 } };
+
+					db.BulkCopy(list);
+
+					var ret = db.Parent.Delete(p => list.Contains(p));
+
+					Assert.That(ret, Is.EqualTo(2));
+				}
+				finally
+				{
+					db.Parent.Delete(c => c.ParentID >= 1000);
+				}
+			}
+		}
+
+		[Test, DataContextSource]
+		public void DeleteByTableName(string context)
+		{
+			const string schemaName = null;
+			const string tableName = "xxPerson";
+
+			using (var db = GetDataContext(context))
+			{
+				try
+				{
+					db.DropTable<Person>(tableName, schemaName: schemaName, throwExceptionIfNotExists: false);
+
+					var table = db.CreateTable<Person>(tableName, schemaName: schemaName);
+
+					Assert.AreEqual(tableName, table.TableName);
+					Assert.AreEqual(schemaName, table.SchemaName);
+
+					var person = new Person()
+					{
+						FirstName = "Steven",
+						LastName = "King",
+						Gender = Gender.Male,
+					};
+
+					// insert a row into the table
+					db.Insert(person, tableName: tableName, schemaName: schemaName);
+					var newCount = table.Count();
+					Assert.AreEqual(1, newCount);
+
+					var personForDelete = table.Single();
+
+					db.Delete(personForDelete, tableName: tableName, schemaName: schemaName);
+
+					Assert.AreEqual(0, table.Count());
+
+					table.Drop();
+				}
+				catch
+				{
+					db.DropTable<Person>(tableName, schemaName: schemaName);
+					throw;
+				}
+			}
+		}
+
+		[Test, DataContextSource]
+		public async Task DeleteByTableNameAsync(string context)
+		{
+			const string schemaName = null;
+			const string tableName = "xxPerson";
+
+			using (var db = GetDataContext(context))
+			{
+				try
+				{
+					db.DropTable<Person>(tableName, schemaName: schemaName, throwExceptionIfNotExists: false);
+
+					var table = await db.CreateTableAsync<Person>(tableName, schemaName: schemaName);
+
+					Assert.AreEqual(tableName, table.TableName);
+					Assert.AreEqual(schemaName, table.SchemaName);
+
+					var person = new Person()
+					{
+						FirstName = "Steven",
+						LastName = "King",
+						Gender = Gender.Male,
+					};
+
+					// insert a row into the table
+					await db.InsertAsync(person, tableName: tableName, schemaName: schemaName);
+					var newCount = await table.CountAsync();
+					Assert.AreEqual(1, newCount);
+
+					var personForDelete = await table.SingleAsync();
+
+					await db.DeleteAsync(personForDelete, tableName: tableName, schemaName: schemaName);
+
+					Assert.AreEqual(0, await table.CountAsync());
+
+					await table.DropAsync();
+				}
+				catch
+				{
+					await db.DropTableAsync<Person>(tableName, schemaName: schemaName);
+					throw;
+				}
+			}
+		}
+	}
+}

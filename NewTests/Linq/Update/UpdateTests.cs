@@ -1,0 +1,826 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+using LinqToDB;
+using LinqToDB.Data;
+using LinqToDB.Mapping;
+
+using NUnit.Framework;
+
+#region ReSharper disable
+// ReSharper disable ConvertToConstant.Local
+#endregion
+
+namespace Tests.xUpdate
+{
+	using Model;
+
+	[TestFixture]
+	public class UpdateTests : TestBase
+	{
+		[Test, DataContextSource]
+		public void Update1(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				try
+				{
+					var parent = new Parent1 { ParentID = 1001, Value1 = 1001 };
+
+					db.Parent.Delete(p => p.ParentID > 1000);
+					db.Insert(parent);
+
+					Assert.AreEqual(1, db.Parent.Count(p => p.ParentID == parent.ParentID));
+					Assert.AreEqual(1, db.Parent.Update(p => p.ParentID == parent.ParentID, p => new Parent { ParentID = p.ParentID + 1 }));
+					Assert.AreEqual(1, db.Parent.Count(p => p.ParentID == parent.ParentID + 1));
+				}
+				finally
+				{
+					db.Child.Delete(c => c.ChildID > 1000);
+				}
+			}
+		}
+
+		[Test, DataContextSource]
+		public async Task Update1Async(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				try
+				{
+					var parent = new Parent1 { ParentID = 1001, Value1 = 1001 };
+
+					await db.Parent.DeleteAsync(p => p.ParentID > 1000);
+					await db.InsertAsync(parent);
+
+					Assert.AreEqual(1, await db.Parent.CountAsync(p => p.ParentID == parent.ParentID));
+					Assert.AreEqual(1, await db.Parent.UpdateAsync(p => p.ParentID == parent.ParentID, p => new Parent { ParentID = p.ParentID + 1 }));
+					Assert.AreEqual(1, await db.Parent.CountAsync(p => p.ParentID == parent.ParentID + 1));
+				}
+				finally
+				{
+					await db.Child.DeleteAsync(c => c.ChildID > 1000);
+				}
+			}
+		}
+
+		[Test, DataContextSource]
+		public void Update2(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				try
+				{
+					var parent = new Parent1 { ParentID = 1001, Value1 = 1001 };
+
+					db.Parent.Delete(p => p.ParentID > 1000);
+					db.Insert(parent);
+
+					Assert.AreEqual(1, db.Parent.Count(p => p.ParentID == parent.ParentID));
+					Assert.AreEqual(1, db.Parent.Where(p => p.ParentID == parent.ParentID).Update(p => new Parent { ParentID = p.ParentID + 1 }));
+					Assert.AreEqual(1, db.Parent.Count(p => p.ParentID == parent.ParentID + 1));
+				}
+				finally
+				{
+					db.Child.Delete(c => c.ChildID > 1000);
+				}
+			}
+		}
+
+		[Test, DataContextSource]
+		public async Task Update2Async(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				try
+				{
+					var parent = new Parent1 { ParentID = 1001, Value1 = 1001 };
+
+					await db.Parent.DeleteAsync(p => p.ParentID > 1000);
+					await db.InsertAsync(parent);
+
+					Assert.AreEqual(1, await db.Parent.CountAsync(p => p.ParentID == parent.ParentID));
+					Assert.AreEqual(1, await db.Parent.Where(p => p.ParentID == parent.ParentID).UpdateAsync(p => new Parent { ParentID = p.ParentID + 1 }));
+					Assert.AreEqual(1, await db.Parent.CountAsync(p => p.ParentID == parent.ParentID + 1));
+				}
+				finally
+				{
+					await db.Child.DeleteAsync(c => c.ChildID > 1000);
+				}
+			}
+		}
+
+		[Test, DataContextSource(ProviderName.Informix)]
+		public void Update3(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				try
+				{
+					var id = 1001;
+
+					db.Child.Delete(c => c.ChildID > 1000);
+					db.Child.Insert(() => new Child { ParentID = 1, ChildID = id });
+
+					Assert.AreEqual(1, db.Child.Count(c => c.ChildID == id));
+					Assert.AreEqual(1, db.Child.Where(c => c.ChildID == id && c.Parent.Value1 == 1).Update(c => new Child { ChildID = c.ChildID + 1 }));
+					Assert.AreEqual(1, db.Child.Count(c => c.ChildID == id + 1));
+				}
+				finally
+				{
+					db.Child.Delete(c => c.ChildID > 1000);
+				}
+			}
+		}
+
+		[Test, DataContextSource(ProviderName.Informix)]
+		public void Update4(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				try
+				{
+					var id = 1001;
+
+					db.Child.Delete(c => c.ChildID > 1000);
+					db.Child.Insert(() => new Child { ParentID = 1, ChildID = id });
+
+					Assert.AreEqual(1, db.Child.Count(c => c.ChildID == id));
+					Assert.AreEqual(1,
+						db.Child
+							.Where(c => c.ChildID == id && c.Parent.Value1 == 1)
+								.Set(c => c.ChildID, c => c.ChildID + 1)
+							.Update());
+					Assert.AreEqual(1, db.Child.Count(c => c.ChildID == id + 1));
+				}
+				finally
+				{
+					db.Child.Delete(c => c.ChildID > 1000);
+				}
+			}
+		}
+
+		[Test, DataContextSource(ProviderName.Informix)]
+		public async Task Update4Async(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				try
+				{
+					var id = 1001;
+
+					await db.Child.DeleteAsync(c => c.ChildID > 1000);
+					await db.Child.InsertAsync(() => new Child { ParentID = 1, ChildID = id });
+
+					Assert.AreEqual(1, await db.Child.CountAsync(c => c.ChildID == id));
+					Assert.AreEqual(1,
+						await db.Child
+							.Where(c => c.ChildID == id && c.Parent.Value1 == 1)
+								.Set(c => c.ChildID, c => c.ChildID + 1)
+							.UpdateAsync());
+					Assert.AreEqual(1, await db.Child.CountAsync(c => c.ChildID == id + 1));
+				}
+				finally
+				{
+					await db.Child.DeleteAsync(c => c.ChildID > 1000);
+				}
+			}
+		}
+
+		[Test, DataContextSource(ProviderName.Informix)]
+		public void Update5(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				try
+				{
+					var id = 1001;
+
+					db.Child.Delete(c => c.ChildID > 1000);
+					db.Child.Insert(() => new Child { ParentID = 1, ChildID = id });
+
+					Assert.AreEqual(1, db.Child.Count(c => c.ChildID == id));
+					Assert.AreEqual(1,
+						db.Child
+							.Where(c => c.ChildID == id && c.Parent.Value1 == 1)
+								.Set(c => c.ChildID, () => id + 1)
+							.Update());
+					Assert.AreEqual(1, db.Child.Count(c => c.ChildID == id + 1));
+				}
+				finally
+				{
+					db.Child.Delete(c => c.ChildID > 1000);
+				}
+			}
+		}
+
+		[Test, DataContextSource(ProviderName.Informix)]
+		public void Update6(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				try
+				{
+					var id = 1001;
+
+					db.Parent4.Delete(p => p.ParentID > 1000);
+					db.Insert(new Parent4 { ParentID = id, Value1 = TypeValue.Value1 });
+
+					Assert.AreEqual(1, db.Parent4.Count(p => p.ParentID == id && p.Value1 == TypeValue.Value1));
+					Assert.AreEqual(1,
+						db.Parent4
+							.Where(p => p.ParentID == id)
+								.Set(p => p.Value1, () => TypeValue.Value2)
+							.Update());
+					Assert.AreEqual(1, db.Parent4.Count(p => p.ParentID == id && p.Value1 == TypeValue.Value2));
+				}
+				finally
+				{
+					db.Parent4.Delete(p => p.ParentID > 1000);
+				}
+			}
+		}
+
+		[Test, DataContextSource(ProviderName.Informix)]
+		public void Update7(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				try
+				{
+					var id = 1001;
+
+					db.Parent4.Delete(p => p.ParentID > 1000);
+					db.Insert(new Parent4 { ParentID = id, Value1 = TypeValue.Value1 });
+
+					Assert.AreEqual(1, db.Parent4.Count(p => p.ParentID == id && p.Value1 == TypeValue.Value1));
+					Assert.AreEqual(1,
+						db.Parent4
+							.Where(p => p.ParentID == id)
+								.Set(p => p.Value1, TypeValue.Value2)
+							.Update());
+					Assert.AreEqual(1, db.Parent4.Count(p => p.ParentID == id && p.Value1 == TypeValue.Value2));
+
+					Assert.AreEqual(1,
+						db.Parent4
+							.Where(p => p.ParentID == id)
+								.Set(p => p.Value1, TypeValue.Value3)
+							.Update());
+					Assert.AreEqual(1, db.Parent4.Count(p => p.ParentID == id && p.Value1 == TypeValue.Value3));
+				}
+				finally
+				{
+					db.Parent4.Delete(p => p.ParentID > 1000);
+				}
+			}
+		}
+
+		[Test, DataContextSource]
+		public void Update8(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				try
+				{
+					var parent = new Parent1 { ParentID = 1001, Value1 = 1001 };
+
+					db.Parent.Delete(p => p.ParentID > 1000);
+					db.Insert(parent);
+
+					parent.Value1++;
+
+					db.Update(parent);
+
+					Assert.AreEqual(1002, db.Parent.Single(p => p.ParentID == parent.ParentID).Value1);
+				}
+				finally
+				{
+					db.Child.Delete(c => c.ChildID > 1000);
+				}
+			}
+		}
+
+		//[Test, DataContextSource]
+		public void Update11(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				db.BeginTransaction();
+
+				var q = db.GetTable<LinqDataTypes2>().Union(db.GetTable<LinqDataTypes2>());
+
+				//db.GetTable<LinqDataTypes2>().Update(_ => q.Contains(_), _ => new LinqDataTypes2 { GuidValue = _.GuidValue });
+
+				q.Update(_ => new LinqDataTypes2 { GuidValue = _.GuidValue });
+			}
+		}
+
+		[Test, DataContextSource]
+		public void UpdateComplex1(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				db.Person.Where(x => x.FirstName.StartsWith("UpdateComplex")).Delete();
+				try
+				{
+
+					var id = Convert.ToInt32(db.InsertWithIdentity(
+						new ComplexPerson2
+						{
+							Name = new FullName
+							{
+								FirstName = "UpdateComplex",
+								LastName = "Empty"
+							}
+						}));
+
+					var obj = db.GetTable<ComplexPerson2>().First(x => x.ID == id);
+					obj.Name.LastName = obj.Name.FirstName;
+
+					db.Update(obj);
+
+					obj = db.GetTable<ComplexPerson2>().First(x => x.ID == id);
+
+					Assert.AreEqual(obj.Name.FirstName, obj.Name.LastName);
+				}
+				finally
+				{
+					db.Person.Where(x => x.FirstName.StartsWith("UpdateComplex")).Delete();
+				}
+			}
+		}
+
+		[Test, DataContextSource]
+		public async Task UpdateComplex1Async(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				await db.Person.DeleteAsync(x => x.FirstName.StartsWith("UpdateComplex"));
+
+				try
+				{
+
+					var id = Convert.ToInt32(await db.InsertWithIdentityAsync(
+						new ComplexPerson2
+						{
+							Name = new FullName
+							{
+								FirstName = "UpdateComplex",
+								LastName = "Empty"
+							}
+						}));
+
+					var obj = await db.GetTable<ComplexPerson2>().FirstAsync(x => x.ID == id);
+					obj.Name.LastName = obj.Name.FirstName;
+
+					await db.UpdateAsync(obj);
+
+					obj = await db.GetTable<ComplexPerson2>().FirstAsync(x => x.ID == id);
+
+					Assert.AreEqual(obj.Name.FirstName, obj.Name.LastName);
+				}
+				finally
+				{
+					await db.Person.Where(x => x.FirstName.StartsWith("UpdateComplex")).DeleteAsync();
+				}
+			}
+		}
+
+		[Test, DataContextSource]
+		public void UpdateComplex2(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				db.Person.Where(x => x.FirstName.StartsWith("UpdateComplex")).Delete();
+				try
+				{
+
+					var id = Convert.ToInt32(db.InsertWithIdentity(
+						new ComplexPerson2()
+						{
+							Name = new FullName
+							{
+								FirstName = "UpdateComplex",
+								LastName = "Empty"
+							}
+						}));
+
+					var cnt = db.GetTable<ComplexPerson2>()
+						.Where(x => x.Name.FirstName.StartsWith("UpdateComplex"))
+						.Set(x => x.Name.LastName, x => x.Name.FirstName)
+						.Update();
+
+					Assert.AreEqual(1, cnt);
+
+					var obj = db.GetTable<ComplexPerson2>().First(x => x.ID == id);
+
+					Assert.AreEqual(obj.Name.FirstName, obj.Name.LastName);
+				}
+				finally
+				{
+					db.Person.Where(x => x.FirstName.StartsWith("UpdateComplex")).Delete();
+				}
+
+			}
+		}
+
+		[Test, DataContextSource(ProviderName.Sybase, ProviderName.Informix)]
+		public void UpdateAssociation1(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				const int childId = 10000;
+				const int parentId = 20000;
+
+				try
+				{
+					db.Child.Delete(x => x.ChildID == childId);
+					db.Parent.Delete(x => x.ParentID == parentId);
+
+					db.Parent.Insert(() => new Parent { ParentID = parentId, Value1 = parentId });
+					db.Child.Insert(() => new Child { ChildID = childId, ParentID = parentId });
+
+					var parents =
+						from child in db.Child
+						where child.ChildID == childId
+						select child.Parent;
+
+					Assert.AreEqual(1, parents.Update(db.Parent, x => new Parent { Value1 = 5 }));
+				}
+				finally
+				{
+					db.Child.Delete(x => x.ChildID == childId);
+					db.Parent.Delete(x => x.ParentID == parentId);
+				}
+			}
+		}
+
+		[Test, DataContextSource(ProviderName.Sybase, ProviderName.Informix)]
+		public async Task UpdateAssociation1Async(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				const int childId = 10000;
+				const int parentId = 20000;
+
+				try
+				{
+					await db.Child.DeleteAsync(x => x.ChildID == childId);
+					await db.Parent.DeleteAsync(x => x.ParentID == parentId);
+
+					await db.Parent.InsertAsync(() => new Parent { ParentID = parentId, Value1 = parentId });
+					await db.Child.InsertAsync(() => new Child { ChildID = childId, ParentID = parentId });
+
+					var parents =
+						from child in db.Child
+						where child.ChildID == childId
+						select child.Parent;
+
+					Assert.AreEqual(1, await parents.UpdateAsync(db.Parent, x => new Parent { Value1 = 5 }));
+				}
+				finally
+				{
+					await db.Child.DeleteAsync(x => x.ChildID == childId);
+					await db.Parent.DeleteAsync(x => x.ParentID == parentId);
+				}
+			}
+		}
+
+		[Test, DataContextSource(ProviderName.Sybase, ProviderName.Informix)]
+		public void UpdateAssociation2(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				const int childId = 10000;
+				const int parentId = 20000;
+
+				try
+				{
+					db.Child.Delete(x => x.ChildID == childId);
+					db.Parent.Delete(x => x.ParentID == parentId);
+
+					db.Parent.Insert(() => new Parent { ParentID = parentId, Value1 = parentId });
+					db.Child.Insert(() => new Child { ChildID = childId, ParentID = parentId });
+
+					var parents =
+						from child in db.Child
+						where child.ChildID == childId
+						select child.Parent;
+
+					Assert.AreEqual(1, parents.Update(x => new Parent { Value1 = 5 }));
+				}
+				finally
+				{
+					db.Child.Delete(x => x.ChildID == childId);
+					db.Parent.Delete(x => x.ParentID == parentId);
+				}
+			}
+		}
+
+		[Test, DataContextSource(ProviderName.Sybase, ProviderName.Informix)]
+		public void UpdateAssociation3(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				const int childId = 10000;
+				const int parentId = 20000;
+
+				try
+				{
+					db.Child.Delete(x => x.ChildID == childId);
+					db.Parent.Delete(x => x.ParentID == parentId);
+
+					db.Parent.Insert(() => new Parent { ParentID = parentId, Value1 = parentId });
+					db.Child.Insert(() => new Child { ChildID = childId, ParentID = parentId });
+
+					var parents =
+						from child in db.Child
+						where child.ChildID == childId
+						select child.Parent;
+
+					Assert.AreEqual(1, parents.Update(x => x.ParentID > 0, x => new Parent { Value1 = 5 }));
+				}
+				finally
+				{
+					db.Child.Delete(x => x.ChildID == childId);
+					db.Parent.Delete(x => x.ParentID == parentId);
+				}
+			}
+		}
+
+		[Test, DataContextSource(ProviderName.Sybase, ProviderName.Informix)]
+		public void UpdateAssociation4(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				const int childId = 10000;
+				const int parentId = 20000;
+
+				try
+				{
+					db.Child.Delete(x => x.ChildID == childId);
+					db.Parent.Delete(x => x.ParentID == parentId);
+
+					db.Parent.Insert(() => new Parent { ParentID = parentId, Value1 = parentId });
+					db.Child.Insert(() => new Child { ChildID = childId, ParentID = parentId });
+
+					var parents =
+						from child in db.Child
+						where child.ChildID == childId
+						select child.Parent;
+
+					Assert.AreEqual(1, parents.Set(x => x.Value1, 5).Update());
+				}
+				finally
+				{
+					db.Child.Delete(x => x.ChildID == childId);
+					db.Parent.Delete(x => x.ParentID == parentId);
+				}
+			}
+		}
+
+		static readonly Func<TestDataConnection, int, string, int> _updateQuery =
+			CompiledQuery.Compile<TestDataConnection, int, string, int>((ctx, key, value) =>
+				   ctx.Person
+					   .Where(x => x.ID == key)
+					   .Set(x => x.FirstName, value)
+					   .Update());
+
+		[Test]
+		public void CompiledUpdate()
+		{
+			using (var ctx = new TestDataConnection())
+			{
+				_updateQuery(ctx, 12345, "54321");
+			}
+		}
+
+		[Table("LinqDataTypes")]
+		class Table1
+		{
+			[Column] public int ID;
+			[Column] public bool BoolValue;
+
+			[Association(ThisKey = "ID", OtherKey = "ParentID", CanBeNull = false)]
+			public List<Table2> Tables2;
+		}
+
+		[Table("Parent")]
+		class Table2
+		{
+			[Column] public int ParentID;
+			[Column] public bool Value1;
+
+			[Association(ThisKey = "ParentID", OtherKey = "ID", CanBeNull = false)]
+			public Table1 Table1;
+		}
+
+		[Test, DataContextSource(ProviderName.Informix)]
+		public void AsUpdatableTest(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				try
+				{
+					var id = 1001;
+
+					db.Child.Delete(c => c.ChildID > 1000);
+					db.Child.Insert(() => new Child { ParentID = 1, ChildID = id });
+
+					Assert.AreEqual(1, db.Child.Count(c => c.ChildID == id));
+
+					var q = db.Child.Where(c => c.ChildID == id && c.Parent.Value1 == 1);
+					var uq = q.AsUpdatable();
+
+					uq = uq.Set(c => c.ChildID, c => c.ChildID + 1);
+
+					Assert.AreEqual(1, uq.Update());
+					Assert.AreEqual(1, db.Child.Count(c => c.ChildID == id + 1));
+				}
+				finally
+				{
+					db.Child.Delete(c => c.ChildID > 1000);
+				}
+			}
+		}
+
+		[Table("GrandChild")]
+		class Table3
+		{
+			[PrimaryKey(1)] public int? ParentID;
+			[PrimaryKey(2)] public int? ChildID;
+			[Column] public int? GrandChildID;
+		}
+
+		[Test, DataContextSource]
+		public void UpdateNullablePrimaryKey(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				db.Update(new Table3 { ParentID = 10000, ChildID = null, GrandChildID = 1000 });
+
+				if (db is DataConnection)
+					Assert.IsTrue(((DataConnection)db).LastQuery.Contains("IS NULL"));
+
+				db.Update(new Table3 { ParentID = 10000, ChildID = 111, GrandChildID = 1000 });
+
+				if (db is DataConnection)
+					Assert.IsFalse(((DataConnection)db).LastQuery.Contains("IS NULL"));
+			}
+		}
+
+		[Test, DataContextSource(ProviderName.Access, ProviderName.Informix, ProviderName.SqlCe)]
+		public void UpdateSetSelect(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				db.Parent.Delete(x => x.ParentID > 1000);
+
+				var res =
+				(
+					from p in db.Parent
+					join c in db.Child on p.ParentID equals c.ParentID
+					where p.ParentID == 1
+					select p
+				)
+				.Set(p => p.ParentID, p => db.Child.SingleOrDefault(c => c.ChildID == 11).ParentID + 1000)
+				.Update();
+
+				Assert.AreEqual(1, res);
+
+				res = db.Parent.Where(x => x.ParentID == 1001).Set(x => x.ParentID, 1).Update();
+				Assert.AreEqual(1, res);
+			}
+		}
+
+		[Test, DataContextSource()]
+		public void UpdateMultipleColumns(string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var ldt = new LinqDataTypes
+				{
+					ID = 1001,
+					MoneyValue = 1000,
+					SmallIntValue = 100,
+				};
+
+				try
+				{
+					db.Types.Delete(c => c.ID == ldt.ID);
+					db.Types
+						.Value(t => t.ID, ldt.ID)
+						.Value(t => t.MoneyValue, () => ldt.MoneyValue)
+						.Value(t => t.SmallIntValue, () => ldt.SmallIntValue)
+						.Insert()
+						;
+
+					db.Types
+						.Where(t => t.ID == ldt.ID)
+						.Set(t => t.MoneyValue, () => 2000)
+						.Set(t => t.SmallIntValue, () => 200)
+						.Update()
+						;
+
+					var udt = db.Types.Single(t => t.ID == ldt.ID);
+
+					Assert.That(udt.MoneyValue, Is.Not.EqualTo(ldt.MoneyValue));
+					Assert.That(udt.SmallIntValue, Is.Not.EqualTo(ldt.SmallIntValue));
+				}
+				finally
+				{
+					db.Types.Delete(t => t.ID == ldt.ID);
+				}
+			}
+		}
+
+		[Test, DataContextSource]
+		public void UpdateByTableName(string context)
+		{
+			const string schemaName = null;
+			const string tableName = "xxPerson";
+
+			using (var db = GetDataContext(context))
+			{
+				db.DropTable<Patient>(tableName, schemaName: schemaName, throwExceptionIfNotExists: false);
+			}
+
+			using (var db = GetDataContext(context))
+			{
+				var table = db.CreateTable<Person>(tableName, schemaName: schemaName);
+
+				Assert.AreEqual(tableName, table.TableName);
+				Assert.AreEqual(schemaName, table.SchemaName);
+
+				var person = new Person()
+				{
+					FirstName = "Steven",
+					LastName = "King",
+					Gender = Gender.Male,
+				};
+
+				// insert a row into the table
+				db.Insert(person, tableName: tableName, schemaName: schemaName);
+				var newCount = table.Count();
+				Assert.AreEqual(1, newCount);
+
+				var personForUpdate = table.Single();
+
+				// update that row
+				personForUpdate.MiddleName = "None";
+				db.Update(personForUpdate, tableName: tableName, schemaName: schemaName);
+
+				var updatedPerson = table.Single();
+				Assert.AreEqual("None", updatedPerson.MiddleName);
+
+				table.Drop();
+			}
+		}
+
+		[Test, DataContextSource]
+		public async Task UpdateByTableNameAsync(string context)
+		{
+			const string schemaName = null;
+			const string tableName = "xxPerson";
+
+			using (var db = GetDataContext(context))
+			{
+				await db.DropTableAsync<Patient>(tableName, schemaName: schemaName, throwExceptionIfNotExists: false);
+			}
+
+			using (var db = GetDataContext(context))
+			{
+				var table = await db.CreateTableAsync<Person>(tableName, schemaName: schemaName);
+
+				Assert.AreEqual(tableName, table.TableName);
+				Assert.AreEqual(schemaName, table.SchemaName);
+
+				var person = new Person()
+				{
+					FirstName = "Steven",
+					LastName = "King",
+					Gender = Gender.Male,
+				};
+
+				// insert a row into the table
+				await db.InsertAsync(person, tableName: tableName, schemaName: schemaName);
+				var newCount = await table.CountAsync();
+				Assert.AreEqual(1, newCount);
+
+				var personForUpdate = await table.SingleAsync();
+
+				// update that row
+				personForUpdate.MiddleName = "None";
+				await db.UpdateAsync(personForUpdate, tableName: tableName, schemaName: schemaName);
+
+				var updatedPerson = await table.SingleAsync();
+				Assert.AreEqual("None", updatedPerson.MiddleName);
+
+				await table.DropAsync();
+			}
+		}
+
+	}
+}

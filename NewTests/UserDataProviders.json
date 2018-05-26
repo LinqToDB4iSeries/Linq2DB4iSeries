@@ -1,0 +1,28 @@
+{
+	"NET45" :
+	{
+		"DefaultConfiguration" : "DB2.iSeries",
+		"Providers"            :
+		[
+			"DB2.iSeries",
+			"DB2.iSeries.GAS"
+		],
+		"Connections"          :
+		{
+			"DB2.iSeries" : 
+			{ 
+				"Provider"         : "DB2.iSeries",    
+				"ConnectionString" : "Data Source=radev06; Persist Security Info=True;User ID=royc71;Password=password;Library List=LINQ2DB;Default Collection=LINQ2DB;Naming=1" 
+			},
+			"DB2.iSeries.GAS" : 
+			{ 
+				"Provider"         : "DB2.iSeries.GAS",    
+				"ConnectionString" : "Data Source=radev06; Persist Security Info=True;User ID=royc71;Password=password;Library List=LINQ2DBGAS;Default Collection=LINQ2DBGAS;Naming=1" 
+			}
+		}
+	},
+		"CORE.2":
+	{
+		BasedOn     : 'NET45',
+	}
+}

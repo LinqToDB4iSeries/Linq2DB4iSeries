@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFrameworks>net45;netstandard2.0</TargetFrameworks>
+		<TargetFrameworks>net45;netstandard2.0;netcoreapp2.0</TargetFrameworks>
 		<Configurations>Debug;Release</Configurations>
 		<SignAssembly>true</SignAssembly>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -29,10 +29,12 @@
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<PackageId>linq2db4iSeries</PackageId>
 	</PropertyGroup>
-  
-	<ItemGroup>
-		<PackageReference Include="linq2db" Version="2.0.0" />
-	</ItemGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net45|AnyCPU'">
+	  <LangVersion>7.1</LangVersion>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net45|AnyCPU'">
+	  <LangVersion>7.1</LangVersion>
+	</PropertyGroup>
   
   <ItemGroup Condition=" '$(TargetFramework)' == 'net40' OR '$(TargetFramework)' == 'net45' OR '$(TargetFramework)' == 'net451' ">
 		<Reference Include="IBM.Data.DB2.iSeries">
@@ -45,7 +47,11 @@
 		<Reference Include="System.Data.DataSetExtensions" />
 	</ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
+  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.0'">
+    <DefineConstants>$(DefineConstants);NETSTANDARD2_0</DefineConstants>
+  </PropertyGroup>
+  
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' ==  'netcoreapp2.0' ">
     <Reference Include="IBM.Data.DB2.iSeries">
       <HintPath>..\Redist\IBM.Data.DB2.iSeries.dll</HintPath>
     </Reference>
@@ -58,5 +64,8 @@
 	</ItemGroup>
 	<ItemGroup>
 		<Folder Include="Properties\" />
+	</ItemGroup>
+	<ItemGroup>
+	  <PackageReference Include="linq2db" Version="2.0.0" />
 	</ItemGroup>
 </Project>

@@ -152,12 +152,6 @@
     <Compile Include="CompilerServices.vb" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Model\Tests.Model.csproj">
-      <Project>{D527524F-EC92-465E-9CAE-86278121675A}</Project>
-      <Name>Tests.Model</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <Folder Include="My Project\" />
   </ItemGroup>
   <ItemGroup>
