@@ -53,6 +53,8 @@
 		<None Include="LinqToDB.DB2iSeries.snk" />
 	</ItemGroup>
 	<ItemGroup>
+		<Folder Include="DB2Connect\" />
+		<Folder Include="HIS\" />
 		<Folder Include="Properties\" />
 	</ItemGroup>
 	<ItemGroup>
