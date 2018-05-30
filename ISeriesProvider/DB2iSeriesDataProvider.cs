@@ -29,8 +29,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
             this.minLevel = minLevel;
 	        this.mapGuidAsString = mapGuidAsString;
 
-            DB2iSeriesExpressions.LoadExpressions(name);
-
             SqlProviderFlags.AcceptsTakeAsParameter = false;
             SqlProviderFlags.AcceptsTakeAsParameterIfSkip = true;
             SqlProviderFlags.IsDistinctOrderBySupported = true;
@@ -39,6 +37,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			if(mapGuidAsString)
 				SqlProviderFlags.CustomFlags.Add(DB2iSeriesTools.MapGuidAsString);
+
+            DB2iSeriesExpressions.LoadExpressions(name, SqlProviderFlags);
 
             SetCharField("CHAR", (r, i) => r.GetString(i).TrimEnd(' '));
             SetCharField("NCHAR", (r, i) => r.GetString(i).TrimEnd(' '));
@@ -322,7 +322,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         #endregion
 
-        private static object GetNullValue(Type type)
+        protected static object GetNullValue(Type type)
         {
             dynamic getValue = Expression.Lambda<Func<object>>(Expression.Convert(Expression.Field(null, type, "Null"), typeof(object)));
             return getValue.Compile()();

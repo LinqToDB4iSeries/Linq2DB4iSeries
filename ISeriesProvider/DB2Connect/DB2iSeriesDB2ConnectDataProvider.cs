@@ -14,7 +14,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 	public class DB2iSeriesDB2ConnectDataProvider : DB2iSeriesDataProvider
 	{
-        public DB2iSeriesDB2ConnectDataProvider() : this(DB2iSeriesProviderName.DB2, DB2iSeriesLevels.Any, false)
+        public DB2iSeriesDB2ConnectDataProvider() : this(DB2iSeriesDB2ConnectProviderName.DB2, DB2iSeriesLevels.Any, false)
         {
         }
 
@@ -30,7 +30,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		protected override string ConnectionTypeName { get { return DB2iSeriesDB2ConnectTools.ConnectionTypeName; } }
 		protected override string DataReaderTypeName { get { return DB2iSeriesDB2ConnectTools.DataReaderTypeName; } }
 		
-
 		
 		protected override void OnConnectionTypeCreated(Type connectionType)
 		{
@@ -109,16 +108,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
                     DB2iSeriesDB2ConnectTypes.DB2DateTime.IsSupported ? "DB2DateTime is supported." : "DB2DateTime is not supported.",
                     DataConnection.TraceSwitch.DisplayName);
             }
+
             DB2iSeriesDB2ConnectTools.Initialized();
 		}
 
 
         #endregion
-
-        private static object GetNullValue(Type type)
-        {
-            dynamic getValue = Expression.Lambda<Func<object>>(Expression.Convert(Expression.Field(null, type, "Null"), typeof(object)));
-            return getValue.Compile()();
-        }
     }
 }

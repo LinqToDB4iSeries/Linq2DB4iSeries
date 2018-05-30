@@ -11,7 +11,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	
 	public class DB2iSeriesHISDataProvider : DB2iSeriesDataProvider
 	{
-        public DB2iSeriesHISDataProvider() : this(DB2iSeriesProviderName.DB2, DB2iSeriesLevels.Any, false)
+        public DB2iSeriesHISDataProvider() : this(DB2iSeriesHISProviderName.DB2, DB2iSeriesLevels.Any, false)
         {
         }
 
@@ -40,7 +40,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
                     DB2iSeriesHISTypes.DB2DateTime.IsSupported ? "DB2DateTime is supported." : "DB2DateTime is not supported.",
                     DataConnection.TraceSwitch.DisplayName);
             }
-            DB2iSeriesDB2ConnectTools.Initialized();
+            DB2iSeriesHISTools.Initialized();
 		}
 
 		#endregion

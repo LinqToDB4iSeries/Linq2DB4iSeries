@@ -7,12 +7,13 @@ using System.Text;
 using System.Threading.Tasks;
 using LinqToDB;
 using LinqToDB.Linq;
+using LinqToDB.SqlProvider;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
 	internal static class DB2iSeriesExpressions
 	{
-		public static void LoadExpressions(string providerName)
+		public static void LoadExpressions(string providerName, SqlProviderFlags providerFlags)
 		{
 			LinqToDB.Linq.Expressions.MapMember(
 				providerName,
@@ -35,7 +36,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				Linq.Expressions.M(() => Sql.ConvertTo<String>.From((Decimal)0)),
 				Linq.Expressions.N(() => Linq.Expressions.L<Decimal, String>((Decimal p) => Sql.TrimLeft(Sql.Convert<string, Decimal>(p), '0'))));
 
-		    if (providerName == DB2iSeriesProviderName.DB2)
+		    //if (providerName == DB2iSeriesProviderName.DB2)
+            if (!providerFlags.CustomFlags.Contains(DB2iSeriesTools.MapGuidAsString))
 		    {
 		        LinqToDB.Linq.Expressions.MapMember(
 		            providerName,
