@@ -21,7 +21,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public static string AssemblyName = "Microsoft.HostIntegration.MsDb2Client";
 		public static string ConnectionTypeName = AssemblyName + ".MsDb2Connection, " + AssemblyName;
 		public static string DataReaderTypeName = AssemblyName + ".MsDb2DataReader, " + AssemblyName;
-		
+        public static string DbParameterTypeName = AssemblyName + ".MsDb2Parameter, " + AssemblyName;
+        public static string DbTypeTypeName = AssemblyName + ".MsDb2Type, " + AssemblyName;
+
         static readonly DB2iSeriesHISDataProvider _db2iDataProvider = new DB2iSeriesHISDataProvider(DB2iSeriesHISProviderName.DB2, DB2iSeriesLevels.Any, false);
         static readonly DB2iSeriesHISDataProvider _db2iDataProvider_gas = new DB2iSeriesHISDataProvider(DB2iSeriesHISProviderName.DB2_GAS, DB2iSeriesLevels.Any, true);
         static readonly DB2iSeriesHISDataProvider _db2iDataProvider_73 = new DB2iSeriesHISDataProvider(DB2iSeriesHISProviderName.DB2_73, DB2iSeriesLevels.V7_1_38, false);
