@@ -56,9 +56,6 @@
 	  <PackageReference Include="linq2db" Version="2.1.0" />
   </ItemGroup>
 	<ItemGroup>
-	  <ProjectReference Include="..\..\linq2db\Source\LinqToDB\LinqToDB.csproj" />
-	</ItemGroup>
-	<ItemGroup>
 	  <Reference Include="IBM.Data.DB2.iSeries">
 	    <HintPath>..\Redist\IBM.Data.DB2.iSeries.dll</HintPath>
 	  </Reference>
