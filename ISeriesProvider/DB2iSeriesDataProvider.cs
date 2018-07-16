@@ -16,9 +16,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
     public class DB2iSeriesDataProvider : DynamicDataProviderBase
     {
-	    private readonly DB2iSeriesLevels minLevel;
+	    private DB2iSeriesLevels minLevel;
 
-	    private readonly bool mapGuidAsString;
+	    private bool mapGuidAsString;
 
 	    public DB2iSeriesDataProvider() : this(DB2iSeriesProviderName.DB2, DB2iSeriesLevels.Any, false)
 	    {
@@ -90,6 +90,28 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
             base.InitCommand(dataConnection, commandType, commandText, parameters);
         }
+
+	    protected override IDbConnection CreateConnectionInternal(string connectionString)
+	    {
+		    var parts = connectionString.Split(';').ToList();
+		    var gas = parts.FirstOrDefault(p => p.ToLower().StartsWith("mapguidasstring"));
+			var minVer = parts.FirstOrDefault(p => p.ToLower().StartsWith("minver"));
+
+		    if (!string.IsNullOrWhiteSpace(gas))
+		    {
+			    mapGuidAsString = gas.EndsWith("true", StringComparison.CurrentCultureIgnoreCase);
+			    parts.Remove(gas);
+		    }
+
+		    if (!string.IsNullOrWhiteSpace(minVer))
+		    {
+				minLevel = minVer.EndsWith("7_1_38", StringComparison.CurrentCultureIgnoreCase) ? DB2iSeriesLevels.V7_1_38 : DB2iSeriesLevels.Any;
+				parts.Remove(minVer);
+			}
+
+		    var conString = string.Join(";", parts);
+			return base.CreateConnectionInternal(conString);
+	    }
 
 	    static class MappingSchemaInstance
 	    {
@@ -322,7 +344,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         #endregion
 
-        private static object GetNullValue(Type type)
+		private static object GetNullValue(Type type)
         {
             dynamic getValue = Expression.Lambda<Func<object>>(Expression.Convert(Expression.Field(null, type, "Null"), typeof(object)));
             return getValue.Compile()();

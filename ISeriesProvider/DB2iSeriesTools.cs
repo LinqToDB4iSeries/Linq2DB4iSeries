@@ -66,7 +66,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						{
 							conn.Open();
 
-							return GetDataProvider(css.Name);
+							return GetDataProvider(css.Name, connectionString);
 						}
 					}
 					catch (Exception)
@@ -77,14 +77,37 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return null;
 		}
 
-		public static IDataProvider GetDataProvider(string name)
+		public static IDataProvider GetDataProvider(string name, string connectionString)
 		{
 			switch (name)
 			{
 				case DB2iSeriesProviderName.DB2_73: return _db2iDataProvider_73;
 				case DB2iSeriesProviderName.DB2_GAS: return _db2iDataProvider_gas;
 				case DB2iSeriesProviderName.DB2_73_GAS: return _db2iDataProvider_73_gas;
-				default: return _db2iDataProvider;
+				default:
+					if (string.IsNullOrWhiteSpace(connectionString))
+						return _db2iDataProvider;
+
+					var parts = connectionString.Split(';').ToList();
+					var gas = parts.FirstOrDefault(p => p.Trim().ToLower().StartsWith("mapguidasstring"));
+					var minVer = parts.FirstOrDefault(p => p.Trim().ToLower().StartsWith("minver"));
+
+					var isGas = gas != null && gas.EndsWith("true", StringComparison.CurrentCultureIgnoreCase);
+					var level = minVer != null && 
+					            (minVer.EndsWith("7_1_38", StringComparison.CurrentCultureIgnoreCase) || 
+					             minVer.EndsWith("7_2", StringComparison.CurrentCultureIgnoreCase) || 
+					             minVer.EndsWith("7_3", StringComparison.CurrentCultureIgnoreCase)) ? 
+						DB2iSeriesLevels.V7_1_38 : 
+						DB2iSeriesLevels.Any;
+
+					if (isGas && level == DB2iSeriesLevels.V7_1_38)
+						return _db2iDataProvider_73_gas;
+					if (isGas)
+						return _db2iDataProvider_gas;
+					if (level == DB2iSeriesLevels.V7_1_38)
+						return _db2iDataProvider_73;
+
+					return _db2iDataProvider;
 			}
 		}
 
@@ -141,17 +164,17 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static DataConnection CreateDataConnection(string connectionString, string providerName)
 		{
-			return new DataConnection(GetDataProvider(providerName), connectionString);
+			return new DataConnection(GetDataProvider(providerName, connectionString), connectionString);
 		}
 
 		public static DataConnection CreateDataConnection(IDbConnection connection, string providerName)
 		{
-			return new DataConnection(GetDataProvider(providerName), connection);
+			return new DataConnection(GetDataProvider(providerName, string.Empty), connection);
 		}
 
 		public static DataConnection CreateDataConnection(IDbTransaction transaction, string providerName)
 		{
-			return new DataConnection(GetDataProvider(providerName), transaction);
+			return new DataConnection(GetDataProvider(providerName, string.Empty), transaction);
 		}
 
 		#endregion
