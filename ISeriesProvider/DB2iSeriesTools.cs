@@ -94,9 +94,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 					var isGas = gas != null && gas.EndsWith("true", StringComparison.CurrentCultureIgnoreCase);
 					var level = minVer != null && 
-					            (minVer.EndsWith("7_1_38", StringComparison.CurrentCultureIgnoreCase) || 
-					             minVer.EndsWith("7_2", StringComparison.CurrentCultureIgnoreCase) || 
-					             minVer.EndsWith("7_3", StringComparison.CurrentCultureIgnoreCase)) ? 
+					            (minVer.EndsWith("7.1.38", StringComparison.CurrentCultureIgnoreCase) || 
+					             minVer.EndsWith("7.2", StringComparison.CurrentCultureIgnoreCase) || 
+					             minVer.EndsWith("7.3", StringComparison.CurrentCultureIgnoreCase)) ? 
 						DB2iSeriesLevels.V7_1_38 : 
 						DB2iSeriesLevels.Any;
 
