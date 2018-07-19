@@ -91,27 +91,28 @@ namespace LinqToDB.DataProvider.DB2iSeries
             base.InitCommand(dataConnection, commandType, commandText, parameters);
         }
 
-	    protected override IDbConnection CreateConnectionInternal(string connectionString)
-	    {
-		    var parts = connectionString.Split(';').ToList();
-		    var gas = parts.FirstOrDefault(p => p.ToLower().StartsWith("mapguidasstring"));
-			var minVer = parts.FirstOrDefault(p => p.ToLower().StartsWith("minver"));
+	  //  protected override IDbConnection CreateConnectionInternal(string connectionString)
+	  //  {
+	  //      var vers73 = new[] { "7.1.38", "7.2", "7.3" };
+		 //   var parts = connectionString.Split(';').ToList();
+		 //   var gas = parts.FirstOrDefault(p => p.ToLower().StartsWith("mapguidasstring"));
+			//var minVer = parts.FirstOrDefault(p => p.ToLower().StartsWith("minver"));
 
-		    if (!string.IsNullOrWhiteSpace(gas))
-		    {
-			    mapGuidAsString = gas.EndsWith("true", StringComparison.CurrentCultureIgnoreCase);
-			    parts.Remove(gas);
-		    }
+		 //   if (!string.IsNullOrWhiteSpace(gas))
+		 //   {
+			//    mapGuidAsString = gas.EndsWith("true", StringComparison.CurrentCultureIgnoreCase);
+			//    parts.Remove(gas);
+		 //   }
 
-		    if (!string.IsNullOrWhiteSpace(minVer))
-		    {
-				minLevel = minVer.EndsWith("7_1_38", StringComparison.CurrentCultureIgnoreCase) ? DB2iSeriesLevels.V7_1_38 : DB2iSeriesLevels.Any;
-				parts.Remove(minVer);
-			}
+		 //   if (!string.IsNullOrWhiteSpace(minVer))
+		 //   {
+			//	minLevel = vers73.Any(v => minVer.EndsWith(v, StringComparison.CurrentCultureIgnoreCase)) ? DB2iSeriesLevels.V7_1_38 : DB2iSeriesLevels.Any;
+			//	parts.Remove(minVer);
+			//}
 
-		    var conString = string.Join(";", parts);
-			return base.CreateConnectionInternal(conString);
-	    }
+		 //   var conString = string.Join(";", parts);
+			//return base.CreateConnectionInternal(conString);
+	  //  }
 
 	    static class MappingSchemaInstance
 	    {

@@ -39,7 +39,7 @@ The rest of the usage is exactly the same as Linq2DB. See https://github.com/lin
 ### Minimum DB2 Version
 The provider can create SQL compatible with V7.1 and above.  
 
-V7.1 PTF Level 38 introduced a proper sysntax for SKIP (OFFSET n ROWS). To have the provider generate this new syntax add MinVer="7.1.38" to the Provider or, if instantiating the provider in code set the parameter appropriatly.
+V7.1 PTF Level 38, V7.2 PTF Level 9 and V7.3 introduced a proper syntax for SKIP (OFFSET n ROWS). To have the provider generate this new syntax add MinVer="7.1.38" to the Provider or, if instantiating the provider in code set the parameter appropriatly.
 
 ### GUIDs
 DB2 doesn't have a GUID type.  By default GUIDs will be stored as CHAR(16) FOR BIT DATA.  This works and is probably the most efficient however it is unreadable when queried directly.

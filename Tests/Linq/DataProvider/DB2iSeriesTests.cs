@@ -1013,19 +1013,5 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test]
-		public void GetDataProvider()
-		{
-			Assert.AreEqual(DB2iSeriesProviderName.DB2_GAS,  DB2iSeriesTools.GetDataProvider("", "x=1;mapGuidasstring=true").Name);
-			Assert.AreEqual(DB2iSeriesProviderName.DB2_GAS, DB2iSeriesTools.GetDataProvider("", "x=1;MinVer=5; mapGuidasstring=true").Name);
-			Assert.AreEqual(DB2iSeriesProviderName.DB2_73_GAS, DB2iSeriesTools.GetDataProvider("", "x=1;MinVer=7.1.38; mapguidasstring=true").Name);
-			Assert.AreEqual(DB2iSeriesProviderName.DB2_73_GAS, DB2iSeriesTools.GetDataProvider("", "x=1;MinVer=7.2; mapGuidasstring=true").Name);
-			Assert.AreEqual(DB2iSeriesProviderName.DB2_73_GAS, DB2iSeriesTools.GetDataProvider("", "x=1;MinVer=7.3; mapGuidasstring=true").Name);
-			Assert.AreEqual(DB2iSeriesProviderName.DB2_73, DB2iSeriesTools.GetDataProvider("", "x=1;MinVer=7.1.38").Name);
-			Assert.AreEqual(DB2iSeriesProviderName.DB2_73, DB2iSeriesTools.GetDataProvider("", "x=1;MinVer=7.2; mapGuidasstring=false").Name);
-			Assert.AreEqual(DB2iSeriesProviderName.DB2_73, DB2iSeriesTools.GetDataProvider("", "x=1;MinVer=7.3; mapGuidasstring=false").Name);
-			Assert.AreEqual(DB2iSeriesProviderName.DB2, DB2iSeriesTools.GetDataProvider("", "x=1;").Name);
-			Assert.AreEqual(DB2iSeriesProviderName.DB2, DB2iSeriesTools.GetDataProvider("", "x=1;MinVer=5; mapGuidasstring=yes").Name);
-		}
 	}
 }
