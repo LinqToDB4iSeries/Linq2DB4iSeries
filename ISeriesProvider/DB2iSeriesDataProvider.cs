@@ -33,10 +33,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
             SqlProviderFlags.AcceptsTakeAsParameter = false;
             SqlProviderFlags.AcceptsTakeAsParameterIfSkip = true;
-            SqlProviderFlags.IsDistinctOrderBySupported = true;
+            SqlProviderFlags.IsDistinctOrderBySupported = false;
             SqlProviderFlags.CanCombineParameters = false;
             SqlProviderFlags.IsParameterOrderDependent = true;
-
+            SqlProviderFlags.IsCommonTableExpressionsSupported = true;
+            
 			if(mapGuidAsString)
 				SqlProviderFlags.CustomFlags.Add(DB2iSeriesTools.MapGuidAsString);
 

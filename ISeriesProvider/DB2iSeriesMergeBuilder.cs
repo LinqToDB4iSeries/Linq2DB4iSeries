@@ -17,7 +17,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         protected override bool ProviderUsesAlternativeUpdate => true;
 
-        protected override void AddSourceValue(ValueToSqlConverter valueConverter, ColumnDescriptor column, SqlDataType columnType, object value, bool isFirstRow)
+        protected override void AddSourceValue(ValueToSqlConverter valueConverter, ColumnDescriptor column, SqlDataType columnType, object value, bool isFirstRow, bool isLastRow)
 		{ 
 			if (value == null || value is INullable && ((INullable)value).IsNull)
 			{
@@ -44,5 +44,5 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		        AddParameter(new DataParameter(name, value, column.DataType));
 			}
         }
-	}
+    }
 }

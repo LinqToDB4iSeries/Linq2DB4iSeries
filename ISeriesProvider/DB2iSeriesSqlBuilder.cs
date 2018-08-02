@@ -94,6 +94,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case DataType.Single: return "REAL";
 				case DataType.Int16:
 				case DataType.Boolean:
+                case DataType.Byte:
 					return "SMALLINT";
 				case DataType.Time:
 				case DataType.DateTimeOffset:
@@ -259,21 +260,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			while (EndLine.Contains(StringBuilder[StringBuilder.Length - 1]))
 				StringBuilder.Length--;
 		}
-
-		protected override void BuildTruncateTableStatement(SqlTruncateTableStatement truncateTable)
-		{
-		    var table = truncateTable.Table;
-
-		    AppendIndent();
-		    StringBuilder.Append("TRUNCATE TABLE ");
-		    BuildPhysicalTable(table, null);
-
-            if (truncateTable.ResetIdentity)
-                StringBuilder.Append(" RESTART IDENTITY");
-
-            StringBuilder.Append(" IMMEDIATE");
-		    StringBuilder.AppendLine();
-        }
 
 		protected override void BuildUpdateSet(SelectQuery selectQuery, SqlUpdateClause updateClause)
 		{

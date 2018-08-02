@@ -53,7 +53,7 @@
 		<Folder Include="Properties\" />
 	</ItemGroup>
 	<ItemGroup>
-	  <PackageReference Include="linq2db" Version="2.1.0" />
+	  <PackageReference Include="linq2db" Version="2.2.0" />
   </ItemGroup>
 	<ItemGroup>
 	  <Reference Include="IBM.Data.DB2.iSeries">
