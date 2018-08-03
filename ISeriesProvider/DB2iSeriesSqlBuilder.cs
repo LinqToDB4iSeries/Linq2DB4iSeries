@@ -92,14 +92,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case DataType.Date:
 				    return "DATE";
                 case DataType.UInt64:
-			    case DataType.Decimal:
+                    return "DECIMAL(28,0)";
+                case DataType.Decimal:
                     return "DECIMAL";
 				case DataType.Double:
 				    return "DOUBLE";
                 case DataType.UInt16:
 			    case DataType.Int32:
 				    return "INTEGER";
-				case DataType.Single: return "REAL";
+				case DataType.Single:
+				    return "REAL";
 				case DataType.Int16:
 				case DataType.Boolean:
                 case DataType.Byte:

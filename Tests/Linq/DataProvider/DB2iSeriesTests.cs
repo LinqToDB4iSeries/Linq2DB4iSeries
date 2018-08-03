@@ -1035,10 +1035,12 @@ namespace Tests.DataProvider
 	                table = db.CreateTable<MergeTypesByte>();
 	            }
 
-	            table.InsertOrUpdate(
-	                () => new MergeTypesByte { FieldByte = 27, FieldULong = ulong.MaxValue },
-	                s => new MergeTypesByte { FieldByte = 27, FieldULong = ulong.MaxValue },
-	                () => new MergeTypesByte { FieldByte = 22, FieldULong = ulong.MaxValue }
+	            ulong val = long.MaxValue;
+
+                table.InsertOrUpdate(
+	                () => new MergeTypesByte { FieldByte = 27, FieldULong = val },
+	                s => new MergeTypesByte { FieldByte = 27, FieldULong = val },
+	                () => new MergeTypesByte { FieldByte = 22, FieldULong = val }
 	            );
 
 	            Assert.AreEqual(1, table.Count());
