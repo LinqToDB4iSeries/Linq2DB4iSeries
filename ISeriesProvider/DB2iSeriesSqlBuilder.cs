@@ -81,16 +81,24 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case DataType.Binary:
 					return $"BINARY({(dataType.Length == 0 ? 1 : dataType.Length)})";
 				case DataType.Int64:
+                case DataType.UInt32:
 					return "BIGINT";
 				case DataType.Blob:
 					return $"BLOB({(dataType.Length == 0 ? 1 : dataType.Length)})";
 				case DataType.VarBinary:
 					return $"VARBINARY({(dataType.Length == 0 ? 1 : dataType.Length)})";
-				case DataType.Char: return "CHAR";
-				case DataType.Date: return "DATE";
-				case DataType.Decimal: return "DECIMAL";
-				case DataType.Double: return "DOUBLE";
-				case DataType.Int32: return "INTEGER";
+				case DataType.Char:
+				    return "CHAR";
+				case DataType.Date:
+				    return "DATE";
+                case DataType.UInt64:
+			    case DataType.Decimal:
+                    return "DECIMAL";
+				case DataType.Double:
+				    return "DOUBLE";
+                case DataType.UInt16:
+			    case DataType.Int32:
+				    return "INTEGER";
 				case DataType.Single: return "REAL";
 				case DataType.Int16:
 				case DataType.Boolean:

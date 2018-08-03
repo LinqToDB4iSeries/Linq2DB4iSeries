@@ -1019,10 +1019,12 @@ namespace Tests.DataProvider
 	        [Column("Id", IsIdentity = true)] [PrimaryKey] public int Id { get; set; }
 
 	        [Column("FieldByteAsDecimal", DataType = DataType.Decimal, Length = 2, Precision = 0)] public byte FieldByte { get; set; }
-	    }
+
+	        [Column("FieldULongAsDecimal", DataType = DataType.Decimal, Length = 20, Precision = 0)] public ulong FieldULong { get; set; }
+        }
 
 	    [Test, DataContextSource(false)]
-	    public void InsertOrUpdateWithByte(string context)
+	    public void InsertOrUpdateWithIntegers(string context)
 	    {
 	        using (var db = new TestDataConnection(context))
 	        {
@@ -1034,9 +1036,9 @@ namespace Tests.DataProvider
 	            }
 
 	            table.InsertOrUpdate(
-	                () => new MergeTypesByte { FieldByte = 27 },
-	                s => new MergeTypesByte { FieldByte = 27 },
-	                () => new MergeTypesByte { FieldByte = 22 }
+	                () => new MergeTypesByte { FieldByte = 27, FieldULong = ulong.MaxValue },
+	                s => new MergeTypesByte { FieldByte = 27, FieldULong = ulong.MaxValue },
+	                () => new MergeTypesByte { FieldByte = 22, FieldULong = ulong.MaxValue }
 	            );
 
 	            Assert.AreEqual(1, table.Count());
