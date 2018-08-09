@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Linq.Expressions;
 
 using LinqToDB;
@@ -178,8 +179,7 @@ namespace Tests.Linq
         }
 
         [Test, Combinatorial]
-        // TODO : tests fail but this should work - further investigation required
-        public void CteTestInsert([CteContextSource(true, ProviderName.DB2, DB2iSeriesProviderName.DB2_73, DB2iSeriesProviderName.DB2, DB2iSeriesProviderName.DB2_GAS, DB2iSeriesProviderName.DB2_73_GAS)] string context)
+        public void CteTestInsert([CteContextSource(true, ProviderName.DB2)] string context)
         {
             using (var db = GetDataContext(context))
             using (var testTable = db.CreateLocalTable<CteDMLTests>("CteChild"))
@@ -212,8 +212,11 @@ namespace Tests.Linq
         }
 
         [Test, Combinatorial]
-        // TODO : tests fail but this should work - further investigation required
-        public void CteTestDelete([CteContextSource(ProviderName.Firebird, ProviderName.DB2, DB2iSeriesProviderName.DB2_73, DB2iSeriesProviderName.DB2, DB2iSeriesProviderName.DB2_GAS, DB2iSeriesProviderName.DB2_73_GAS)] string context)
+        // Delete with Cte not supported on iSeries
+        public void CteTestDelete(
+            //[CteContextSource(true, ProviderName.Oracle, ProviderName.OracleManaged, ProviderName.OracleNative, DB2iSeriesProviderName.DB2_73, DB2iSeriesProviderName.DB2, DB2iSeriesProviderName.DB2_GAS, DB2iSeriesProviderName.DB2_73_GAS)]
+            [CteContextSource(false)]
+            string context)
         {
             using (var db = GetDataContext(context))
             using (var tmp = db.CreateLocalTable("CteChild",
@@ -226,15 +229,14 @@ namespace Tests.Linq
                     from ct in cte.InnerJoin(ct => ct.ParentID == c.ParentID)
                     select c;
 
-                var recordsAffected = toDelete.Delete();
-                Assert.AreEqual(5, recordsAffected);
+                Assert.Throws<NotSupportedException>(() => toDelete.Delete());
             }
         }
 
         [Test, Combinatorial]
-        // TODO : tests fail but this should work - further investigation required
+        // Delete with Cte not supported on iSeries
         public void CteTestUpdate(
-            [CteContextSource(ProviderName.Firebird, ProviderName.DB2, ProviderName.Oracle, ProviderName.OracleManaged, ProviderName.OracleNative, DB2iSeriesProviderName.DB2_73, DB2iSeriesProviderName.DB2, DB2iSeriesProviderName.DB2_GAS, DB2iSeriesProviderName.DB2_73_GAS)]
+            [CteContextSource(false)]
             string context)
         {
             using (var db = GetDataContext(context))
@@ -247,14 +249,7 @@ namespace Tests.Linq
                     from ct in cte.InnerJoin(ct => ct.ParentID == c.ParentID)
                     select c;
 
-                toUpdate.Update(prev => new CteDMLTests { ParentID = prev.ChildID });
-
-                var expected = testTable.Where(c => c.ParentID % 2 == 0)
-                    .Select(c => new CteDMLTests { ParentID = c.ChildID, ChildID = c.ChildID });
-
-                var result = testTable.Where(c => c.ParentID % 2 == 0);
-
-                AreEqual(expected, result);
+                Assert.Throws<NotSupportedException>(() => toUpdate.Update(prev => new CteDMLTests { ParentID = prev.ChildID }));
             }
         }
 
@@ -266,8 +261,9 @@ namespace Tests.Linq
         }
 
         [Test, Combinatorial]
-        // TODO : tests fail but this should theoretically work - further investigation required
-        public void CteRecursiveTest([CteContextSource(true, ProviderName.DB2, DB2iSeriesProviderName.DB2_73, DB2iSeriesProviderName.DB2, DB2iSeriesProviderName.DB2_GAS, DB2iSeriesProviderName.DB2_73_GAS)] string context)
+        public void CteRecursiveTest(
+            [CteContextSource(true, ProviderName.DB2)]
+            string context)
         {
             using (var db = GetDataContext(context))
             {

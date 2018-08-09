@@ -471,7 +471,44 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			base.BuildPredicate(newpredicate);
 		}
 
-		private ISqlExpression GetDateParm(IValueContainer parameter)
+	    protected override void BuildInsertQuery(SqlStatement statement, SqlInsertClause insertClause, bool addAlias)
+	    {
+	        BuildStep = Step.InsertClause; BuildInsertClause(statement, insertClause, addAlias);
+	        BuildStep = Step.WithClause; BuildWithClause(statement.GetWithClause());
+
+            if (statement.QueryType == QueryType.Insert && statement.SelectQuery.From.Tables.Count != 0)
+	        {
+	            BuildStep = Step.SelectClause; BuildSelectClause(statement.SelectQuery);
+	            BuildStep = Step.FromClause; BuildFromClause(statement, statement.SelectQuery);
+	            BuildStep = Step.WhereClause; BuildWhereClause(statement.SelectQuery);
+	            BuildStep = Step.GroupByClause; BuildGroupByClause(statement.SelectQuery);
+	            BuildStep = Step.HavingClause; BuildHavingClause(statement.SelectQuery);
+	            BuildStep = Step.OrderByClause; BuildOrderByClause(statement.SelectQuery);
+	            BuildStep = Step.OffsetLimit; BuildOffsetLimit(statement.SelectQuery);
+	        }
+
+	        if (insertClause.WithIdentity)
+	            BuildGetIdentity(insertClause);
+	    }
+
+	    protected override void BuildDeleteQuery(SqlDeleteStatement deleteStatement)
+	    {
+            if(deleteStatement.With != null)
+                throw new NotSupportedException("iSeries doesn't support Cte in Delete statement");
+
+	       base.BuildDeleteQuery(deleteStatement);
+	    }
+
+	    protected override void BuildUpdateQuery(SqlStatement statement, SelectQuery selectQuery, SqlUpdateClause updateClause)
+	    {
+	        if (statement.GetWithClause() != null)
+	            throw new NotSupportedException("iSeries doesn't support Cte in Update statement");
+            
+
+            base.BuildUpdateQuery(statement, selectQuery, updateClause);
+	    }
+
+	    private ISqlExpression GetDateParm(IValueContainer parameter)
 		{
 			if (parameter != null && parameter is SqlParameter)
 			{
