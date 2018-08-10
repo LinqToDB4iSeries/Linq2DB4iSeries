@@ -54,5 +54,5 @@ Setting MapGuidAsString="true" (or setting the parameter true in the constructor
 3. Transactions can only be used if journalling is set up on the table (file).  If the iSeries schema is created with a CREATE SCHEMA command then this will be set by default however if the schema is created using the iSeries commands then you will need to either add journalling to the table explicitly OR create a journal receiver called QSQJRN in the Library to have journalling automatically applied to each table.
 4. This is currently only working for .Net 4.0/4.5
 
-See https://github.com/LinqToDB4iSeries/Linq2DB4iSeries/wiki for further information
+See https://github.com/LinqToDB4iSeries/Linq2DB4iSeries/wiki for further information.
 
