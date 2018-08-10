@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
+using LinqToDB.Extensions;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
@@ -9,8 +12,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	using Data;
 	using SchemaProvider;
 	using System.Data.Common;
-	using IBM.Data.DB2.iSeries;
-	
 
 	public class DB2iSeriesSchemaProvider : SchemaProviderBase
 	{
@@ -306,15 +307,27 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 		}
 
-		#endregion
+        #endregion
 
-		private string GetLibList(DataConnection dataConnection)
-		{
-		    if (!(dataConnection.Connection is iDB2Connection con))
-				throw new LinqToDBException("dataconnection is not iDB2Connection.");
+	    private string GetLibList(DataConnection dataConnection)
+	    {
+	        if (dataConnection.Connection == null || dataConnection.Connection.GetType().Name != "iDB2Connection")
+	            throw new LinqToDBException("dataconnection is not iDB2Connection.");
 
-			var liblist = con.LibraryList.Split(',');
-			return string.Join("','", liblist);
-		}
-	}
+	        var libListProp = dataConnection.Connection.GetType()
+	            .GetPropertiesEx(BindingFlags.Public | BindingFlags.Instance)
+	            .FirstOrDefault(p => p.Name == "LibraryList"); 
+
+	        if (libListProp == null)
+	            throw new LinqToDBException("iDB2Connection is missing LibraryList property, perhaps the IBM library has moved to non supported version");
+
+	        var liblist = Expression.Lambda<Func<object>>(
+	                Expression.Convert(
+	                    Expression.MakeMemberAccess(Expression.Constant(dataConnection.Connection), libListProp),
+	                    typeof(object)))
+	            .Compile()();
+
+            return string.Join("','", liblist.ToString().Split(','));
+	    }
+    }
 }

@@ -2,7 +2,7 @@
 
 This is a provider for Linq2DB to allow access to DB2 running on an IBM iSeries (AS/400) server.
 
-It has been tested on iSeries v7.2 with iAccess for Windows version V7R1M0 with service pack SI55797
+It has been tested on iSeries v7.1 & 7.3 with iAccess for Windows version V7R1M0 with service pack SI55797
 
 ## Installation
 
@@ -39,7 +39,7 @@ The rest of the usage is exactly the same as Linq2DB. See https://github.com/lin
 ### Minimum DB2 Version
 The provider can create SQL compatible with V7.1 and above.  
 
-V7.1 PTF Level 38 introduced a proper sysntax for SKIP (OFFSET n ROWS). To have the provider generate this new syntax add MinVer="7.1.38" to the Provider or, if instantiating the provider in code set the parameter appropriatly.
+V7.1 PTF Level 38, V7.2 PTF Level 9 and V7.3 introduced a proper syntax for SKIP (OFFSET n ROWS). To have the provider generate this new syntax add MinVer="7.1.38" to the Provider or, if instantiating the provider in code set the parameter appropriatly.
 
 ### GUIDs
 DB2 doesn't have a GUID type.  By default GUIDs will be stored as CHAR(16) FOR BIT DATA.  This works and is probably the most efficient however it is unreadable when queried directly.
@@ -53,5 +53,6 @@ Setting MapGuidAsString="true" (or setting the parameter true in the constructor
 2. Any objects created using this provider (e.g. as the result of a Create table statement) will be created in the Library in the Default Collection connection string parameter.  If this is not specifed then it wil be created in the default library for the user account.
 3. Transactions can only be used if journalling is set up on the table (file).  If the iSeries schema is created with a CREATE SCHEMA command then this will be set by default however if the schema is created using the iSeries commands then you will need to either add journalling to the table explicitly OR create a journal receiver called QSQJRN in the Library to have journalling automatically applied to each table.
 4. This is currently only working for .Net 4.0/4.5
-5. The new Linq2DB merge syntax is currently untested.
+
+See https://github.com/LinqToDB4iSeries/Linq2DB4iSeries/wiki for further information.
 

@@ -16,9 +16,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
     public class DB2iSeriesDataProvider : DynamicDataProviderBase
     {
-	    private readonly DB2iSeriesLevels minLevel;
+	    private DB2iSeriesLevels minLevel;
 
-	    private readonly bool mapGuidAsString;
+	    private bool mapGuidAsString;
 
 	    public DB2iSeriesDataProvider() : this(DB2iSeriesProviderName.DB2, DB2iSeriesLevels.Any, false)
 	    {
@@ -29,14 +29,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
             this.minLevel = minLevel;
 	        this.mapGuidAsString = mapGuidAsString;
 
-            DB2iSeriesExpressions.LoadExpressions(name);
+            LoadExpressions(name, mapGuidAsString);
 
             SqlProviderFlags.AcceptsTakeAsParameter = false;
             SqlProviderFlags.AcceptsTakeAsParameterIfSkip = true;
-            SqlProviderFlags.IsDistinctOrderBySupported = true;
+            SqlProviderFlags.IsDistinctOrderBySupported = false;
             SqlProviderFlags.CanCombineParameters = false;
             SqlProviderFlags.IsParameterOrderDependent = true;
-
+            SqlProviderFlags.IsCommonTableExpressionsSupported = true;
+            
 			if(mapGuidAsString)
 				SqlProviderFlags.CustomFlags.Add(DB2iSeriesTools.MapGuidAsString);
 
@@ -90,6 +91,29 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
             base.InitCommand(dataConnection, commandType, commandText, parameters);
         }
+
+	  //  protected override IDbConnection CreateConnectionInternal(string connectionString)
+	  //  {
+	  //      var vers73 = new[] { "7.1.38", "7.2", "7.3" };
+		 //   var parts = connectionString.Split(';').ToList();
+		 //   var gas = parts.FirstOrDefault(p => p.ToLower().StartsWith("mapguidasstring"));
+			//var minVer = parts.FirstOrDefault(p => p.ToLower().StartsWith("minver"));
+
+		 //   if (!string.IsNullOrWhiteSpace(gas))
+		 //   {
+			//    mapGuidAsString = gas.EndsWith("true", StringComparison.CurrentCultureIgnoreCase);
+			//    parts.Remove(gas);
+		 //   }
+
+		 //   if (!string.IsNullOrWhiteSpace(minVer))
+		 //   {
+			//	minLevel = vers73.Any(v => minVer.EndsWith(v, StringComparison.CurrentCultureIgnoreCase)) ? DB2iSeriesLevels.V7_1_38 : DB2iSeriesLevels.Any;
+			//	parts.Remove(minVer);
+			//}
+
+		 //   var conString = string.Join(";", parts);
+			//return base.CreateConnectionInternal(conString);
+	  //  }
 
 	    static class MappingSchemaInstance
 	    {
@@ -322,10 +346,61 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         #endregion
 
-        private static object GetNullValue(Type type)
+		private static object GetNullValue(Type type)
         {
             dynamic getValue = Expression.Lambda<Func<object>>(Expression.Convert(Expression.Field(null, type, "Null"), typeof(object)));
             return getValue.Compile()();
         }
-    }
+
+		private static void LoadExpressions(string providerName, bool mapGuidAsString)
+		{
+			Linq.Expressions.MapMember(
+				providerName,
+				Linq.Expressions.M(() => Sql.Space(0)),
+				Linq.Expressions.N(() => Linq.Expressions.L<Int32?, String>(p0 => Sql.Convert(Sql.VarChar(1000), Linq.Expressions.Replicate(" ", p0)))));
+			Linq.Expressions.MapMember(
+				providerName,
+				Linq.Expressions.M(() => Sql.Stuff("", 0, 0, "")),
+				Linq.Expressions.N(() => Linq.Expressions.L<String, Int32?, Int32?, String, String>((p0, p1, p2, p3) => Linq.Expressions.AltStuff(p0, p1, p2, p3))));
+			Linq.Expressions.MapMember(
+				providerName,
+				Linq.Expressions.M(() => Sql.PadRight("", 0, ' ')),
+				Linq.Expressions.N(() => Linq.Expressions.L<String, Int32?, Char?, String>((p0, p1, p2) => p0.Length > p1 ? p0 : p0 + Linq.Expressions.VarChar(Linq.Expressions.Replicate(p2, p1 - p0.Length), 1000))));
+			Linq.Expressions.MapMember(
+				providerName,
+				Linq.Expressions.M(() => Sql.PadLeft("", 0, ' ')),
+				Linq.Expressions.N(() => Linq.Expressions.L<String, Int32?, Char?, String>((p0, p1, p2) => p0.Length > p1 ? p0 : Linq.Expressions.VarChar(Linq.Expressions.Replicate(p2, p1 - p0.Length), 1000) + p0)));
+			Linq.Expressions.MapMember(
+				providerName,
+				Linq.Expressions.M(() => Sql.ConvertTo<String>.From((Decimal)0)),
+				Linq.Expressions.N(() => Linq.Expressions.L<Decimal, String>((Decimal p) => Sql.TrimLeft(Sql.Convert<string, Decimal>(p), '0'))));
+
+			if (!mapGuidAsString)
+			{
+				Linq.Expressions.MapMember(
+					providerName,
+					Linq.Expressions.M(() => Sql.ConvertTo<String>.From(Guid.Empty)),
+					Linq.Expressions.N(() => Linq.Expressions.L<Guid, String>(
+						(Guid p) => Sql.Lower(Sql.Substring(Linq.Expressions.Hex(p), 7, 2)
+											  + Sql.Substring(Linq.Expressions.Hex(p), 5, 2)
+											  + Sql.Substring(Linq.Expressions.Hex(p), 3, 2)
+											  + Sql.Substring(Linq.Expressions.Hex(p), 1, 2)
+											  + "-" + Sql.Substring(Linq.Expressions.Hex(p), 11, 2)
+											  + Sql.Substring(Linq.Expressions.Hex(p), 9, 2)
+											  + "-" + Sql.Substring(Linq.Expressions.Hex(p), 15, 2)
+											  + Sql.Substring(Linq.Expressions.Hex(p), 13, 2)
+											  + "-" + Sql.Substring(Linq.Expressions.Hex(p), 17, 4)
+											  + "-" + Sql.Substring(Linq.Expressions.Hex(p), 21, 12)))));
+			}
+
+			Linq.Expressions.MapMember(
+				providerName,
+				Linq.Expressions.M(() => Sql.Log(0m, 0)),
+				Linq.Expressions.N(() => Linq.Expressions.L<Decimal?, Decimal?, Decimal?>((m, n) => Sql.Log(n) / Sql.Log(m))));
+			Linq.Expressions.MapMember(
+				providerName,
+				Linq.Expressions.M(() => Sql.Log(0.0, 0)),
+				Linq.Expressions.N(() => Linq.Expressions.L<Double?, Double?, Double?>((m, n) => Sql.Log(n) / Sql.Log(m))));
+		}
+	}
 }

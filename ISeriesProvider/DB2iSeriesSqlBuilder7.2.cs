@@ -17,5 +17,17 @@
 		protected override string LimitFormat(SelectQuery selectQuery) => "FETCH FIRST {0} ROWS ONLY";
 
 		protected override void BuildSql() => DefaultBuildSqlMethod();
-	}
+
+        protected override void BuildTruncateTableStatement(SqlTruncateTableStatement truncateTable)
+        {
+            var table = truncateTable.Table;
+
+            AppendIndent();
+            StringBuilder.Append("TRUNCATE TABLE ");
+            BuildPhysicalTable(table, null);
+
+            if (truncateTable.ResetIdentity)
+                StringBuilder.Append(" RESTART IDENTITY");
+        }
+    }
 }

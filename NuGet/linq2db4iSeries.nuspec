@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>linq2db4iSeries</id>
+    <version>2.2.0.3</version>
+    <authors>Retail-Assist Ltd</authors>
+    <owners>Retail-Assist Ltd</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <licenseUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries/blob/master/MIT-LICENSE.txt</licenseUrl>
+    <projectUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/LinqToDB4iSeries/Linq2DB4iSeries/master/NuGet/linq2db2i.png</iconUrl>
+    <description>LINQ to DB is a data access technology that provides a run-time infrastructure for managing relational data as objects.  This package is a provider for DB2 on the IBM iSeries.</description>
+    <tags>linq linq2db LinqToDB ORM database DB SQL DB2 IBM iSeries</tags>
+    <repository type="git" url="https://github.com/LinqToDB4iSeries/Linq2DB4iSeries" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.5">
+        <dependency id="linq2db" version="[2.2.0,2.2.9]" />
+      </group>
+    </dependencies>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="Microsoft.CSharp" targetFramework=".NETFramework4.5" />
+      <frameworkAssembly assemblyName="System.Configuration" targetFramework=".NETFramework4.5" />
+      <frameworkAssembly assemblyName="System.Data.DataSetExtensions" targetFramework=".NETFramework4.5" />
+      <frameworkAssembly assemblyName="System.Data.Linq" targetFramework=".NETFramework4.5" />
+      <frameworkAssembly assemblyName="System.Data.Services" targetFramework=".NETFramework4.5" />
+    </frameworkAssemblies>
+  </metadata>
+  <files>
+    <file src="..\ISeriesProvider\bin\Debug\net45\LinqToDB.DataProvider.DB2iSeries.dll" target="lib\net45\LinqToDB.DataProvider.DB2iSeries.dll" />
+  </files>
+</package>
