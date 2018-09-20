@@ -41,8 +41,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			if(mapGuidAsString)
 				SqlProviderFlags.CustomFlags.Add(DB2iSeriesTools.MapGuidAsString);
 
-            DB2iSeriesExpressions.LoadExpressions(name, SqlProviderFlags);
-
             SetCharField("CHAR", (r, i) => r.GetString(i).TrimEnd(' '));
             SetCharField("NCHAR", (r, i) => r.GetString(i).TrimEnd(' '));
 

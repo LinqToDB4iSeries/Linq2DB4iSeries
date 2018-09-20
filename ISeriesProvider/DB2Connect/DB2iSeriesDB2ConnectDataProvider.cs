@@ -112,6 +112,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
             DB2iSeriesDB2ConnectTools.Initialized();
 		}
 
+        private static object GetNullValue(Type type)
+        {
+            dynamic getValue = Expression.Lambda<Func<object>>(Expression.Convert(Expression.Field(null, type, "Null"), typeof(object)));
+            return getValue.Compile()();
+        }
 
         #endregion
     }
