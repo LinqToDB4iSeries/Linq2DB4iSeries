@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
+using LinqToDB.Extensions;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
@@ -9,7 +12,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	using Data;
 	using SchemaProvider;
 	using System.Data.Common;
-		
+	using IBM.Data.DB2.iSeries;
+	
 
 	public class DB2iSeriesSchemaProvider : SchemaProviderBase
 	{
@@ -307,18 +311,25 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         #endregion
 
-        private string GetLibList(DataConnection dataConnection)
-        {
-            if (dataConnection.Connection == null || !(dataConnection.Connection.GetType().Name == "iDB2Connection"))
-                throw new LinqToDBException("dataconnection is not iDB2Connection.");
+	    private string GetLibList(DataConnection dataConnection)
+	    {
+	        if (dataConnection.Connection == null || dataConnection.Connection.GetType().Name != "iDB2Connection")
+	            throw new LinqToDBException("dataconnection is not iDB2Connection.");
 
-            var libListProp = dataConnection.Connection.GetType().GetProperty("LibraryList");
-            if (libListProp == null)
-                throw new LinqToDBException("iDB2Connection is missing LibraryList property, perhaps the IBM library has moved to non supported version");
+	        var libListProp = dataConnection.Connection.GetType()
+	            .GetPropertiesEx(BindingFlags.Public | BindingFlags.Instance)
+	            .FirstOrDefault(p => p.Name == "LibraryList"); 
 
-            var liblist = libListProp.GetValue(dataConnection.Connection) as string ?? "";
+	        if (libListProp == null)
+	            throw new LinqToDBException("iDB2Connection is missing LibraryList property, perhaps the IBM library has moved to non supported version");
 
-            return string.Join("','", liblist.Split(','));
-        }
+	        var liblist = Expression.Lambda<Func<object>>(
+	                Expression.Convert(
+	                    Expression.MakeMemberAccess(Expression.Constant(dataConnection.Connection), libListProp),
+	                    typeof(object)))
+	            .Compile()();
+
+            return string.Join("','", liblist.ToString().Split(','));
+	    }
     }
 }

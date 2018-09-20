@@ -2,6 +2,7 @@
 using System.Linq;
 
 using LinqToDB;
+using LinqToDB.DataProvider.DB2iSeries;
 using LinqToDB.Mapping;
 
 using NUnit.Framework;
@@ -40,7 +41,7 @@ namespace Tests.xUpdate
 			[Column] public decimal Field1;
 		}
 
-		[Test, DataContextSource(ProviderName.OracleNative, ProviderName.Informix)]
+		[Test, DataContextSource(ProviderName.OracleNative, ProviderName.Informix, DB2iSeriesProviderName.DB2, DB2iSeriesProviderName.DB2_GAS)]
 		public void TruncateIdentityTest(string context)
 		{
 			using (var db = GetDataContext(context))

@@ -81,19 +81,30 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case DataType.Binary:
 					return $"BINARY({(dataType.Length == 0 ? 1 : dataType.Length)})";
 				case DataType.Int64:
+                case DataType.UInt32:
 					return "BIGINT";
 				case DataType.Blob:
 					return $"BLOB({(dataType.Length == 0 ? 1 : dataType.Length)})";
 				case DataType.VarBinary:
 					return $"VARBINARY({(dataType.Length == 0 ? 1 : dataType.Length)})";
-				case DataType.Char: return "CHAR";
-				case DataType.Date: return "DATE";
-				case DataType.Decimal: return "DECIMAL";
-				case DataType.Double: return "DOUBLE";
-				case DataType.Int32: return "INTEGER";
-				case DataType.Single: return "REAL";
+				case DataType.Char:
+				    return "CHAR";
+				case DataType.Date:
+				    return "DATE";
+                case DataType.UInt64:
+                    return "DECIMAL(28,0)";
+                case DataType.Decimal:
+                    return "DECIMAL";
+				case DataType.Double:
+				    return "DOUBLE";
+                case DataType.UInt16:
+			    case DataType.Int32:
+				    return "INTEGER";
+				case DataType.Single:
+				    return "REAL";
 				case DataType.Int16:
 				case DataType.Boolean:
+                case DataType.Byte:
 					return "SMALLINT";
 				case DataType.Time:
 				case DataType.DateTimeOffset:
@@ -259,21 +270,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			while (EndLine.Contains(StringBuilder[StringBuilder.Length - 1]))
 				StringBuilder.Length--;
 		}
-
-		protected override void BuildTruncateTableStatement(SqlTruncateTableStatement truncateTable)
-		{
-		    var table = truncateTable.Table;
-
-		    AppendIndent();
-		    StringBuilder.Append("TRUNCATE TABLE ");
-		    BuildPhysicalTable(table, null);
-
-            if (truncateTable.ResetIdentity)
-                StringBuilder.Append(" RESTART IDENTITY");
-
-            StringBuilder.Append(" IMMEDIATE");
-		    StringBuilder.AppendLine();
-        }
 
 		protected override void BuildUpdateSet(SelectQuery selectQuery, SqlUpdateClause updateClause)
 		{
@@ -508,7 +504,44 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			base.BuildPredicate(newpredicate);
 		}
 
-		private ISqlExpression GetDateParm(IValueContainer parameter)
+	    protected override void BuildInsertQuery(SqlStatement statement, SqlInsertClause insertClause, bool addAlias)
+	    {
+	        BuildStep = Step.InsertClause; BuildInsertClause(statement, insertClause, addAlias);
+	        BuildStep = Step.WithClause; BuildWithClause(statement.GetWithClause());
+
+            if (statement.QueryType == QueryType.Insert && statement.SelectQuery.From.Tables.Count != 0)
+	        {
+	            BuildStep = Step.SelectClause; BuildSelectClause(statement.SelectQuery);
+	            BuildStep = Step.FromClause; BuildFromClause(statement, statement.SelectQuery);
+	            BuildStep = Step.WhereClause; BuildWhereClause(statement.SelectQuery);
+	            BuildStep = Step.GroupByClause; BuildGroupByClause(statement.SelectQuery);
+	            BuildStep = Step.HavingClause; BuildHavingClause(statement.SelectQuery);
+	            BuildStep = Step.OrderByClause; BuildOrderByClause(statement.SelectQuery);
+	            BuildStep = Step.OffsetLimit; BuildOffsetLimit(statement.SelectQuery);
+	        }
+
+	        if (insertClause.WithIdentity)
+	            BuildGetIdentity(insertClause);
+	    }
+
+	    protected override void BuildDeleteQuery(SqlDeleteStatement deleteStatement)
+	    {
+            if(deleteStatement.With != null)
+                throw new NotSupportedException("iSeries doesn't support Cte in Delete statement");
+
+	       base.BuildDeleteQuery(deleteStatement);
+	    }
+
+	    protected override void BuildUpdateQuery(SqlStatement statement, SelectQuery selectQuery, SqlUpdateClause updateClause)
+	    {
+	        if (statement.GetWithClause() != null)
+	            throw new NotSupportedException("iSeries doesn't support Cte in Update statement");
+            
+
+            base.BuildUpdateQuery(statement, selectQuery, updateClause);
+	    }
+
+	    private ISqlExpression GetDateParm(IValueContainer parameter)
 		{
 			if (parameter != null && parameter is SqlParameter)
 			{
