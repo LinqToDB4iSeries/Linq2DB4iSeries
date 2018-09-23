@@ -141,32 +141,32 @@ namespace LinqToDB.DataProvider.DB2iSeries
             SetProviderField(DB2iSeriesTypes.VarGraphic, typeof(string), "GetiDB2VarGraphic");
             SetProviderField(DB2iSeriesTypes.Xml, typeof(string), "GetiDB2Xml");
 
-            MappingSchema.AddScalarType(DB2iSeriesTypes.BigInt, GetNullValue(DB2iSeriesTypes.BigInt), true, DataType.Int64);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.Binary, GetNullValue(DB2iSeriesTypes.Binary), true, DataType.Binary);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.Blob, GetNullValue(DB2iSeriesTypes.Blob), true, DataType.Blob);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.Char, GetNullValue(DB2iSeriesTypes.Char), true, DataType.Char);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.CharBitData, GetNullValue(DB2iSeriesTypes.CharBitData), true, DataType.Binary);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.Clob, GetNullValue(DB2iSeriesTypes.Clob), true, DataType.NText);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.DataLink, GetNullValue(DB2iSeriesTypes.DataLink), true, DataType.NText);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.Date, GetNullValue(DB2iSeriesTypes.Date), true, DataType.Date);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.DbClob, GetNullValue(DB2iSeriesTypes.DbClob), true, DataType.NText);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.DecFloat16, GetNullValue(DB2iSeriesTypes.DecFloat16), true, DataType.Decimal);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.DecFloat34, GetNullValue(DB2iSeriesTypes.DecFloat34), true, DataType.Decimal);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.Decimal, GetNullValue(DB2iSeriesTypes.Decimal), true, DataType.Decimal);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.Double, GetNullValue(DB2iSeriesTypes.Double), true, DataType.Double);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.Graphic, GetNullValue(DB2iSeriesTypes.Graphic), true, DataType.NText);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.Integer, GetNullValue(DB2iSeriesTypes.Integer), true, DataType.Int32);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.Numeric, GetNullValue(DB2iSeriesTypes.Numeric), true, DataType.Decimal);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.Real, GetNullValue(DB2iSeriesTypes.Real), true, DataType.Single);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.RowId, GetNullValue(DB2iSeriesTypes.RowId), true, DataType.VarBinary);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.SmallInt, GetNullValue(DB2iSeriesTypes.SmallInt), true, DataType.Int16);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.Time, GetNullValue(DB2iSeriesTypes.Time), true, DataType.Time);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.TimeStamp, GetNullValue(DB2iSeriesTypes.TimeStamp), true, DataType.DateTime2);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.VarBinary, GetNullValue(DB2iSeriesTypes.VarBinary), true, DataType.VarBinary);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.VarChar, GetNullValue(DB2iSeriesTypes.VarChar), true, DataType.VarChar);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.VarCharBitData, GetNullValue(DB2iSeriesTypes.VarCharBitData), true, DataType.VarBinary);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.VarGraphic, GetNullValue(DB2iSeriesTypes.VarGraphic), true, DataType.NText);
-            MappingSchema.AddScalarType(DB2iSeriesTypes.Xml, GetNullValue(DB2iSeriesTypes.Xml), true, DataType.Xml);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.BigInt, GetNullValue(DB2iSeriesTypes.BigInt), true, DataType.Int64);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.Binary, GetNullValue(DB2iSeriesTypes.Binary), true, DataType.Binary);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.Blob, GetNullValue(DB2iSeriesTypes.Blob), true, DataType.Blob);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.Char, GetNullValue(DB2iSeriesTypes.Char), true, DataType.Char);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.CharBitData, GetNullValue(DB2iSeriesTypes.CharBitData), true, DataType.Binary);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.Clob, GetNullValue(DB2iSeriesTypes.Clob), true, DataType.NText);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.DataLink, GetNullValue(DB2iSeriesTypes.DataLink), true, DataType.NText);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.Date, GetNullValue(DB2iSeriesTypes.Date), true, DataType.Date);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.DbClob, GetNullValue(DB2iSeriesTypes.DbClob), true, DataType.NText);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.DecFloat16, GetNullValue(DB2iSeriesTypes.DecFloat16), true, DataType.Decimal);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.DecFloat34, GetNullValue(DB2iSeriesTypes.DecFloat34), true, DataType.Decimal);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.Decimal, GetNullValue(DB2iSeriesTypes.Decimal), true, DataType.Decimal);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.Double, GetNullValue(DB2iSeriesTypes.Double), true, DataType.Double);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.Graphic, GetNullValue(DB2iSeriesTypes.Graphic), true, DataType.NText);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.Integer, GetNullValue(DB2iSeriesTypes.Integer), true, DataType.Int32);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.Numeric, GetNullValue(DB2iSeriesTypes.Numeric), true, DataType.Decimal);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.Real, GetNullValue(DB2iSeriesTypes.Real), true, DataType.Single);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.RowId, GetNullValue(DB2iSeriesTypes.RowId), true, DataType.VarBinary);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.SmallInt, GetNullValue(DB2iSeriesTypes.SmallInt), true, DataType.Int16);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.Time, GetNullValue(DB2iSeriesTypes.Time), true, DataType.Time);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.TimeStamp, GetNullValue(DB2iSeriesTypes.TimeStamp), true, DataType.DateTime2);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.VarBinary, GetNullValue(DB2iSeriesTypes.VarBinary), true, DataType.VarBinary);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.VarChar, GetNullValue(DB2iSeriesTypes.VarChar), true, DataType.VarChar);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.VarCharBitData, GetNullValue(DB2iSeriesTypes.VarCharBitData), true, DataType.VarBinary);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.VarGraphic, GetNullValue(DB2iSeriesTypes.VarGraphic), true, DataType.NText);
+            //MappingSchema.AddScalarType(DB2iSeriesTypes.Xml, GetNullValue(DB2iSeriesTypes.Xml), true, DataType.Xml);
 
             _setBlob = GetSetParameter(connectionType, "iDB2Parameter", "iDB2DbType", "iDB2DbType", "iDB2Blob");
             if (DataConnection.TraceSwitch.TraceInfo)
@@ -224,23 +224,23 @@ namespace LinqToDB.DataProvider.DB2iSeries
             SetProviderField(DB2.DB2Types.DB2Xml, typeof(string), "GetDB2Xml");
             SetProviderField(DB2.DB2Types.DB2RowId, typeof(byte[]), "GetDB2RowId");
 
-            MappingSchema.AddScalarType(DB2.DB2Types.DB2Int64, GetNullValue(DB2.DB2Types.DB2Int64), true, DataType.Int64);
-            MappingSchema.AddScalarType(DB2.DB2Types.DB2Int32, GetNullValue(DB2.DB2Types.DB2Int32), true, DataType.Int32);
-            MappingSchema.AddScalarType(DB2.DB2Types.DB2Int16, GetNullValue(DB2.DB2Types.DB2Int16), true, DataType.Int16);
-            MappingSchema.AddScalarType(DB2.DB2Types.DB2Decimal, GetNullValue(DB2.DB2Types.DB2Decimal), true, DataType.Decimal);
-            MappingSchema.AddScalarType(DB2.DB2Types.DB2DecimalFloat, GetNullValue(DB2.DB2Types.DB2DecimalFloat), true, DataType.Decimal);
-            MappingSchema.AddScalarType(DB2.DB2Types.DB2Real, GetNullValue(DB2.DB2Types.DB2Real), true, DataType.Single);
-            MappingSchema.AddScalarType(DB2.DB2Types.DB2Real370, GetNullValue(DB2.DB2Types.DB2Real370), true, DataType.Single);
-            MappingSchema.AddScalarType(DB2.DB2Types.DB2Double, GetNullValue(DB2.DB2Types.DB2Double), true, DataType.Double);
-            MappingSchema.AddScalarType(DB2.DB2Types.DB2String, GetNullValue(DB2.DB2Types.DB2String), true, DataType.NVarChar);
-            MappingSchema.AddScalarType(DB2.DB2Types.DB2Clob, GetNullValue(DB2.DB2Types.DB2Clob), true, DataType.NText);
-            MappingSchema.AddScalarType(DB2.DB2Types.DB2Binary, GetNullValue(DB2.DB2Types.DB2Binary), true, DataType.VarBinary);
-            MappingSchema.AddScalarType(DB2.DB2Types.DB2Blob, GetNullValue(DB2.DB2Types.DB2Blob), true, DataType.Blob);
-            MappingSchema.AddScalarType(DB2.DB2Types.DB2Date, GetNullValue(DB2.DB2Types.DB2Date), true, DataType.Date);
-            MappingSchema.AddScalarType(DB2.DB2Types.DB2Time, GetNullValue(DB2.DB2Types.DB2Time), true, DataType.Time);
-            MappingSchema.AddScalarType(DB2.DB2Types.DB2TimeStamp, GetNullValue(DB2.DB2Types.DB2TimeStamp), true, DataType.DateTime2);
-            MappingSchema.AddScalarType(DB2.DB2Types.DB2RowId, GetNullValue(DB2.DB2Types.DB2RowId), true, DataType.VarBinary);
-            MappingSchema.AddScalarType(DB2.DB2Types.DB2Xml, DB2.DB2Tools.IsCore ? null : GetNullValue(DB2.DB2Types.DB2Xml), true, DataType.Xml);
+            //MappingSchema.AddScalarType(DB2.DB2Types.DB2Int64, GetNullValue(DB2.DB2Types.DB2Int64), true, DataType.Int64);
+            //MappingSchema.AddScalarType(DB2.DB2Types.DB2Int32, GetNullValue(DB2.DB2Types.DB2Int32), true, DataType.Int32);
+            //MappingSchema.AddScalarType(DB2.DB2Types.DB2Int16, GetNullValue(DB2.DB2Types.DB2Int16), true, DataType.Int16);
+            //MappingSchema.AddScalarType(DB2.DB2Types.DB2Decimal, GetNullValue(DB2.DB2Types.DB2Decimal), true, DataType.Decimal);
+            //MappingSchema.AddScalarType(DB2.DB2Types.DB2DecimalFloat, GetNullValue(DB2.DB2Types.DB2DecimalFloat), true, DataType.Decimal);
+            //MappingSchema.AddScalarType(DB2.DB2Types.DB2Real, GetNullValue(DB2.DB2Types.DB2Real), true, DataType.Single);
+            //MappingSchema.AddScalarType(DB2.DB2Types.DB2Real370, GetNullValue(DB2.DB2Types.DB2Real370), true, DataType.Single);
+            //MappingSchema.AddScalarType(DB2.DB2Types.DB2Double, GetNullValue(DB2.DB2Types.DB2Double), true, DataType.Double);
+            //MappingSchema.AddScalarType(DB2.DB2Types.DB2String, GetNullValue(DB2.DB2Types.DB2String), true, DataType.NVarChar);
+            //MappingSchema.AddScalarType(DB2.DB2Types.DB2Clob, GetNullValue(DB2.DB2Types.DB2Clob), true, DataType.NText);
+            //MappingSchema.AddScalarType(DB2.DB2Types.DB2Binary, GetNullValue(DB2.DB2Types.DB2Binary), true, DataType.VarBinary);
+            //MappingSchema.AddScalarType(DB2.DB2Types.DB2Blob, GetNullValue(DB2.DB2Types.DB2Blob), true, DataType.Blob);
+            //MappingSchema.AddScalarType(DB2.DB2Types.DB2Date, GetNullValue(DB2.DB2Types.DB2Date), true, DataType.Date);
+            //MappingSchema.AddScalarType(DB2.DB2Types.DB2Time, GetNullValue(DB2.DB2Types.DB2Time), true, DataType.Time);
+            //MappingSchema.AddScalarType(DB2.DB2Types.DB2TimeStamp, GetNullValue(DB2.DB2Types.DB2TimeStamp), true, DataType.DateTime2);
+            //MappingSchema.AddScalarType(DB2.DB2Types.DB2RowId, GetNullValue(DB2.DB2Types.DB2RowId), true, DataType.VarBinary);
+            //MappingSchema.AddScalarType(DB2.DB2Types.DB2Xml, DB2.DB2Tools.IsCore ? null : GetNullValue(DB2.DB2Types.DB2Xml), true, DataType.Xml);
 
             _setBlob = GetSetParameter(connectionType, "DB2Parameter", "DB2Type", "DB2Type", "Blob");
 
@@ -307,15 +307,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
             base.InitCommand(dataConnection, commandType, commandText, parameters);
         }
 
-        static class MappingSchemaInstance
-        {
-            public static readonly MappingSchema BlobGuidMappingSchema_AccessClient = new DB2iSeriesAccessClientMappingSchema();
-            public static readonly MappingSchema StringGuidMappingSchema_AccessClient = new DB2iSeriesAccessClientMappingSchema_GAS();
-
-            public static readonly MappingSchema BlobGuidMappingSchema_DB2Connect = new DB2iSeriesDB2ConnectMappingSchema();
-            public static readonly MappingSchema StringGuidMappingSchema_DB2Connect = new DB2iSeriesDB2ConnectMappingSchema_GAS();
-        }
-
         public override MappingSchema MappingSchema
         {
             get
@@ -323,14 +314,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
                 if (options.AdoProviderType == DB2iSeriesAdoProviderType.AccessClient)
                 {
                     return options.MapGuidAsString
-                      ? MappingSchemaInstance.StringGuidMappingSchema_AccessClient
-                      : MappingSchemaInstance.BlobGuidMappingSchema_AccessClient;
+                      ? DB2iSeriesAccessClientMappingSchema_GAS.Instance as MappingSchema
+                      : DB2iSeriesAccessClientMappingSchema.Instance;
                 }
                 else if (options.AdoProviderType == DB2iSeriesAdoProviderType.DB2Connect)
                 {
                     return options.MapGuidAsString
-                      ? MappingSchemaInstance.StringGuidMappingSchema_DB2Connect
-                      : MappingSchemaInstance.BlobGuidMappingSchema_DB2Connect;
+                      ? DB2iSeriesDB2ConnectMappingSchema_GAS.Instance as MappingSchema
+                      : DB2iSeriesDB2ConnectMappingSchema.Instance;
                 }
                 else
                     throw new NotSupportedException();
@@ -475,11 +466,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         #region Helpers
 
-        private static object GetNullValue(Type type)
-        {
-            dynamic getValue = Expression.Lambda<Func<object>>(Expression.Convert(Expression.Field(null, type, "Null"), typeof(object)));
-            return getValue.Compile()();
-        }
+        //private static object GetNullValue(Type type)
+        //{
+        //    dynamic getValue = Expression.Lambda<Func<object>>(Expression.Convert(Expression.Field(null, type, "Null"), typeof(object)));
+        //    return getValue.Compile()();
+        //}
 
 		private static void LoadExpressions(string providerName, bool mapGuidAsString)
 		{
