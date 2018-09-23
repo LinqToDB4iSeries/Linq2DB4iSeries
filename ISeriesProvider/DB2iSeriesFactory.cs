@@ -5,39 +5,24 @@ using System.Reflection;
 using LinqToDB.Configuration;
 using LinqToDB.Linq;
 using System.Linq;
+using LinqToDB.Data;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
-
-	public class DB2iSeriesFactory : IDataProviderFactory
+    public class DB2iSeriesFactory : IDataProviderFactory
 	{
 		public IDataProvider GetDataProvider(IEnumerable<NamedValue> attributes)
 		{
 			if (attributes == null)
-			{
-				return new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2, DB2iSeriesLevels.Any, false);
-			}
+                return DB2iSeriesTools.GetDataProvider(DB2iSeriesProviderName.DB2);
 
-			var attribs = attributes.ToList();
+            var options = DB2iSeriesDataProviderOptions.FromAttributes(attributes);
+            var providerName = DB2iSeriesProviderName.GetFromOptions(options);
 
-			var mapGuidAsString = false;
-
-			var attrib = attribs.FirstOrDefault(_ => _.Name == DB2iSeriesTools.MapGuidAsString);
-
-			if (attrib != null)
-			{
-				bool.TryParse(attrib.Value, out mapGuidAsString);
-			}
-
-			var version = attribs.FirstOrDefault(_ => _.Name == "MinVer");
-			var level = version != null && version.Value == "7.1.38" ? DB2iSeriesLevels.V7_1_38 : DB2iSeriesLevels.Any;
-
-			if (mapGuidAsString)
-			{
-				return new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2_GAS, level, true);
-			}
-
-			return new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2, level, false);
-		}
+            if (providerName != null && DB2iSeriesTools.TryGetDataProvider(providerName, out var dataProvider))
+                return dataProvider;
+            
+            else return new DB2iSeriesDataProvider(options);
+        }
 	}
 }

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,20 +15,43 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
     public class DB2iSeriesDataProvider : DynamicDataProviderBase
     {
-	    private DB2iSeriesLevels minLevel;
+        #region Private fields / Public Properties
 
-	    private bool mapGuidAsString;
+        private readonly DB2iSeriesDataProviderOptions options;
+        readonly DB2iSeriesSqlOptimizer _sqlOptimizer;
+        Action<IDbDataParameter> _setBlob; //Removed static, needs different implementation per providerType
+        DB2iSeriesBulkCopy _bulkCopy;
 
-	    public DB2iSeriesDataProvider() : this(DB2iSeriesProviderName.DB2, DB2iSeriesLevels.Any, false)
-	    {
-	    }
+        public string DummyTableName => DB2iSeriesTools.iSeriesDummyTableName();
 
-	    public DB2iSeriesDataProvider(string name, DB2iSeriesLevels minLevel, bool mapGuidAsString) : base(name, null)
+        #endregion
+
+        #region Constructor
+
+        public DB2iSeriesDataProvider() : this(DB2iSeriesProviderName.DB2iSeries_AccessClient)
         {
-            this.minLevel = minLevel;
-	        this.mapGuidAsString = mapGuidAsString;
+        }
 
-            LoadExpressions(name, mapGuidAsString);
+        public DB2iSeriesDataProvider(DB2iSeriesAdoProviderType adoProviderType, DB2iSeriesLevels minLevel, bool mapGuidAsString)
+            :this(new DB2iSeriesDataProviderOptions(minLevel, mapGuidAsString, adoProviderType))
+        {
+
+        }
+
+        public DB2iSeriesDataProvider(DB2iSeriesDataProviderOptions options)
+            : this(DB2iSeriesProviderName.GetFromOptions(options))
+        {
+            
+        }
+
+        public DB2iSeriesDataProvider(string name) : base(name, null)
+        {
+            if (!DB2iSeriesProviderName.AllNames.Contains(name))
+                throw new NotSupportedException($"Invalid provider name {name}. Valid options are: " + Environment.NewLine + string.Join(Environment.NewLine, DB2iSeriesProviderName.AllNames));
+
+            options = DB2iSeriesProviderName.GetOptions(name);
+
+            LoadExpressions(name, options.MapGuidAsString);
 
             SqlProviderFlags.AcceptsTakeAsParameter = false;
             SqlProviderFlags.AcceptsTakeAsParameterIfSkip = true;
@@ -37,9 +59,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
             SqlProviderFlags.CanCombineParameters = false;
             SqlProviderFlags.IsParameterOrderDependent = true;
             SqlProviderFlags.IsCommonTableExpressionsSupported = true;
-            
-			if(mapGuidAsString)
-				SqlProviderFlags.CustomFlags.Add(DB2iSeriesTools.MapGuidAsString);
+
+            if (options.MapGuidAsString)
+                SqlProviderFlags.CustomFlags.Add(nameof(DB2iSeriesDataProviderOptions.MapGuidAsString));
 
             SetCharField("CHAR", (r, i) => r.GetString(i).TrimEnd(' '));
             SetCharField("NCHAR", (r, i) => r.GetString(i).TrimEnd(' '));
@@ -48,142 +70,49 @@ namespace LinqToDB.DataProvider.DB2iSeries
         }
 
         
-        readonly DB2iSeriesSqlOptimizer _sqlOptimizer;
-        static Action<IDbDataParameter> _setBlob;
-        DB2iSeriesBulkCopy _bulkCopy;
+        //Obsolete - name and options are linked cannot mix and match 
+        //public DB2iSeriesDataProvider(string name, DB2iSeriesLevels minLevel, bool mapGuidAsString) : base(name, null)
+        //{
+            
+        //}
 
-        #region "overrides"
+        #endregion
 
-        public override string ConnectionNamespace => "";
-        protected override string ConnectionTypeName => DB2iSeriesTools.ConnectionTypeName;
-        protected override string DataReaderTypeName => DB2iSeriesTools.DataReaderTypeName;
-        public string DummyTableName => DB2iSeriesTools.iSeriesDummyTableName();
+        #region DataProvider Initialization
 
-        public override BulkCopyRowsCopied BulkCopy<T>(DataConnection dataConnection, BulkCopyOptions options, IEnumerable<T> source)
-        {
-            if (_bulkCopy == null)
-                _bulkCopy = new DB2iSeriesBulkCopy();
-
-            return _bulkCopy.BulkCopy(
-              options.BulkCopyType == BulkCopyType.Default ? DB2iSeriesTools.DefaultBulkCopyType : options.BulkCopyType,
-              dataConnection,
-              options,
-              source);
-        }
-        public override ISqlBuilder CreateSqlBuilder()
-        {
-            return minLevel == DB2iSeriesLevels.V7_1_38 ?
-                new DB2iSeriesSqlBuilder7_2(GetSqlOptimizer(), SqlProviderFlags, MappingSchema.ValueToSqlConverter) :
-                new DB2iSeriesSqlBuilder(GetSqlOptimizer(), SqlProviderFlags, MappingSchema.ValueToSqlConverter);
-        }
-
-        public override ISchemaProvider GetSchemaProvider()
-        {
-            return new DB2iSeriesSchemaProvider();
-        }
-        public override ISqlOptimizer GetSqlOptimizer()
-        {
-            return _sqlOptimizer;
-        }
-        public override void InitCommand(DataConnection dataConnection, CommandType commandType, string commandText, DataParameter[] parameters)
-        {
-            dataConnection.DisposeCommand();
-
-            base.InitCommand(dataConnection, commandType, commandText, parameters);
-        }
-
-	  //  protected override IDbConnection CreateConnectionInternal(string connectionString)
-	  //  {
-	  //      var vers73 = new[] { "7.1.38", "7.2", "7.3" };
-		 //   var parts = connectionString.Split(';').ToList();
-		 //   var gas = parts.FirstOrDefault(p => p.ToLower().StartsWith("mapguidasstring"));
-			//var minVer = parts.FirstOrDefault(p => p.ToLower().StartsWith("minver"));
-
-		 //   if (!string.IsNullOrWhiteSpace(gas))
-		 //   {
-			//    mapGuidAsString = gas.EndsWith("true", StringComparison.CurrentCultureIgnoreCase);
-			//    parts.Remove(gas);
-		 //   }
-
-		 //   if (!string.IsNullOrWhiteSpace(minVer))
-		 //   {
-			//	minLevel = vers73.Any(v => minVer.EndsWith(v, StringComparison.CurrentCultureIgnoreCase)) ? DB2iSeriesLevels.V7_1_38 : DB2iSeriesLevels.Any;
-			//	parts.Remove(minVer);
-			//}
-
-		 //   var conString = string.Join(";", parts);
-			//return base.CreateConnectionInternal(conString);
-	  //  }
-
-	    static class MappingSchemaInstance
-	    {
-		    public static readonly DB2iSeriesMappingSchema BlobGuidMappingSchema = new DB2iSeriesMappingSchema(DB2iSeriesProviderName.DB2); 
-		    public static readonly DB2iSeriesMappingSchema StringGuidMappingSchema = new DB2iSeriesMappingSchema(DB2iSeriesProviderName.DB2_GAS);
-	    }
-
-		public override MappingSchema MappingSchema => mapGuidAsString
-		    ? MappingSchemaInstance.StringGuidMappingSchema
-		    : MappingSchemaInstance.BlobGuidMappingSchema;
-
-        #region Merge
-        public override int Merge<T>(DataConnection dataConnection, Expression<Func<T, bool>> deletePredicate, bool delete, IEnumerable<T> source, string tableName, string databaseName, string schemaName)
-        {
-            if (delete)
-            {
-                throw new LinqToDBException("DB2 iSeries MERGE statement does not support DELETE by source.");
-            }
-            return new DB2iSeriesMerge().Merge(dataConnection, deletePredicate, delete, source, tableName, databaseName, schemaName);
-        }
-
-	    public override Task<int> MergeAsync<T>(DataConnection dataConnection, Expression<Func<T, bool>> deletePredicate, bool delete, IEnumerable<T> source,
-		    string tableName, string databaseName, string schemaName, CancellationToken token)
-	    {
-		    if (delete)
-			    throw new LinqToDBException("DB2 MERGE statement does not support DELETE by source.");
-
-		    return new DB2iSeriesMerge().MergeAsync(dataConnection, deletePredicate, delete, source, tableName, databaseName, schemaName, token);
-	    }
-
-	    protected override BasicMergeBuilder<TTarget, TSource> GetMergeBuilder<TTarget, TSource>(
-		    DataConnection connection,
-		    IMergeable<TTarget, TSource> merge)
-	    {
-		    return new DB2iSeriesMergeBuilder<TTarget, TSource>(connection, merge);
-	    }
-
-	    #endregion
-
-		protected override void OnConnectionTypeCreated(Type connectionType)
+        private void OnConnectionTypeCreated_AccessClient(Type connectionType)
         {
             DB2iSeriesTypes.ConnectionType = connectionType;
 
-            dynamic ass = connectionType.Assembly;
-            DB2iSeriesTypes.BigInt.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2BigInt", true);
-            DB2iSeriesTypes.Binary.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2Binary", true);
-            DB2iSeriesTypes.Blob.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2Blob", true);
-            DB2iSeriesTypes.Char.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2Char", true);
-            DB2iSeriesTypes.CharBitData.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2CharBitData", true);
-            DB2iSeriesTypes.Clob.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2Clob", true);
-            DB2iSeriesTypes.Date.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2Date", true);
-            DB2iSeriesTypes.DataLink.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2DataLink", true);
-            DB2iSeriesTypes.DbClob.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2DbClob", true);
-            DB2iSeriesTypes.DecFloat16.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2DecFloat16", true);
-            DB2iSeriesTypes.DecFloat34.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2DecFloat34", true);
-            DB2iSeriesTypes.Decimal.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2Decimal", true);
-            DB2iSeriesTypes.Double.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2Double", true);
-            DB2iSeriesTypes.Graphic.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2Graphic", true);
-            DB2iSeriesTypes.Integer.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2Integer", true);
-            DB2iSeriesTypes.Numeric.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2Numeric", true);
-            DB2iSeriesTypes.Real.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2Real", true);
-            DB2iSeriesTypes.RowId.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2Rowid", true);
-            DB2iSeriesTypes.SmallInt.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2SmallInt", true);
-            DB2iSeriesTypes.Time.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2Time", true);
-            DB2iSeriesTypes.TimeStamp.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2TimeStamp", true);
-            DB2iSeriesTypes.VarBinary.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2VarBinary", true);
-            DB2iSeriesTypes.VarChar.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2VarChar", true);
-            DB2iSeriesTypes.VarCharBitData.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2VarCharBitData", true);
-            DB2iSeriesTypes.VarGraphic.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2VarGraphic", true);
-            DB2iSeriesTypes.Xml.Type = ass.GetType(DB2iSeriesTools.AssemblyName + ".iDB2Xml", true);
+            var assembly = connectionType.Assembly;
+            Type getType(string typeName) => assembly.GetType($"{DB2iSeriesTools.AssemblyName_AccessClient}.{typeName}", true);
+
+            DB2iSeriesTypes.BigInt.Type = getType("iDB2BigInt");
+            DB2iSeriesTypes.Binary.Type = getType("iDB2Binary");
+            DB2iSeriesTypes.Blob.Type = getType("iDB2Blob");
+            DB2iSeriesTypes.Char.Type = getType("iDB2Char");
+            DB2iSeriesTypes.CharBitData.Type = getType("iDB2CharBitData");
+            DB2iSeriesTypes.Clob.Type = getType("iDB2Clob");
+            DB2iSeriesTypes.Date.Type = getType("iDB2Date");
+            DB2iSeriesTypes.DataLink.Type = getType("iDB2DataLink");
+            DB2iSeriesTypes.DbClob.Type = getType("iDB2DbClob");
+            DB2iSeriesTypes.DecFloat16.Type = getType("iDB2DecFloat16");
+            DB2iSeriesTypes.DecFloat34.Type = getType("iDB2DecFloat34");
+            DB2iSeriesTypes.Decimal.Type = getType("iDB2Decimal");
+            DB2iSeriesTypes.Double.Type = getType("iDB2Double");
+            DB2iSeriesTypes.Graphic.Type = getType("iDB2Graphic");
+            DB2iSeriesTypes.Integer.Type = getType("iDB2Integer");
+            DB2iSeriesTypes.Numeric.Type = getType("iDB2Numeric");
+            DB2iSeriesTypes.Real.Type = getType("iDB2Real");
+            DB2iSeriesTypes.RowId.Type = getType("iDB2Rowid");
+            DB2iSeriesTypes.SmallInt.Type = getType("iDB2SmallInt");
+            DB2iSeriesTypes.Time.Type = getType("iDB2Time");
+            DB2iSeriesTypes.TimeStamp.Type = getType("iDB2TimeStamp");
+            DB2iSeriesTypes.VarBinary.Type = getType("iDB2VarBinary");
+            DB2iSeriesTypes.VarChar.Type = getType("iDB2VarChar");
+            DB2iSeriesTypes.VarCharBitData.Type = getType("iDB2VarCharBitData");
+            DB2iSeriesTypes.VarGraphic.Type = getType("iDB2VarGraphic");
+            DB2iSeriesTypes.Xml.Type = getType("iDB2Xml");
 
             SetProviderField(DB2iSeriesTypes.BigInt, typeof(long), "GetiDB2BigInt");
             SetProviderField(DB2iSeriesTypes.Binary, typeof(byte[]), "GetiDB2Binary");
@@ -204,8 +133,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
             SetProviderField(DB2iSeriesTypes.Real, typeof(float), "GetiDB2Real");
             SetProviderField(DB2iSeriesTypes.RowId, typeof(byte[]), "GetiDB2RowId");
             SetProviderField(DB2iSeriesTypes.SmallInt, typeof(short), "GetiDB2SmallInt");
-            SetProviderField(DB2iSeriesTypes.Time, typeof(System.DateTime), "GetiDB2Time");
-            SetProviderField(DB2iSeriesTypes.TimeStamp, typeof(System.DateTime), "GetiDB2TimeStamp");
+            SetProviderField(DB2iSeriesTypes.Time, typeof(DateTime), "GetiDB2Time");
+            SetProviderField(DB2iSeriesTypes.TimeStamp, typeof(DateTime), "GetiDB2TimeStamp");
             SetProviderField(DB2iSeriesTypes.VarBinary, typeof(byte[]), "GetiDB2VarBinary");
             SetProviderField(DB2iSeriesTypes.VarChar, typeof(string), "GetiDB2VarChar");
             SetProviderField(DB2iSeriesTypes.VarCharBitData, typeof(byte[]), "GetiDB2VarCharBitData");
@@ -238,45 +167,243 @@ namespace LinqToDB.DataProvider.DB2iSeries
             MappingSchema.AddScalarType(DB2iSeriesTypes.VarCharBitData, GetNullValue(DB2iSeriesTypes.VarCharBitData), true, DataType.VarBinary);
             MappingSchema.AddScalarType(DB2iSeriesTypes.VarGraphic, GetNullValue(DB2iSeriesTypes.VarGraphic), true, DataType.NText);
             MappingSchema.AddScalarType(DB2iSeriesTypes.Xml, GetNullValue(DB2iSeriesTypes.Xml), true, DataType.Xml);
+
             _setBlob = GetSetParameter(connectionType, "iDB2Parameter", "iDB2DbType", "iDB2DbType", "iDB2Blob");
             if (DataConnection.TraceSwitch.TraceInfo)
-            {
                 DataConnection.WriteTraceLine(DataReaderType.AssemblyEx().FullName, DataConnection.TraceSwitch.DisplayName);
-            }
+            
             DB2iSeriesTools.Initialized();
         }
-        public override void SetParameter(IDbDataParameter parameter, string name, DataType dataType__1, object value)
+
+        private void OnConnectionTypeCreated_DB2Connect(Type connectionType)
+        {
+            //Avoid duplicate creation of static DB2 types of a standard DB2 provider has already been created
+            if (DB2.DB2Types.ConnectionType == null)
+            {
+                var prop = typeof(DB2.DB2Types).GetPropertyEx(nameof(DB2.DB2Types.ConnectionType));
+                prop.SetValue(null, connectionType);
+
+                var assembly = connectionType.AssemblyEx();
+                Type getType(string typeName) => assembly.GetType($"{DB2iSeriesTools.NamespaceNameDB2Types}.{typeName}", true);
+
+                DB2.DB2Types.DB2Int64.Type = DB2.DB2Types.DB2Int64.Type ?? getType(nameof(DB2.DB2Types.DB2Int64));
+                DB2.DB2Types.DB2Int16.Type = DB2.DB2Types.DB2Int16.Type ?? getType(nameof(DB2.DB2Types.DB2Int16));
+                DB2.DB2Types.DB2Decimal.Type = DB2.DB2Types.DB2Decimal.Type ?? getType(nameof(DB2.DB2Types.DB2Decimal));
+                DB2.DB2Types.DB2DecimalFloat.Type = DB2.DB2Types.DB2DecimalFloat.Type ?? getType(nameof(DB2.DB2Types.DB2DecimalFloat));
+                DB2.DB2Types.DB2Real.Type = DB2.DB2Types.DB2Real.Type ?? getType(nameof(DB2.DB2Types.DB2Real));
+                DB2.DB2Types.DB2Real370.Type = DB2.DB2Types.DB2Real370.Type ?? getType(nameof(DB2.DB2Types.DB2Real370));
+                DB2.DB2Types.DB2Double.Type = DB2.DB2Types.DB2Double.Type ?? getType(nameof(DB2.DB2Types.DB2Double));
+                DB2.DB2Types.DB2String.Type = DB2.DB2Types.DB2String.Type ?? getType(nameof(DB2.DB2Types.DB2String));
+                DB2.DB2Types.DB2Clob.Type = DB2.DB2Types.DB2Clob.Type ?? getType(nameof(DB2.DB2Types.DB2Clob));
+                DB2.DB2Types.DB2Binary.Type = DB2.DB2Types.DB2Binary.Type ?? getType(nameof(DB2.DB2Types.DB2Binary));
+                DB2.DB2Types.DB2Blob.Type = DB2.DB2Types.DB2Blob.Type ?? getType(nameof(DB2.DB2Types.DB2Blob));
+                DB2.DB2Types.DB2Date.Type = DB2.DB2Types.DB2Date.Type ?? getType(nameof(DB2.DB2Types.DB2Date));
+                DB2.DB2Types.DB2Time.Type = DB2.DB2Types.DB2Time.Type ?? getType(nameof(DB2.DB2Types.DB2Time));
+                DB2.DB2Types.DB2TimeStamp.Type = DB2.DB2Types.DB2TimeStamp.Type ?? getType(nameof(DB2.DB2Types.DB2TimeStamp));
+                DB2.DB2Types.DB2Xml = DB2.DB2Types.DB2Xml ?? getType(nameof(DB2.DB2Types.DB2Xml));
+                DB2.DB2Types.DB2RowId.Type = DB2.DB2Types.DB2RowId.Type ?? getType(nameof(DB2.DB2Types.DB2RowId));
+                //Disabled DateTime support
+                //DB2.DB2Types.DB2DateTime.Type = DB2.DB2Types.DB2DateTime.Type ?? getType(nameof(DB2.DB2Types.DB2DateTime));
+            }
+
+            SetProviderField(DB2.DB2Types.DB2Int64, typeof(Int64), "GetDB2Int64");
+            SetProviderField(DB2.DB2Types.DB2Int32, typeof(Int32), "GetDB2Int32");
+            SetProviderField(DB2.DB2Types.DB2Int16, typeof(Int16), "GetDB2Int16");
+            SetProviderField(DB2.DB2Types.DB2Decimal, typeof(Decimal), "GetDB2Decimal");
+            SetProviderField(DB2.DB2Types.DB2DecimalFloat, typeof(Decimal), "GetDB2DecimalFloat");
+            SetProviderField(DB2.DB2Types.DB2Real, typeof(Single), "GetDB2Real");
+            SetProviderField(DB2.DB2Types.DB2Real370, typeof(Single), "GetDB2Real370");
+            SetProviderField(DB2.DB2Types.DB2Double, typeof(Double), "GetDB2Double");
+            SetProviderField(DB2.DB2Types.DB2String, typeof(String), "GetDB2String");
+            SetProviderField(DB2.DB2Types.DB2Clob, typeof(String), "GetDB2Clob");
+            SetProviderField(DB2.DB2Types.DB2Binary, typeof(byte[]), "GetDB2Binary");
+            SetProviderField(DB2.DB2Types.DB2Blob, typeof(byte[]), "GetDB2Blob");
+            SetProviderField(DB2.DB2Types.DB2Date, typeof(DateTime), "GetDB2Date");
+            SetProviderField(DB2.DB2Types.DB2Time, typeof(TimeSpan), "GetDB2Time");
+            SetProviderField(DB2.DB2Types.DB2TimeStamp, typeof(DateTime), "GetDB2TimeStamp");
+            SetProviderField(DB2.DB2Types.DB2Xml, typeof(string), "GetDB2Xml");
+            SetProviderField(DB2.DB2Types.DB2RowId, typeof(byte[]), "GetDB2RowId");
+
+            MappingSchema.AddScalarType(DB2.DB2Types.DB2Int64, GetNullValue(DB2.DB2Types.DB2Int64), true, DataType.Int64);
+            MappingSchema.AddScalarType(DB2.DB2Types.DB2Int32, GetNullValue(DB2.DB2Types.DB2Int32), true, DataType.Int32);
+            MappingSchema.AddScalarType(DB2.DB2Types.DB2Int16, GetNullValue(DB2.DB2Types.DB2Int16), true, DataType.Int16);
+            MappingSchema.AddScalarType(DB2.DB2Types.DB2Decimal, GetNullValue(DB2.DB2Types.DB2Decimal), true, DataType.Decimal);
+            MappingSchema.AddScalarType(DB2.DB2Types.DB2DecimalFloat, GetNullValue(DB2.DB2Types.DB2DecimalFloat), true, DataType.Decimal);
+            MappingSchema.AddScalarType(DB2.DB2Types.DB2Real, GetNullValue(DB2.DB2Types.DB2Real), true, DataType.Single);
+            MappingSchema.AddScalarType(DB2.DB2Types.DB2Real370, GetNullValue(DB2.DB2Types.DB2Real370), true, DataType.Single);
+            MappingSchema.AddScalarType(DB2.DB2Types.DB2Double, GetNullValue(DB2.DB2Types.DB2Double), true, DataType.Double);
+            MappingSchema.AddScalarType(DB2.DB2Types.DB2String, GetNullValue(DB2.DB2Types.DB2String), true, DataType.NVarChar);
+            MappingSchema.AddScalarType(DB2.DB2Types.DB2Clob, GetNullValue(DB2.DB2Types.DB2Clob), true, DataType.NText);
+            MappingSchema.AddScalarType(DB2.DB2Types.DB2Binary, GetNullValue(DB2.DB2Types.DB2Binary), true, DataType.VarBinary);
+            MappingSchema.AddScalarType(DB2.DB2Types.DB2Blob, GetNullValue(DB2.DB2Types.DB2Blob), true, DataType.Blob);
+            MappingSchema.AddScalarType(DB2.DB2Types.DB2Date, GetNullValue(DB2.DB2Types.DB2Date), true, DataType.Date);
+            MappingSchema.AddScalarType(DB2.DB2Types.DB2Time, GetNullValue(DB2.DB2Types.DB2Time), true, DataType.Time);
+            MappingSchema.AddScalarType(DB2.DB2Types.DB2TimeStamp, GetNullValue(DB2.DB2Types.DB2TimeStamp), true, DataType.DateTime2);
+            MappingSchema.AddScalarType(DB2.DB2Types.DB2RowId, GetNullValue(DB2.DB2Types.DB2RowId), true, DataType.VarBinary);
+            MappingSchema.AddScalarType(DB2.DB2Types.DB2Xml, DB2.DB2Tools.IsCore ? null : GetNullValue(DB2.DB2Types.DB2Xml), true, DataType.Xml);
+
+            _setBlob = GetSetParameter(connectionType, "DB2Parameter", "DB2Type", "DB2Type", "Blob");
+
+            //Note: Removed the check for DateTime support , assumed not supported
+
+            if (DataConnection.TraceSwitch.TraceInfo)
+            {
+                DataConnection.WriteTraceLine(
+                    DataReaderType.AssemblyEx().FullName,
+                    DataConnection.TraceSwitch.DisplayName);
+            }
+
+            DB2iSeriesTools.Initialized();
+        }
+
+        protected override void OnConnectionTypeCreated(Type connectionType)
+        {
+            if (connectionType.Name == DB2iSeriesTools.GetConnectionTypeName(DB2iSeriesAdoProviderType.AccessClient))
+                OnConnectionTypeCreated_AccessClient(connectionType);
+            else if (connectionType.Name == DB2iSeriesTools.GetConnectionTypeName(DB2iSeriesAdoProviderType.DB2Connect))
+                OnConnectionTypeCreated_DB2Connect(connectionType);
+            else
+                throw new NotSupportedException($"Unsupported connect type {connectionType.Name}");
+        }
+
+        #endregion
+
+        #region Overrides
+
+        public override string ConnectionNamespace => DB2iSeriesTools.GetConnectionNamespace(options.AdoProviderType);
+        protected override string ConnectionTypeName => DB2iSeriesTools.GetConnectionTypeName(options.AdoProviderType);
+        protected override string DataReaderTypeName => DB2iSeriesTools.GetDataReaderTypeName(options.AdoProviderType);
+        
+        public override BulkCopyRowsCopied BulkCopy<T>(DataConnection dataConnection, BulkCopyOptions options, IEnumerable<T> source)
+        {
+            if (_bulkCopy == null)
+                _bulkCopy = new DB2iSeriesBulkCopy();
+
+            return _bulkCopy.BulkCopy(
+              options.BulkCopyType == BulkCopyType.Default ? DB2iSeriesTools.DefaultBulkCopyType : options.BulkCopyType,
+              dataConnection,
+              options,
+              source);
+        }
+        public override ISqlBuilder CreateSqlBuilder()
+        {
+            return options.MinLevel == DB2iSeriesLevels.V7_1_38 ?
+                new DB2iSeriesSqlBuilder7_2(GetSqlOptimizer(), SqlProviderFlags, MappingSchema.ValueToSqlConverter) :
+                new DB2iSeriesSqlBuilder(GetSqlOptimizer(), SqlProviderFlags, MappingSchema.ValueToSqlConverter);
+        }
+
+        public override ISchemaProvider GetSchemaProvider()
+        {
+            return new DB2iSeriesSchemaProvider();
+        }
+        public override ISqlOptimizer GetSqlOptimizer()
+        {
+            return _sqlOptimizer;
+        }
+        public override void InitCommand(DataConnection dataConnection, CommandType commandType, string commandText, DataParameter[] parameters)
+        {
+            dataConnection.DisposeCommand();
+
+            base.InitCommand(dataConnection, commandType, commandText, parameters);
+        }
+
+        static class MappingSchemaInstance
+        {
+            public static readonly MappingSchema BlobGuidMappingSchema_AccessClient = new DB2iSeriesAccessClientMappingSchema();
+            public static readonly MappingSchema StringGuidMappingSchema_AccessClient = new DB2iSeriesAccessClientMappingSchema_GAS();
+
+            public static readonly MappingSchema BlobGuidMappingSchema_DB2Connect = new DB2iSeriesDB2ConnectMappingSchema();
+            public static readonly MappingSchema StringGuidMappingSchema_DB2Connect = new DB2iSeriesDB2ConnectMappingSchema_GAS();
+        }
+
+        public override MappingSchema MappingSchema
+        {
+            get
+            {
+                if (options.AdoProviderType == DB2iSeriesAdoProviderType.AccessClient)
+                {
+                    return options.MapGuidAsString
+                      ? MappingSchemaInstance.StringGuidMappingSchema_AccessClient
+                      : MappingSchemaInstance.BlobGuidMappingSchema_AccessClient;
+                }
+                else if (options.AdoProviderType == DB2iSeriesAdoProviderType.DB2Connect)
+                {
+                    return options.MapGuidAsString
+                      ? MappingSchemaInstance.StringGuidMappingSchema_DB2Connect
+                      : MappingSchemaInstance.BlobGuidMappingSchema_DB2Connect;
+                }
+                else
+                    throw new NotSupportedException();
+            }
+        }
+
+        protected override IDbConnection CreateConnectionInternal(string connectionString)
+        {
+            return DB2iSeriesTools.CreateConnection(options.AdoProviderType, connectionString);
+        }
+
+        #region Merge
+        public override int Merge<T>(DataConnection dataConnection, Expression<Func<T, bool>> deletePredicate, bool delete, IEnumerable<T> source, string tableName, string databaseName, string schemaName)
+        {
+            if (delete)
+            {
+                throw new LinqToDBException("DB2 iSeries MERGE statement does not support DELETE by source.");
+            }
+            return new DB2iSeriesMerge().Merge(dataConnection, deletePredicate, delete, source, tableName, databaseName, schemaName);
+        }
+
+	    public override Task<int> MergeAsync<T>(DataConnection dataConnection, Expression<Func<T, bool>> deletePredicate, bool delete, IEnumerable<T> source,
+		    string tableName, string databaseName, string schemaName, CancellationToken token)
+	    {
+		    if (delete)
+			    throw new LinqToDBException("DB2 MERGE statement does not support DELETE by source.");
+
+		    return new DB2iSeriesMerge().MergeAsync(dataConnection, deletePredicate, delete, source, tableName, databaseName, schemaName, token);
+	    }
+
+	    protected override BasicMergeBuilder<TTarget, TSource> GetMergeBuilder<TTarget, TSource>(
+		    DataConnection connection,
+		    IMergeable<TTarget, TSource> merge)
+	    {
+		    return new DB2iSeriesMergeBuilder<TTarget, TSource>(connection, merge);
+	    }
+
+        #endregion
+
+        
+
+        public override void SetParameter(IDbDataParameter parameter, string name, DataType dataType, object value)
         {
             if (value is sbyte)
             {
                 value = Convert.ToInt16(Convert.ToSByte(value));
-                dataType__1 = DataType.Int16;
+                dataType = DataType.Int16;
             }
             else if (value is byte)
             {
                 value = Convert.ToInt16(Convert.ToByte(value));
-                dataType__1 = DataType.Int16;
+                dataType = DataType.Int16;
             }
 
-            switch (dataType__1)
+            switch (dataType)
             {
                 case DataType.UInt16:
-                    dataType__1 = DataType.Int32;
+                    dataType = DataType.Int32;
                     if (value != null)
                         value = Convert.ToInt32(value);
                     break;
                 case DataType.UInt32:
-                    dataType__1 = DataType.Int64;
+                    dataType = DataType.Int64;
                     if (value != null)
                         value = Convert.ToInt64(value);
                     break;
                 case DataType.UInt64:
-                    dataType__1 = DataType.Decimal;
+                    dataType = DataType.Decimal;
                     if (value != null)
                         value = Convert.ToDecimal(value);
                     break;
                 case DataType.VarNumeric:
-                    dataType__1 = DataType.Decimal;
+                    dataType = DataType.Decimal;
                     break;
                 case DataType.Char:
                 case DataType.VarChar:
@@ -296,25 +423,25 @@ namespace LinqToDB.DataProvider.DB2iSeries
                     if (value is bool)
                     {
                         value = (bool)value ? 1 : 0;
-                        dataType__1 = DataType.Int16;
+                        dataType = DataType.Int16;
                     }
                     break;
                 case DataType.Guid:
                     if (value is Guid)
                     {
-                        if (mapGuidAsString)
+                        if (options.MapGuidAsString)
                         {
                             value = ((Guid)value).ToString("D");
-                            dataType__1 = DataType.NVarChar;
+                            dataType = DataType.NVarChar;
                         }
                         else
                         {
                             value = ((Guid)value).ToByteArray();
-                            dataType__1 = DataType.VarBinary;
+                            dataType = DataType.VarBinary;
                         }
                     }
                     if (value == null)
-                        dataType__1 = DataType.VarBinary;
+                        dataType = DataType.VarBinary;
                     break;
                 case DataType.Binary:
                 case DataType.VarBinary:
@@ -334,19 +461,21 @@ namespace LinqToDB.DataProvider.DB2iSeries
                     }
                     break;
                 case DataType.DateTime2:
-                    dataType__1 = DataType.DateTime;
+                    dataType = DataType.DateTime;
                     break;
                 case DataType.Blob:
-                    base.SetParameter(parameter, Convert.ToString("@") + name, dataType__1, value);
+                    base.SetParameter(parameter, $"@{name}", dataType, value);
                     _setBlob(parameter);
                     return;
             }
-            base.SetParameter(parameter, Convert.ToString("@") + name, dataType__1, value);
+            base.SetParameter(parameter, $"@{name}", dataType, value);
         }
 
         #endregion
 
-		private static object GetNullValue(Type type)
+        #region Helpers
+
+        private static object GetNullValue(Type type)
         {
             dynamic getValue = Expression.Lambda<Func<object>>(Expression.Convert(Expression.Field(null, type, "Null"), typeof(object)));
             return getValue.Compile()();
@@ -403,4 +532,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				Linq.Expressions.N(() => Linq.Expressions.L<Double?, Double?, Double?>((m, n) => Sql.Log(n) / Sql.Log(m))));
 		}
 	}
+
+    #endregion
 }

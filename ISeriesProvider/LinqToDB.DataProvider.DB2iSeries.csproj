@@ -56,6 +56,9 @@
 	  <PackageReference Include="linq2db" Version="2.2.0" />
   </ItemGroup>
 	<ItemGroup>
+	  <Reference Include="IBM.Data.DB2">
+	    <HintPath>C:\Program Files\IBM\SQLLIB\BIN\netf40\IBM.Data.DB2.dll</HintPath>
+	  </Reference>
 	  <Reference Include="IBM.Data.DB2.iSeries">
 	    <HintPath>..\Redist\IBM.Data.DB2.iSeries.dll</HintPath>
 	  </Reference>

@@ -226,7 +226,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected override string GetProviderSpecificTypeNamespace()
 		{
-			return DB2iSeriesTools.AssemblyName;
+			return DB2iSeriesTools.AssemblyName_AccessClient;
 		}
 
 		protected override List<TableInfo> GetTables(DataConnection dataConnection)
@@ -311,25 +311,41 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         #endregion
 
-	    private string GetLibList(DataConnection dataConnection)
+        
+          
+
+        private string GetLibList(DataConnection dataConnection)
 	    {
-	        if (dataConnection.Connection == null || dataConnection.Connection.GetType().Name != "iDB2Connection")
-	            throw new LinqToDBException("dataconnection is not iDB2Connection.");
+            var providerType = DB2iSeriesTools.GetAdoProviderType(dataConnection.Connection);
 
-	        var libListProp = dataConnection.Connection.GetType()
-	            .GetPropertiesEx(BindingFlags.Public | BindingFlags.Instance)
-	            .FirstOrDefault(p => p.Name == "LibraryList"); 
+            if (providerType == null)
+                throw new LinqToDBException("Null or unsupported DbConnection");
 
-	        if (libListProp == null)
-	            throw new LinqToDBException("iDB2Connection is missing LibraryList property, perhaps the IBM library has moved to non supported version");
+            if (providerType == DB2iSeriesAdoProviderType.AccessClient)
+            {
+                if (MemberAccessor.TryGetValue<string>(dataConnection.Connection, "LibraryList", out var liblist))
+                    return string.Join("','", liblist.Split(','));
 
-	        var liblist = Expression.Lambda<Func<object>>(
-	                Expression.Convert(
-	                    Expression.MakeMemberAccess(Expression.Constant(dataConnection.Connection), libListProp),
-	                    typeof(object)))
-	            .Compile()();
+                throw new LinqToDBException("iDB2Connection is missing LibraryList property, perhaps the IBM library has moved to non supported version");
+                //optionally fall back to connectionstring
+                //var stringBuilder = DB2iSeriesTools.CreateConnectionStringBuilder(providerType.Value, dataConnection.Connection.ConnectionString);
+                //if (stringBuilder.TryGetValue("LibraryList", out var liblist))
+                //    return string.Join("','", liblist.ToString().Split(','));
+                //else
+                //    return string.Empty;
+            }
+            else if (providerType == DB2iSeriesAdoProviderType.DB2Connect)
+            {
+                //DB2Connection doesn't have a librarylist property, falling back to connection string
+                var stringBuilder = DB2iSeriesTools.CreateConnectionStringBuilder(providerType.Value, dataConnection.Connection.ConnectionString);
 
-            return string.Join("','", liblist.ToString().Split(','));
-	    }
+                if (stringBuilder.TryGetValue("LibraryList", out var liblist))
+                    return string.Join("','", liblist.ToString().Split(','));
+                else
+                    return string.Empty;
+            }
+
+            return string.Empty;
+        }
     }
 }

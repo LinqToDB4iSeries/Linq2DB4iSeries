@@ -11,7 +11,8 @@ namespace Tests
 		public const string Northwind         = "Northwind";
 		public const string NorthwindSQLite   = "Northwind.SQLite";
 		public const string NorthwindSQLiteMS = "Northwind.SQLite.MS";
-		public const string DB2i              = "DB2.iSeries";
+        public const string DB2i_DB2Connect   = "DB2.iSeries.DB2Connect";
+        public const string DB2i              = "DB2.iSeries";
 		public const string DB2iGAS           = "DB2.iSeries.GAS";
 		public const string DB2i73            = "DB2.iSeries.73";
 		public const string DB2i73GAS         = "DB2.iSeries.73.GAS";

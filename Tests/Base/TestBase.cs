@@ -146,15 +146,17 @@ namespace Tests
 
 			    switch (provider.Value.Provider)
 			    {
-			        case TestProvName.DB2i:
+                    case TestProvName.DB2i_DB2Connect:
+                    case TestProvName.DB2i:
 			        case TestProvName.DB2iGAS :
 			        case TestProvName.DB2i73GAS:
 					case TestProvName.DB2i73:
                    DataConnection.AddDataProvider(
 						    provider.Value.Provider,
-						    new DB2iSeriesDataProvider(provider.Value.Provider,
-							    provider.Value.Provider.Contains(".73") ? DB2iSeriesLevels.V7_1_38 : DB2iSeriesLevels.Any,
-							    provider.Value.Provider.Contains(".GAS")));
+						    new DB2iSeriesDataProvider(provider.Value.Provider)//,
+							    //provider.Value.Provider.Contains(".73") ? DB2iSeriesLevels.V7_1_38 : DB2iSeriesLevels.Any,
+							    //provider.Value.Provider.Contains(".GAS"))
+                                );
 
 					    DataConnection.AddOrSetConfiguration(
 						    provider.Value.Provider,
@@ -278,7 +280,8 @@ namespace Tests
 			ProviderName.OracleManaged,
 			ProviderName.SqlCe,
 			ProviderName.SQLiteClassic,
-		    TestProvName.DB2i,
+            TestProvName.DB2i_DB2Connect,
+            TestProvName.DB2i,
 		    TestProvName.DB2iGAS,
 			TestProvName.DB2i73,
 			TestProvName.DB2i73GAS,

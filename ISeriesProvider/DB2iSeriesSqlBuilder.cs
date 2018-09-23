@@ -13,14 +13,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 	public class DB2iSeriesSqlBuilder : BasicSqlBuilder
 	{
-		public static DB2iSeriesIdentifierQuoteMode IdentifierQuoteMode = DB2iSeriesIdentifierQuoteMode.None;
+        public static DB2iSeriesIdentifierQuoteMode IdentifierQuoteMode = DB2iSeriesIdentifierQuoteMode.None;
+
 	    protected readonly bool mapGuidAsString;
 
 		public DB2iSeriesSqlBuilder(ISqlOptimizer sqlOptimizer, SqlProviderFlags sqlProviderFlags,
 			ValueToSqlConverter valueToSqlConverter)
 			: base(sqlOptimizer, sqlProviderFlags, valueToSqlConverter)
 		{
-			this.mapGuidAsString = sqlProviderFlags.CustomFlags.Contains(DB2iSeriesTools.MapGuidAsString);
+			this.mapGuidAsString = sqlProviderFlags.CustomFlags.Contains(nameof(DB2iSeriesDataProviderOptions.MapGuidAsString));
 		}
 
 		protected override string LimitFormat(SelectQuery selectQuery) => selectQuery.Select.SkipValue == null ? " FETCH FIRST {0} ROWS ONLY" : null;
@@ -412,6 +413,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected override string GetProviderTypeName(IDbDataParameter parameter)
 		{
+            //Added support for Db2Connect and HIS parameter Types
             dynamic p = parameter;
             var pType = p.GetType();
             if (pType.Name == "DB2Parameter")
@@ -462,7 +464,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case QueryElementType.ExprExprPredicate:
 
 					var ep = (SqlPredicate.ExprExpr)predicate;
-
+                    //Temporary DateTime fix
                     if (ep.Expr1 != null && (ep.Expr1 is SqlExpression || ep.Expr1 is SqlField)
                         && ep.Expr2 != null && ep.Expr2 is SqlParameter p2)
                     {

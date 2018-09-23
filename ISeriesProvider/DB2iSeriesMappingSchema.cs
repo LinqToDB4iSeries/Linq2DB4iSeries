@@ -12,18 +12,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	using SqlQuery;
 
 	public class DB2iSeriesMappingSchema : MappingSchema
-    { 
-	    public DB2iSeriesMappingSchema() : this(DB2iSeriesProviderName.DB2)
-	    {
-	    }
+    {
+        internal static readonly DB2iSeriesMappingSchema Instance = new DB2iSeriesMappingSchema();
+        internal static readonly DB2iSeriesMappingSchema Instance_GAS = new DB2iSeriesMappingSchema(true);
 
-		public DB2iSeriesMappingSchema(string configuration) : base(configuration)
-        { 
-		    if (configuration != DB2iSeriesProviderName.DB2_GAS)
-		    {
+        internal DB2iSeriesMappingSchema(bool mapGuidAsString = false) : base(DB2iSeriesProviderName.DB2)
+        {
+            if (mapGuidAsString)
 		        SetValueToSqlConverter(typeof(Guid), (sb, dt, v) => ConvertGuidToSql(sb, (Guid)v));
-            }
-
+            
 	        ColumnNameComparer = StringComparer.OrdinalIgnoreCase;
 
 			SetDataType(typeof(string), new SqlDataType(DataType.NVarChar, typeof(string), 255));
@@ -31,7 +28,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetValueToSqlConverter(typeof(char), (sb, dt, v) => ConvertCharToSql(sb, (char)v));
 			SetValueToSqlConverter(typeof(DateTime), (sb, dt, v) => ConvertDateTimeToSql(sb, dt, (DateTime)v));
 
-			AddMetadataReader(new DB2iSeriesMetadataReader(configuration));
+			AddMetadataReader(new DB2iSeriesMetadataReader(DB2iSeriesProviderName.DB2));
 #if !NETSTANDARD2_0
 			AddMetadataReader(new DB2iSeriesAttributeReader());
 #endif
@@ -87,5 +84,37 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			  .Append(s.Substring(16, 16))
 			  .Append("' as char(16) for bit data)");
 		}
+    }
+
+    public class DB2iSeriesAccessClientMappingSchema : MappingSchema
+    {
+        public DB2iSeriesAccessClientMappingSchema()
+            : base(DB2iSeriesProviderName.DB2iSeries_AccessClient, DB2iSeriesMappingSchema.Instance)
+        {
+        }
+    }
+
+    public class DB2iSeriesDB2ConnectMappingSchema : MappingSchema
+    {
+        public DB2iSeriesDB2ConnectMappingSchema()
+            : base(DB2iSeriesProviderName.DB2iSeries_DB2Connect, DB2iSeriesMappingSchema.Instance)
+        {
+        }
+    }
+
+    public class DB2iSeriesAccessClientMappingSchema_GAS : MappingSchema
+    {
+        public DB2iSeriesAccessClientMappingSchema_GAS()
+            : base(DB2iSeriesProviderName.DB2iSeries_AccessClient_GAS, DB2iSeriesMappingSchema.Instance_GAS)
+        {
+        }
+    }
+
+    public class DB2iSeriesDB2ConnectMappingSchema_GAS : MappingSchema
+    {
+        public DB2iSeriesDB2ConnectMappingSchema_GAS()
+            : base(DB2iSeriesProviderName.DB2iSeries_DB2Connect_GAS, DB2iSeriesMappingSchema.Instance_GAS)
+        {
+        }
     }
 }
