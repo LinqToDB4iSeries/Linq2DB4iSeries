@@ -150,31 +150,29 @@ namespace LinqToDB.DataProvider.DB2iSeries
             BuildDB2ConnectMappings();
         }
 
-        private static object GetNullValue(Type type)
-        {
-            dynamic getValue = Expression.Lambda<Func<object>>(Expression.Convert(Expression.Field(null, type, "Null"), typeof(object)));
-            return getValue.Compile()();
-        }
-
         protected void BuildDB2ConnectMappings()
         {
-            AddScalarType(DB2Types.Instance.DB2Int64, GetNullValue(DB2Types.Instance.DB2Int64), true, DataType.Int64);
-            AddScalarType(DB2Types.Instance.DB2Int32, GetNullValue(DB2Types.Instance.DB2Int32), true, DataType.Int32);
-            AddScalarType(DB2Types.Instance.DB2Int16, GetNullValue(DB2Types.Instance.DB2Int16), true, DataType.Int16);
-            AddScalarType(DB2Types.Instance.DB2Decimal, GetNullValue(DB2Types.Instance.DB2Decimal), true, DataType.Decimal);
-            AddScalarType(DB2Types.Instance.DB2DecimalFloat, GetNullValue(DB2Types.Instance.DB2DecimalFloat), true, DataType.Decimal);
-            AddScalarType(DB2Types.Instance.DB2Real, GetNullValue(DB2Types.Instance.DB2Real), true, DataType.Single);
-            AddScalarType(DB2Types.Instance.DB2Real370, GetNullValue(DB2Types.Instance.DB2Real370), true, DataType.Single);
-            AddScalarType(DB2Types.Instance.DB2Double, GetNullValue(DB2Types.Instance.DB2Double), true, DataType.Double);
-            AddScalarType(DB2Types.Instance.DB2String, GetNullValue(DB2Types.Instance.DB2String), true, DataType.NVarChar);
-            AddScalarType(DB2Types.Instance.DB2Clob, GetNullValue(DB2Types.Instance.DB2Clob), true, DataType.NText);
-            AddScalarType(DB2Types.Instance.DB2Binary, GetNullValue(DB2Types.Instance.DB2Binary), true, DataType.VarBinary);
-            AddScalarType(DB2Types.Instance.DB2Blob, GetNullValue(DB2Types.Instance.DB2Blob), true, DataType.Blob);
-            AddScalarType(DB2Types.Instance.DB2Date, GetNullValue(DB2Types.Instance.DB2Date), true, DataType.Date);
-            AddScalarType(DB2Types.Instance.DB2Time, GetNullValue(DB2Types.Instance.DB2Time), true, DataType.Time);
-            AddScalarType(DB2Types.Instance.DB2TimeStamp, GetNullValue(DB2Types.Instance.DB2TimeStamp), true, DataType.DateTime2);
-            AddScalarType(DB2Types.Instance.DB2RowId, GetNullValue(DB2Types.Instance.DB2RowId), true, DataType.VarBinary);
-            AddScalarType(DB2Types.Instance.DB2Xml, DB2.DB2Tools.IsCore ? null : GetNullValue(DB2Types.Instance.DB2Xml), true, DataType.Xml);
+            foreach (var type in DB2Types.AllTypes)
+                AddScalarType(type.Type, type.NullValue, type.CanBeNull, type.DataType);
+            
+
+            //AddScalarType(DB2Types.Instance.DB2Int64, GetNullValue(DB2Types.Instance.DB2Int64), true, DataType.Int64);
+            //AddScalarType(DB2Types.Instance.DB2Int32, GetNullValue(DB2Types.Instance.DB2Int32), true, DataType.Int32);
+            //AddScalarType(DB2Types.Instance.DB2Int16, GetNullValue(DB2Types.Instance.DB2Int16), true, DataType.Int16);
+            //AddScalarType(DB2Types.Instance.DB2Decimal, GetNullValue(DB2Types.Instance.DB2Decimal), true, DataType.Decimal);
+            //AddScalarType(DB2Types.Instance.DB2DecimalFloat, GetNullValue(DB2Types.Instance.DB2DecimalFloat), true, DataType.Decimal);
+            //AddScalarType(DB2Types.Instance.DB2Real, GetNullValue(DB2Types.Instance.DB2Real), true, DataType.Single);
+            //AddScalarType(DB2Types.Instance.DB2Real370, GetNullValue(DB2Types.Instance.DB2Real370), true, DataType.Single);
+            //AddScalarType(DB2Types.Instance.DB2Double, GetNullValue(DB2Types.Instance.DB2Double), true, DataType.Double);
+            //AddScalarType(DB2Types.Instance.DB2String, GetNullValue(DB2Types.Instance.DB2String), true, DataType.NVarChar);
+            //AddScalarType(DB2Types.Instance.DB2Clob, GetNullValue(DB2Types.Instance.DB2Clob), true, DataType.NText);
+            //AddScalarType(DB2Types.Instance.DB2Binary, GetNullValue(DB2Types.Instance.DB2Binary), true, DataType.VarBinary);
+            //AddScalarType(DB2Types.Instance.DB2Blob, GetNullValue(DB2Types.Instance.DB2Blob), true, DataType.Blob);
+            //AddScalarType(DB2Types.Instance.DB2Date, GetNullValue(DB2Types.Instance.DB2Date), true, DataType.Date);
+            //AddScalarType(DB2Types.Instance.DB2Time, GetNullValue(DB2Types.Instance.DB2Time), true, DataType.Time);
+            //AddScalarType(DB2Types.Instance.DB2TimeStamp, GetNullValue(DB2Types.Instance.DB2TimeStamp), true, DataType.DateTime2);
+            //AddScalarType(DB2Types.Instance.DB2RowId, GetNullValue(DB2Types.Instance.DB2RowId), true, DataType.VarBinary);
+            //AddScalarType(DB2Types.Instance.DB2Xml, DB2.DB2Tools.IsCore ? null : GetNullValue(DB2Types.Instance.DB2Xml), true, DataType.Xml);
         }
     }
 

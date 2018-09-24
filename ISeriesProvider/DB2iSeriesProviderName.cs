@@ -92,7 +92,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         public static bool IsVirtual(string providerName)
         {
-            return providerName != actualNames[providerName];
+            return actualNames.TryGetValue(providerName, out var actualName) 
+                && providerName != actualName;
         }
     }
 }
