@@ -7,7 +7,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	{
 		Func<object> _creator;
 
-		public dynamic CreateInstance()
+        public TypeCreator()
+        {
+        }
+
+        public TypeCreator(Type type) : base(type)
+        {
+        }
+
+        public dynamic CreateInstance()
 		{
 			if (_creator == null)
 			{
@@ -22,7 +30,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	{
 		Func<T, object> _creator;
 
-		public dynamic CreateInstance(T value)
+        public TypeCreator()
+        {
+        }
+
+        public TypeCreator(Type type) : base(type)
+        {
+        }
+
+        public dynamic CreateInstance(T value)
 		{
 			return (_creator ?? (_creator = GetCreator<T>()))(value);
 		}
@@ -32,7 +48,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	{
 		Func<T, object> _creator;
 
-		public dynamic CreateInstance(T value)
+        public TypeCreator()
+        {
+        }
+
+        public TypeCreator(Type type) : base(type)
+        {
+        }
+
+        public dynamic CreateInstance(T value)
 		{
 			return (_creator ?? (_creator = GetCreator<T>()))(value);
 		}
@@ -42,7 +66,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	{
 		Func<T, object> _paramCreator;
 
-		public dynamic CreateInstance(T value)
+        public TypeCreator()
+        {
+        }
+
+        public TypeCreator(Type type) : base(type)
+        {
+        }
+
+        public dynamic CreateInstance(T value)
 		{
 			return (_paramCreator ?? (_paramCreator = GetCreator<T>()))(value);
 		}

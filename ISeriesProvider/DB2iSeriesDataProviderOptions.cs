@@ -73,7 +73,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         public bool Equals(DB2iSeriesDataProviderOptions other)
         {
-            throw new NotImplementedException();
+            return 
+                AdoProviderType == other.AdoProviderType 
+                && MinLevel == other.MinLevel
+                && MapGuidAsString == other.MapGuidAsString;
         }
 
         public static bool operator ==(DB2iSeriesDataProviderOptions x, DB2iSeriesDataProviderOptions y)

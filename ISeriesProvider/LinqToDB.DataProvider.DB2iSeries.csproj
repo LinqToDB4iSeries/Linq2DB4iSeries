@@ -57,7 +57,7 @@
   </ItemGroup>
 	<ItemGroup>
 	  <Reference Include="IBM.Data.DB2">
-	    <HintPath>C:\Program Files\IBM\SQLLIB\BIN\netf40\IBM.Data.DB2.dll</HintPath>
+	    <HintPath>..\..\..\IBM\SQLLIB\BIN\netf40_32\IBM.Data.DB2.dll</HintPath>
 	  </Reference>
 	  <Reference Include="IBM.Data.DB2.iSeries">
 	    <HintPath>..\Redist\IBM.Data.DB2.iSeries.dll</HintPath>

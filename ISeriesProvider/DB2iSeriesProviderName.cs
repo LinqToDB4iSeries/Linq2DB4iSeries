@@ -29,7 +29,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
         //Provider names per ADO provider type for GAS
         [DataProviderOptions(DB2iSeriesLevels.Any, true, DB2iSeriesAdoProviderType.AccessClient)]
         public const string DB2iSeries_AccessClient_GAS = "DB2.iSeries.AccessClient.GAS";
-        [DataProviderOptions(DB2iSeriesLevels.Any, false, DB2iSeriesAdoProviderType.DB2Connect)]
+        [DataProviderOptions(DB2iSeriesLevels.Any, true, DB2iSeriesAdoProviderType.DB2Connect)]
         public const string DB2iSeries_DB2Connect_GAS = "DB2.iSeries.DB2Connect.GAS";
 
         //Provider names including version
@@ -40,7 +40,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         [DataProviderOptions(DB2iSeriesLevels.V7_1_38, true, DB2iSeriesAdoProviderType.AccessClient)]
         public const string DB2iSeries_AccessClient_73_GAS = "DB2.iSeries.AccessClient.73.GAS";
-        [DataProviderOptions(DB2iSeriesLevels.V7_1_38, true, DB2iSeriesAdoProviderType.AccessClient)]
+        [DataProviderOptions(DB2iSeriesLevels.V7_1_38, true, DB2iSeriesAdoProviderType.DB2Connect)]
         public const string DB2iSeries_DB2Connect_73_GAS = "DB2.iSeries.DB2Connect.73.GAS";
 
         //Turned to hashset for faster query execution
@@ -80,11 +80,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
             options.ToDictionary(x => x.Value, x => x.Key);
 
         public static string GetFromOptions(DB2iSeriesDataProviderOptions options) => fromOptions[options];
-        public static DB2iSeriesDataProviderOptions GetOptions(string providerName) => options[providerName];
+        public static DB2iSeriesDataProviderOptions GetOptions(string providerName) { var c = GetActualProviderName(providerName); return  options[GetActualProviderName(providerName)]; }
 
         public static string GetActualProviderName(string providerName)
         {
-            return actualNames[providerName];
+            if (actualNames.TryGetValue(providerName, out var actualName))
+                return actualName;
+
+            return providerName;
         }
 
         public static bool IsVirtual(string providerName)

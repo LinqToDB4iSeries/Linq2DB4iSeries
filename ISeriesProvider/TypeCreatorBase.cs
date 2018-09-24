@@ -7,6 +7,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	{
 		public Type Type;
 
+        public TypeCreatorBase()
+        {
+
+        }
+
+        public TypeCreatorBase(Type type)
+        {
+            Type = type;
+        }
+
 		protected Func<T, object> GetCreator<T>()
 		{
 			var ctor = Type.GetConstructor(new[] { typeof(T) });

@@ -158,23 +158,23 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         protected void BuildDB2ConnectMappings()
         {
-            AddScalarType(DB2.DB2Types.DB2Int64, GetNullValue(DB2.DB2Types.DB2Int64), true, DataType.Int64);
-            AddScalarType(DB2.DB2Types.DB2Int32, GetNullValue(DB2.DB2Types.DB2Int32), true, DataType.Int32);
-            AddScalarType(DB2.DB2Types.DB2Int16, GetNullValue(DB2.DB2Types.DB2Int16), true, DataType.Int16);
-            AddScalarType(DB2.DB2Types.DB2Decimal, GetNullValue(DB2.DB2Types.DB2Decimal), true, DataType.Decimal);
-            AddScalarType(DB2.DB2Types.DB2DecimalFloat, GetNullValue(DB2.DB2Types.DB2DecimalFloat), true, DataType.Decimal);
-            AddScalarType(DB2.DB2Types.DB2Real, GetNullValue(DB2.DB2Types.DB2Real), true, DataType.Single);
-            AddScalarType(DB2.DB2Types.DB2Real370, GetNullValue(DB2.DB2Types.DB2Real370), true, DataType.Single);
-            AddScalarType(DB2.DB2Types.DB2Double, GetNullValue(DB2.DB2Types.DB2Double), true, DataType.Double);
-            AddScalarType(DB2.DB2Types.DB2String, GetNullValue(DB2.DB2Types.DB2String), true, DataType.NVarChar);
-            AddScalarType(DB2.DB2Types.DB2Clob, GetNullValue(DB2.DB2Types.DB2Clob), true, DataType.NText);
-            AddScalarType(DB2.DB2Types.DB2Binary, GetNullValue(DB2.DB2Types.DB2Binary), true, DataType.VarBinary);
-            AddScalarType(DB2.DB2Types.DB2Blob, GetNullValue(DB2.DB2Types.DB2Blob), true, DataType.Blob);
-            AddScalarType(DB2.DB2Types.DB2Date, GetNullValue(DB2.DB2Types.DB2Date), true, DataType.Date);
-            AddScalarType(DB2.DB2Types.DB2Time, GetNullValue(DB2.DB2Types.DB2Time), true, DataType.Time);
-            AddScalarType(DB2.DB2Types.DB2TimeStamp, GetNullValue(DB2.DB2Types.DB2TimeStamp), true, DataType.DateTime2);
-            AddScalarType(DB2.DB2Types.DB2RowId, GetNullValue(DB2.DB2Types.DB2RowId), true, DataType.VarBinary);
-            AddScalarType(DB2.DB2Types.DB2Xml, DB2.DB2Tools.IsCore ? null : GetNullValue(DB2.DB2Types.DB2Xml), true, DataType.Xml);
+            AddScalarType(DB2Types.Instance.DB2Int64, GetNullValue(DB2Types.Instance.DB2Int64), true, DataType.Int64);
+            AddScalarType(DB2Types.Instance.DB2Int32, GetNullValue(DB2Types.Instance.DB2Int32), true, DataType.Int32);
+            AddScalarType(DB2Types.Instance.DB2Int16, GetNullValue(DB2Types.Instance.DB2Int16), true, DataType.Int16);
+            AddScalarType(DB2Types.Instance.DB2Decimal, GetNullValue(DB2Types.Instance.DB2Decimal), true, DataType.Decimal);
+            AddScalarType(DB2Types.Instance.DB2DecimalFloat, GetNullValue(DB2Types.Instance.DB2DecimalFloat), true, DataType.Decimal);
+            AddScalarType(DB2Types.Instance.DB2Real, GetNullValue(DB2Types.Instance.DB2Real), true, DataType.Single);
+            AddScalarType(DB2Types.Instance.DB2Real370, GetNullValue(DB2Types.Instance.DB2Real370), true, DataType.Single);
+            AddScalarType(DB2Types.Instance.DB2Double, GetNullValue(DB2Types.Instance.DB2Double), true, DataType.Double);
+            AddScalarType(DB2Types.Instance.DB2String, GetNullValue(DB2Types.Instance.DB2String), true, DataType.NVarChar);
+            AddScalarType(DB2Types.Instance.DB2Clob, GetNullValue(DB2Types.Instance.DB2Clob), true, DataType.NText);
+            AddScalarType(DB2Types.Instance.DB2Binary, GetNullValue(DB2Types.Instance.DB2Binary), true, DataType.VarBinary);
+            AddScalarType(DB2Types.Instance.DB2Blob, GetNullValue(DB2Types.Instance.DB2Blob), true, DataType.Blob);
+            AddScalarType(DB2Types.Instance.DB2Date, GetNullValue(DB2Types.Instance.DB2Date), true, DataType.Date);
+            AddScalarType(DB2Types.Instance.DB2Time, GetNullValue(DB2Types.Instance.DB2Time), true, DataType.Time);
+            AddScalarType(DB2Types.Instance.DB2TimeStamp, GetNullValue(DB2Types.Instance.DB2TimeStamp), true, DataType.DateTime2);
+            AddScalarType(DB2Types.Instance.DB2RowId, GetNullValue(DB2Types.Instance.DB2RowId), true, DataType.VarBinary);
+            AddScalarType(DB2Types.Instance.DB2Xml, DB2.DB2Tools.IsCore ? null : GetNullValue(DB2Types.Instance.DB2Xml), true, DataType.Xml);
         }
     }
 

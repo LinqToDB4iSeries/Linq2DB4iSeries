@@ -178,51 +178,51 @@ namespace LinqToDB.DataProvider.DB2iSeries
         private void OnConnectionTypeCreated_DB2Connect(Type connectionType)
         {
             //Avoid duplicate creation of static DB2 types of a standard DB2 provider has already been created
-            if (DB2.DB2Types.ConnectionType == null)
-            {
-                var prop = typeof(DB2.DB2Types).GetPropertyEx(nameof(DB2.DB2Types.ConnectionType));
-                prop.SetValue(null, connectionType);
+            //if (DB2.DB2Types.ConnectionType == null)
+            //{
+            //    var prop = typeof(DB2.DB2Types).GetPropertyEx(nameof(DB2.DB2Types.ConnectionType));
+            //    prop.SetValue(null, connectionType);
 
-                var assembly = connectionType.AssemblyEx();
-                Type getType(string typeName) => assembly.GetType($"{DB2iSeriesTools.NamespaceNameDB2Types}.{typeName}", true);
+            //    var assembly = connectionType.AssemblyEx();
+            //    Type getType(string typeName) => assembly.GetType($"{DB2iSeriesTools.NamespaceNameDB2Types}.{typeName}", true);
 
-                DB2.DB2Types.DB2Int64.Type = DB2.DB2Types.DB2Int64.Type ?? getType(nameof(DB2.DB2Types.DB2Int64));
-                DB2.DB2Types.DB2Int16.Type = DB2.DB2Types.DB2Int16.Type ?? getType(nameof(DB2.DB2Types.DB2Int16));
-                DB2.DB2Types.DB2Decimal.Type = DB2.DB2Types.DB2Decimal.Type ?? getType(nameof(DB2.DB2Types.DB2Decimal));
-                DB2.DB2Types.DB2DecimalFloat.Type = DB2.DB2Types.DB2DecimalFloat.Type ?? getType(nameof(DB2.DB2Types.DB2DecimalFloat));
-                DB2.DB2Types.DB2Real.Type = DB2.DB2Types.DB2Real.Type ?? getType(nameof(DB2.DB2Types.DB2Real));
-                DB2.DB2Types.DB2Real370.Type = DB2.DB2Types.DB2Real370.Type ?? getType(nameof(DB2.DB2Types.DB2Real370));
-                DB2.DB2Types.DB2Double.Type = DB2.DB2Types.DB2Double.Type ?? getType(nameof(DB2.DB2Types.DB2Double));
-                DB2.DB2Types.DB2String.Type = DB2.DB2Types.DB2String.Type ?? getType(nameof(DB2.DB2Types.DB2String));
-                DB2.DB2Types.DB2Clob.Type = DB2.DB2Types.DB2Clob.Type ?? getType(nameof(DB2.DB2Types.DB2Clob));
-                DB2.DB2Types.DB2Binary.Type = DB2.DB2Types.DB2Binary.Type ?? getType(nameof(DB2.DB2Types.DB2Binary));
-                DB2.DB2Types.DB2Blob.Type = DB2.DB2Types.DB2Blob.Type ?? getType(nameof(DB2.DB2Types.DB2Blob));
-                DB2.DB2Types.DB2Date.Type = DB2.DB2Types.DB2Date.Type ?? getType(nameof(DB2.DB2Types.DB2Date));
-                DB2.DB2Types.DB2Time.Type = DB2.DB2Types.DB2Time.Type ?? getType(nameof(DB2.DB2Types.DB2Time));
-                DB2.DB2Types.DB2TimeStamp.Type = DB2.DB2Types.DB2TimeStamp.Type ?? getType(nameof(DB2.DB2Types.DB2TimeStamp));
-                DB2.DB2Types.DB2Xml = DB2.DB2Types.DB2Xml ?? getType(nameof(DB2.DB2Types.DB2Xml));
-                DB2.DB2Types.DB2RowId.Type = DB2.DB2Types.DB2RowId.Type ?? getType(nameof(DB2.DB2Types.DB2RowId));
-                //Disabled DateTime support
-                //DB2.DB2Types.DB2DateTime.Type = DB2.DB2Types.DB2DateTime.Type ?? getType(nameof(DB2.DB2Types.DB2DateTime));
-            }
+            //    DB2.DB2Types.DB2Int64.Type = DB2.DB2Types.DB2Int64.Type ?? getType(nameof(DB2.DB2Types.DB2Int64));
+            //    DB2.DB2Types.DB2Int16.Type = DB2.DB2Types.DB2Int16.Type ?? getType(nameof(DB2.DB2Types.DB2Int16));
+            //    DB2.DB2Types.DB2Decimal.Type = DB2.DB2Types.DB2Decimal.Type ?? getType(nameof(DB2.DB2Types.DB2Decimal));
+            //    DB2.DB2Types.DB2DecimalFloat.Type = DB2.DB2Types.DB2DecimalFloat.Type ?? getType(nameof(DB2.DB2Types.DB2DecimalFloat));
+            //    DB2.DB2Types.DB2Real.Type = DB2.DB2Types.DB2Real.Type ?? getType(nameof(DB2.DB2Types.DB2Real));
+            //    DB2.DB2Types.DB2Real370.Type = DB2.DB2Types.DB2Real370.Type ?? getType(nameof(DB2.DB2Types.DB2Real370));
+            //    DB2.DB2Types.DB2Double.Type = DB2.DB2Types.DB2Double.Type ?? getType(nameof(DB2.DB2Types.DB2Double));
+            //    DB2.DB2Types.DB2String.Type = DB2.DB2Types.DB2String.Type ?? getType(nameof(DB2.DB2Types.DB2String));
+            //    DB2.DB2Types.DB2Clob.Type = DB2.DB2Types.DB2Clob.Type ?? getType(nameof(DB2.DB2Types.DB2Clob));
+            //    DB2.DB2Types.DB2Binary.Type = DB2.DB2Types.DB2Binary.Type ?? getType(nameof(DB2.DB2Types.DB2Binary));
+            //    DB2.DB2Types.DB2Blob.Type = DB2.DB2Types.DB2Blob.Type ?? getType(nameof(DB2.DB2Types.DB2Blob));
+            //    DB2.DB2Types.DB2Date.Type = DB2.DB2Types.DB2Date.Type ?? getType(nameof(DB2.DB2Types.DB2Date));
+            //    DB2.DB2Types.DB2Time.Type = DB2.DB2Types.DB2Time.Type ?? getType(nameof(DB2.DB2Types.DB2Time));
+            //    DB2.DB2Types.DB2TimeStamp.Type = DB2.DB2Types.DB2TimeStamp.Type ?? getType(nameof(DB2.DB2Types.DB2TimeStamp));
+            //    DB2.DB2Types.DB2Xml = DB2.DB2Types.DB2Xml ?? getType(nameof(DB2.DB2Types.DB2Xml));
+            //    DB2.DB2Types.DB2RowId.Type = DB2.DB2Types.DB2RowId.Type ?? getType(nameof(DB2.DB2Types.DB2RowId));
+            //    //Disabled DateTime support
+            //    //DB2.DB2Types.DB2DateTime.Type = DB2.DB2Types.DB2DateTime.Type ?? getType(nameof(DB2.DB2Types.DB2DateTime));
+            //}
 
-            SetProviderField(DB2.DB2Types.DB2Int64, typeof(Int64), "GetDB2Int64");
-            SetProviderField(DB2.DB2Types.DB2Int32, typeof(Int32), "GetDB2Int32");
-            SetProviderField(DB2.DB2Types.DB2Int16, typeof(Int16), "GetDB2Int16");
-            SetProviderField(DB2.DB2Types.DB2Decimal, typeof(Decimal), "GetDB2Decimal");
-            SetProviderField(DB2.DB2Types.DB2DecimalFloat, typeof(Decimal), "GetDB2DecimalFloat");
-            SetProviderField(DB2.DB2Types.DB2Real, typeof(Single), "GetDB2Real");
-            SetProviderField(DB2.DB2Types.DB2Real370, typeof(Single), "GetDB2Real370");
-            SetProviderField(DB2.DB2Types.DB2Double, typeof(Double), "GetDB2Double");
-            SetProviderField(DB2.DB2Types.DB2String, typeof(String), "GetDB2String");
-            SetProviderField(DB2.DB2Types.DB2Clob, typeof(String), "GetDB2Clob");
-            SetProviderField(DB2.DB2Types.DB2Binary, typeof(byte[]), "GetDB2Binary");
-            SetProviderField(DB2.DB2Types.DB2Blob, typeof(byte[]), "GetDB2Blob");
-            SetProviderField(DB2.DB2Types.DB2Date, typeof(DateTime), "GetDB2Date");
-            SetProviderField(DB2.DB2Types.DB2Time, typeof(TimeSpan), "GetDB2Time");
-            SetProviderField(DB2.DB2Types.DB2TimeStamp, typeof(DateTime), "GetDB2TimeStamp");
-            SetProviderField(DB2.DB2Types.DB2Xml, typeof(string), "GetDB2Xml");
-            SetProviderField(DB2.DB2Types.DB2RowId, typeof(byte[]), "GetDB2RowId");
+            SetProviderField(DB2Types.Instance.DB2Int64, typeof(Int64), "GetDB2Int64");
+            SetProviderField(DB2Types.Instance.DB2Int32, typeof(Int32), "GetDB2Int32");
+            SetProviderField(DB2Types.Instance.DB2Int16, typeof(Int16), "GetDB2Int16");
+            SetProviderField(DB2Types.Instance.DB2Decimal, typeof(Decimal), "GetDB2Decimal");
+            SetProviderField(DB2Types.Instance.DB2DecimalFloat, typeof(Decimal), "GetDB2DecimalFloat");
+            SetProviderField(DB2Types.Instance.DB2Real, typeof(Single), "GetDB2Real");
+            SetProviderField(DB2Types.Instance.DB2Real370, typeof(Single), "GetDB2Real370");
+            SetProviderField(DB2Types.Instance.DB2Double, typeof(Double), "GetDB2Double");
+            SetProviderField(DB2Types.Instance.DB2String, typeof(String), "GetDB2String");
+            SetProviderField(DB2Types.Instance.DB2Clob, typeof(String), "GetDB2Clob");
+            SetProviderField(DB2Types.Instance.DB2Binary, typeof(byte[]), "GetDB2Binary");
+            SetProviderField(DB2Types.Instance.DB2Blob, typeof(byte[]), "GetDB2Blob");
+            SetProviderField(DB2Types.Instance.DB2Date, typeof(DateTime), "GetDB2Date");
+            SetProviderField(DB2Types.Instance.DB2Time, typeof(TimeSpan), "GetDB2Time");
+            SetProviderField(DB2Types.Instance.DB2TimeStamp, typeof(DateTime), "GetDB2TimeStamp");
+            SetProviderField(DB2Types.Instance.DB2Xml, typeof(string), "GetDB2Xml");
+            SetProviderField(DB2Types.Instance.DB2RowId, typeof(byte[]), "GetDB2RowId");
 
             //MappingSchema.AddScalarType(DB2.DB2Types.DB2Int64, GetNullValue(DB2.DB2Types.DB2Int64), true, DataType.Int64);
             //MappingSchema.AddScalarType(DB2.DB2Types.DB2Int32, GetNullValue(DB2.DB2Types.DB2Int32), true, DataType.Int32);
