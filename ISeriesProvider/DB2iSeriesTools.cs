@@ -11,47 +11,42 @@ namespace LinqToDB.DataProvider.DB2iSeries
 {
     using System.Data.Common;
     using System.Linq;
-    using System.Linq.Expressions;
-    using System.Reflection;
     using Configuration;
     using Data;
 
     public static class DB2iSeriesTools
     {
-        #region Reflection Constants
+        #region Public Settings
 
-        internal const string AssemblyName_AccessClient = "IBM.Data.DB2.iSeries";
-        internal const string AssemblyName_DB2Connect_Net = "IBM.Data.DB2";
-        internal const string AssemblyName_DB2Connect_Core = "IBM.Data.DB2.Core";
-        internal const string NamespaceNameDB2Types = "IBM.Data.DB2Types";
-        
+        public static bool AutoDetectProvider { get; set; }
+        public static DB2iSeriesAdoProviderType DefaultAdoProviderType { get; set; } = DB2iSeriesAdoProviderType.AccessClient;
 
-        internal static readonly string AssemblyName_DB2Connect = DB2.DB2Tools.AssemblyName;
-        internal static readonly string NamespaceName_DB2Connect = AssemblyName_DB2Connect;
+        #endregion
 
-        internal static readonly string ConnectionTypeName_AccessClient = AssemblyName_AccessClient + ".iDB2Connection, " + AssemblyName_AccessClient;
-        internal static readonly string DataReaderTypeName_AccessClient = AssemblyName_AccessClient + ".iDB2DataReader, " + AssemblyName_AccessClient;
+        #region Type Helpers
 
-        internal static readonly string ConnectionTypeName_DB2Connect = AssemblyName_DB2Connect + ".DB2Connection, " + AssemblyName_DB2Connect;
-        internal static readonly string DataReaderTypeName_DB2Connect = AssemblyName_DB2Connect + ".DB2DataReader, " + AssemblyName_DB2Connect;
-
-        internal static readonly string TypeNameDB2ConnectionStringBuilder_AccessClient = AssemblyName_AccessClient + ".iDB2ConnectionStringBuilder";
-        internal static readonly string TypeNameDB2ConnectionStringBuilder_DB2Connect = AssemblyName_DB2Connect + ".DB2ConnectionStringBuilder";
-
-        internal static readonly Lazy<Type> ConnectionType_AccessClient = new Lazy<Type>(() => Type.GetType(GetConnectionTypeName(DB2iSeriesAdoProviderType.AccessClient), true));
-        internal static readonly Lazy<Type> ConnectionType_DB2Connect = new Lazy<Type>(() => Type.GetType(GetConnectionTypeName(DB2iSeriesAdoProviderType.DB2Connect), true));
+        public static string GetProviderSpecificTypeNamespace(DB2iSeriesAdoProviderType adoProviderType)
+        {
+            switch (adoProviderType)
+            {
+                case DB2iSeriesAdoProviderType.DB2Connect:
+                    return DB2Types.TypesNamespaceName;
+                //case DB2iSeriesAdoProviderType.AccessClient:
+                default:
+                    return DB2iSeriesTypes.TypesNamespaceName;
+            }
+        }
 
         public static string GetConnectionTypeName(DB2iSeriesAdoProviderType dB2AdoProviderType)
         {
             switch (dB2AdoProviderType)
             {
                 case DB2iSeriesAdoProviderType.DB2Connect:
-                    return ConnectionTypeName_DB2Connect;
-                case DB2iSeriesAdoProviderType.AccessClient:
-                    return ConnectionTypeName_AccessClient;
+                    return DB2Types.ConnectionTypeName;
+                //case DB2iSeriesAdoProviderType.AccessClient:
+                default:
+                    return DB2iSeriesTypes.ConnectionTypeName;
             }
-
-            throw new NotSupportedException();
         }
 
         public static string GetDataReaderTypeName(DB2iSeriesAdoProviderType dB2AdoProviderType)
@@ -59,12 +54,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
             switch (dB2AdoProviderType)
             {
                 case DB2iSeriesAdoProviderType.DB2Connect:
-                    return DataReaderTypeName_DB2Connect;
-                case DB2iSeriesAdoProviderType.AccessClient:
-                    return DataReaderTypeName_AccessClient;
+                    return DB2Types.DataReaderTypeName;
+                //case DB2iSeriesAdoProviderType.AccessClient:
+                default:
+                    return DB2iSeriesTypes.DataReaderTypeName;
             }
-
-            throw new NotSupportedException();
         }
 
         public static string GetConnectionNamespace(DB2iSeriesAdoProviderType dB2AdoProviderType)
@@ -72,22 +66,23 @@ namespace LinqToDB.DataProvider.DB2iSeries
             switch (dB2AdoProviderType)
             {
                 case DB2iSeriesAdoProviderType.DB2Connect:
-                    return NamespaceName_DB2Connect;
-                case DB2iSeriesAdoProviderType.AccessClient:
-                    return AssemblyName_AccessClient;
+                    return DB2Types.NamespaceName;
+                //case DB2iSeriesAdoProviderType.AccessClient:
+                default:
+                    return DB2iSeriesTypes.NamespaceName;
             }
-
-            throw new NotSupportedException();
         }
 
         public static Type GetConnectionType(DB2iSeriesAdoProviderType dB2AdoProviderType)
         {
-            if (dB2AdoProviderType == DB2iSeriesAdoProviderType.AccessClient)
-                return ConnectionType_AccessClient.Value;
-            else if (dB2AdoProviderType == DB2iSeriesAdoProviderType.DB2Connect)
-                return ConnectionType_DB2Connect.Value;
-            else
-                throw new NotSupportedException();
+            switch (dB2AdoProviderType)
+            {
+                case DB2iSeriesAdoProviderType.DB2Connect:
+                    return DB2Types.ConnectionType;
+                //case DB2iSeriesAdoProviderType.AccessClient:
+                default:
+                    return DB2iSeriesTypes.ConnectionType;
+            }
         }
 
         public static DB2iSeriesAdoProviderType? GetAdoProviderType(IDbConnection connection)
@@ -103,13 +98,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
             else
                 return null;
         }
-
-        #endregion
-
-        #region Public Settings
-
-        public static bool AutoDetectProvider { get; set; }
-        public static DB2iSeriesAdoProviderType DefaultAdoProviderType { get; set; } = DB2iSeriesAdoProviderType.AccessClient;
 
         #endregion
 
@@ -139,10 +127,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
         internal const string IdentityColumnSql = "identity_val_local()";
 
         //Changed default naming convention to SQL as DB2 doesn't support it
-        public static string iSeriesDummyTableName(DB2iSeriesNamingConvention naming = DB2iSeriesNamingConvention.Sql)
+        public static string GetDB2DummyTableName(DB2iSeriesNamingConvention naming = DB2iSeriesNamingConvention.Sql)
         {
             var seperator = (naming == DB2iSeriesNamingConvention.System) ? "/" : ".";
             return string.Format("SYSIBM{0}SYSDUMMY1", seperator);
+        }
+
+        public static string GetDB2DummyTableName(IDbConnection dbConnection)
+        {
+            return GetDB2DummyTableName(GetNamingConvention(dbConnection));
         }
 
         #endregion
@@ -156,7 +149,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
                 .Select(x => new DB2iSeriesDataProvider(x))
             .ToDictionary(x => x.Name);
 
-        //All data providers dictionary, including virtual/mapped ones
+        //All data providers, including virtual/mapped ones
         static readonly IReadOnlyDictionary<string, DB2iSeriesDataProvider> dataProviders =
             DB2iSeriesProviderName.AllNames
                 .ToDictionary(x => x, x => actualDataProviders[DB2iSeriesProviderName.GetActualProviderName(x)]);
@@ -177,6 +170,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
         #endregion
 
         #region Provider Detector
+
+        private static DB2iSeriesAdoProviderType DetectFromConnection(IDbConnection dbConnection)
+        {
+            if (dbConnection.GetType() == DB2iSeriesTypes.ConnectionType)
+                return DB2iSeriesAdoProviderType.AccessClient;
+            if (dbConnection.GetType() == DB2Types.ConnectionType)
+                return DB2iSeriesAdoProviderType.DB2Connect;
+            else
+                throw new LinqToDBException("Unsopported provider type");
+        }
 
         private static DB2iSeriesAdoProviderType DetectFromConnectionString(string connectionString)
         {
@@ -199,9 +202,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
             if (TryGetDataProvider(css.Name, out var dataProvider))
                 return dataProvider;
 
-            if (css.ProviderName == AssemblyName_AccessClient)
+            if (css.ProviderName == DB2iSeriesTypes.AssemblyName)
                 return GetDataProvider(DB2iSeriesProviderName.DB2iSeries_AccessClient);
-            else if (css.ProviderName == AssemblyName_DB2Connect || css.ProviderName == AssemblyName_DB2Connect_Core)
+            else if (css.ProviderName == DB2Types.AssemblyName_Net || css.ProviderName == DB2Types.AssemblyName_Core)
                 return GetDataProvider(DB2iSeriesProviderName.DB2iSeries_DB2Connect);
 
             if (AutoDetectProvider)
@@ -334,22 +337,47 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         #region CreateConnectionStringBuilder
 
+        public static DB2iSeriesNamingConvention GetNamingConvention(IDbConnection dbConnection)
+        {
+            switch (DetectFromConnection(dbConnection))
+            {
+                case DB2iSeriesAdoProviderType.DB2Connect:
+                    return DB2iSeriesNamingConvention.Sql;
+                //case DB2iSeriesAdoProviderType.AccessClient:
+                default:
+                    if (!MemberAccessor.TryGetValue<int>(dbConnection, "Naming", out var naming))
+                        return naming == 1 ? DB2iSeriesNamingConvention.System : DB2iSeriesNamingConvention.Sql;
+
+                    return GetNamingConvetionFromConnectionString_AccessClient(dbConnection.ConnectionString);
+            }
+        }
+
         public static DB2iSeriesNamingConvention GetNamingConvention(string connectionString)
         {
-            var providerType = DetectFromConnectionString(connectionString);
-            if (providerType == DB2iSeriesAdoProviderType.DB2Connect)
-                return DB2iSeriesNamingConvention.Sql;
-            else
+            switch (DetectFromConnectionString(connectionString))
             {
-                var csb = CreateConnectionStringBuilder(providerType, connectionString);
-                return csb["Naming"]?.ToString() == "1" ? DB2iSeriesNamingConvention.System : DB2iSeriesNamingConvention.Sql;
+                case DB2iSeriesAdoProviderType.DB2Connect:
+                    return DB2iSeriesNamingConvention.Sql;
+                //case DB2iSeriesAdoProviderType.AccessClient:
+                default:
+                    return GetNamingConvetionFromConnectionString_AccessClient(connectionString);
             }
+        }
 
+        private static DB2iSeriesNamingConvention GetNamingConvetionFromConnectionString_AccessClient(string connectionString)
+        {
+            var csb = DB2iSeriesTypes.CreateConnectionStringBuilder(connectionString);
+            return csb["Naming"]?.ToString() == "1" ? DB2iSeriesNamingConvention.System : DB2iSeriesNamingConvention.Sql;
         }
 
         public static string GetSqlObjectDelimiter(string connectionString)
         {
             return GetNamingConvention(connectionString) == DB2iSeriesNamingConvention.Sql ? "." : "/";
+        }
+
+        public static string GetSqlObjectDelimiter(IDbConnection dbConnection)
+        {
+            return GetNamingConvention(dbConnection) == DB2iSeriesNamingConvention.Sql ? "." : "/";
         }
 
         public static DbConnectionStringBuilder CreateConnectionStringBuilder(string connectionString)

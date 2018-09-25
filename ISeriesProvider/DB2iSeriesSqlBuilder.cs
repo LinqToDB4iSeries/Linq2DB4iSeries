@@ -13,15 +13,17 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 	public class DB2iSeriesSqlBuilder : BasicSqlBuilder
 	{
-        public static DB2iSeriesIdentifierQuoteMode IdentifierQuoteMode = DB2iSeriesIdentifierQuoteMode.None;
+        
 
-	    protected readonly bool mapGuidAsString;
+	    //protected readonly bool mapGuidAsString;
+        protected readonly DB2iSeriesDataProviderOptions providerOptions;
 
-		public DB2iSeriesSqlBuilder(ISqlOptimizer sqlOptimizer, SqlProviderFlags sqlProviderFlags,
-			ValueToSqlConverter valueToSqlConverter)
+        public DB2iSeriesSqlBuilder(ISqlOptimizer sqlOptimizer, SqlProviderFlags sqlProviderFlags,
+			ValueToSqlConverter valueToSqlConverter, DB2iSeriesDataProviderOptions providerOptions)
 			: base(sqlOptimizer, sqlProviderFlags, valueToSqlConverter)
 		{
-			this.mapGuidAsString = sqlProviderFlags.CustomFlags.Contains(nameof(DB2iSeriesDataProviderOptions.MapGuidAsString));
+            //this.mapGuidAsString = sqlProviderFlags.CustomFlags.Contains(nameof(DB2iSeriesDataProviderOptions.MapGuidAsString));
+            this.providerOptions = providerOptions;
 		}
 
 		protected override string LimitFormat(SelectQuery selectQuery) => selectQuery.Select.SkipValue == null ? " FETCH FIRST {0} ROWS ONLY" : null;
@@ -119,7 +121,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case DataType.NVarChar:
 					return $"NVARCHAR({(dataType.Length == 0 ? 1 : dataType.Length)})";
 				case DataType.Guid:
-					return mapGuidAsString ? "CHAR(32)" : "char(16) for bit data";
+					return providerOptions.MapGuidAsString ? "CHAR(32)" : "char(16) for bit data";
 				default:
 					return dataType.DataType.ToString();
 			}
@@ -140,8 +142,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return colType;
 		}
 
-		protected override void BuildCommand(SqlStatement selectQuery, int commandNumber) =>
-			StringBuilder.AppendLine($"SELECT {DB2iSeriesTools.IdentityColumnSql} FROM {DB2iSeriesTools.iSeriesDummyTableName()}");
+		protected override void BuildCommand(SqlStatement selectQuery, int commandNumber) => 
+            StringBuilder.AppendLine($"SELECT {DB2iSeriesTools.IdentityColumnSql} FROM {DB2iSeriesTools.GetDB2DummyTableName(providerOptions.NamingConvention)}");
 
 		protected override void BuildCreateTableIdentityAttribute1(SqlField field) => StringBuilder.Append("GENERATED ALWAYS AS IDENTITY");
 
@@ -179,7 +181,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		}
 
         protected override void BuildInsertOrUpdateQuery(SqlInsertOrUpdateStatement insertOrUpdate) =>
-            BuildInsertOrUpdateQueryAsMerge(insertOrUpdate, $"FROM {DB2iSeriesTools.iSeriesDummyTableName()} FETCH FIRST 1 ROW ONLY");
+            BuildInsertOrUpdateQueryAsMerge(insertOrUpdate, $"FROM {DB2iSeriesTools.GetDB2DummyTableName(providerOptions.NamingConvention)} FETCH FIRST 1 ROW ONLY");
 
 
         protected override void BuildInsertOrUpdateQueryAsMerge(SqlInsertOrUpdateStatement insertOrUpdate, string fromDummyTable)
@@ -335,7 +337,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			{
 				AppendIndent().AppendLine("SELECT");
 				BuildColumns(selectQuery);
-				AppendIndent().AppendLine($"FROM {DB2iSeriesTools.iSeriesDummyTableName()} FETCH FIRST 1 ROW ONLY");
+				AppendIndent().AppendLine($"FROM {DB2iSeriesTools.GetDB2DummyTableName(providerOptions.NamingConvention)} FETCH FIRST 1 ROW ONLY");
 			}
 			else
 			{
@@ -386,14 +388,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case ConvertType.NameToQueryFieldAlias:
 				case ConvertType.NameToQueryTable:
 				case ConvertType.NameToQueryTableAlias:
-					if (value != null && IdentifierQuoteMode != DB2iSeriesIdentifierQuoteMode.None)
+					if (value != null && providerOptions.IdentifierQuoteMode != DB2iSeriesIdentifierQuoteMode.None)
 					{
 						var name = value.ToString();
 						if (name.Length > 0 && name[0] == '"')
 						{
 							return name;
 						}
-						if (IdentifierQuoteMode == DB2iSeriesIdentifierQuoteMode.Quote ||
+						if (providerOptions.IdentifierQuoteMode == DB2iSeriesIdentifierQuoteMode.Quote ||
 							name.StartsWith("_") ||
 							name
 
@@ -412,7 +414,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected override ISqlBuilder CreateSqlBuilder()
 		{
-			return new DB2iSeriesSqlBuilder(SqlOptimizer, SqlProviderFlags, ValueToSqlConverter);
+			return new DB2iSeriesSqlBuilder(SqlOptimizer, SqlProviderFlags, ValueToSqlConverter, providerOptions);
 		}
 
 		protected override string GetProviderTypeName(IDbDataParameter parameter)
@@ -424,8 +426,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
                 return p.DB2Type.ToString();
             else if (pType.Name == "MsDb2Parameter")
                 return p.MsDb2Type.ToString();
-            else
+            else if (pType.Name == "iDB2Parameter")
                 return p.iDB2DbType.ToString();
+            else
+                return parameter.DbType.ToString();
         }
 
 		protected override void BuildCreateTableNullAttribute(SqlField field, DefaultNullable defaulNullable)
@@ -468,6 +472,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case QueryElementType.ExprExprPredicate:
 
 					var ep = (SqlPredicate.ExprExpr)predicate;
+
                     //Temporary DateTime fix
                     if (ep.Expr1 != null && (ep.Expr1 is SqlExpression || ep.Expr1 is SqlField)
                         && ep.Expr2 != null && ep.Expr2 is SqlParameter p2)
@@ -496,13 +501,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
                         }
                     }
 
-                    if (ep.Expr1 is SqlFunction function && function.Name == "Date")
-					{
-						if (ep.Expr2 is SqlParameter parameter)
-						{
+                    if (ep.Expr1 is SqlFunction function && function.Name == "Date"
+					    && ep.Expr2 is SqlParameter parameter)
 							parameter.DataType = DataType.Date;
-						}
-					}
+					
 
 					break;
 			}

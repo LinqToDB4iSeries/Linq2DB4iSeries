@@ -42,7 +42,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
                 options.MaxBatchSize = MAX_ALLOWABLE_BATCH_SIZE;
             }
 
-            return MultipleRowsCopy2(dataConnection, options, source, " FROM " + DB2iSeriesTools.iSeriesDummyTableName());
+            return MultipleRowsCopy2(dataConnection, options, source, " FROM " + DB2iSeriesTools.GetDB2DummyTableName(dataConnection.Connection));
         }
     }
 }

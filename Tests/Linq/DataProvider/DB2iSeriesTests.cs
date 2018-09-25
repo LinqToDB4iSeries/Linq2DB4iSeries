@@ -872,75 +872,116 @@ namespace Tests.DataProvider
 		[Test, DataContextSource(false)]
 		public void TestTypes(string context)
 		{
-			dynamic int64Value = DB2iSeriesTypes.BigInt.CreateInstance(1);
-            dynamic int32Value = DB2iSeriesTypes.Integer.CreateInstance(2);
-            dynamic int16Value = DB2iSeriesTypes.SmallInt.CreateInstance(3);
-   //         DB2iSeriesTools.AfterInitialized(() =>
-			//{
-			//	int64Value = DB2iSeriesTypes.BigInt.CreateInstance(1);
-			//	int32Value = DB2iSeriesTypes.Integer.CreateInstance(2);
-			//	int16Value = DB2iSeriesTypes.SmallInt.CreateInstance(3);
-			//});
+            if (context.Contains("DB2Connect"))
+            {
+                dynamic int64Value = DB2Types.DB2Int64.CreateInstance(1);
+                dynamic int32Value = DB2Types.DB2Int32.CreateInstance(2);
+                dynamic int16Value = DB2Types.DB2Int16.CreateInstance(3);
 
-			using (var conn = new DataConnection(context))
-			{
-				conn.Select(() => 1);
-				Assert.That(DB2iSeriesTypes.Clob.CreateInstance(conn) == null, Is.True);
-				Assert.That(DB2iSeriesTypes.Blob.CreateInstance(conn) == null, Is.True);
-			}
+                using (var conn = new DataConnection(context))
+                {
+                    conn.Select(() => 1);
+                    Assert.That(DB2Types.DB2Clob.CreateInstance(conn) != null, Is.True);
+                    Assert.That(DB2Types.DB2Blob.CreateInstance(conn) != null, Is.True);
+                }
 
-			Assert.That(int64Value.Value, Is.TypeOf<long>().And.EqualTo(1));
-			Assert.That(int32Value.Value, Is.TypeOf<int>().And.EqualTo(2));
-			Assert.That(int16Value.Value, Is.TypeOf<short>().And.EqualTo(3));
+                Assert.That(int64Value.Value, Is.TypeOf<long>().And.EqualTo(1));
+                Assert.That(int32Value.Value, Is.TypeOf<int>().And.EqualTo(2));
+                Assert.That(int16Value.Value, Is.TypeOf<short>().And.EqualTo(3));
 
-			var decimalValue = DB2iSeriesTypes.Decimal.CreateInstance(4);
-			var decimalValueAsDecimal = DB2iSeriesTypes.DecFloat16.CreateInstance(5m);
-			var decimalValueAsDouble = DB2iSeriesTypes.DecFloat34.CreateInstance(6.0);
-			var decimalValueAsLong = DB2iSeriesTypes.DecFloat34.CreateInstance(7);
-			var realValue = DB2iSeriesTypes.Real.CreateInstance(8);
-			var stringValue = DB2iSeriesTypes.VarChar.CreateInstance("1");
-			var clobValue = DB2iSeriesTypes.Clob.CreateInstance("2");
-			var binaryValue = DB2iSeriesTypes.Binary.CreateInstance(new byte[] {1});
-			var blobValue = DB2iSeriesTypes.Blob.CreateInstance(new byte[] {2});
-			var dateValue = DB2iSeriesTypes.Date.CreateInstance(new DateTime(2000, 1, 1));
-			var timeValue = DB2iSeriesTypes.Time.CreateInstance(new DateTime(1, 1, 1, 1, 1, 1));
-			var timeStampValue = DB2iSeriesTypes.TimeStamp.CreateInstance(new DateTime(2000, 1, 4));
+                dynamic decimalValue = DB2Types.DB2Decimal.CreateInstance(4);
+                dynamic decimalValueAsDecimal = DB2Types.DB2DecimalFloat.CreateInstance(5m);
+                //dynamic decimalValueAsDouble = DB2Types.DB2DecimalFloat.CreateInstance(6.0);
+                //dynamic decimalValueAsLong = DB2Types.DB2DecimalFloat.CreateInstance(7);
+                dynamic realValue = DB2Types.DB2Real.CreateInstance(8);
+                dynamic real370Value = DB2Types.DB2Real370.CreateInstance(8);
+                dynamic doubleValue = DB2Types.DB2Double.CreateInstance(8);
+                dynamic stringValue = DB2Types.DB2String.CreateInstance("1");
+                dynamic clobValue = DB2Types.DB2Clob.CreateInstance("2");
+                dynamic binaryValue = DB2Types.DB2Binary.CreateInstance(new byte[] { 1 });
+                dynamic blobValue = DB2Types.DB2Blob.CreateInstance(new byte[] { 2 });
+                dynamic dateValue = DB2Types.DB2Date.CreateInstance(new DateTime(2000, 1, 1));
+                dynamic timeValue = DB2Types.DB2Time.CreateInstance(new DateTime(1, 1, 1, 1, 1, 1).TimeOfDay);
+                dynamic timeStampValue = DB2Types.DB2TimeStamp.CreateInstance(new DateTime(2000, 1, 4));
 
-			Assert.That(decimalValue.Value, Is.TypeOf<decimal>().And.EqualTo(4));
-			Assert.That(decimalValueAsDecimal.Value, Is.TypeOf<decimal>().And.EqualTo(5));
-			Assert.That(decimalValueAsDouble.Value, Is.TypeOf<decimal>().And.EqualTo(6));
-			Assert.That(decimalValueAsLong.Value, Is.TypeOf<decimal>().And.EqualTo(7));
-			Assert.That(realValue.Value, Is.TypeOf<float>().And.EqualTo(8));
-			Assert.That(stringValue.Value, Is.TypeOf<string>().And.EqualTo("1"));
-			Assert.That(clobValue.Value, Is.TypeOf<string>().And.EqualTo("2"));
-			Assert.That(binaryValue.Value, Is.TypeOf<byte[]>().And.EqualTo(new byte[] {1}));
-			Assert.That(blobValue.Value, Is.TypeOf<byte[]>().And.EqualTo(new byte[] {2}));
-			Assert.That(dateValue.Value, Is.TypeOf<DateTime>().And.EqualTo(new DateTime(2000, 1, 1)));
-			Assert.That(timeValue.Value, Is.TypeOf<DateTime>().And.EqualTo(new DateTime(1, 1, 1, 1, 1, 1)));
-			Assert.That(timeStampValue.Value, Is.TypeOf<DateTime>().And.EqualTo(new DateTime(2000, 1, 4)));
+                Assert.That(decimalValue.Value, Is.TypeOf<decimal>().And.EqualTo(4));
+                Assert.That(decimalValueAsDecimal.Value, Is.TypeOf<decimal>().And.EqualTo(5));
+                //Assert.That(decimalValueAsDouble.Value, Is.TypeOf<decimal>().And.EqualTo(6));
+                //Assert.That(decimalValueAsLong.Value, Is.TypeOf<decimal>().And.EqualTo(7));
+                Assert.That(realValue.Value, Is.TypeOf<float>().And.EqualTo(8));
+                Assert.That(real370Value.Value, Is.TypeOf<double>().And.EqualTo(8));
+                Assert.That(doubleValue.Value, Is.TypeOf<double>().And.EqualTo(8));
+                Assert.That(stringValue.Value, Is.TypeOf<string>().And.EqualTo("1"));
+                Assert.That(clobValue.Value, Is.TypeOf<string>().And.EqualTo("2"));
+                Assert.That(binaryValue.Value, Is.TypeOf<byte[]>().And.EqualTo(new byte[] { 1 }));
+                Assert.That(blobValue.Value, Is.TypeOf<byte[]>().And.EqualTo(new byte[] { 2 }));
+                Assert.That(dateValue.Value, Is.TypeOf<DateTime>().And.EqualTo(new DateTime(2000, 1, 1)));
+                Assert.That(timeValue.Value, Is.TypeOf<TimeSpan>().And.EqualTo(new DateTime(1, 1, 1, 1, 1, 1).TimeOfDay));
+                Assert.That(timeStampValue.Value, Is.TypeOf<DateTime>().And.EqualTo(new DateTime(2000, 1, 4)));
+            }
+            else
+            {
+                var int64Value = DB2iSeriesTypes.BigInt.CreateInstance(1);
+                var int32Value = DB2iSeriesTypes.Integer.CreateInstance(2);
+                var int16Value = DB2iSeriesTypes.SmallInt.CreateInstance(3);
 
-			//DB2iSeriesTools.AfterInitialized(() =>
-			//{
-				int64Value = DB2iSeriesTypes.BigInt.CreateInstance();
-				int32Value = DB2iSeriesTypes.Integer.CreateInstance();
-				int16Value = DB2iSeriesTypes.SmallInt.CreateInstance();
-			//});
+                using (var conn = new DataConnection(context))
+                {
+                    conn.Select(() => 1);
+                    Assert.That(DB2iSeriesTypes.Clob.CreateInstance(conn) == null, Is.True);
+                    Assert.That(DB2iSeriesTypes.Blob.CreateInstance(conn) == null, Is.True);
+                }
 
-			Assert.That(int64Value.IsNull, Is.True);
-			Assert.That(int32Value.IsNull, Is.True);
-			Assert.That(int16Value.IsNull, Is.True);
+                Assert.That(int64Value.Value, Is.TypeOf<long>().And.EqualTo(1));
+                Assert.That(int32Value.Value, Is.TypeOf<int>().And.EqualTo(2));
+                Assert.That(int16Value.Value, Is.TypeOf<short>().And.EqualTo(3));
 
-			Assert.That(DB2iSeriesTypes.Decimal.CreateInstance().IsNull, Is.True);
-			Assert.That(DB2iSeriesTypes.DecFloat16.CreateInstance().IsNull, Is.True);
-			Assert.That(DB2iSeriesTypes.DecFloat34.CreateInstance().IsNull, Is.True);
-			Assert.That(DB2iSeriesTypes.Real.CreateInstance().IsNull, Is.True);
-			Assert.That(DB2iSeriesTypes.VarChar.CreateInstance().IsNull, Is.True);
-			Assert.That(DB2iSeriesTypes.Binary.CreateInstance().IsNull, Is.True);
-			Assert.That(DB2iSeriesTypes.Date.CreateInstance().IsNull, Is.True);
-			Assert.That(DB2iSeriesTypes.Time.CreateInstance().IsNull, Is.True);
-			Assert.That(DB2iSeriesTypes.TimeStamp.CreateInstance().IsNull, Is.True);
-			Assert.That(DB2iSeriesTypes.RowId.CreateInstance().IsNull, Is.True);
+                var decimalValue = DB2iSeriesTypes.Decimal.CreateInstance(4);
+                var decimalValueAsDecimal = DB2iSeriesTypes.DecFloat16.CreateInstance(5m);
+                var decimalValueAsDouble = DB2iSeriesTypes.DecFloat34.CreateInstance(6.0);
+                var decimalValueAsLong = DB2iSeriesTypes.DecFloat34.CreateInstance(7);
+                var realValue = DB2iSeriesTypes.Real.CreateInstance(8);
+                var stringValue = DB2iSeriesTypes.VarChar.CreateInstance("1");
+                var clobValue = DB2iSeriesTypes.Clob.CreateInstance("2");
+                var binaryValue = DB2iSeriesTypes.Binary.CreateInstance(new byte[] { 1 });
+                var blobValue = DB2iSeriesTypes.Blob.CreateInstance(new byte[] { 2 });
+                var dateValue = DB2iSeriesTypes.Date.CreateInstance(new DateTime(2000, 1, 1));
+                var timeValue = DB2iSeriesTypes.Time.CreateInstance(new DateTime(1, 1, 1, 1, 1, 1));
+                var timeStampValue = DB2iSeriesTypes.TimeStamp.CreateInstance(new DateTime(2000, 1, 4));
 
+                Assert.That(decimalValue, Is.TypeOf<decimal>().And.EqualTo(4));
+                Assert.That(decimalValueAsDecimal, Is.TypeOf<decimal>().And.EqualTo(5));
+                Assert.That(decimalValueAsDouble, Is.TypeOf<decimal>().And.EqualTo(6));
+                Assert.That(decimalValueAsLong, Is.TypeOf<decimal>().And.EqualTo(7));
+                Assert.That(realValue, Is.TypeOf<float>().And.EqualTo(8));
+                Assert.That(stringValue, Is.TypeOf<string>().And.EqualTo("1"));
+                Assert.That(clobValue, Is.TypeOf<string>().And.EqualTo("2"));
+                Assert.That(binaryValue, Is.TypeOf<byte[]>().And.EqualTo(new byte[] { 1 }));
+                Assert.That(blobValue, Is.TypeOf<byte[]>().And.EqualTo(new byte[] { 2 }));
+                Assert.That(dateValue, Is.TypeOf<DateTime>().And.EqualTo(new DateTime(2000, 1, 1)));
+                Assert.That(timeValue, Is.TypeOf<DateTime>().And.EqualTo(new DateTime(1, 1, 1, 1, 1, 1)));
+                Assert.That(timeStampValue, Is.TypeOf<DateTime>().And.EqualTo(new DateTime(2000, 1, 4)));
+
+
+                int64Value = DB2iSeriesTypes.BigInt.CreateInstance();
+                int32Value = DB2iSeriesTypes.Integer.CreateInstance();
+                int16Value = DB2iSeriesTypes.SmallInt.CreateInstance();
+
+                Assert.That(int64Value.IsNull, Is.True);
+                Assert.That(int32Value.IsNull, Is.True);
+                Assert.That(int16Value.IsNull, Is.True);
+
+                Assert.That(DB2iSeriesTypes.Decimal.CreateInstance().IsNull, Is.True);
+                Assert.That(DB2iSeriesTypes.DecFloat16.CreateInstance().IsNull, Is.True);
+                Assert.That(DB2iSeriesTypes.DecFloat34.CreateInstance().IsNull, Is.True);
+                Assert.That(DB2iSeriesTypes.Real.CreateInstance().IsNull, Is.True);
+                Assert.That(DB2iSeriesTypes.VarChar.CreateInstance().IsNull, Is.True);
+                Assert.That(DB2iSeriesTypes.Binary.CreateInstance().IsNull, Is.True);
+                Assert.That(DB2iSeriesTypes.Date.CreateInstance().IsNull, Is.True);
+                Assert.That(DB2iSeriesTypes.Time.CreateInstance().IsNull, Is.True);
+                Assert.That(DB2iSeriesTypes.TimeStamp.CreateInstance().IsNull, Is.True);
+                Assert.That(DB2iSeriesTypes.RowId.CreateInstance().IsNull, Is.True);
+            }
 		}
 
 		[Test, DataContextSource(false)]

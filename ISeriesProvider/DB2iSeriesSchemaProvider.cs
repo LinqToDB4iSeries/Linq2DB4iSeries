@@ -17,9 +17,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 	public class DB2iSeriesSchemaProvider : SchemaProviderBase
 	{
+        private readonly DB2iSeriesAdoProviderType adoProviderType;
+
+        public DB2iSeriesSchemaProvider(DB2iSeriesAdoProviderType adoProviderType)
+        {
+            this.adoProviderType = adoProviderType;
+        }
+
         private string GetSqlObjectDelimiter(DataConnection dataConnection)
         {
-            return DB2iSeriesTools.GetSqlObjectDelimiter(dataConnection.ConnectionString);
+            return DB2iSeriesTools.GetSqlObjectDelimiter(dataConnection.Connection);
         }
 
 
@@ -233,7 +240,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected override string GetProviderSpecificTypeNamespace()
 		{
-			return DB2iSeriesTools.AssemblyName_AccessClient;
+			return DB2iSeriesTools.GetProviderSpecificTypeNamespace(adoProviderType);
 		}
 
 		protected override List<TableInfo> GetTables(DataConnection dataConnection)

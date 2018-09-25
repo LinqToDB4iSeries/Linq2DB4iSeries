@@ -11,12 +11,25 @@ namespace LinqToDB.DataProvider.DB2iSeries
         public DB2iSeriesLevels MinLevel { get; }
         public bool MapGuidAsString { get; }
         public DB2iSeriesAdoProviderType AdoProviderType { get; }
+        public DB2iSeriesIdentifierQuoteMode IdentifierQuoteMode { get; }
+        public DB2iSeriesNamingConvention NamingConvention { get; }
 
-        public DB2iSeriesDataProviderOptions(DB2iSeriesLevels minLevel, bool mapGuidAsString, DB2iSeriesAdoProviderType dB2AdoProviderType)
+        public DB2iSeriesDataProviderOptions(DB2iSeriesLevels minLevel, bool mapGuidAsString, 
+            DB2iSeriesAdoProviderType dB2AdoProviderType, DB2iSeriesNamingConvention namingConvention,
+            DB2iSeriesIdentifierQuoteMode identifierQuoteMode = DB2iSeriesIdentifierQuoteMode.None)
+            :this(minLevel, mapGuidAsString, dB2AdoProviderType, identifierQuoteMode)
+        {
+            this.NamingConvention = dB2AdoProviderType == DB2iSeriesAdoProviderType.AccessClient ? DB2iSeriesNamingConvention.System : DB2iSeriesNamingConvention.Sql;
+        }
+
+        public DB2iSeriesDataProviderOptions(DB2iSeriesLevels minLevel, bool mapGuidAsString,
+            DB2iSeriesAdoProviderType dB2AdoProviderType, 
+            DB2iSeriesIdentifierQuoteMode identifierQuoteMode = DB2iSeriesIdentifierQuoteMode.None)
         {
             this.MinLevel = minLevel;
             this.MapGuidAsString = mapGuidAsString;
             this.AdoProviderType = dB2AdoProviderType;
+            this.IdentifierQuoteMode = identifierQuoteMode;
         }
 
         public static DB2iSeriesDataProviderOptions FromAttributes(IEnumerable<NamedValue> attributes)

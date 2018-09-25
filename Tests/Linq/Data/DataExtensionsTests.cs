@@ -32,7 +32,7 @@ namespace Tests.Data
 			using (var conn = new DataConnection())
 			{
 			    var param = ParamType(conn, SqlDataType.GetDataType(typeof(byte[])));
-			    var sql = $"SELECT cast(@P as {param}){Base.Helpers.GetDummyFrom(conn.DataProvider)}";
+			    var sql = $"SELECT cast(@P as {param}){Base.Helpers.GetDummyFrom(conn)}";
 				Assert.That(conn.Execute<byte[]>(sql, new { p = arr1 }), Is.EqualTo(arr1));
 				Assert.That(conn.Execute<byte[]>(sql, new { p = arr2 }), Is.EqualTo(arr2));
 			}
@@ -51,7 +51,7 @@ namespace Tests.Data
 			using (var conn = new DataConnection())
 			{
 			    var param = ParamType(conn, new SqlDataType(DataType.Int64));
-                var sql = $"SELECT cast(@P as {param}){Base.Helpers.GetDummyFrom(conn.DataProvider)}";
+                var sql = $"SELECT cast(@P as {param}){Base.Helpers.GetDummyFrom(conn)}";
 				Assert.That(conn.Execute<int>(sql, new { p = 1 }), Is.EqualTo(1));
 			}
 		}
@@ -62,7 +62,7 @@ namespace Tests.Data
 			using (var conn = new DataConnection())
 			{
 			    var param = ParamType(conn, new SqlDataType(DataType.Int64));
-                var sql = $"SELECT cast(@P as {param}){Base.Helpers.GetDummyFrom(conn.DataProvider)}";
+                var sql = $"SELECT cast(@P as {param}){Base.Helpers.GetDummyFrom(conn)}";
 
 				var res = conn.Execute<string>(
 					sql,
@@ -94,7 +94,7 @@ namespace Tests.Data
 			using (var conn = new DataConnection())
 			{
 			    var param = ParamType(conn, new SqlDataType(DataType.Int64));
-                string sql = $"SELECT cast(@P as {param}){Base.Helpers.GetDummyFrom(conn.DataProvider)}";
+                string sql = $"SELECT cast(@P as {param}){Base.Helpers.GetDummyFrom(conn)}";
 
 				Assert.That(conn.Execute<string>(
 					sql,
@@ -135,7 +135,7 @@ namespace Tests.Data
 			using (var conn = new DataConnection().AddMappingSchema(ms))
 			{
 			    var param = ParamType(conn, new SqlDataType(DataType.Int64));
-                string sql = $"SELECT cast(@P as {param}){Base.Helpers.GetDummyFrom(conn.DataProvider)}";
+                string sql = $"SELECT cast(@P as {param}){Base.Helpers.GetDummyFrom(conn)}";
 
 				var n = conn.Execute<long>(sql, new { p = new TwoValues { Value1 = 1, Value2 = 2 } });
 
@@ -153,7 +153,7 @@ namespace Tests.Data
 			using (var conn = new DataConnection().AddMappingSchema(ms))
 			{
 			    var param = ParamType(conn, new SqlDataType(DataType.Int64));
-                string sql = $"SELECT cast(@P as {param}){Base.Helpers.GetDummyFrom(conn.DataProvider)}";
+                string sql = $"SELECT cast(@P as {param}){Base.Helpers.GetDummyFrom(conn)}";
 
 				var n = conn.Execute<long?>(sql, new { p = (TwoValues)null });
 
@@ -177,7 +177,7 @@ namespace Tests.Data
 			using (var conn = new DataConnection().AddMappingSchema(ms))
 			{
 			    var param = ParamType(conn, new SqlDataType(DataType.Int64));
-                string sql = $"SELECT cast(@P as {param}){Base.Helpers.GetDummyFrom(conn.DataProvider)}";
+                string sql = $"SELECT cast(@P as {param}){Base.Helpers.GetDummyFrom(conn)}";
 
 				var n = conn.Execute<long?>(sql, new { p = (TwoValues)null });
 

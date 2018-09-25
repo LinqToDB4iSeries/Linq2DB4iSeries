@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LinqToDB.Extensions;
+using System;
 using System.Linq.Expressions;
 
 namespace LinqToDB.DataProvider.DB2iSeries
@@ -19,10 +20,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected Func<T, object> GetCreator<T>()
 		{
-			var ctor = Type.GetConstructor(new[] { typeof(T) });
+			var ctor = Type.GetConstructorEx(new[] { typeof(T) });
 			var parm = Expression.Parameter(typeof(T));
 			var expr = Expression.Lambda<Func<T, object>>(
-			  Expression.Convert(Expression.New(ctor, parm), typeof(object)),
+			  Expression.Convert(Expression.New(ctor, 
+                Expression.Convert(parm, ctor.GetParameters()[0].ParameterType)), typeof(object)),
 			  parm);
 
 			return expr.Compile();
@@ -30,15 +32,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected Func<T, object> GetCreator<T>(Type paramType)
 		{
-			var ctor = Type.GetConstructor(new[] { paramType });
+			var ctor = Type.GetConstructorEx(new[] { paramType });
 
 			if (ctor == null)
 				return null;
 
 			var parm = Expression.Parameter(typeof(T));
 			var expr = Expression.Lambda<Func<T, object>>(
-			  Expression.Convert(Expression.New(ctor, Expression.Convert(parm, paramType)), typeof(object)),
-			  parm);
+			  Expression.Convert(Expression.New(ctor,
+                Expression.Convert(parm, ctor.GetParameters()[0].ParameterType)), typeof(object)),
+              parm);
 
 			return expr.Compile();
 		}
