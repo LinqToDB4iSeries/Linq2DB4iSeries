@@ -27,6 +27,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
             SetValueToSqlConverter(typeof(string), (sb, dt, v) => ConvertStringToSql(sb, v.ToString()));
             SetValueToSqlConverter(typeof(char), (sb, dt, v) => ConvertCharToSql(sb, (char)v));
             SetValueToSqlConverter(typeof(DateTime), (sb, dt, v) => ConvertDateTimeToSql(sb, dt, (DateTime)v));
+            SetValueToSqlConverter(typeof(TimeSpan), (sb, dt, v) => ConvertTimeSpanToSql(sb, (TimeSpan)v));
 
             AddMetadataReader(new DB2iSeriesMetadataReader(DB2iSeriesProviderName.DB2));
 #if !NETSTANDARD2_0
@@ -34,9 +35,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
 #endif
         }
 
-        internal static void MapGuidAsString(MappingSchema mappingSchema)
+        internal static void MapGuidAsChar16(MappingSchema mappingSchema)
         {
             mappingSchema.SetValueToSqlConverter(typeof(Guid), (sb, dt, v) => ConvertGuidToSql(sb, (Guid)v));
+        }
+
+        internal static void MapGuidAsString(MappingSchema mappingSchema)
+        {
+            mappingSchema.SetValueToSqlConverter(typeof(Guid), (sb, dt, v) => sb.Append("'{v}'"));
         }
 
         private static void AppendConversion(StringBuilder stringBuilder, int value)
@@ -73,6 +79,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
             stringBuilder.AppendFormat(format, value);
         }
 
+        private static void ConvertTimeSpanToSql(StringBuilder stringBuilder, TimeSpan value)
+        {
+            var format = value.Milliseconds == 0 ?
+                        "'{0:HH:mm:ss}'" :
+                        "'{0:HH:mm:ss.fff}'";
+
+            stringBuilder.Append(value.ToString(format));
+        }
+
         private static void ConvertGuidToSql(StringBuilder stringBuilder, Guid value)
         {
             dynamic s = value.ToString("N");
@@ -99,6 +114,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
         public DB2iSeriesAccessClientMappingSchema()
             : base(DB2iSeriesProviderName.DB2iSeries_AccessClient, DB2iSeriesMappingSchema.Instance)
         {
+            DB2iSeriesMappingSchema.MapGuidAsChar16(this);
             BuildAccessClientMappings();
         }
 
@@ -148,6 +164,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
             : base(DB2iSeriesProviderName.DB2iSeries_DB2Connect, DB2iSeriesMappingSchema.Instance)
         {
             BuildDB2ConnectMappings();
+            DB2iSeriesMappingSchema.MapGuidAsChar16(this);
         }
 
         protected void BuildDB2ConnectMappings()

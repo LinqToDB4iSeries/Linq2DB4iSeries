@@ -17,6 +17,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 	public class DB2iSeriesSchemaProvider : SchemaProviderBase
 	{
+        private string GetSqlObjectDelimiter(DataConnection dataConnection)
+        {
+            return DB2iSeriesTools.GetSqlObjectDelimiter(dataConnection.ConnectionString);
+        }
+
+
 		protected override List<ColumnInfo> GetColumns(DataConnection dataConnection)
 		{
 			var sql = $@"
@@ -32,8 +38,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				, Table_Name
 				, Table_Schema
 				, Column_Name
-				From QSYS2/SYSCOLUMNS
-				where System_Table_Schema in('{GetLibList(dataConnection)}')
+				From QSYS2{GetSqlObjectDelimiter(dataConnection)}SYSCOLUMNS
+
+                where System_Table_Schema in('{GetLibList(dataConnection)}')
 				 ";
 
 			ColumnInfo drf(IDataReader dr)
@@ -98,9 +105,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		  , uk.Column_Name  As OtherColumn
 		  , uk.Table_Schema As OtherSchema
 		  , uk.Table_Name   As OtherTable
-		  From QSYS2/SYSREFCST ref
-		  Join QSYS2/SYSKEYCST fk on(fk.Constraint_Schema, fk.Constraint_Name) = (ref.Constraint_Schema, ref.Constraint_Name)
-		  Join QSYS2/SYSKEYCST uk on(uk.Constraint_Schema, uk.Constraint_Name) = (ref.Unique_Constraint_Schema, ref.Unique_Constraint_Name)
+		  From QSYS2{GetSqlObjectDelimiter(dataConnection)}SYSREFCST ref
+		  Join QSYS2{GetSqlObjectDelimiter(dataConnection)}SYSKEYCST fk on(fk.Constraint_Schema, fk.Constraint_Name) = (ref.Constraint_Schema, ref.Constraint_Name)
+		  Join QSYS2{GetSqlObjectDelimiter(dataConnection)}SYSKEYCST uk on(uk.Constraint_Schema, uk.Constraint_Name) = (ref.Unique_Constraint_Schema, ref.Unique_Constraint_Name)
 		  Where uk.Ordinal_Position = fk.Ordinal_Position
 		  And fk.System_Table_Schema in('{GetLibList(dataConnection)}')
 		  Order By ThisSchema, ThisTable, Constraint_Name, Ordinal_Position
@@ -129,8 +136,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			   , cst.table_NAME 
 			   , col.Ordinal_position 
 			   , col.Column_Name   
-		  From QSYS2/SYSKEYCST col
-		  Join QSYS2/SYSCST    cst On(cst.constraint_SCHEMA, cst.constraint_NAME, cst.constraint_type) = (col.constraint_SCHEMA, col.constraint_NAME, 'PRIMARY KEY')
+		  From QSYS2{GetSqlObjectDelimiter(dataConnection)}SYSKEYCST col
+		  Join QSYS2{GetSqlObjectDelimiter(dataConnection)}SYSCST    cst On(cst.constraint_SCHEMA, cst.constraint_NAME, cst.constraint_type) = (col.constraint_SCHEMA, col.constraint_NAME, 'PRIMARY KEY')
 		  And cst.System_Table_Schema in('{GetLibList(dataConnection)}')
 		  Order By cst.table_SCHEMA, cst.table_NAME, col.Ordinal_position
 		  ";
@@ -159,7 +166,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		  , Routine_Type
 		  , Specific_Name
 		  , Specific_Schema
-		  From QSYS2/SYSROUTINES 
+		  From QSYS2{GetSqlObjectDelimiter(dataConnection)}SYSROUTINES 
 		  Where Specific_Schema in('{GetLibList(dataConnection)}')
 		  Order By Specific_Schema, Specific_Name
 		  ";
@@ -199,7 +206,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		  , Parameter_Name
 		  , Specific_Name
 		  , Specific_Schema
-		  From QSYS2/SYSPARMS 
+		  From QSYS2{GetSqlObjectDelimiter(dataConnection)}SYSPARMS 
 		  where Specific_Schema in('{GetLibList(dataConnection)}')
 		  Order By Specific_Schema, Specific_Name, Parameter_Name
 		  ";
@@ -231,7 +238,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected override List<TableInfo> GetTables(DataConnection dataConnection)
 		{
-			var sql = $@"
+            var sql = $@"
 				  Select 
 					CAST(CURRENT_SERVER AS VARCHAR(128)) AS Catalog_Name
 				  , Table_Schema
@@ -239,12 +246,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				  , Table_Text
 				  , Table_Type
 				  , System_Table_Schema
-				  From QSYS2/SYSTABLES 
+				  From QSYS2{GetSqlObjectDelimiter(dataConnection)}SYSTABLES 
 				  Where Table_Type In('L', 'P', 'T', 'V')
 				  And System_Table_Schema in ('{GetLibList(dataConnection)}')	
 				  Order By System_Table_Schema, System_Table_Name
 				 ";
-
+            
 			var defaultSchema = dataConnection.Execute<string>("select current_schema from sysibm.sysdummy1");
 			Func<IDataReader, TableInfo> drf = (IDataReader dr) => new TableInfo
 			{
@@ -311,8 +318,28 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         #endregion
 
-        
-          
+        protected override List<DataTypeInfo> GetDataTypes(DataConnection dataConnection)
+        {
+            if (DB2iSeriesTools.GetAdoProviderType(dataConnection.Connection) == DB2iSeriesAdoProviderType.AccessClient)
+                return base.GetDataTypes(dataConnection);
+
+            DataTypesSchema = ((DbConnection)dataConnection.Connection).GetSchema("DataTypes");
+
+            return DataTypesSchema.AsEnumerable()
+                .Select(t => new DataTypeInfo
+                {
+                    TypeName = t.Field<string>("SQL_TYPE_NAME"),
+                    DataType = t.Field<string>("FRAMEWORK_TYPE"),
+                    CreateParameters = t.Field<string>("CREATE_PARAMS")?.ToUpper(),
+                })
+                .Union(
+                new[]
+                {
+                    new DataTypeInfo { TypeName = "CHARACTER", CreateParameters = "LENGTH", DataType = "System.String" }
+                })
+                .ToList();
+        }
+
 
         private string GetLibList(DataConnection dataConnection)
 	    {

@@ -59,6 +59,7 @@ namespace Tests.xUpdate
 
             [Column(IsColumn = false, Configuration = ProviderName.Sybase)]
             [Column(IsColumn = false, Configuration = ProviderName.DB2)]
+            [Column(IsColumn = false, Configuration = DB2iSeriesProviderName.DB2iSeries_DB2Connect)]
             [Column(IsColumn = false, Configuration = DB2iSeriesProviderName.DB2)]
             [Column(IsColumn = false, Configuration = DB2iSeriesProviderName.DB2_GAS)]
             [Column(IsColumn = false, Configuration = DB2iSeriesProviderName.DB2_73)]
@@ -99,6 +100,7 @@ namespace Tests.xUpdate
             [Column(IsColumn = false, Configuration = ProviderName.SqlCe)]
             [Column("FieldDate", Configuration = ProviderName.Informix, DataType = DataType.Date)]
             [Column("FieldDate", Configuration = ProviderName.Sybase, DataType = DataType.Date)]
+            [Column("FieldDate", DataType = DataType.Date, Configuration = DB2iSeriesProviderName.DB2iSeries_DB2Connect)]
             [Column("FieldDate", DataType = DataType.Date, Configuration = DB2iSeriesProviderName.DB2)]
             [Column("FieldDate", DataType = DataType.Date, Configuration = DB2iSeriesProviderName.DB2_GAS)]
             [Column("FieldDate")]
@@ -629,6 +631,7 @@ namespace Tests.xUpdate
                         expected = TimeSpan.FromTicks((expected.Value.Ticks / 10) * 10);
                         break;
                     case ProviderName.DB2:
+                    case DB2iSeriesProviderName.DB2iSeries_DB2Connect:
                     case DB2iSeriesProviderName.DB2:
                     case DB2iSeriesProviderName.DB2_GAS:
                     case DB2iSeriesProviderName.DB2_73:

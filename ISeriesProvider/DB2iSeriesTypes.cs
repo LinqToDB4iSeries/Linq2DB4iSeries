@@ -14,6 +14,33 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
     public static class DB2iSeriesTypes
     {
+        internal static readonly string AssemblyName = "IBM.Data.DB2.iSeries";
+        internal static readonly string NamespaceName = AssemblyName;
+
+        internal static readonly string ConnectionTypeName = NamespaceName + ".iDB2Connection, " + AssemblyName;
+        internal static readonly string DataReaderTypeName = NamespaceName + ".iDB2DataReader, " + AssemblyName;
+
+        internal static readonly string TypeNameDbConnectionStringBuilder = AssemblyName + ".iDB2ConnectionStringBuilder, " + AssemblyName;
+
+        private readonly static Lazy<Type> connectionType = new Lazy<Type>(() =>
+        {
+            var type = Type.GetType(ConnectionTypeName, true);
+            LoadDataTypes(type);
+            return type;
+        });
+
+        public static Type ConnectionType => connectionType.Value;
+
+        private static readonly Lazy<StaticTypeCreator<string, DbConnectionStringBuilder>> dbConnectionStringBuilderCreator
+            = new Lazy<StaticTypeCreator<string, DbConnectionStringBuilder>>(() =>
+                new StaticTypeCreator<string, DbConnectionStringBuilder>(
+                  Type.GetType(TypeNameDbConnectionStringBuilder, true)));
+
+        public static DbConnectionStringBuilder CreateConnectionStringBuilder(string connectionString = null)
+            => connectionString == null ?
+            dbConnectionStringBuilderCreator.Value.CreateInstance() :
+            dbConnectionStringBuilderCreator.Value.CreateInstance(connectionString);
+
         // https://secure.pamtransport.com/bin/IBM.Data.DB2.iSeries.xml
 
         public static readonly TypeCreator<long> BigInt = new TypeCreator<long>();
@@ -43,8 +70,45 @@ namespace LinqToDB.DataProvider.DB2iSeries
         public static readonly TypeCreator<string> VarGraphic = new TypeCreator<string>();
 
         public static readonly TypeCreator<string> Xml = new TypeCreator<string>();
-        public static Type ConnectionType { get; set; }
+        //public static Type ConnectionType { get; set; }
 
+        static DB2iSeriesTypes()
+        {
+            LoadDataTypes(ConnectionType);
+        }
+
+        private static void LoadDataTypes(Type connectionType)
+        {
+            var assembly = connectionType.Assembly;
+            Type getType(string typeName) => assembly.GetType($"{NamespaceName}.{typeName}", true);
+
+            BigInt.Type = getType("iDB2BigInt");
+            Binary.Type = getType("iDB2Binary");
+            Blob.Type = getType("iDB2Blob");
+            Char.Type = getType("iDB2Char");
+            CharBitData.Type = getType("iDB2CharBitData");
+            Clob.Type = getType("iDB2Clob");
+            Date.Type = getType("iDB2Date");
+            DataLink.Type = getType("iDB2DataLink");
+            DbClob.Type = getType("iDB2DbClob");
+            DecFloat16.Type = getType("iDB2DecFloat16");
+            DecFloat34.Type = getType("iDB2DecFloat34");
+            Decimal.Type = getType("iDB2Decimal");
+            Double.Type = getType("iDB2Double");
+            Graphic.Type = getType("iDB2Graphic");
+            Integer.Type = getType("iDB2Integer");
+            Numeric.Type = getType("iDB2Numeric");
+            Real.Type = getType("iDB2Real");
+            RowId.Type = getType("iDB2Rowid");
+            SmallInt.Type = getType("iDB2SmallInt");
+            Time.Type = getType("iDB2Time");
+            TimeStamp.Type = getType("iDB2TimeStamp");
+            VarBinary.Type = getType("iDB2VarBinary");
+            VarChar.Type = getType("iDB2VarChar");
+            VarCharBitData.Type = getType("iDB2VarCharBitData");
+            VarGraphic.Type = getType("iDB2VarGraphic");
+            Xml.Type = getType("iDB2Xml");
+        }
     }
 
     public class DB2TypeDescriptor
@@ -57,7 +121,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
             DataType = dataType;
             CanBeNull = canBeNull;
 
-            type = new Lazy<Type>(() => DB2Types.ConnectionType.Assembly.GetType(DatatypeName));
+            type = new Lazy<Type>(() => DB2Types.ConnectionType.Assembly.GetType($"{DB2Types.NamespaceNameDB2Types}.{DatatypeName}"));
             nullValue = new Lazy<object>(() => isNullValueSet ? overridenNullValue : GetNullValue());
         }
 
@@ -218,7 +282,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
     }
 
-    public class DB2Types
+    public static class DB2Types
     {
         //internal const string AssemblyName_DB2Connect_Net = "IBM.Data.DB2";
         //internal const string AssemblyName_DB2Connect_Core = "IBM.Data.DB2.Core";
@@ -259,11 +323,19 @@ namespace LinqToDB.DataProvider.DB2iSeries
                 typeof(DB2Types)
                     .GetPropertiesEx()
                     .Where(x => x.PropertyType == typeof(DB2TypeDescriptor))
-                    .Select(x => x.GetValue(null).ToString())
-                    .Cast<DB2TypeDescriptor>()
+                    .Select(x => (DB2TypeDescriptor)x.GetValue(null))
                     .ToArray();
 
-        
+        private static readonly Lazy<StaticTypeCreator<string, DbConnectionStringBuilder>> dbConnectionStringBuilderCreator
+            = new Lazy<StaticTypeCreator<string, DbConnectionStringBuilder>>(() =>
+                new StaticTypeCreator<string, DbConnectionStringBuilder>(
+                  Type.GetType(TypeNameDbConnectionStringBuilder, true)));
+
+        public static DbConnectionStringBuilder CreateConnectionStringBuilder(string connectionString = null)
+            => connectionString == null ?
+            dbConnectionStringBuilderCreator.Value.CreateInstance() :
+            dbConnectionStringBuilderCreator.Value.CreateInstance(connectionString);
+
         //private static Assembly AutoLoadAssembly()
         //{
         //    return Assembly.LoadFile(System.IO.Path.GetDirectoryName(Assembly.GetCallingAssembly().Location) + "\\" + AssemblyName + ".dll");

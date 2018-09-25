@@ -37,7 +37,7 @@ namespace Tests.DataProvider
 					conn.Execute<int>("SELECT cast(@p as varchar(10)) FROM SYSIBM.SYSDUMMY1", new {p = new DataParameter {Value = 1}}),
 					Is.EqualTo(1));
 				Assert.That(
-					conn.Execute<string>("SELECT cast(@p as varchar(10)) FROM SYSIBM.SYSDUMMY1",
+					conn.Execute<string>("SELECT cast(@p1 as varchar(10)) FROM SYSIBM.SYSDUMMY1",
 						new {p1 = new DataParameter {Value = "1"}}), Is.EqualTo("1"));
 				Assert.That(
 					conn.Execute<int>("SELECT cast(@p1 as int) + cast(@p2 as int) FROM SYSIBM.SYSDUMMY1", new {p1 = 2, p2 = 3}),
@@ -250,7 +250,7 @@ namespace Tests.DataProvider
 			}.Except(skipTypes))
 			{
 				var sqlValue = expectedValue is bool ? (bool) (object) expectedValue ? 1 : 0 : (object) expectedValue;
-				var sql = string.Format("SELECT Cast({0} as {1}) FROM SYSIBM.SYSDUMMY1", sqlValue ?? "NULL", sqlType);
+                var sql = string.Format(System.Globalization.CultureInfo.InvariantCulture, "SELECT Cast({0} as {1}) FROM SYSIBM.SYSDUMMY1", sqlValue ?? "NULL", sqlType);
 				Debug.WriteLine(sql + " -> " + typeof(T));
 				Assert.That(conn.Execute<T>(sql), Is.EqualTo(expectedValue));
 			}
@@ -872,15 +872,15 @@ namespace Tests.DataProvider
 		[Test, DataContextSource(false)]
 		public void TestTypes(string context)
 		{
-			dynamic int64Value = null;
-			dynamic int32Value = null;
-			dynamic int16Value = null;
-			DB2iSeriesTools.AfterInitialized(() =>
-			{
-				int64Value = DB2iSeriesTypes.BigInt.CreateInstance(1);
-				int32Value = DB2iSeriesTypes.Integer.CreateInstance(2);
-				int16Value = DB2iSeriesTypes.SmallInt.CreateInstance(3);
-			});
+			dynamic int64Value = DB2iSeriesTypes.BigInt.CreateInstance(1);
+            dynamic int32Value = DB2iSeriesTypes.Integer.CreateInstance(2);
+            dynamic int16Value = DB2iSeriesTypes.SmallInt.CreateInstance(3);
+   //         DB2iSeriesTools.AfterInitialized(() =>
+			//{
+			//	int64Value = DB2iSeriesTypes.BigInt.CreateInstance(1);
+			//	int32Value = DB2iSeriesTypes.Integer.CreateInstance(2);
+			//	int16Value = DB2iSeriesTypes.SmallInt.CreateInstance(3);
+			//});
 
 			using (var conn = new DataConnection(context))
 			{
@@ -919,12 +919,12 @@ namespace Tests.DataProvider
 			Assert.That(timeValue.Value, Is.TypeOf<DateTime>().And.EqualTo(new DateTime(1, 1, 1, 1, 1, 1)));
 			Assert.That(timeStampValue.Value, Is.TypeOf<DateTime>().And.EqualTo(new DateTime(2000, 1, 4)));
 
-			DB2iSeriesTools.AfterInitialized(() =>
-			{
+			//DB2iSeriesTools.AfterInitialized(() =>
+			//{
 				int64Value = DB2iSeriesTypes.BigInt.CreateInstance();
 				int32Value = DB2iSeriesTypes.Integer.CreateInstance();
 				int16Value = DB2iSeriesTypes.SmallInt.CreateInstance();
-			});
+			//});
 
 			Assert.That(int64Value.IsNull, Is.True);
 			Assert.That(int32Value.IsNull, Is.True);

@@ -178,101 +178,105 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				base.BuildFromClause(statement, selectQuery);
 		}
 
-		protected override void BuildInsertOrUpdateQuery(SqlInsertOrUpdateStatement insertOrUpdate) =>
-			BuildInsertOrUpdateQueryAsMerge(insertOrUpdate, $"FROM {DB2iSeriesTools.iSeriesDummyTableName()} FETCH FIRST 1 ROW ONLY");
-
-		protected override void BuildInsertOrUpdateQueryAsMerge(SqlInsertOrUpdateStatement insertOrUpdate, string fromDummyTable)
-		{
-			var table = insertOrUpdate.Insert.Into;
-			var targetAlias = Convert(insertOrUpdate.SelectQuery.From.Tables[0].Alias, ConvertType.NameToQueryTableAlias).ToString();
-			var sourceAlias = Convert(GetTempAliases(1, "s")[0], ConvertType.NameToQueryTableAlias).ToString();
-			var keys = insertOrUpdate.Update.Keys;
-
-			AppendIndent().Append("MERGE INTO ");
-			BuildPhysicalTable(table, null);
-			StringBuilder.Append(' ').AppendLine(targetAlias);
-
-			AppendIndent().Append("USING (SELECT ");
-
-			ExtractMergeParametersIfCannotCombine(insertOrUpdate, keys);
-
-			for (var i = 0; i < keys.Count; i++)
-			{
-				var key = keys[i];
-				var expr = key.Expression;
-
-				if (expr is SqlParameter || expr is SqlValue)
-				{
-					var exprType = SqlDataType.GetDataType(expr.SystemType);
-					var asType = GetiSeriesType(exprType);
-
-					StringBuilder.Append("CAST(");
-					BuildExpression(expr, false, false);
-					StringBuilder.AppendFormat(" AS {0})", asType);
-				}
-				else
-					BuildExpression(expr, false, false);
+        protected override void BuildInsertOrUpdateQuery(SqlInsertOrUpdateStatement insertOrUpdate) =>
+            BuildInsertOrUpdateQueryAsMerge(insertOrUpdate, $"FROM {DB2iSeriesTools.iSeriesDummyTableName()} FETCH FIRST 1 ROW ONLY");
 
 
-				StringBuilder.Append(" AS ");
-				BuildExpression(key.Column, false, false);
+        protected override void BuildInsertOrUpdateQueryAsMerge(SqlInsertOrUpdateStatement insertOrUpdate, string fromDummyTable)
+        {
+            var table = insertOrUpdate.Insert.Into;
+            var targetAlias = Convert(insertOrUpdate.SelectQuery.From.Tables[0].Alias, ConvertType.NameToQueryTableAlias).ToString();
+            var sourceAlias = Convert(GetTempAliases(1, "s")[0], ConvertType.NameToQueryTableAlias).ToString();
+            var keys = insertOrUpdate.Update.Keys;
 
-				if (i + 1 < keys.Count)
-					StringBuilder.Append(", ");
-			}
+            AppendIndent().Append("MERGE INTO ");
+            BuildPhysicalTable(table, null);
+            StringBuilder.Append(' ').AppendLine(targetAlias);
 
-			if (!string.IsNullOrEmpty(fromDummyTable))
-				StringBuilder.Append(' ').Append(fromDummyTable);
+            AppendIndent().Append("USING (SELECT ");
 
-			StringBuilder.Append(") ").Append(sourceAlias).AppendLine(" ON");
+            ExtractMergeParametersIfCannotCombine(insertOrUpdate, keys);
+            
+            for (var i = 0; i < keys.Count; i++)
+            {
+                var key = keys[i];
+                var expr = key.Expression;
 
-			AppendIndent().AppendLine("(");
+                if (expr is SqlParameter || expr is SqlValue)
+                {
+                    var exprType = SqlDataType.GetDataType(expr.SystemType);
+                    var asType = GetiSeriesType(exprType);
 
-			Indent++;
+                    StringBuilder.Append("CAST(");
+                    BuildExpression(expr, false, false);
+                    StringBuilder.AppendFormat(" AS {0})", asType);
+                }
+                else
+                    BuildExpression(expr, false, false);
 
-			for (var i = 0; i < keys.Count; i++)
-			{
-				var key = keys[i];
 
-				AppendIndent();
+                StringBuilder.Append(" AS ");
+                BuildExpression(key.Column, false, false);
 
-				StringBuilder.Append(targetAlias).Append('.');
-				BuildExpression(key.Column, false, false);
+                if (i + 1 < keys.Count)
+                    StringBuilder.Append(", ");
+            }
 
-				StringBuilder.Append(" = ").Append(sourceAlias).Append('.');
-				BuildExpression(key.Column, false, false);
+            if (!string.IsNullOrEmpty(fromDummyTable))
+                StringBuilder.Append(' ').Append(fromDummyTable);
 
-				if (i + 1 < keys.Count)
-					StringBuilder.Append(" AND");
+            StringBuilder.Append(") ").Append(sourceAlias).AppendLine(" ON");
 
-				StringBuilder.AppendLine();
-			}
+            AppendIndent().AppendLine("(");
 
-			Indent--;
+            Indent++;
 
-			AppendIndent().AppendLine(")");
+            for (var i = 0; i < keys.Count; i++)
+            {
+                var key = keys[i];
 
-			if (insertOrUpdate.Update.Items.Any())
-			{
-				AppendIndent().AppendLine("WHEN MATCHED THEN");
+                AppendIndent();
 
-				Indent++;
-				AppendIndent().AppendLine("UPDATE ");
-				BuildUpdateSet(insertOrUpdate.SelectQuery, insertOrUpdate.Update);
-				Indent--;
-			}
+                StringBuilder.Append(targetAlias).Append('.');
+                BuildExpression(key.Column, false, false);
 
-			AppendIndent().AppendLine("WHEN NOT MATCHED THEN");
+                StringBuilder.Append(" = ").Append(sourceAlias).Append('.');
+                BuildExpression(key.Column, false, false);
 
-			Indent++;
-			BuildInsertClause(insertOrUpdate, insertOrUpdate.Insert, "INSERT", false, false);
-			Indent--;
+                if (i + 1 < keys.Count)
+                    StringBuilder.Append(" AND");
 
-			while (EndLine.Contains(StringBuilder[StringBuilder.Length - 1]))
-				StringBuilder.Length--;
-		}
+                StringBuilder.AppendLine();
+            }
 
-		protected override void BuildUpdateSet(SelectQuery selectQuery, SqlUpdateClause updateClause)
+            Indent--;
+
+            AppendIndent().AppendLine(")");
+
+            if (insertOrUpdate.Update.Items.Any())
+            {
+                AppendIndent().AppendLine("WHEN MATCHED THEN");
+
+                Indent++;
+                AppendIndent().AppendLine("UPDATE ");
+                BuildUpdateSet(insertOrUpdate.SelectQuery, insertOrUpdate.Update);
+                Indent--;
+            }
+
+            AppendIndent().AppendLine("WHEN NOT MATCHED THEN");
+
+            Indent++;
+            BuildInsertClause(insertOrUpdate, insertOrUpdate.Insert, "INSERT", false, false);
+            Indent--;
+
+            while (EndLine.Contains(StringBuilder[StringBuilder.Length - 1]))
+                StringBuilder.Length--;
+        }
+
+
+
+
+        protected override void BuildUpdateSet(SelectQuery selectQuery, SqlUpdateClause updateClause)
 		{
 			AppendIndent()
 				.AppendLine("SET");
@@ -506,27 +510,27 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			base.BuildPredicate(newpredicate);
 		}
 
-	    protected override void BuildInsertQuery(SqlStatement statement, SqlInsertClause insertClause, bool addAlias)
-	    {
-	        BuildStep = Step.InsertClause; BuildInsertClause(statement, insertClause, addAlias);
-	        BuildStep = Step.WithClause; BuildWithClause(statement.GetWithClause());
+        protected override void BuildInsertQuery(SqlStatement statement, SqlInsertClause insertClause, bool addAlias)
+        {
+            BuildStep = Step.InsertClause; BuildInsertClause(statement, insertClause, addAlias);
+            BuildStep = Step.WithClause; BuildWithClause(statement.GetWithClause());
 
             if (statement.QueryType == QueryType.Insert && statement.SelectQuery.From.Tables.Count != 0)
-	        {
-	            BuildStep = Step.SelectClause; BuildSelectClause(statement.SelectQuery);
-	            BuildStep = Step.FromClause; BuildFromClause(statement, statement.SelectQuery);
-	            BuildStep = Step.WhereClause; BuildWhereClause(statement.SelectQuery);
-	            BuildStep = Step.GroupByClause; BuildGroupByClause(statement.SelectQuery);
-	            BuildStep = Step.HavingClause; BuildHavingClause(statement.SelectQuery);
-	            BuildStep = Step.OrderByClause; BuildOrderByClause(statement.SelectQuery);
-	            BuildStep = Step.OffsetLimit; BuildOffsetLimit(statement.SelectQuery);
-	        }
+            {
+                BuildStep = Step.SelectClause; BuildSelectClause(statement.SelectQuery);
+                BuildStep = Step.FromClause; BuildFromClause(statement, statement.SelectQuery);
+                BuildStep = Step.WhereClause; BuildWhereClause(statement.SelectQuery);
+                BuildStep = Step.GroupByClause; BuildGroupByClause(statement.SelectQuery);
+                BuildStep = Step.HavingClause; BuildHavingClause(statement.SelectQuery);
+                BuildStep = Step.OrderByClause; BuildOrderByClause(statement.SelectQuery);
+                BuildStep = Step.OffsetLimit; BuildOffsetLimit(statement.SelectQuery);
+            }
 
-	        if (insertClause.WithIdentity)
-	            BuildGetIdentity(insertClause);
-	    }
+            if (insertClause.WithIdentity)
+                BuildGetIdentity(insertClause);
+        }
 
-	    protected override void BuildDeleteQuery(SqlDeleteStatement deleteStatement)
+        protected override void BuildDeleteQuery(SqlDeleteStatement deleteStatement)
 	    {
             if(deleteStatement.With != null)
                 throw new NotSupportedException("iSeries doesn't support Cte in Delete statement");

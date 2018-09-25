@@ -334,23 +334,35 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         #region CreateConnectionStringBuilder
 
-        //Lazy TypeCreators make sure types are loaded
-        private static readonly Lazy<StaticTypeCreator<string, DbConnectionStringBuilder>> DbConnectionStringBuilderCreator_AccessClient
-            = new Lazy<StaticTypeCreator<string, DbConnectionStringBuilder>>(() =>
-                new StaticTypeCreator<string, DbConnectionStringBuilder>(
-                  Type.GetType(TypeNameDB2ConnectionStringBuilder_AccessClient, true)));
+        public static DB2iSeriesNamingConvention GetNamingConvention(string connectionString)
+        {
+            var providerType = DetectFromConnectionString(connectionString);
+            if (providerType == DB2iSeriesAdoProviderType.DB2Connect)
+                return DB2iSeriesNamingConvention.Sql;
+            else
+            {
+                var csb = CreateConnectionStringBuilder(providerType, connectionString);
+                return csb["Naming"]?.ToString() == "1" ? DB2iSeriesNamingConvention.System : DB2iSeriesNamingConvention.Sql;
+            }
 
-        private static readonly Lazy<StaticTypeCreator<string, DbConnectionStringBuilder>> DbConnectionStringBuilderCreator_DB2Connect
-            = new Lazy<StaticTypeCreator<string, DbConnectionStringBuilder>>(() =>
-                new StaticTypeCreator<string, DbConnectionStringBuilder>(
-                  Type.GetType(TypeNameDB2ConnectionStringBuilder_DB2Connect, true)));
+        }
+
+        public static string GetSqlObjectDelimiter(string connectionString)
+        {
+            return GetNamingConvention(connectionString) == DB2iSeriesNamingConvention.Sql ? "." : "/";
+        }
+
+        public static DbConnectionStringBuilder CreateConnectionStringBuilder(string connectionString)
+        {
+            return CreateConnectionStringBuilder(DetectFromConnectionString(connectionString), connectionString);
+        }
 
         public static DbConnectionStringBuilder CreateConnectionStringBuilder(DB2iSeriesAdoProviderType dB2AdoProviderType, string connectionString)
         {
             if (dB2AdoProviderType == DB2iSeriesAdoProviderType.AccessClient)
-                return DbConnectionStringBuilderCreator_AccessClient.Value.CreateInstance(connectionString);
+                return DB2iSeriesTypes.CreateConnectionStringBuilder(connectionString);
             else if (dB2AdoProviderType == DB2iSeriesAdoProviderType.DB2Connect)
-                return DbConnectionStringBuilderCreator_DB2Connect.Value.CreateInstance(connectionString);
+                return DB2Types.CreateConnectionStringBuilder(connectionString);
             else
                 throw new NotSupportedException();
         }

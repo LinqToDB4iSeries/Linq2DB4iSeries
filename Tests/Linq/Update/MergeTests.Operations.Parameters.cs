@@ -68,6 +68,7 @@ namespace Tests.xUpdate
 
                 switch (context)
                 {
+                    case DB2iSeriesProviderName.DB2iSeries_DB2Connect:
                     case DB2iSeriesProviderName.DB2:
                     case DB2iSeriesProviderName.DB2_GAS:
                     case DB2iSeriesProviderName.DB2_73:
@@ -141,6 +142,7 @@ namespace Tests.xUpdate
 
                 switch (context)
                 {
+                    case DB2iSeriesProviderName.DB2iSeries_DB2Connect:
                     case DB2iSeriesProviderName.DB2:
                     case DB2iSeriesProviderName.DB2_GAS:
                     case DB2iSeriesProviderName.DB2_73:

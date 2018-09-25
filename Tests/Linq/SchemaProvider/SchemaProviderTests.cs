@@ -96,7 +96,9 @@ namespace Tests.SchemaProvider
 				var dbSchema = sp.GetSchema(conn);
 				var table = dbSchema.Tables.Single(t => t.TableName == "ALLTYPES");
 
-				Assert.That(table.Columns.Single(c => c.ColumnName == "BINARYDATATYPE").ColumnType, Is.EqualTo("BINARY(20)"));
+                var binaryType = (DB2iSeriesTools.GetAdoProviderType(conn.Connection) == DB2iSeriesAdoProviderType.AccessClient) ? "BINARY(20)" : "BINARY";
+
+                Assert.That(table.Columns.Single(c => c.ColumnName == "BINARYDATATYPE").ColumnType, Is.EqualTo(binaryType));
 				Assert.That(table.Columns.Single(c => c.ColumnName == "VARBINARYDATATYPE").ColumnType, Is.EqualTo("VARBIN"));
 			}
 		}

@@ -17,9 +17,31 @@ namespace LinqToDB.DataProvider.DB2iSeries
     {
         #region Private fields / Public Properties
 
+        private static Action<IDbDataParameter> _setBlob_AccessClient;
+        private static Action<IDbDataParameter> _setBlob_DB2Connect;
+        private static Action<IDbDataParameter> GetBlobSetter(DB2iSeriesDataProvider provider)
+        {
+
+            if (provider.options.AdoProviderType == DB2iSeriesAdoProviderType.AccessClient)
+            {
+                if (_setBlob_AccessClient == null)
+                    _setBlob_AccessClient = provider.GetSetParameter(DB2iSeriesTypes.ConnectionType, "iDB2Parameter", "iDB2DbType", "iDB2DbType", "iDB2Blob");
+
+                return _setBlob_AccessClient;
+            }
+            else
+            {
+                if (_setBlob_DB2Connect == null)
+                    _setBlob_DB2Connect = provider.GetSetParameter(DB2Types.ConnectionType,  "DB2Parameter", "DB2Type", "DB2Type", "Blob");
+
+                return _setBlob_DB2Connect;
+            }
+        }
+
+
         private readonly DB2iSeriesDataProviderOptions options;
         readonly DB2iSeriesSqlOptimizer _sqlOptimizer;
-        Action<IDbDataParameter> _setBlob; //Removed static, needs different implementation per providerType
+        
         DB2iSeriesBulkCopy _bulkCopy;
 
         public string DummyTableName => DB2iSeriesTools.iSeriesDummyTableName();
@@ -56,7 +78,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
             SqlProviderFlags.AcceptsTakeAsParameter = false;
             SqlProviderFlags.AcceptsTakeAsParameterIfSkip = true;
             SqlProviderFlags.IsDistinctOrderBySupported = false;
-            SqlProviderFlags.CanCombineParameters = false;
+            SqlProviderFlags.CanCombineParameters = options.AdoProviderType == DB2iSeriesAdoProviderType.DB2Connect;
             SqlProviderFlags.IsParameterOrderDependent = true;
             SqlProviderFlags.IsCommonTableExpressionsSupported = true;
 
@@ -82,38 +104,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         private void OnConnectionTypeCreated_AccessClient(Type connectionType)
         {
-            DB2iSeriesTypes.ConnectionType = connectionType;
-
-            var assembly = connectionType.Assembly;
-            Type getType(string typeName) => assembly.GetType($"{DB2iSeriesTools.AssemblyName_AccessClient}.{typeName}", true);
-
-            DB2iSeriesTypes.BigInt.Type = getType("iDB2BigInt");
-            DB2iSeriesTypes.Binary.Type = getType("iDB2Binary");
-            DB2iSeriesTypes.Blob.Type = getType("iDB2Blob");
-            DB2iSeriesTypes.Char.Type = getType("iDB2Char");
-            DB2iSeriesTypes.CharBitData.Type = getType("iDB2CharBitData");
-            DB2iSeriesTypes.Clob.Type = getType("iDB2Clob");
-            DB2iSeriesTypes.Date.Type = getType("iDB2Date");
-            DB2iSeriesTypes.DataLink.Type = getType("iDB2DataLink");
-            DB2iSeriesTypes.DbClob.Type = getType("iDB2DbClob");
-            DB2iSeriesTypes.DecFloat16.Type = getType("iDB2DecFloat16");
-            DB2iSeriesTypes.DecFloat34.Type = getType("iDB2DecFloat34");
-            DB2iSeriesTypes.Decimal.Type = getType("iDB2Decimal");
-            DB2iSeriesTypes.Double.Type = getType("iDB2Double");
-            DB2iSeriesTypes.Graphic.Type = getType("iDB2Graphic");
-            DB2iSeriesTypes.Integer.Type = getType("iDB2Integer");
-            DB2iSeriesTypes.Numeric.Type = getType("iDB2Numeric");
-            DB2iSeriesTypes.Real.Type = getType("iDB2Real");
-            DB2iSeriesTypes.RowId.Type = getType("iDB2Rowid");
-            DB2iSeriesTypes.SmallInt.Type = getType("iDB2SmallInt");
-            DB2iSeriesTypes.Time.Type = getType("iDB2Time");
-            DB2iSeriesTypes.TimeStamp.Type = getType("iDB2TimeStamp");
-            DB2iSeriesTypes.VarBinary.Type = getType("iDB2VarBinary");
-            DB2iSeriesTypes.VarChar.Type = getType("iDB2VarChar");
-            DB2iSeriesTypes.VarCharBitData.Type = getType("iDB2VarCharBitData");
-            DB2iSeriesTypes.VarGraphic.Type = getType("iDB2VarGraphic");
-            DB2iSeriesTypes.Xml.Type = getType("iDB2Xml");
-
             SetProviderField(DB2iSeriesTypes.BigInt, typeof(long), "GetiDB2BigInt");
             SetProviderField(DB2iSeriesTypes.Binary, typeof(byte[]), "GetiDB2Binary");
             SetProviderField(DB2iSeriesTypes.Blob, typeof(byte[]), "GetiDB2Blob");
@@ -167,9 +157,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
             //MappingSchema.AddScalarType(DB2iSeriesTypes.VarCharBitData, GetNullValue(DB2iSeriesTypes.VarCharBitData), true, DataType.VarBinary);
             //MappingSchema.AddScalarType(DB2iSeriesTypes.VarGraphic, GetNullValue(DB2iSeriesTypes.VarGraphic), true, DataType.NText);
             //MappingSchema.AddScalarType(DB2iSeriesTypes.Xml, GetNullValue(DB2iSeriesTypes.Xml), true, DataType.Xml);
-
-            _setBlob = GetSetParameter(connectionType, "iDB2Parameter", "iDB2DbType", "iDB2DbType", "iDB2Blob");
-            
             
             //DB2iSeriesTools.Initialized();
         }
@@ -215,7 +202,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
             //MappingSchema.AddScalarType(DB2.DB2Types.DB2RowId, GetNullValue(DB2.DB2Types.DB2RowId), true, DataType.VarBinary);
             //MappingSchema.AddScalarType(DB2.DB2Types.DB2Xml, DB2.DB2Tools.IsCore ? null : GetNullValue(DB2.DB2Types.DB2Xml), true, DataType.Xml);
 
-            _setBlob = GetSetParameter(connectionType, "DB2Parameter", "DB2Type", "DB2Type", "Blob");
+            //_setBlob = GetSetParameter(connectionType, "DB2Parameter", "DB2Type", "DB2Type", "Blob");
 
             //Note: Removed the check for DateTime support , assumed not supported
 
@@ -424,9 +411,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
                     break;
                 case DataType.Time:
-                    if (value is TimeSpan)
+                    if (parameter.GetType().Assembly.GetName().Name == DB2iSeriesTypes.AssemblyName)
                     {
-                        value = new DateTime(((TimeSpan)value).Ticks);
+                        if (value is TimeSpan)
+                        {
+                            value = new DateTime(((TimeSpan)value).Ticks);
+                        }
                     }
                     break;
                 case DataType.DateTime2:
@@ -434,7 +424,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
                     break;
                 case DataType.Blob:
                     base.SetParameter(parameter, $"@{name}", dataType, value);
-                    _setBlob(parameter);
+                    GetBlobSetter(this)(parameter);
                     return;
             }
             base.SetParameter(parameter, $"@{name}", dataType, value);
