@@ -6,6 +6,11 @@ namespace LinqToDB.DataProvider.DB2iSeries {
 
   public class DB2iSeriesTypeCreator<T> : TypeCreatorNoDefault<T> {
     private Func<IDbConnection, object> _creator;
+        //public DB2iSeriesTypeCreator(Type type)
+        //{
+        //    this.Type = type;
+        //}
+
     public object CreateInstance(DataConnection value) {
       if (_creator == null) {
         _creator = GetCreator<IDbConnection>(DB2iSeriesTypes.ConnectionType);

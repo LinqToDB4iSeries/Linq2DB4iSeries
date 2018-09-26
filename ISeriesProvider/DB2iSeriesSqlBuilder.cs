@@ -13,10 +13,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 	public class DB2iSeriesSqlBuilder : BasicSqlBuilder
 	{
-        
+	    protected readonly DB2iSeriesDataProviderOptions providerOptions;
 
-	    //protected readonly bool mapGuidAsString;
-        protected readonly DB2iSeriesDataProviderOptions providerOptions;
+        public DB2iSeriesSqlBuilder(ISqlOptimizer sqlOptimizer, SqlProviderFlags sqlProviderFlags, ValueToSqlConverter valueToSqlConverter)
+            : base(sqlOptimizer, sqlProviderFlags, valueToSqlConverter)
+        {
+            //this.mapGuidAsString = sqlProviderFlags.CustomFlags.Contains(nameof(DB2iSeriesDataProviderOptions.MapGuidAsString));
+            this.providerOptions = new DB2iSeriesDataProviderOptions(DB2iSeriesLevels.Any, false, DB2iSeriesAdoProviderType.AccessClient, DB2iSeriesNamingConvention.Sql, DB2iSeriesIdentifierQuoteMode.None);
+        }
 
         public DB2iSeriesSqlBuilder(ISqlOptimizer sqlOptimizer, SqlProviderFlags sqlProviderFlags,
 			ValueToSqlConverter valueToSqlConverter, DB2iSeriesDataProviderOptions providerOptions)

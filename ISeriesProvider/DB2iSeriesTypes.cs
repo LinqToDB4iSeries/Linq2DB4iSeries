@@ -22,7 +22,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         internal static readonly string TypeNameDbConnectionStringBuilder = AssemblyName + ".iDB2ConnectionStringBuilder, " + AssemblyName;
 
-        private readonly static Lazy<Type> connectionType = new Lazy<Type>(() => Type.GetType(ConnectionTypeName, true));
+        private readonly static Lazy<Type> connectionType = new Lazy<Type>(() => Type.GetType(ConnectionTypeName));
         
         public static Type ConnectionType => connectionType.Value;
 
@@ -92,9 +92,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
             return Type.GetType($"{DB2iSeriesTypes.TypesNamespaceName}.{DatatypeName},{DB2iSeriesTypes.AssemblyName}");
         }
     }
+
     public class DB2iTypeDescriptorDefault : DB2iTypeDescriptor
     {
-        private readonly DB2.TypeCreator creator = new DB2.TypeCreator();
+        private readonly TypeCreator creator = new TypeCreator();
 
         public DB2iTypeDescriptorDefault(Type dotnetType, DataType dataType, string datareaderGetMethodName, string datatypeName, bool canBeNull = true) : base(dotnetType, dataType, datareaderGetMethodName, datatypeName, canBeNull)
         {
@@ -104,15 +105,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
         {
         }
 
-        public dynamic CreateInstance()
+        public object CreateInstance()
         {
             creator.Type = creator.Type ?? Type;
             return creator.CreateInstance();
         }
     }
+
     public class DB2iTypeDescriptor<T> : DB2iTypeDescriptor
     {
-        private readonly DB2.TypeCreator<T> creator = new DB2.TypeCreator<T>();
+        private readonly TypeCreator<T> creator = new TypeCreator<T>();
 
         public DB2iTypeDescriptor(DataType dataType, string datareaderGetMethodName, string datatypeName, bool canBeNull = true) : base(typeof(T), dataType, datareaderGetMethodName, datatypeName, canBeNull)
         {
@@ -122,21 +124,22 @@ namespace LinqToDB.DataProvider.DB2iSeries
         {
         }
 
-        public dynamic CreateInstance()
+        public object CreateInstance()
         {
             creator.Type = creator.Type ?? Type;
             return creator.CreateInstance();
         }
 
-        public dynamic CreateInstance(T value)
+        public object CreateInstance(T value)
         {
             creator.Type = creator.Type ?? Type;
             return creator.CreateInstance(value);
         }
     }
+
     public class DB2iTypeDescriptor<T1, T2, T3> : DB2iTypeDescriptor
     {
-        private readonly DB2.TypeCreator<T1, T2, T3> creator = new DB2.TypeCreator<T1, T2, T3>();
+        private readonly TypeCreator<T1, T2, T3> creator = new TypeCreator<T1, T2, T3>();
 
         public DB2iTypeDescriptor(DataType dataType, string datareaderGetMethodName, string datatypeName, bool canBeNull = true) : base(typeof(T1), dataType, datareaderGetMethodName, datatypeName, canBeNull)
         {
@@ -146,49 +149,55 @@ namespace LinqToDB.DataProvider.DB2iSeries
         {
         }
 
-        public dynamic CreateInstance()
+        public object CreateInstance()
         {
             creator.Type = creator.Type ?? Type;
             return creator.CreateInstance();
         }
 
-        public dynamic CreateInstance(T1 value)
+        public object CreateInstance(T1 value)
         {
             creator.Type = creator.Type ?? Type;
             return creator.CreateInstance(value);
         }
 
-        public dynamic CreateInstance(T2 value)
+        public object CreateInstance(T2 value)
         {
             creator.Type = creator.Type ?? Type;
             return creator.CreateInstance(value);
         }
 
-        public dynamic CreateInstance(T3 value)
+        public object CreateInstance(T3 value)
         {
             creator.Type = creator.Type ?? Type;
             return creator.CreateInstance(value);
         }
     }
-    public class DB2iTypeDescriptorConnectionCreator<T> : DB2TypeDescriptor
+
+    public class DB2iTypeDescriptorConnectionCreator<T> : DB2iTypeDescriptor
     {
         private readonly DB2iSeriesTypeCreator<T> creator = new DB2iSeriesTypeCreator<T>();
 
         public DB2iTypeDescriptorConnectionCreator(DataType dataType, string datareaderGetMethodName, string datatypeName, bool canBeNull = true) : base(typeof(T), dataType, datareaderGetMethodName, datatypeName, canBeNull)
         {
+            //creator = new Lazy<DB2iSeriesTypeCreator<T>>(() => new DB2iSeriesTypeCreator<T>(Type));
+            //creator = new Lazy<DB2iSeriesTypeCreator<T>>(() => new DB2iSeriesTypeCreator<T>(
+            //    Type.GetType($"{DB2iSeriesTypes.TypesNamespaceName}.{DatatypeName},{DB2iSeriesTypes.AssemblyName}")
+            //    ));
+            
         }
 
         public DB2iTypeDescriptorConnectionCreator(DataType dataType, string datareaderGetMethodName, string datatypeName, object nullValue, bool canBeNull = true) : base(typeof(T), dataType, datareaderGetMethodName, datatypeName, nullValue, canBeNull)
         {
         }
 
-        public dynamic CreateInstance(T value)
+        public object CreateInstance(T value)
         {
             creator.Type = creator.Type ?? Type;
             return creator.CreateInstance(value);
         }
 
-        public dynamic CreateInstance(DataConnection value)
+        public object CreateInstance(DataConnection value)
         {
             creator.Type = creator.Type ?? Type;
             return creator.CreateInstance(value);

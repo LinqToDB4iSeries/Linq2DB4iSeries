@@ -19,7 +19,8 @@ using NUnit.Framework;
 
 namespace Tests.DataProvider
 {
-	using Model;
+    using IBM.Data.DB2Types;
+    using Model;
 
 	[TestFixture]
 	public class DB2iSeriesTests : TestBase
@@ -162,75 +163,134 @@ namespace Tests.DataProvider
 		{
 			using (var conn = new DataConnection(context))
 			{
-				Assert.That(TestType<long?>(conn, "bigintDataType", DataType.Int64), Is.EqualTo(1000000L));
-				Assert.That(TestType<iDB2BigInt?>(conn, "bigintDataType", DataType.Int64), Is.EqualTo(new iDB2BigInt(1000000L)));
-				Assert.That(TestType<int?>(conn, "intDataType", DataType.Int32), Is.EqualTo(444444));
-				Assert.That(TestType<iDB2Integer?>(conn, "intDataType", DataType.Int32), Is.EqualTo(new iDB2Integer(444444)));
-				Assert.That(TestType<short?>(conn, "smallintDataType", DataType.Int16), Is.EqualTo(100));
-				Assert.That(TestType<iDB2SmallInt?>(conn, "smallintDataType", DataType.Int16), Is.EqualTo(new iDB2SmallInt(100)));
-				Assert.That(TestType<decimal?>(conn, "decimalDataType", DataType.Decimal), Is.EqualTo(666m));
-				Assert.That(TestType<decimal?>(conn, "decfloat16DataType", DataType.Decimal), Is.EqualTo(888.456m));
-				Assert.That(TestType<decimal?>(conn, "decfloat34DataType", DataType.Decimal), Is.EqualTo(777.987m));
-				Assert.That(TestType<float?>(conn, "realDataType", DataType.Single), Is.EqualTo(222.987f));
-				Assert.That(TestType<iDB2Real?>(conn, "realDataType", DataType.Single), Is.EqualTo(new iDB2Real(222.987f)));
+                if (context.Contains("DB2Connect"))
+                {
+                    Assert.That(TestType<long?>(conn, "bigintDataType", DataType.Int64), Is.EqualTo(1000000L));
+                    Assert.That(TestType<DB2Int64?>(conn, "bigintDataType", DataType.Int64), Is.EqualTo(new DB2Int64(1000000L)));
+                    Assert.That(TestType<int?>(conn, "intDataType", DataType.Int32), Is.EqualTo(444444));
+                    Assert.That(TestType<DB2Int32?>(conn, "intDataType", DataType.Int32), Is.EqualTo(new DB2Int32(444444)));
+                    Assert.That(TestType<short?>(conn, "smallintDataType", DataType.Int16), Is.EqualTo(100));
+                    Assert.That(TestType<DB2Int16?>(conn, "smallintDataType", DataType.Int16), Is.EqualTo(new DB2Int16(100)));
+                    Assert.That(TestType<decimal?>(conn, "decimalDataType", DataType.Decimal), Is.EqualTo(666m));
+                    Assert.That(TestType<decimal?>(conn, "decfloat16DataType", DataType.Decimal), Is.EqualTo(888.456m));
+                    Assert.That(TestType<decimal?>(conn, "decfloat34DataType", DataType.Decimal), Is.EqualTo(777.987m));
+                    Assert.That(TestType<float?>(conn, "realDataType", DataType.Single), Is.EqualTo(222.987f));
+                    Assert.That(TestType<DB2Real?>(conn, "realDataType", DataType.Single), Is.EqualTo(new DB2Real(222.987f)));
+                    Assert.That(TestType<double?>(conn, "doubleDataType", DataType.Double), Is.EqualTo(555.987d));
+                    Assert.That(TestType<DB2Double?>(conn, "doubleDataType", DataType.Double), Is.EqualTo(new DB2Double(555.987d)));
 
-				//Assert.That(TestType<double?>(conn, "doubleDataType", DataType.Double), Is.EqualTo(16.2d));
-				//Assert.That(TestType<iDB2Double?>(conn, "doubleDataType", DataType.Double), Is.EqualTo(new iDB2Double(16.2d)));
+                    Assert.That(TestType<string>(conn, "charDataType", DataType.Char), Is.EqualTo("Y"));
+                    Assert.That(TestType<string>(conn, "charDataType", DataType.NChar), Is.EqualTo("Y"));
+                    Assert.That(TestType<DB2String?>(conn, "charDataType", DataType.Char), Is.EqualTo(new DB2String("Y")));
+                    Assert.That(TestType<string>(conn, "varcharDataType", DataType.VarChar), Is.EqualTo("var-char"));
+                    Assert.That(TestType<string>(conn, "varcharDataType", DataType.NVarChar), Is.EqualTo("var-char"));
+                    Assert.That(TestType<string>(conn, "clobDataType", DataType.Text), Is.EqualTo("567"));
+                    Assert.That(TestType<string>(conn, "dbclobDataType", DataType.NText), Is.EqualTo("890"));
 
-				Assert.That(TestType<string>(conn, "charDataType", DataType.Char), Is.EqualTo("Y"));
-				Assert.That(TestType<string>(conn, "charDataType", DataType.NChar), Is.EqualTo("Y"));
-				Assert.That(TestType<iDB2VarChar?>(conn, "charDataType", DataType.Char), Is.EqualTo(new iDB2VarChar("Y")));
-				Assert.That(TestType<string>(conn, "varcharDataType", DataType.VarChar), Is.EqualTo("var-char"));
-				Assert.That(TestType<string>(conn, "varcharDataType", DataType.NVarChar), Is.EqualTo("var-char"));
-				Assert.That(TestType<string>(conn, "clobDataType", DataType.Text), Is.EqualTo("567"));
-				Assert.That(TestType<string>(conn, "dbclobDataType", DataType.NText), Is.EqualTo("890"));
+                    Assert.That(TestType<byte[]>(conn, "binaryDataType", DataType.Binary), Is.EqualTo(
+                        new byte[] { 0xF1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }));
+                    Assert.That(TestType<byte[]>(conn, "varbinaryDataType", DataType.VarBinary), Is.EqualTo(new byte[] { 0xF4 }));
+                    Assert.That(TestType<byte[]>(conn, "blobDataType", DataType.Blob, skipDefaultNull: true, skipUndefinedNull: true, skipDefault: true, skipUndefined: true), Is.EqualTo(new byte[] { 0xF2, 0xF3, 0xF4 }));
+                    Assert.That(TestType<byte[]>(conn, "blobDataType", DataType.VarBinary, skipDefaultNull: true, skipUndefinedNull: true, skipDefault: true, skipUndefined: true), Is.EqualTo(new byte[] { 0xF2, 0xF3, 0xF4 }));
+                    Assert.That(TestType<string>(conn, "graphicDataType", DataType.VarChar), Is.EqualTo("graphic   "));
+                    Assert.That(TestType<string>(conn, "vargraphicDataType", DataType.VarChar), Is.EqualTo("vargraphic"));
 
-				Assert.That(TestType<byte[]>(conn, "binaryDataType", DataType.Binary),
-					Is.EqualTo(new byte[] {0xF1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}));
-				Assert.That(TestType<byte[]>(conn, "varbinaryDataType", DataType.VarBinary), Is.EqualTo(new byte[] {0xF4}));
-				Assert.That(
-					TestType<byte[]>(conn, "blobDataType", DataType.Blob, skipDefaultNull: true, skipUndefinedNull: true,
-						skipDefault: true, skipUndefined: true), Is.EqualTo(new byte[] {0xF2, 0xF3, 0xF4}));
-				Assert.That(
-					TestType<byte[]>(conn, "blobDataType", DataType.VarBinary, skipDefaultNull: true, skipUndefinedNull: true,
-						skipDefault: true, skipUndefined: true), Is.EqualTo(new byte[] {0xF2, 0xF3, 0xF4}));
+                    Assert.That(TestType<DateTime?>(conn, "dateDataType", DataType.Date), Is.EqualTo(new DateTime(2012, 12, 12)));
+                    Assert.That(TestType<DB2Date?>(conn, "dateDataType", DataType.Date), Is.EqualTo(new DB2Date(new DateTime(2012, 12, 12))));
+                    Assert.That(TestType<TimeSpan?>(conn, "timeDataType", DataType.Time), Is.EqualTo(new TimeSpan(12, 12, 12)));
+                    Assert.That(TestType<DB2Time?>(conn, "timeDataType", DataType.Time), Is.EqualTo(new DB2Time(new TimeSpan(12, 12, 12))));
+                    Assert.That(TestType<DateTime?>(conn, "timestampDataType", DataType.DateTime2), Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12, 0)));
+                    Assert.That(TestType<DB2TimeStamp?>(conn, "timestampDataType", DataType.DateTime2), Is.EqualTo(new DB2TimeStamp(new DateTime(2012, 12, 12, 12, 12, 12, 0))));
 
-				Assert.That(TestType<string>(conn, "graphicDataType", DataType.VarChar), Is.EqualTo("graphic   "));
-				Assert.That(TestType<string>(conn, "vargraphicDataType", DataType.VarChar), Is.EqualTo("vargraphic"));
+                    Assert.That(TestType<string>(conn, "xmlDataType", DataType.Xml, skipPass: true), Is.EqualTo("<root><element strattr=\"strvalue\" intattr=\"12345\"/></root>"));
 
-				Assert.That(TestType<DateTime?>(conn, "dateDataType", DataType.Date, skipDefault: true, skipUndefined: true),
-					Is.EqualTo(new DateTime(2012, 12, 12)));
-				Assert.That(TestType<iDB2Date?>(conn, "dateDataType", DataType.Date),
-					Is.EqualTo(new iDB2Date(new DateTime(2012, 12, 12))));
-				Assert.That(TestType<TimeSpan?>(conn, "timeDataType", DataType.Time), Is.EqualTo(new TimeSpan(12, 12, 12)));
-				Assert.That(TestType<iDB2Time?>(conn, "timeDataType", DataType.Time),
-					Is.EqualTo(new iDB2Time(new DateTime(1, 1, 1, 12, 12, 12))));
-				Assert.That(
-					TestType<DateTime?>(conn, "timestampDataType", DataType.DateTime2, skipDefault: true, skipUndefined: true),
-					Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12, 0)));
-				Assert.That(TestType<iDB2TimeStamp?>(conn, "timestampDataType", DataType.DateTime2),
-					Is.EqualTo(new iDB2TimeStamp(new DateTime(2012, 12, 12, 12, 12, 12, 0))));
+                    Assert.That(conn.Execute<byte[]>("SELECT rowidDataType FROM AllTypes WHERE ID = 2").Length, Is.Not.EqualTo(0));
+                    //Assert.That(conn.Execute<DB2RowId>("SELECT rowid FROM AllTypes WHERE ID = 2").Value.Length, Is.Not.EqualTo(0));
 
-				Assert.That(TestType<string>(conn, "xmlDataType", DataType.Xml, skipPass: true),
-					Is.EqualTo("<root><element strattr=\"strvalue\" intattr=\"12345\"/></root>"));
+                    //TestType<DB2Clob>(conn, "clobDataType", DataType.Text, skipNotNull: true);
+                    //TestType<DB2Blob>(conn, "blobDataType", DataType.VarBinary, skipNotNull: true);
+                    //TestType<DB2Xml>(conn, "xmlDataType", DataType.Xml, skipPass: true);
 
-				Assert.That(conn.Execute<byte[]>("SELECT rowidDataType FROM AllTypes WHERE ID = 2").Length, Is.Not.EqualTo(0));
-				Assert.That(conn.Execute<iDB2Rowid>("SELECT rowidDataType FROM AllTypes WHERE ID = 2").Value.Length,
-					Is.Not.EqualTo(0));
+                    Assert.That(TestType<DB2Decimal?>(conn, "decimalDataType", DataType.Decimal).ToString(),
+                        Is.EqualTo(new DB2Decimal(666m).ToString()));
+                    Assert.That(TestType<DB2Binary>(conn, "varbinaryDataType", DataType.VarBinary).ToString(),
+                        Is.EqualTo(new DB2Binary(new byte[] { 0xF4 }).ToString()));
+                    Assert.That(TestType<DB2DecimalFloat?>(conn, "decfloat16DataType", DataType.Decimal),
+                        Is.EqualTo(new DB2DecimalFloat(888.456m)));
+                    Assert.That(TestType<DB2DecimalFloat?>(conn, "decfloat34DataType", DataType.Decimal).ToString(),
+                        Is.EqualTo(new DB2DecimalFloat(777.987m).ToString()));
+                }
+                else
+                {
+                    Assert.That(TestType<long?>(conn, "bigintDataType", DataType.Int64), Is.EqualTo(1000000L));
+                    Assert.That(TestType<iDB2BigInt?>(conn, "bigintDataType", DataType.Int64), Is.EqualTo(new iDB2BigInt(1000000L)));
+                    Assert.That(TestType<int?>(conn, "intDataType", DataType.Int32), Is.EqualTo(444444));
+                    Assert.That(TestType<iDB2Integer?>(conn, "intDataType", DataType.Int32), Is.EqualTo(new iDB2Integer(444444)));
+                    Assert.That(TestType<short?>(conn, "smallintDataType", DataType.Int16), Is.EqualTo(100));
+                    Assert.That(TestType<iDB2SmallInt?>(conn, "smallintDataType", DataType.Int16), Is.EqualTo(new iDB2SmallInt(100)));
+                    Assert.That(TestType<decimal?>(conn, "decimalDataType", DataType.Decimal), Is.EqualTo(666m));
+                    Assert.That(TestType<decimal?>(conn, "decfloat16DataType", DataType.Decimal), Is.EqualTo(888.456m));
+                    Assert.That(TestType<decimal?>(conn, "decfloat34DataType", DataType.Decimal), Is.EqualTo(777.987m));
+                    Assert.That(TestType<float?>(conn, "realDataType", DataType.Single), Is.EqualTo(222.987f));
+                    Assert.That(TestType<iDB2Real?>(conn, "realDataType", DataType.Single), Is.EqualTo(new iDB2Real(222.987f)));
+                    Assert.That(TestType<double?>(conn, "doubleDataType", DataType.Double), Is.EqualTo(555.987d));
+                    Assert.That(TestType<iDB2Double?>(conn, "doubleDataType", DataType.Double), Is.EqualTo(new iDB2Double(555.987d)));
 
-				TestType<iDB2Clob>(conn, "clobDataType", DataType.Text, skipNotNull: true);
-				TestType<iDB2Blob>(conn, "blobDataType", DataType.VarBinary, skipNotNull: true);
+                    Assert.That(TestType<string>(conn, "charDataType", DataType.Char), Is.EqualTo("Y"));
+                    Assert.That(TestType<string>(conn, "charDataType", DataType.NChar), Is.EqualTo("Y"));
+                    Assert.That(TestType<iDB2VarChar?>(conn, "charDataType", DataType.Char), Is.EqualTo(new iDB2VarChar("Y")));
+                    Assert.That(TestType<string>(conn, "varcharDataType", DataType.VarChar), Is.EqualTo("var-char"));
+                    Assert.That(TestType<string>(conn, "varcharDataType", DataType.NVarChar), Is.EqualTo("var-char"));
+                    Assert.That(TestType<string>(conn, "clobDataType", DataType.Text), Is.EqualTo("567"));
+                    Assert.That(TestType<string>(conn, "dbclobDataType", DataType.NText), Is.EqualTo("890"));
 
-				TestType<iDB2Xml>(conn, "xmlDataType", DataType.Xml, skipPass: true);
+                    Assert.That(TestType<byte[]>(conn, "binaryDataType", DataType.Binary),
+                        Is.EqualTo(new byte[] { 0xF1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }));
+                    Assert.That(TestType<byte[]>(conn, "varbinaryDataType", DataType.VarBinary), Is.EqualTo(new byte[] { 0xF4 }));
+                    Assert.That(
+                        TestType<byte[]>(conn, "blobDataType", DataType.Blob, skipDefaultNull: true, skipUndefinedNull: true,
+                            skipDefault: true, skipUndefined: true), Is.EqualTo(new byte[] { 0xF2, 0xF3, 0xF4 }));
+                    Assert.That(
+                        TestType<byte[]>(conn, "blobDataType", DataType.VarBinary, skipDefaultNull: true, skipUndefinedNull: true,
+                            skipDefault: true, skipUndefined: true), Is.EqualTo(new byte[] { 0xF2, 0xF3, 0xF4 }));
 
-				Assert.That(TestType<iDB2Decimal?>(conn, "decimalDataType", DataType.Decimal).ToString(),
-					Is.EqualTo(new iDB2Decimal(666m).ToString()));
-				Assert.That(TestType<iDB2Binary>(conn, "varbinaryDataType", DataType.VarBinary).ToString(),
-					Is.EqualTo(new iDB2Binary(new byte[] {0xF4}).ToString()));
-				Assert.That(TestType<iDB2DecFloat16?>(conn, "decfloat16DataType", DataType.Decimal),
-					Is.EqualTo(new iDB2DecFloat16(888.456m)));
-				Assert.That(TestType<iDB2DecFloat34?>(conn, "decfloat34DataType", DataType.Decimal).ToString(),
-					Is.EqualTo(new iDB2DecFloat34(777.987m).ToString()));
+                    Assert.That(TestType<string>(conn, "graphicDataType", DataType.VarChar), Is.EqualTo("graphic   "));
+                    Assert.That(TestType<string>(conn, "vargraphicDataType", DataType.VarChar), Is.EqualTo("vargraphic"));
+
+                    Assert.That(TestType<DateTime?>(conn, "dateDataType", DataType.Date, skipDefault: true, skipUndefined: true),
+                        Is.EqualTo(new DateTime(2012, 12, 12)));
+                    Assert.That(TestType<iDB2Date?>(conn, "dateDataType", DataType.Date),
+                        Is.EqualTo(new iDB2Date(new DateTime(2012, 12, 12))));
+                    Assert.That(TestType<TimeSpan?>(conn, "timeDataType", DataType.Time), Is.EqualTo(new TimeSpan(12, 12, 12)));
+                    Assert.That(TestType<iDB2Time?>(conn, "timeDataType", DataType.Time),
+                        Is.EqualTo(new iDB2Time(new DateTime(1, 1, 1, 12, 12, 12))));
+                    Assert.That(
+                        TestType<DateTime?>(conn, "timestampDataType", DataType.DateTime2, skipDefault: true, skipUndefined: true),
+                        Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12, 0)));
+                    Assert.That(TestType<iDB2TimeStamp?>(conn, "timestampDataType", DataType.DateTime2),
+                        Is.EqualTo(new iDB2TimeStamp(new DateTime(2012, 12, 12, 12, 12, 12, 0))));
+
+                    Assert.That(TestType<string>(conn, "xmlDataType", DataType.Xml, skipPass: true),
+                        Is.EqualTo("<root><element strattr=\"strvalue\" intattr=\"12345\"/></root>"));
+
+                    Assert.That(conn.Execute<byte[]>("SELECT rowidDataType FROM AllTypes WHERE ID = 2").Length, Is.Not.EqualTo(0));
+                    Assert.That(conn.Execute<iDB2Rowid>("SELECT rowidDataType FROM AllTypes WHERE ID = 2").Value.Length,
+                        Is.Not.EqualTo(0));
+
+                    TestType<iDB2Clob>(conn, "clobDataType", DataType.Text, skipNotNull: true);
+                    TestType<iDB2Blob>(conn, "blobDataType", DataType.VarBinary, skipNotNull: true);
+
+                    TestType<iDB2Xml>(conn, "xmlDataType", DataType.Xml, skipPass: true);
+
+                    Assert.That(TestType<iDB2Decimal?>(conn, "decimalDataType", DataType.Decimal).ToString(),
+                        Is.EqualTo(new iDB2Decimal(666m).ToString()));
+                    Assert.That(TestType<iDB2Binary>(conn, "varbinaryDataType", DataType.VarBinary).ToString(),
+                        Is.EqualTo(new iDB2Binary(new byte[] { 0xF4 }).ToString()));
+                    Assert.That(TestType<iDB2DecFloat16?>(conn, "decfloat16DataType", DataType.Decimal),
+                        Is.EqualTo(new iDB2DecFloat16(888.456m)));
+                    Assert.That(TestType<iDB2DecFloat34?>(conn, "decfloat34DataType", DataType.Decimal).ToString(),
+                        Is.EqualTo(new iDB2DecFloat34(777.987m).ToString()));
+                }
 			}
 		}
 
@@ -921,9 +981,10 @@ namespace Tests.DataProvider
             }
             else
             {
-                var int64Value = DB2iSeriesTypes.BigInt.CreateInstance(1);
-                var int32Value = DB2iSeriesTypes.Integer.CreateInstance(2);
-                var int16Value = DB2iSeriesTypes.SmallInt.CreateInstance(3);
+                dynamic int64Value = DB2iSeriesTypes.BigInt.CreateInstance(1);
+                dynamic int32Value = DB2iSeriesTypes.Integer.CreateInstance(2);
+                dynamic int16Value = DB2iSeriesTypes.SmallInt.CreateInstance(3);
+                DB2iSeriesTypes.Clob.CreateInstance("1");
 
                 using (var conn = new DataConnection(context))
                 {
@@ -936,31 +997,31 @@ namespace Tests.DataProvider
                 Assert.That(int32Value.Value, Is.TypeOf<int>().And.EqualTo(2));
                 Assert.That(int16Value.Value, Is.TypeOf<short>().And.EqualTo(3));
 
-                var decimalValue = DB2iSeriesTypes.Decimal.CreateInstance(4);
-                var decimalValueAsDecimal = DB2iSeriesTypes.DecFloat16.CreateInstance(5m);
-                var decimalValueAsDouble = DB2iSeriesTypes.DecFloat34.CreateInstance(6.0);
-                var decimalValueAsLong = DB2iSeriesTypes.DecFloat34.CreateInstance(7);
-                var realValue = DB2iSeriesTypes.Real.CreateInstance(8);
-                var stringValue = DB2iSeriesTypes.VarChar.CreateInstance("1");
-                var clobValue = DB2iSeriesTypes.Clob.CreateInstance("2");
-                var binaryValue = DB2iSeriesTypes.Binary.CreateInstance(new byte[] { 1 });
-                var blobValue = DB2iSeriesTypes.Blob.CreateInstance(new byte[] { 2 });
-                var dateValue = DB2iSeriesTypes.Date.CreateInstance(new DateTime(2000, 1, 1));
-                var timeValue = DB2iSeriesTypes.Time.CreateInstance(new DateTime(1, 1, 1, 1, 1, 1));
-                var timeStampValue = DB2iSeriesTypes.TimeStamp.CreateInstance(new DateTime(2000, 1, 4));
+                dynamic decimalValue = DB2iSeriesTypes.Decimal.CreateInstance(4);
+                dynamic decimalValueAsDecimal = DB2iSeriesTypes.DecFloat16.CreateInstance(5m);
+                dynamic decimalValueAsDouble = DB2iSeriesTypes.DecFloat34.CreateInstance(6.0);
+                dynamic decimalValueAsLong = DB2iSeriesTypes.DecFloat34.CreateInstance(7);
+                dynamic realValue = DB2iSeriesTypes.Real.CreateInstance(8);
+                dynamic stringValue = DB2iSeriesTypes.VarChar.CreateInstance("1");
+                dynamic clobValue = DB2iSeriesTypes.Clob.CreateInstance("2");
+                dynamic binaryValue = DB2iSeriesTypes.Binary.CreateInstance(new byte[] { 1 });
+                dynamic blobValue = DB2iSeriesTypes.Blob.CreateInstance(new byte[] { 2 });
+                dynamic dateValue = DB2iSeriesTypes.Date.CreateInstance(new DateTime(2000, 1, 1));
+                dynamic timeValue = DB2iSeriesTypes.Time.CreateInstance(new DateTime(1, 1, 1, 1, 1, 1));
+                dynamic timeStampValue = DB2iSeriesTypes.TimeStamp.CreateInstance(new DateTime(2000, 1, 4));
 
-                Assert.That(decimalValue, Is.TypeOf<decimal>().And.EqualTo(4));
-                Assert.That(decimalValueAsDecimal, Is.TypeOf<decimal>().And.EqualTo(5));
-                Assert.That(decimalValueAsDouble, Is.TypeOf<decimal>().And.EqualTo(6));
-                Assert.That(decimalValueAsLong, Is.TypeOf<decimal>().And.EqualTo(7));
-                Assert.That(realValue, Is.TypeOf<float>().And.EqualTo(8));
-                Assert.That(stringValue, Is.TypeOf<string>().And.EqualTo("1"));
-                Assert.That(clobValue, Is.TypeOf<string>().And.EqualTo("2"));
-                Assert.That(binaryValue, Is.TypeOf<byte[]>().And.EqualTo(new byte[] { 1 }));
-                Assert.That(blobValue, Is.TypeOf<byte[]>().And.EqualTo(new byte[] { 2 }));
-                Assert.That(dateValue, Is.TypeOf<DateTime>().And.EqualTo(new DateTime(2000, 1, 1)));
-                Assert.That(timeValue, Is.TypeOf<DateTime>().And.EqualTo(new DateTime(1, 1, 1, 1, 1, 1)));
-                Assert.That(timeStampValue, Is.TypeOf<DateTime>().And.EqualTo(new DateTime(2000, 1, 4)));
+                Assert.That(decimalValue.Value, Is.TypeOf<decimal>().And.EqualTo(4));
+                Assert.That(decimalValueAsDecimal.Value, Is.TypeOf<decimal>().And.EqualTo(5));
+                Assert.That(decimalValueAsDouble.Value, Is.TypeOf<decimal>().And.EqualTo(6));
+                Assert.That(decimalValueAsLong.Value, Is.TypeOf<decimal>().And.EqualTo(7));
+                Assert.That(realValue.Value, Is.TypeOf<float>().And.EqualTo(8));
+                Assert.That(stringValue.Value, Is.TypeOf<string>().And.EqualTo("1"));
+                Assert.That(clobValue.Value, Is.TypeOf<string>().And.EqualTo("2"));
+                Assert.That(binaryValue.Value, Is.TypeOf<byte[]>().And.EqualTo(new byte[] { 1 }));
+                Assert.That(blobValue.Value, Is.TypeOf<byte[]>().And.EqualTo(new byte[] { 2 }));
+                Assert.That(dateValue.Value, Is.TypeOf<DateTime>().And.EqualTo(new DateTime(2000, 1, 1)));
+                Assert.That(timeValue.Value, Is.TypeOf<DateTime>().And.EqualTo(new DateTime(1, 1, 1, 1, 1, 1)));
+                Assert.That(timeStampValue.Value, Is.TypeOf<DateTime>().And.EqualTo(new DateTime(2000, 1, 4)));
 
 
                 int64Value = DB2iSeriesTypes.BigInt.CreateInstance();
@@ -971,16 +1032,16 @@ namespace Tests.DataProvider
                 Assert.That(int32Value.IsNull, Is.True);
                 Assert.That(int16Value.IsNull, Is.True);
 
-                Assert.That(DB2iSeriesTypes.Decimal.CreateInstance().IsNull, Is.True);
-                Assert.That(DB2iSeriesTypes.DecFloat16.CreateInstance().IsNull, Is.True);
-                Assert.That(DB2iSeriesTypes.DecFloat34.CreateInstance().IsNull, Is.True);
-                Assert.That(DB2iSeriesTypes.Real.CreateInstance().IsNull, Is.True);
-                Assert.That(DB2iSeriesTypes.VarChar.CreateInstance().IsNull, Is.True);
-                Assert.That(DB2iSeriesTypes.Binary.CreateInstance().IsNull, Is.True);
-                Assert.That(DB2iSeriesTypes.Date.CreateInstance().IsNull, Is.True);
-                Assert.That(DB2iSeriesTypes.Time.CreateInstance().IsNull, Is.True);
-                Assert.That(DB2iSeriesTypes.TimeStamp.CreateInstance().IsNull, Is.True);
-                Assert.That(DB2iSeriesTypes.RowId.CreateInstance().IsNull, Is.True);
+                Assert.That(((dynamic)DB2iSeriesTypes.Decimal.CreateInstance()).IsNull, Is.True);
+                Assert.That(((dynamic)DB2iSeriesTypes.DecFloat16.CreateInstance()).IsNull, Is.True);
+                Assert.That(((dynamic)DB2iSeriesTypes.DecFloat34.CreateInstance()).IsNull, Is.True);
+                Assert.That(((dynamic)DB2iSeriesTypes.Real.CreateInstance()).IsNull, Is.True);
+                Assert.That(((dynamic)DB2iSeriesTypes.VarChar.CreateInstance()).IsNull, Is.True);
+                Assert.That(((dynamic)DB2iSeriesTypes.Binary.CreateInstance()).IsNull, Is.True);
+                Assert.That(((dynamic)DB2iSeriesTypes.Date.CreateInstance()).IsNull, Is.True);
+                Assert.That(((dynamic)DB2iSeriesTypes.Time.CreateInstance()).IsNull, Is.True);
+                Assert.That(((dynamic)DB2iSeriesTypes.TimeStamp.CreateInstance()).IsNull, Is.True);
+                Assert.That(((dynamic)DB2iSeriesTypes.RowId.CreateInstance()).IsNull, Is.True);
             }
 		}
 

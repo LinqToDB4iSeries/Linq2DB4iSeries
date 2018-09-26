@@ -173,7 +173,7 @@ CREATE TABLE AllTypes(
 	, blobDataType             blob                    Default NULL
 	, charDataType             char(1)                 Default NULL
 	, CharForBitDataType       char(5) for bit data    Default NULL
-	, clobDataType             clob                    Default NULL
+	, clobDataType             clob          CCSID 1208          Default NULL
 	, dataLinkDataType         dataLink                Default NULL
 	, dateDataType             date                    Default NULL
 	, dbclobDataType           dbclob(100)   CCSID 1200          Default NULL

@@ -21,7 +21,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         internal static readonly string TypeNameDbConnectionStringBuilder = AssemblyName + ".DB2ConnectionStringBuilder, " + AssemblyName;
 
-        private readonly static Lazy<Type> connectionType = new Lazy<Type>(() => Type.GetType(ConnectionTypeName, true));
+        private readonly static Lazy<Type> connectionType = new Lazy<Type>(() => Type.GetType(ConnectionTypeName, true), true);
 
         public static Type ConnectionType => connectionType.Value;
 
@@ -91,7 +91,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
         {
         }
 
-        public dynamic CreateInstance()
+        public object CreateInstance()
         {
             creator.Type = creator.Type ?? Type;
             return creator.CreateInstance();
@@ -109,13 +109,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
         {
         }
 
-        public dynamic CreateInstance()
+        public object CreateInstance()
         {
             creator.Type = creator.Type ?? Type;
             return creator.CreateInstance();
         }
 
-        public dynamic CreateInstance(T value)
+        public object CreateInstance(T value)
         {
             creator.Type = creator.Type ?? Type;
             return creator.CreateInstance(value);

@@ -16,7 +16,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
             DataType = dataType;
             CanBeNull = canBeNull;
 
-            type = new Lazy<Type>(() => GetDB2Type());
+            type = new Lazy<Type>(() => GetDB2Type(), true);
             nullValue = new Lazy<object>(() => isNullValueSet ? overridenNullValue : GetNullValue());
         }
 
