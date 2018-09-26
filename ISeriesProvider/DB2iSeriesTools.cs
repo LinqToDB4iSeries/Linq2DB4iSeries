@@ -143,7 +143,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
         #region DataProvider Cache
 
         //All instances of unique data providers
-        static readonly IReadOnlyDictionary<string, DB2iSeriesDataProvider> actualDataProviders = 
+        static readonly IReadOnlyDictionary<string, DB2iSeriesDataProvider> actualDataProviders =
             DB2iSeriesProviderName.AllNames
                 .Where(x => !DB2iSeriesProviderName.IsVirtual(x))
                 .Select(x => new DB2iSeriesDataProvider(x))
@@ -214,49 +214,24 @@ namespace LinqToDB.DataProvider.DB2iSeries
                     var cs = string.IsNullOrWhiteSpace(connectionString) ? css.ConnectionString : connectionString;
                     var providerType = DetectFromConnectionString(connectionString);
 
-                    if (providerType == DB2iSeriesAdoProviderType.AccessClient)
+
+                    using (var conn = providerType == DB2iSeriesAdoProviderType.AccessClient ?
+                        ConnectionBuilder_ClientAccess(cs) :
+                        ConnectionBuilder_DB2Connect(cs))
                     {
-                        using (var conn = ConnectionBuilder_ClientAccess(cs))
+                        conn.Open();
+
+                        var version = GetServerVersion(conn);
+                        var maxPtfLevel = GetLevel(conn, version.PtfGroupName);
+                        var minLevel = GetMinLevel(version, maxPtfLevel);
+
+                        switch(minLevel)
                         {
-                            conn.Open();
-
-                            if (MemberAccessor.TryGetValue<string>(conn, "ServerVersion", out var serverVersion))
-                            {
-                                serverVersion = serverVersion.Substring(0, 5);
-
-                                string ptf;
-                                int desiredLevel;
-
-                                switch (serverVersion)
-                                {
-                                    case "07.03":
-                                        return GetDataProvider(DB2iSeriesProviderName.DB2iSeries_AccessClient_73);
-                                    case "07.02":
-                                        ptf = "SF99702";
-                                        desiredLevel = 9;
-                                        break;
-                                    case "07.01":
-                                        ptf = "SF99701";
-                                        desiredLevel = 38;
-                                        break;
-                                    default:
-                                        return GetDataProvider(DB2iSeriesProviderName.DB2iSeries_AccessClient);
-                                }
-                                var level = GetLevel(conn, ptf);
-                                return GetDataProvider(level < desiredLevel ? DB2iSeriesProviderName.DB2iSeries_AccessClient : DB2iSeriesProviderName.DB2iSeries_AccessClient_73);
-                            }
+                            case DB2iSeriesLevels.V7_1_38:
+                                return GetDataProvider(DB2iSeriesProviderName.GetFromOptions(new DB2iSeriesDataProviderOptions(DB2iSeriesLevels.V7_1_38, false, providerType)));
+                            default:
+                                return GetDataProvider(DB2iSeriesProviderName.GetFromOptions(new DB2iSeriesDataProviderOptions(DB2iSeriesLevels.Any, false, providerType)));
                         }
-                    }
-                    else
-                    {
-                        //TODO: Detect DB2Connect provider
-                        //ReflectionHelper.TryGetValue<string>(conn, "ServerVersion", out var eServerType))
-                        //using (var conn = ConnectionBuilder_DB2Connect(cs))
-                        //{
-                        //    conn.Open();
-
-                        //}
-                        return GetDataProvider(DB2iSeriesProviderName.DB2iSeries_DB2Connect);
                     }
                 }
                 catch (Exception)
@@ -266,6 +241,73 @@ namespace LinqToDB.DataProvider.DB2iSeries
             }
 
             return null;
+        }
+
+        public class ServerVersion
+        {
+            public ServerVersion(int major, int minor, string ptfGroupName)
+            {
+                Major = major;
+                Minor = minor;
+                PtfGroupName = ptfGroupName;
+            }
+
+            public int Major { get; }
+            public int Minor { get; }
+            public string PtfGroupName { get; }
+        }
+
+        public static DB2iSeriesLevels GetMinLevel(ServerVersion version, int maxPtfGroupLevel)
+        {
+            if (version.Major < 7)
+                return DB2iSeriesLevels.Any;
+
+            if (version.Major > 7)
+                return DB2iSeriesLevels.V7_1_38;
+
+            switch(version.Minor)
+            {
+                case 1:
+                    return maxPtfGroupLevel < 38 ? DB2iSeriesLevels.Any : DB2iSeriesLevels.V7_1_38;
+                case 2:
+                    return maxPtfGroupLevel < 9 ? DB2iSeriesLevels.Any : DB2iSeriesLevels.V7_1_38;
+                //case 3:
+                default:
+                    return DB2iSeriesLevels.V7_1_38;
+            }
+        }
+
+        public static ServerVersion GetServerVersion(IDbConnection dbConnection)
+        {
+            var providerType = GetAdoProviderType(dbConnection);
+            switch (providerType)
+            {
+                case DB2iSeriesAdoProviderType.AccessClient:
+                    if (MemberAccessor.TryGetValue<string>(dbConnection, "ServerVersion", out var serverVersion))
+                    {
+                        var serverVersionParts = serverVersion.Split('.');
+                        var major = int.Parse(serverVersionParts[0]);
+                        var minor = int.Parse(serverVersionParts[1]);
+                        var ptf = GetPtfGroupName(major, minor);
+                        return new ServerVersion(major, minor, ptf);
+                    }
+                    throw new LinqToDBException("ServerVersion not found in iDB2Connection");
+                case DB2iSeriesAdoProviderType.DB2Connect:
+                    if (MemberAccessor.TryGetValue<int>(dbConnection, "ServerMajorVersion", out var serverMajorVersion)
+                        && MemberAccessor.TryGetValue<int>(dbConnection, "ServerMinorVersion", out var serverMinorVersion))
+                    {
+                        var ptf = GetPtfGroupName(serverMajorVersion, serverMinorVersion);
+                        return new ServerVersion(serverMajorVersion, serverMinorVersion, ptf);
+                    }
+                    throw new LinqToDBException("ServerMajorVersion or ServerMinorVersion not found in DB2Connection");
+                default:
+                    throw new LinqToDBException($"Unsupported provider type {providerType.ToString()}");
+            }
+        }
+
+        private static string GetPtfGroupName(int major, int minor)
+        {
+            return string.Format("SF99{0:D1}{1:D2}", major, minor);
         }
 
         private static int GetLevel(IDbConnection conn, string ptf)

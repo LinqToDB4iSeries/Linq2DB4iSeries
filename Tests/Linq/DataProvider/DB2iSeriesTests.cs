@@ -929,7 +929,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, DataContextSource(false)]
+        [Test, DataContextSource(false)]
 		public void TestTypes(string context)
 		{
             if (context.Contains("DB2Connect"))
