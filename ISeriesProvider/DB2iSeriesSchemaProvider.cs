@@ -24,13 +24,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
             this.adoProviderType = adoProviderType;
         }
 
-        private string GetSqlObjectDelimiter(DataConnection dataConnection)
-        {
-            return DB2iSeriesTools.GetSqlObjectDelimiter(dataConnection.Connection);
-        }
-
-
-		protected override List<ColumnInfo> GetColumns(DataConnection dataConnection)
+        protected override List<ColumnInfo> GetColumns(DataConnection dataConnection)
 		{
 			var sql = $@"
 				Select 
@@ -120,18 +114,18 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		  Order By ThisSchema, ThisTable, Constraint_Name, Ordinal_Position
 		  ";
 
-			//And {GetSchemaFilter("col.TBCREATOR")}
-			Func<IDataReader, ForeignKeyInfo> drf = (IDataReader dr) => new ForeignKeyInfo
-			{
-				Name = dr["Constraint_Name"].ToString().TrimEnd(),
-				Ordinal = Converter.ChangeTypeTo<int>(dr["Ordinal_Position"]),
-				OtherColumn = dr["OtherColumn"].ToString().TrimEnd(),
-				OtherTableID = dataConnection.Connection.Database + "." + Convert.ToString(dr["OtherSchema"]).TrimEnd() + "." + Convert.ToString(dr["OtherTable"]).TrimEnd(),
-				ThisColumn = dr["ThisColumn"].ToString().TrimEnd(),
-				ThisTableID = dataConnection.Connection.Database + "." + Convert.ToString(dr["ThisSchema"]).TrimEnd() + "." + Convert.ToString(dr["ThisTable"]).TrimEnd()
-			};
+            //And {GetSchemaFilter("col.TBCREATOR")}
+            ForeignKeyInfo drf(IDataReader dr) => new ForeignKeyInfo
+            {
+                Name = dr["Constraint_Name"].ToString().TrimEnd(),
+                Ordinal = Converter.ChangeTypeTo<int>(dr["Ordinal_Position"]),
+                OtherColumn = dr["OtherColumn"].ToString().TrimEnd(),
+                OtherTableID = dataConnection.Connection.Database + "." + Convert.ToString(dr["OtherSchema"]).TrimEnd() + "." + Convert.ToString(dr["OtherTable"]).TrimEnd(),
+                ThisColumn = dr["ThisColumn"].ToString().TrimEnd(),
+                ThisTableID = dataConnection.Connection.Database + "." + Convert.ToString(dr["ThisSchema"]).TrimEnd() + "." + Convert.ToString(dr["ThisTable"]).TrimEnd()
+            };
 
-			var list = dataConnection.Query(drf, sql).ToList();
+            var list = dataConnection.Query(drf, sql).ToList();
 			return list;
 		}
 
@@ -218,23 +212,23 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		  Order By Specific_Schema, Specific_Name, Parameter_Name
 		  ";
 
-			//And {GetSchemaFilter("col.TBCREATOR")}
-			Func<IDataReader, ProcedureParameterInfo> drf = (IDataReader dr) =>
-			{
-				return new ProcedureParameterInfo
-				{
-					DataType = Convert.ToString(dr["Parameter_Name"]),
-					IsIn = dr["Parameter_Mode"].ToString().Contains("IN"),
-					IsOut = dr["Parameter_Mode"].ToString().Contains("OUT"),
-					Length = Converter.ChangeTypeTo<long?>(dr["CHARACTER_MAXIMUM_LENGTH"]),
-					Ordinal = Converter.ChangeTypeTo<int>(dr["Ordinal_position"]),
-					ParameterName = Convert.ToString(dr["Parameter_Name"]).TrimEnd(),
-					Precision = Converter.ChangeTypeTo<int?>(dr["Numeric_Precision"]),
-					ProcedureID = dataConnection.Connection.Database + "." + Convert.ToString(dr["Specific_Schema"]).TrimEnd() + "." + Convert.ToString(dr["Specific_Name"]).TrimEnd(),
-					Scale = Converter.ChangeTypeTo<int?>(dr["Numeric_Scale"]),
-				};
-			};
-			List<ProcedureParameterInfo> _list = dataConnection.Query(drf, sql).ToList();
+            //And {GetSchemaFilter("col.TBCREATOR")}
+            ProcedureParameterInfo drf(IDataReader dr)
+            {
+                return new ProcedureParameterInfo
+                {
+                    DataType = Convert.ToString(dr["Parameter_Name"]),
+                    IsIn = dr["Parameter_Mode"].ToString().Contains("IN"),
+                    IsOut = dr["Parameter_Mode"].ToString().Contains("OUT"),
+                    Length = Converter.ChangeTypeTo<long?>(dr["CHARACTER_MAXIMUM_LENGTH"]),
+                    Ordinal = Converter.ChangeTypeTo<int>(dr["Ordinal_position"]),
+                    ParameterName = Convert.ToString(dr["Parameter_Name"]).TrimEnd(),
+                    Precision = Converter.ChangeTypeTo<int?>(dr["Numeric_Precision"]),
+                    ProcedureID = dataConnection.Connection.Database + "." + Convert.ToString(dr["Specific_Schema"]).TrimEnd() + "." + Convert.ToString(dr["Specific_Name"]).TrimEnd(),
+                    Scale = Converter.ChangeTypeTo<int?>(dr["Numeric_Scale"]),
+                };
+            }
+            List<ProcedureParameterInfo> _list = dataConnection.Query(drf, sql).ToList();
 			return _list;
 		}
 
@@ -260,23 +254,45 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				 ";
             
 			var defaultSchema = dataConnection.Execute<string>("select current_schema from sysibm.sysdummy1");
-			Func<IDataReader, TableInfo> drf = (IDataReader dr) => new TableInfo
-			{
-			    CatalogName = dr["Catalog_Name"].ToString().TrimEnd(),
-			    Description = dr["Table_Text"].ToString().TrimEnd(),
-			    IsDefaultSchema = dr["System_Table_Schema"].ToString().TrimEnd() == defaultSchema,
-			    IsView = new[] { "L", "V" }.Contains<string>(dr["Table_Type"].ToString()),
-			    SchemaName = dr["Table_Schema"].ToString().TrimEnd(),
-			    TableID = dataConnection.Connection.Database + "." + dr["Table_Schema"].ToString().TrimEnd() + "." + dr["Table_Name"].ToString().TrimEnd(),
-			    TableName = dr["Table_Name"].ToString().TrimEnd()
-			};
-			var _list = dataConnection.Query(drf, sql).ToList();
+            TableInfo drf(IDataReader dr) => new TableInfo
+            {
+                CatalogName = dr["Catalog_Name"].ToString().TrimEnd(),
+                Description = dr["Table_Text"].ToString().TrimEnd(),
+                IsDefaultSchema = dr["System_Table_Schema"].ToString().TrimEnd() == defaultSchema,
+                IsView = new[] { "L", "V" }.Contains<string>(dr["Table_Type"].ToString()),
+                SchemaName = dr["Table_Schema"].ToString().TrimEnd(),
+                TableID = dataConnection.Connection.Database + "." + dr["Table_Schema"].ToString().TrimEnd() + "." + dr["Table_Name"].ToString().TrimEnd(),
+                TableName = dr["Table_Name"].ToString().TrimEnd()
+            };
+            var _list = dataConnection.Query(drf, sql).ToList();
 			return _list;
 		}
 
-		#region Helpers
+        protected override List<DataTypeInfo> GetDataTypes(DataConnection dataConnection)
+        {
+            if (DB2iSeriesTools.GetAdoProviderType(dataConnection.Connection) == DB2iSeriesAdoProviderType.AccessClient)
+                return base.GetDataTypes(dataConnection);
 
-		public static void SetColumnParameters(ColumnInfo ci, long? size, int? scale)
+            DataTypesSchema = ((DbConnection)dataConnection.Connection).GetSchema("DataTypes");
+
+            return DataTypesSchema.AsEnumerable()
+                .Select(t => new DataTypeInfo
+                {
+                    TypeName = t.Field<string>("SQL_TYPE_NAME"),
+                    DataType = t.Field<string>("FRAMEWORK_TYPE"),
+                    CreateParameters = t.Field<string>("CREATE_PARAMS")?.ToUpper(),
+                })
+                .Union(
+                new[]
+                {
+                    new DataTypeInfo { TypeName = "CHARACTER", CreateParameters = "LENGTH", DataType = "System.String" }
+                })
+                .ToList();
+        }
+
+        #region Helpers
+
+        public static void SetColumnParameters(ColumnInfo ci, long? size, int? scale)
 		{
 			switch (ci.DataType)
 			{
@@ -323,31 +339,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 		}
 
-        #endregion
-
-        protected override List<DataTypeInfo> GetDataTypes(DataConnection dataConnection)
-        {
-            if (DB2iSeriesTools.GetAdoProviderType(dataConnection.Connection) == DB2iSeriesAdoProviderType.AccessClient)
-                return base.GetDataTypes(dataConnection);
-
-            DataTypesSchema = ((DbConnection)dataConnection.Connection).GetSchema("DataTypes");
-
-            return DataTypesSchema.AsEnumerable()
-                .Select(t => new DataTypeInfo
-                {
-                    TypeName = t.Field<string>("SQL_TYPE_NAME"),
-                    DataType = t.Field<string>("FRAMEWORK_TYPE"),
-                    CreateParameters = t.Field<string>("CREATE_PARAMS")?.ToUpper(),
-                })
-                .Union(
-                new[]
-                {
-                    new DataTypeInfo { TypeName = "CHARACTER", CreateParameters = "LENGTH", DataType = "System.String" }
-                })
-                .ToList();
-        }
-
-
         private IEnumerable<string> GetLibList(DataConnection dataConnection)
 	    {
             var providerType = DB2iSeriesTools.GetAdoProviderType(dataConnection.Connection);
@@ -390,5 +381,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
         {
             return "'" + string.Join("','", GetLibList(dataConnection)) + "'";
         }
+
+        private string GetSqlObjectDelimiter(DataConnection dataConnection)
+        {
+            return DB2iSeriesTools.GetSqlObjectDelimiter(dataConnection.Connection);
+        }
+
+        #endregion
     }
 }

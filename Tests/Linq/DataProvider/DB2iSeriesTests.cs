@@ -938,12 +938,7 @@ namespace Tests.DataProvider
                 dynamic int32Value = DB2Types.DB2Int32.CreateInstance(2);
                 dynamic int16Value = DB2Types.DB2Int16.CreateInstance(3);
 
-                using (var conn = new DataConnection(context))
-                {
-                    conn.Select(() => 1);
-                    Assert.That(DB2Types.DB2Clob.CreateInstance(conn) != null, Is.True);
-                    Assert.That(DB2Types.DB2Blob.CreateInstance(conn) != null, Is.True);
-                }
+                Assert.That(DB2Types.ConnectionType != null, Is.True);
 
                 Assert.That(int64Value.Value, Is.TypeOf<long>().And.EqualTo(1));
                 Assert.That(int32Value.Value, Is.TypeOf<int>().And.EqualTo(2));
@@ -984,14 +979,8 @@ namespace Tests.DataProvider
                 dynamic int64Value = DB2iSeriesTypes.BigInt.CreateInstance(1);
                 dynamic int32Value = DB2iSeriesTypes.Integer.CreateInstance(2);
                 dynamic int16Value = DB2iSeriesTypes.SmallInt.CreateInstance(3);
-                DB2iSeriesTypes.Clob.CreateInstance("1");
 
-                using (var conn = new DataConnection(context))
-                {
-                    conn.Select(() => 1);
-                    Assert.That(DB2iSeriesTypes.Clob.CreateInstance(conn) == null, Is.True);
-                    Assert.That(DB2iSeriesTypes.Blob.CreateInstance(conn) == null, Is.True);
-                }
+                Assert.That(DB2iSeriesTypes.ConnectionType != null, Is.True);
 
                 Assert.That(int64Value.Value, Is.TypeOf<long>().And.EqualTo(1));
                 Assert.That(int32Value.Value, Is.TypeOf<int>().And.EqualTo(2));

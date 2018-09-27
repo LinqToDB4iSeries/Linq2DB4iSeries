@@ -57,7 +57,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         }
 
-        public dynamic CreateInstance(T2 value)
+        public object CreateInstance(T2 value)
         {
             return (_paramCreator ?? (_paramCreator = GetCreator<T2>()))(value);
         }
@@ -77,7 +77,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         }
 
-        public dynamic CreateInstance(T3 value)
+        public object CreateInstance(T3 value)
         {
             return (_paramCreator ?? (_paramCreator = GetCreator<T3>()))(value);
         }
