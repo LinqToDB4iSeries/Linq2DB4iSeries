@@ -159,9 +159,12 @@ namespace Tests.DataProvider
 
 
 		[Test, DataContextSource(false)]
-		public void TestDataTypes(string context)
+        //DecFloatTests break on AccessClient with greek culture (decimal point is comma)
+        [SetCulture("en-US")] 
+        public void TestDataTypes(string context)
 		{
-			using (var conn = new DataConnection(context))
+            
+            using (var conn = new DataConnection(context))
 			{
                 if (context.Contains("DB2Connect"))
                 {
@@ -215,8 +218,8 @@ namespace Tests.DataProvider
                         Is.EqualTo(new DB2Decimal(666m).ToString()));
                     Assert.That(TestType<DB2Binary>(conn, "varbinaryDataType", DataType.VarBinary).ToString(),
                         Is.EqualTo(new DB2Binary(new byte[] { 0xF4 }).ToString()));
-                    Assert.That(TestType<DB2DecimalFloat?>(conn, "decfloat16DataType", DataType.Decimal),
-                        Is.EqualTo(new DB2DecimalFloat(888.456m)));
+                    Assert.That(TestType<DB2DecimalFloat?>(conn, "decfloat16DataType", DataType.Decimal).ToString(),
+                        Is.EqualTo(new DB2DecimalFloat(888.456m).ToString()));
                     Assert.That(TestType<DB2DecimalFloat?>(conn, "decfloat34DataType", DataType.Decimal).ToString(),
                         Is.EqualTo(new DB2DecimalFloat(777.987m).ToString()));
                 }
@@ -939,6 +942,14 @@ namespace Tests.DataProvider
                 dynamic int16Value = DB2Types.DB2Int16.CreateInstance(3);
 
                 Assert.That(DB2Types.ConnectionType != null, Is.True);
+
+                using (var conn = new DataConnection(context))
+                {
+                    conn.Select(() => 1);
+
+                    Assert.That(((dynamic)DB2Types.DB2Clob.CreateInstance(conn)).IsNull, Is.True);
+                    Assert.That(((dynamic)DB2Types.DB2Blob.CreateInstance(conn)).IsNull, Is.True);
+                }
 
                 Assert.That(int64Value.Value, Is.TypeOf<long>().And.EqualTo(1));
                 Assert.That(int32Value.Value, Is.TypeOf<int>().And.EqualTo(2));

@@ -12,6 +12,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
     using Mapping;
     using SchemaProvider;
     using SqlProvider;
+    using System.Linq;
 
     public class DB2iSeriesDataProvider : DynamicDataProviderBase
     {
@@ -101,13 +102,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         private void OnConnectionTypeCreated_AccessClient()
         {
-            foreach (var type in DB2iSeriesTypes.AllTypes)
+            foreach (var type in DB2iSeriesTypes.AllTypes.Where(t => t.IsSupported))
                 SetProviderField(type.Type, type.DotnetType, type.DatareaderGetMethodName);
         }
 
         private void OnConnectionTypeCreated_DB2Connect()
         {
-            foreach(var type in DB2Types.AllTypes)
+            foreach(var type in DB2Types.AllTypes.Where(t => t.IsSupported))
                 SetProviderField(type.Type, type.DotnetType, type.DatareaderGetMethodName);
         }
 
@@ -204,6 +205,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         public override void SetParameter(IDbDataParameter parameter, string name, DataType dataType, object value)
         {
+            var originalValue = value;
+
             if (value is sbyte)
             {
                 value = Convert.ToInt16(Convert.ToSByte(value));
@@ -301,7 +304,24 @@ namespace LinqToDB.DataProvider.DB2iSeries
                     GetBlobSetter(this)(parameter);
                     return;
             }
+
             base.SetParameter(parameter, $"@{name}", dataType, value);
+
+            if (value != null)
+            {
+                //Set DB2Type to proper expected type based on input parameter
+                //Fixes issues with DecimalFloat
+                if (options.AdoProviderType == DB2iSeriesAdoProviderType.DB2Connect)
+                {
+                    if (originalValue.GetType().Name == "DB2DecimalFloat")
+                    {
+                        var i = 0;
+                    }
+                    var typeDescriptor = DB2Types.GetTypeDescriptor(originalValue.GetType());
+                    if (typeDescriptor != null)
+                        MemberAccessor.SetValue(parameter, "DB2Type", typeDescriptor.ProviderParameterDbType);
+                }
+            }
         }
 
         #region Merge

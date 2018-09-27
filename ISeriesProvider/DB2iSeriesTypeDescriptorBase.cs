@@ -8,20 +8,24 @@ namespace LinqToDB.DataProvider.DB2iSeries
     public abstract class DB2iSeriesTypeDescriptorBase
     {
         protected abstract Type GetDB2Type();
-        protected DB2iSeriesTypeDescriptorBase(Type dotnetType, DataType dataType, string datareaderGetMethodName, string datatypeName, bool canBeNull = true)
+        
+
+        protected DB2iSeriesTypeDescriptorBase(Type dotnetType, DataType dataType, string datareaderGetMethodName, string datatypeName, int providerParameterDbType, bool canBeNull = true, bool isSupported = true)
         {
             DotnetType = dotnetType;
             DatareaderGetMethodName = datareaderGetMethodName;
             DatatypeName = datatypeName;
             DataType = dataType;
             CanBeNull = canBeNull;
+            IsSupported = isSupported;
+            ProviderParameterDbType = providerParameterDbType;
 
-            type = new Lazy<Type>(() => GetDB2Type(), true);
-            nullValue = new Lazy<object>(() => isNullValueSet ? overridenNullValue : GetNullValue());
+            type = IsSupported ? new Lazy<Type>(() => GetDB2Type()) : null;
+            nullValue = IsSupported ? new Lazy<object>(() => isNullValueSet ? overridenNullValue : GetNullValue()) : null;
         }
 
-        protected DB2iSeriesTypeDescriptorBase(Type dotnetType, DataType dataType, string datareaderGetMethodName, string datatypeName, object nullValue, bool canBeNull = true)
-            : this(dotnetType, dataType, datareaderGetMethodName, datatypeName, canBeNull)
+        protected DB2iSeriesTypeDescriptorBase(Type dotnetType, DataType dataType, string datareaderGetMethodName, string datatypeName, int providerParameterDbType, object nullValue, bool canBeNull = true, bool isSupported = true)
+            : this(dotnetType, dataType, datareaderGetMethodName, datatypeName, providerParameterDbType, canBeNull)
         {
             isNullValueSet = true;
             overridenNullValue = nullValue;
@@ -32,17 +36,21 @@ namespace LinqToDB.DataProvider.DB2iSeries
         private readonly object overridenNullValue;
         private readonly bool isNullValueSet = false;
 
-        public Type Type => type.Value;
-        public object NullValue => nullValue.Value;
+        public Type Type => IsSupported ? type.Value : null;
+        public object NullValue => IsSupported ? nullValue.Value : null;
 
+        public bool IsSupported { get; }
         public Type DotnetType { get; }
         public string DatareaderGetMethodName { get; }
         public string DatatypeName { get; }
         public DataType DataType { get; }
         public bool CanBeNull { get; }
-
+        public int ProviderParameterDbType { get; }
         private object GetNullValue()
         {
+            if (!IsSupported)
+                return null;
+
             var field = Type.GetFieldEx("Null");
             if (field == null)
                 return null;

@@ -117,7 +117,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         protected void BuildAccessClientMappings()
         {
-            foreach (var type in DB2Types.AllTypes)
+            foreach (var type in DB2Types.AllTypes.Where(t => t.IsSupported))
                 AddScalarType(type.Type, type.NullValue, type.CanBeNull, type.DataType);
         }
     }
@@ -136,7 +136,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         protected void BuildDB2ConnectMappings()
         {
-            foreach (var type in DB2Types.AllTypes)
+            foreach (var type in DB2Types.AllTypes.Where(t => t.IsSupported))
                 AddScalarType(type.Type, type.NullValue, type.CanBeNull, type.DataType);
         }
     }
