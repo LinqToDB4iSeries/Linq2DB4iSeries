@@ -20,7 +20,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
             IsSupported = isSupported;
             ProviderParameterDbType = providerParameterDbType;
 
-            type = IsSupported ? new Lazy<Type>(() => GetDB2Type()) : null;
+            type = IsSupported ? new Lazy<Type>(() => { var t = GetDB2Type(); if (type == null) IsSupported = false; return t; }) : null;
             nullValue = IsSupported ? new Lazy<object>(() => isNullValueSet ? overridenNullValue : GetNullValue()) : null;
         }
 
@@ -39,7 +39,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
         public Type Type => IsSupported ? type.Value : null;
         public object NullValue => IsSupported ? nullValue.Value : null;
 
-        public bool IsSupported { get; }
+        public bool IsSupported { get; private set; }
         public Type DotnetType { get; }
         public string DatareaderGetMethodName { get; }
         public string DatatypeName { get; }
