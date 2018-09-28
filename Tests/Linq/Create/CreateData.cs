@@ -189,7 +189,7 @@ namespace Tests._Create
 			}
 		}
 
-		[Test, DataContextSource(false)]
+		[Test, IncludeDataContextSource(TestProvName.DB2i, TestProvName.DB2iGAS)]
 		public void DB2iSeries(string ctx) { RunScript(ctx, "\nGO\n", "DB2iSeries"); }
 	}
 }

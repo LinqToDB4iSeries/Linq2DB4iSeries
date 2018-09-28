@@ -18,6 +18,11 @@ namespace Tests.xUpdate
         [Table("KeepIdentityTest", Configuration = ProviderName.DB2)]
         [Table("KeepIdentityTest", Configuration = TestProvName.DB2i)]
         [Table("KeepIdentityTest", Configuration = TestProvName.DB2iGAS)]
+        [Table("KeepIdentityTest", Configuration = TestProvName.DB2i73)]
+        [Table("KeepIdentityTest", Configuration = TestProvName.DB2iGAS)]
+        [Table("KeepIdentityTest", Configuration = TestProvName.DB2i_DB2Connect)]
+        [Table("KeepIdentityTest", Configuration = TestProvName.DB2i_DB2Connect_73)]
+        [Table("KeepIdentityTest", Configuration = TestProvName.DB2i_DB2Connect_GAS)]
         [Table("AllTypes")]
         public class TestTable1
         {
@@ -28,6 +33,11 @@ namespace Tests.xUpdate
             [Column("Value", Configuration = ProviderName.DB2)]
             [Column("Value", Configuration = TestProvName.DB2i)]
             [Column("Value", Configuration = TestProvName.DB2iGAS)]
+            [Column("Value", Configuration = TestProvName.DB2i73)]
+            [Column("Value", Configuration = TestProvName.DB2iGAS)]
+            [Column("Value", Configuration = TestProvName.DB2i_DB2Connect)]
+            [Column("Value", Configuration = TestProvName.DB2i_DB2Connect_73)]
+            [Column("Value", Configuration = TestProvName.DB2i_DB2Connect_GAS)]
             public int Value { get; set; }
 
             [Column("bitDataType", Configuration = ProviderName.Sybase)]
@@ -37,6 +47,11 @@ namespace Tests.xUpdate
         [Table("KeepIdentityTest", Configuration = ProviderName.DB2)]
         [Table("KeepIdentityTest", Configuration = TestProvName.DB2i)]
         [Table("KeepIdentityTest", Configuration = TestProvName.DB2iGAS)]
+        [Table("KeepIdentityTest", Configuration = TestProvName.DB2i73)]
+        [Table("KeepIdentityTest", Configuration = TestProvName.DB2iGAS)]
+        [Table("KeepIdentityTest", Configuration = TestProvName.DB2i_DB2Connect)]
+        [Table("KeepIdentityTest", Configuration = TestProvName.DB2i_DB2Connect_73)]
+        [Table("KeepIdentityTest", Configuration = TestProvName.DB2i_DB2Connect_GAS)]
         [Table("AllTypes")]
         public class TestTable2
         {
@@ -47,6 +62,11 @@ namespace Tests.xUpdate
             [Column("Value", Configuration = ProviderName.DB2)]
             [Column("Value", Configuration = TestProvName.DB2i)]
             [Column("Value", Configuration = TestProvName.DB2iGAS)]
+            [Column("Value", Configuration = TestProvName.DB2i73)]
+            [Column("Value", Configuration = TestProvName.DB2iGAS)]
+            [Column("Value", Configuration = TestProvName.DB2i_DB2Connect)]
+            [Column("Value", Configuration = TestProvName.DB2i_DB2Connect_73)]
+            [Column("Value", Configuration = TestProvName.DB2i_DB2Connect_GAS)]
             public int Value { get; set; }
 
             [Column("bitDataType", Configuration = ProviderName.Sybase)]

@@ -69,11 +69,14 @@ namespace Tests.xUpdate
                 switch (context)
                 {
                     case DB2iSeriesProviderName.DB2iSeries_DB2Connect:
+                    case DB2iSeriesProviderName.DB2iSeries_DB2Connect_73:
+                    case DB2iSeriesProviderName.DB2iSeries_DB2Connect_73_GAS:
+                    case DB2iSeriesProviderName.DB2iSeries_DB2Connect_GAS:
                     case DB2iSeriesProviderName.DB2:
                     case DB2iSeriesProviderName.DB2_GAS:
                     case DB2iSeriesProviderName.DB2_73:
                     case DB2iSeriesProviderName.DB2_73_GAS:
-						parametersCount = 5;
+                        parametersCount = 5;
                         break;
                     case ProviderName.DB2:
                         parametersCount = 1;
@@ -143,6 +146,9 @@ namespace Tests.xUpdate
                 switch (context)
                 {
                     case DB2iSeriesProviderName.DB2iSeries_DB2Connect:
+                    case DB2iSeriesProviderName.DB2iSeries_DB2Connect_73:
+                    case DB2iSeriesProviderName.DB2iSeries_DB2Connect_73_GAS:
+                    case DB2iSeriesProviderName.DB2iSeries_DB2Connect_GAS:
                     case DB2iSeriesProviderName.DB2:
                     case DB2iSeriesProviderName.DB2_GAS:
                     case DB2iSeriesProviderName.DB2_73:

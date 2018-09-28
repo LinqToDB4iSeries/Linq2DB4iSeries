@@ -39,6 +39,9 @@ namespace Tests.xUpdate
 				case ProviderName.OracleNative : batchSize = 100; break;
 
                 case DB2iSeriesProviderName.DB2iSeries_DB2Connect:
+                case DB2iSeriesProviderName.DB2iSeries_DB2Connect_73:
+                case DB2iSeriesProviderName.DB2iSeries_DB2Connect_73_GAS:
+                case DB2iSeriesProviderName.DB2iSeries_DB2Connect_GAS:
                 case DB2iSeriesProviderName.DB2:
                 case DB2iSeriesProviderName.DB2_73:
                 case DB2iSeriesProviderName.DB2_73_GAS:

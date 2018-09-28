@@ -39,7 +39,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         internal static void MapGuidAsString(MappingSchema mappingSchema)
         {
-            mappingSchema.SetValueToSqlConverter(typeof(Guid), (sb, dt, v) => sb.Append("'{v}'"));
+            mappingSchema.SetValueToSqlConverter(typeof(Guid), (sb, dt, v) => sb.Append($"'{v}'"));
         }
 
         private static void AppendConversion(StringBuilder stringBuilder, int value)

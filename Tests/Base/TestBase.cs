@@ -147,6 +147,9 @@ namespace Tests
 			    switch (provider.Value.Provider)
 			    {
                     case TestProvName.DB2i_DB2Connect:
+                    case TestProvName.DB2i_DB2Connect_73:
+                    case TestProvName.DB2i_DB2Connect_73_GAS:
+                    case TestProvName.DB2i_DB2Connect_GAS:
                     case TestProvName.DB2i:
 			        case TestProvName.DB2iGAS :
 			        case TestProvName.DB2i73GAS:
@@ -280,7 +283,11 @@ namespace Tests
 			ProviderName.OracleManaged,
 			ProviderName.SqlCe,
 			ProviderName.SQLiteClassic,
+
             TestProvName.DB2i_DB2Connect,
+            TestProvName.DB2i_DB2Connect_73,
+            TestProvName.DB2i_DB2Connect_73_GAS,
+            TestProvName.DB2i_DB2Connect_GAS,
             TestProvName.DB2i,
 		    TestProvName.DB2iGAS,
 			TestProvName.DB2i73,
