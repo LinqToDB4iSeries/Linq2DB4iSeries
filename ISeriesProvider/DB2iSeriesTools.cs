@@ -196,8 +196,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         private static IDataProvider ProviderDetector(IConnectionStringSettings css, string connectionString)
         {
-            if (css.IsGlobal)
-                return null;
+            //Global configurations should work as well
+            //Linq2db has this commented as well 
+            //if (css.IsGlobal)
+            //    return null;
 
             if (TryGetDataProvider(css.Name, out var dataProvider))
                 return dataProvider;

@@ -1148,5 +1148,14 @@ namespace Tests.DataProvider
 	            Assert.AreEqual(1, table.Count());
 	        }
 	    }
+
+        [Test, IncludeDataContextSource(TestProvName.DB2i_DB2Connect_73)]
+        public void TestDetector(string context)
+        {
+            DB2iSeriesTools.AutoDetectProvider = true;
+            var provider = DataConnection.GetDataProvider("ATHINA");
+
+            Assert.AreEqual(provider.Name, TestProvName.DB2i_DB2Connect_73);
+        }
     }
 }
