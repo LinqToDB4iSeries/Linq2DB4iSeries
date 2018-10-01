@@ -8,9 +8,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 {
     public static class DB2iSeriesProviderName
     {
+        //Refactored this to use attributes to relate options to provider names
+        
         //Default provider names 
         //This provides compatibility with previous versions 
-        //Also provides a way provide shortcuts to "default" options
+        //Also provides a way to provide shortcuts to "default" providers like DB2 with DB2.LUW/DB2.zOS
         [VirtualDataProvider(DB2iSeries_AccessClient)]
         public const string DB2 = "DB2.iSeries";
         [VirtualDataProvider(DB2iSeries_AccessClient_GAS)]

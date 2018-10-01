@@ -14,7 +14,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
     using Configuration;
     using Data;
 
-    public static class DB2iSeriesTools
+    public static partial class DB2iSeriesTools
     {
         #region Public Settings
 
@@ -105,19 +105,17 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         static DB2iSeriesTools()
         {
+            //Caution - This is not run at all if the type is not referenced, meaning that an application that starts with new DataConnection(configuration)
+            //will never get the detector running. Perhaps it makes more sense to move this to an EnableAutoDetection static method instead of a static bool property
             AutoDetectProvider = true;
+            DataConnection.AddProviderDetector(ProviderDetector);
 
-            //Default providers - for compatibility with the original provider names
-            //Caution: this is unaffected by DefaultAdoProviderType - possibly set DefaultAdoProviderType as a const for compile type configuration of default only
-            DataConnection.AddDataProvider(DB2iSeriesProviderName.DB2, GetDataProvider(DB2iSeriesProviderName.DB2));
-            DataConnection.AddDataProvider(DB2iSeriesProviderName.DB2_GAS, GetDataProvider(DB2iSeriesProviderName.DB2_GAS));
-            DataConnection.AddDataProvider(DB2iSeriesProviderName.DB2_73, GetDataProvider(DB2iSeriesProviderName.DB2_73));
-            DataConnection.AddDataProvider(DB2iSeriesProviderName.DB2_73_GAS, GetDataProvider(DB2iSeriesProviderName.DB2_73_GAS));
-
+            //Caution - When using DataConnection.GetDataProvider the default provider names will resolve to iDB2 implementation with the current implementation 
+            //Chaning the DefaultAdoProviderType will only be used fo the DB2iSeriesTools.GetDataProvider
+            //Possible solutions would be to move registration to a static method with the default provider as parameter (and error on second call)
+            //Another solution is to make the propery private const (in essense turn it to a compile time option)
             foreach (var item in dataProviders)
                 DataConnection.AddDataProvider(item.Key, item.Value);
-
-            DataConnection.AddProviderDetector(ProviderDetector);
         }
 
         #endregion
@@ -136,6 +134,21 @@ namespace LinqToDB.DataProvider.DB2iSeries
         public static string GetDB2DummyTableName(IDbConnection dbConnection)
         {
             return GetDB2DummyTableName(GetNamingConvention(dbConnection));
+        }
+
+        public static string GetSqlObjectDelimiter(DB2iSeriesNamingConvention namingConvention)
+        {
+            return namingConvention == DB2iSeriesNamingConvention.Sql ? "." : "/";
+        }
+
+        public static string GetSqlObjectDelimiter(string connectionString)
+        {
+            return GetSqlObjectDelimiter(GetNamingConvention(connectionString));
+        }
+
+        public static string GetSqlObjectDelimiter(IDbConnection dbConnection)
+        {
+            return GetSqlObjectDelimiter(GetNamingConvention(dbConnection));
         }
 
         #endregion
@@ -217,9 +230,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
                     var providerType = DetectFromConnectionString(connectionString);
 
 
-                    using (var conn = providerType == DB2iSeriesAdoProviderType.AccessClient ?
-                        ConnectionBuilder_ClientAccess(cs) :
-                        ConnectionBuilder_DB2Connect(cs))
+                    using (var conn = CreateConnection(providerType, cs))
                     {
                         conn.Open();
 
@@ -227,7 +238,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
                         var maxPtfLevel = GetLevel(conn, version.PtfGroupName);
                         var minLevel = GetMinLevel(version, maxPtfLevel);
 
-                        switch(minLevel)
+                        switch (minLevel)
                         {
                             case DB2iSeriesLevels.V7_1_38:
                                 return GetDataProvider(DB2iSeriesProviderName.GetFromOptions(new DB2iSeriesDataProviderOptions(DB2iSeriesLevels.V7_1_38, false, providerType)));
@@ -238,28 +249,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
                 }
                 catch (Exception)
                 {
+                    //Error or return default provider?
                     return null;
                 }
             }
 
+            //Error or return default provider?
             return null;
         }
 
-        public class ServerVersion
-        {
-            public ServerVersion(int major, int minor, string ptfGroupName)
-            {
-                Major = major;
-                Minor = minor;
-                PtfGroupName = ptfGroupName;
-            }
-
-            public int Major { get; }
-            public int Minor { get; }
-            public string PtfGroupName { get; }
-        }
-
-        public static DB2iSeriesLevels GetMinLevel(ServerVersion version, int maxPtfGroupLevel)
+        public static DB2iSeriesLevels GetMinLevel(DB2iSeriesServerVersion version, int maxPtfGroupLevel)
         {
             if (version.Major < 7)
                 return DB2iSeriesLevels.Any;
@@ -267,7 +266,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
             if (version.Major > 7)
                 return DB2iSeriesLevels.V7_1_38;
 
-            switch(version.Minor)
+            switch (version.Minor)
             {
                 case 1:
                     return maxPtfGroupLevel < 38 ? DB2iSeriesLevels.Any : DB2iSeriesLevels.V7_1_38;
@@ -279,7 +278,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
             }
         }
 
-        public static ServerVersion GetServerVersion(IDbConnection dbConnection)
+        public static DB2iSeriesServerVersion GetServerVersion(IDbConnection dbConnection)
         {
             var providerType = GetAdoProviderType(dbConnection);
             switch (providerType)
@@ -291,7 +290,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
                         var major = int.Parse(serverVersionParts[0]);
                         var minor = int.Parse(serverVersionParts[1]);
                         var ptf = GetPtfGroupName(major, minor);
-                        return new ServerVersion(major, minor, ptf);
+                        return new DB2iSeriesServerVersion(major, minor, ptf);
                     }
                     throw new LinqToDBException("ServerVersion not found in iDB2Connection");
                 case DB2iSeriesAdoProviderType.DB2Connect:
@@ -299,7 +298,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
                         && MemberAccessor.TryGetValue<int>(dbConnection, "ServerMinorVersion", out var serverMinorVersion))
                     {
                         var ptf = GetPtfGroupName(serverMajorVersion, serverMinorVersion);
-                        return new ServerVersion(serverMajorVersion, serverMinorVersion, ptf);
+                        return new DB2iSeriesServerVersion(serverMajorVersion, serverMinorVersion, ptf);
                     }
                     throw new LinqToDBException("ServerMajorVersion or ServerMinorVersion not found in DB2Connection");
                 default:
@@ -331,6 +330,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
         #endregion
 
         #region OnInitialized
+
+        //This whole section existed for test cases to run after the Types were plugged into the TypeCreators
+        //It is obsolete in the current implementation - left in for compatibility only - discard if possible
 
         private static bool _isInitialized;
         private static readonly object _syncAfterInitialized = new object();
@@ -379,7 +381,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         #endregion
 
-        #region CreateConnectionStringBuilder
+        #region ConnectionString Tools
 
         public static DB2iSeriesNamingConvention GetNamingConvention(IDbConnection dbConnection)
         {
@@ -414,15 +416,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
             return csb["Naming"]?.ToString() == "1" ? DB2iSeriesNamingConvention.System : DB2iSeriesNamingConvention.Sql;
         }
 
-        public static string GetSqlObjectDelimiter(string connectionString)
-        {
-            return GetNamingConvention(connectionString) == DB2iSeriesNamingConvention.Sql ? "." : "/";
-        }
 
-        public static string GetSqlObjectDelimiter(IDbConnection dbConnection)
-        {
-            return GetNamingConvention(dbConnection) == DB2iSeriesNamingConvention.Sql ? "." : "/";
-        }
 
         public static DbConnectionStringBuilder CreateConnectionStringBuilder(string connectionString)
         {
@@ -443,15 +437,17 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         #region CreateConnection
 
-        private static readonly Func<string, IDbConnection> ConnectionBuilder_ClientAccess = DynamicDataProviderBase.CreateConnectionExpression(GetConnectionType(DB2iSeriesAdoProviderType.AccessClient)).Compile();
-        private static readonly Func<string, IDbConnection> ConnectionBuilder_DB2Connect = DynamicDataProviderBase.CreateConnectionExpression(GetConnectionType(DB2iSeriesAdoProviderType.DB2Connect)).Compile();
+        private static readonly Lazy<Func<string, IDbConnection>> ConnectionBuilder_ClientAccess
+            = new Lazy<Func<string, IDbConnection>>(() => DynamicDataProviderBase.CreateConnectionExpression(GetConnectionType(DB2iSeriesAdoProviderType.AccessClient)).Compile());
+        private static readonly Lazy<Func<string, IDbConnection>> ConnectionBuilder_DB2Connect
+            = new Lazy<Func<string, IDbConnection>>(() => DynamicDataProviderBase.CreateConnectionExpression(GetConnectionType(DB2iSeriesAdoProviderType.DB2Connect)).Compile());
 
         public static IDbConnection CreateConnection(DB2iSeriesAdoProviderType adoProviderType, string connectionString)
         {
             if (adoProviderType == DB2iSeriesAdoProviderType.AccessClient)
-                return ConnectionBuilder_ClientAccess(connectionString);
+                return ConnectionBuilder_ClientAccess.Value(connectionString);
             else if (adoProviderType == DB2iSeriesAdoProviderType.DB2Connect)
-                return ConnectionBuilder_DB2Connect(connectionString);
+                return ConnectionBuilder_DB2Connect.Value(connectionString);
             else
                 throw new NotSupportedException();
         }
@@ -479,7 +475,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         #region BulkCopy
 
-        public static BulkCopyType DefaultBulkCopyType = BulkCopyType.MultipleRows;
+        public static BulkCopyType DefaultBulkCopyType { get; set; } = BulkCopyType.MultipleRows;
 
         public static BulkCopyRowsCopied MultipleRowsCopy<T>(DataConnection dataConnection, IEnumerable<T> source, int maxBatchSize = 1000, Action<BulkCopyRowsCopied> rowsCopiedCallback = null)
         {

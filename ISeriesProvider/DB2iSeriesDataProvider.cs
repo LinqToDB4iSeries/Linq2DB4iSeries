@@ -16,30 +16,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
     public class DB2iSeriesDataProvider : DynamicDataProviderBase
     {
-        #region Private fields / Public Properties
+        #region Private fields
 
         private static Action<IDbDataParameter> _setBlob_AccessClient;
         private static Action<IDbDataParameter> _setBlob_DB2Connect;
-        private static Action<IDbDataParameter> GetBlobSetter(DB2iSeriesDataProvider provider)
-        {
-
-            if (provider.options.AdoProviderType == DB2iSeriesAdoProviderType.AccessClient)
-            {
-                if (_setBlob_AccessClient == null)
-                    _setBlob_AccessClient = provider.GetSetParameter(DB2iSeriesTypes.ConnectionType, "iDB2Parameter", "iDB2DbType", "iDB2DbType", "iDB2Blob");
-
-                return _setBlob_AccessClient;
-            }
-            else
-            {
-                if (_setBlob_DB2Connect == null)
-                    _setBlob_DB2Connect = provider.GetSetParameter(DB2Types.ConnectionType,  "DB2Parameter", "DB2Type", "DB2Type", "Blob");
-
-                return _setBlob_DB2Connect;
-            }
-        }
-
-
+        
         private readonly DB2iSeriesDataProviderOptions options;
         private readonly DB2iSeriesSqlOptimizer _sqlOptimizer;
         private DB2iSeriesBulkCopy _bulkCopy;
@@ -89,11 +70,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
             _sqlOptimizer = new DB2iSeriesSqlOptimizer(SqlProviderFlags);
         }
 
-        
-        //Obsolete - name and options are linked cannot mix and match 
+
+        //Obsolete - name and options are linked - removing this constructor to prevent inconsistencies
         //public DB2iSeriesDataProvider(string name, DB2iSeriesLevels minLevel, bool mapGuidAsString) : base(name, null)
         //{
-            
+
         //}
 
         #endregion
@@ -119,7 +100,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
             else if (connectionType.Name == DB2iSeriesTools.GetConnectionTypeName(DB2iSeriesAdoProviderType.DB2Connect))
                 OnConnectionTypeCreated_DB2Connect();
             else
-                throw new NotSupportedException($"Unsupported connect type {connectionType.Name}");
+                throw new NotSupportedException($"Unsupported connection type {connectionType.Name}");
 
             if (DataConnection.TraceSwitch.TraceInfo)
                 DataConnection.WriteTraceLine(DataReaderType.AssemblyEx().FullName, DataConnection.TraceSwitch.DisplayName);
@@ -132,10 +113,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         #region Overrides
 
+        //GetConnectionType is the main entry point of the flow of dynamic type creation in DynamicDataProviderBase
+        //By delegating it to the lazy resolvers in DB2/DB2iSeries tools we can avoid the clunky cycle of the original DB2 implementation
+        protected override Type GetConnectionType() => DB2iSeriesTools.GetConnectionType(options.AdoProviderType);
         public override string ConnectionNamespace => DB2iSeriesTools.GetConnectionNamespace(options.AdoProviderType);
         protected override string ConnectionTypeName => DB2iSeriesTools.GetConnectionTypeName(options.AdoProviderType);
         protected override string DataReaderTypeName => DB2iSeriesTools.GetDataReaderTypeName(options.AdoProviderType);
         
+  
         public override BulkCopyRowsCopied BulkCopy<T>(DataConnection dataConnection, BulkCopyOptions options, IEnumerable<T> source)
         {
             if (_bulkCopy == null)
@@ -202,6 +187,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
             
             return DB2iSeriesTools.CreateConnection(options.AdoProviderType, connectionString);
         }
+
+        
+        
 
         public override void SetParameter(IDbDataParameter parameter, string name, DataType dataType, object value)
         {
@@ -324,6 +312,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
             }
         }
 
+        #endregion
+
         #region Merge
         public override int Merge<T>(DataConnection dataConnection, Expression<Func<T, bool>> deletePredicate, bool delete, IEnumerable<T> source, string tableName, string databaseName, string schemaName)
         {
@@ -349,8 +339,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	    {
 		    return new DB2iSeriesMergeBuilder<TTarget, TSource>(connection, merge);
 	    }
-
-        #endregion
 
         #endregion
 
@@ -406,6 +394,25 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				Linq.Expressions.M(() => Sql.Log(0.0, 0)),
 				Linq.Expressions.N(() => Linq.Expressions.L<Double?, Double?, Double?>((m, n) => Sql.Log(n) / Sql.Log(m))));
 		}
+
+        private static Action<IDbDataParameter> GetBlobSetter(DB2iSeriesDataProvider provider)
+        {
+
+            if (provider.options.AdoProviderType == DB2iSeriesAdoProviderType.AccessClient)
+            {
+                if (_setBlob_AccessClient == null)
+                    _setBlob_AccessClient = provider.GetSetParameter(DB2iSeriesTypes.ConnectionType, "iDB2Parameter", "iDB2DbType", "iDB2DbType", "iDB2Blob");
+
+                return _setBlob_AccessClient;
+            }
+            else
+            {
+                if (_setBlob_DB2Connect == null)
+                    _setBlob_DB2Connect = provider.GetSetParameter(DB2Types.ConnectionType, "DB2Parameter", "DB2Type", "DB2Type", "Blob");
+
+                return _setBlob_DB2Connect;
+            }
+        }
 
         #endregion
     }

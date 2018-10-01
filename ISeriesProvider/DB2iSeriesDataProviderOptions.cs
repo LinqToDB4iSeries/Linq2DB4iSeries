@@ -6,6 +6,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 {
     using LinqToDB.Configuration;
 
+    //This class contains provider specific options and relevant logic
+    //By implementing IEquatable it behaves like a value type in comparisons, but only for the properties that take part in Equals/GetHashCode
+    //Currently ProviderType , MapGuidAsString and MinLevel do as they define the behaviour of the provider
+    //IdentifierQuoteMode is simply an option that can be safely changed at runtime and thus doesn't
+
     public sealed class DB2iSeriesDataProviderOptions : IEquatable<DB2iSeriesDataProviderOptions>
     {
         public DB2iSeriesLevels MinLevel { get; }
