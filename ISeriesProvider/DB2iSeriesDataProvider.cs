@@ -301,10 +301,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
                 //Fixes issues with DecimalFloat
                 if (options.AdoProviderType == DB2iSeriesAdoProviderType.DB2Connect)
                 {
-                    if (originalValue.GetType().Name == "DB2DecimalFloat")
-                    {
-                        var i = 0;
-                    }
                     var typeDescriptor = DB2Types.GetTypeDescriptor(originalValue.GetType());
                     if (typeDescriptor != null)
                         MemberAccessor.SetValue(parameter, "DB2Type", typeDescriptor.ProviderParameterDbType);

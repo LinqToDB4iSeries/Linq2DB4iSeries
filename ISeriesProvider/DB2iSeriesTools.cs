@@ -191,7 +191,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
             if (dbConnection.GetType() == DB2Types.ConnectionType)
                 return DB2iSeriesAdoProviderType.DB2Connect;
             else
-                throw new LinqToDBException("Unsopported provider type");
+                throw new LinqToDBException("Unsupported provider type");
         }
 
         private static DB2iSeriesAdoProviderType DetectFromConnectionString(string connectionString)
@@ -316,7 +316,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
             using (var cmd = conn.CreateCommand())
             {
                 cmd.CommandText =
-                    "SELECT MAX(PTF_GROUP_LEVEL) FROM QSYS2.GROUP_PTF_INFO WHERE PTF_GROUP_NAME = @p1 AND PTF_GROUP_STATUS = 'INSTALLED'";
+                    $"SELECT MAX(PTF_GROUP_LEVEL) FROM QSYS2{DB2iSeriesTools.GetSqlObjectDelimiter(conn)}GROUP_PTF_INFO WHERE PTF_GROUP_NAME = @p1 AND PTF_GROUP_STATUS = 'INSTALLED'";
                 var param = cmd.CreateParameter();
                 param.ParameterName = "p1";
                 param.Value = ptf;

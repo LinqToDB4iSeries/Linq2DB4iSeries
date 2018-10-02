@@ -1153,7 +1153,7 @@ namespace Tests.DataProvider
         public void TestDetector(string context)
         {
             DB2iSeriesTools.AutoDetectProvider = true;
-            var provider = DataConnection.GetDataProvider("ATHINA");
+            var provider = DataConnection.GetDataProvider("TEST_I_DB");
 
             Assert.AreEqual(provider.Name, TestProvName.DB2i_DB2Connect_73);
         }
