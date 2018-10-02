@@ -15,7 +15,5 @@
             public int Minor { get; }
             public string PtfGroupName { get; }
         }
-
-        #endregion
     }
 }
