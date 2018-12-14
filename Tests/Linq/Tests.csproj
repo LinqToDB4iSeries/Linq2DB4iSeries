@@ -37,7 +37,6 @@
     <!--<PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.2" Condition=" '$(TargetFramework)' != 'net40' " />-->
 		<PackageReference Include="NUnit" Version="3.10.1" />
 		<PackageReference Include="NUnit3TestAdapter" Version="3.10.0" />
-		<PackageReference Include="Mono.Cecil" Version="0.10.0" />
 		<PackageReference Include="Humanizer.Core" Version="2.2.0" />
 	</ItemGroup>
 

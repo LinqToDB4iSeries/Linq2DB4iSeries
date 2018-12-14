@@ -18,9 +18,46 @@
 			}
 		}
 
+	    private static string FixUnderscore(string text)
+	    {
+	        if (text == null)
+	            return null;
+
+	        if (text.Equals("_"))
+	            return "underscore_";
+	            
+	        return text.TrimStart('_');
+        }
+
 	    public override SqlStatement Finalize(SqlStatement statement)
 	    {
-			if (statement.SelectQuery != null)
+            new QueryVisitor().Visit(statement, expr =>
+            {
+                switch (expr.ElementType)
+                {
+                    case QueryElementType.SqlParameter:
+                        {
+                            var p = (SqlParameter)expr;
+                            p.Name = FixUnderscore(p.Name);
+                            
+                            break;
+                        }
+                    case QueryElementType.TableSource:
+                        {
+                            var table = (SqlTableSource)expr;
+                            table.Alias = FixUnderscore(table.Alias);
+                            break;
+                        }
+                    case QueryElementType.Column:
+                        {
+                            var column = (SqlColumn)expr;
+                            column.Alias = FixUnderscore(column.Alias);
+                            break;
+                        }
+                }
+            });
+
+            if (statement.SelectQuery != null)
 				(new QueryVisitor()).Visit(statement.SelectQuery.Select, SetQueryParameter);
 
 	        statement = base.Finalize(statement);
