@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("ISeriesProvider")]
 [assembly: AssemblyDescription("LINQ to DB is a data access technology that provides a run-time infrastructure for managing relational data as objects.  This package is a provider for DB2 on the IBM iSeries.")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Retail-Assist Ltd")]
+[assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("ISeriesProvider")]
-[assembly: AssemblyCopyright("Copyright © Retail-Assist 2016-2018")]
+[assembly: AssemblyCopyright("Copyright © 2016-2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

@@ -1,4 +1,7 @@
-﻿namespace LinqToDB.DataProvider.DB2iSeries
+﻿using System.Linq;
+using LinqToDB.Tools;
+
+namespace LinqToDB.DataProvider.DB2iSeries
 {
 	using Extensions;
 	using SqlProvider;
@@ -18,9 +21,49 @@
 			}
 		}
 
+	    private static string FixUnderscore(string text, string alternative)
+	    {
+	        if (string.IsNullOrWhiteSpace(text))
+	            return null;
+
+           if (text.Equals("_"))
+	            return "underscore_";
+
+	        if (!text.All(t => "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".Contains(t)))
+	            return alternative;
+	            
+	        return text;
+        }
+
 	    public override SqlStatement Finalize(SqlStatement statement)
 	    {
-			if (statement.SelectQuery != null)
+            new QueryVisitor().Visit(statement, expr =>
+            {
+                switch (expr.ElementType)
+                {
+                    case QueryElementType.SqlParameter:
+                        {
+                            var p = (SqlParameter)expr;
+                            p.Name = FixUnderscore(p.Name, $"P{p.GetHashCode()}");
+                            
+                            break;
+                        }
+                    case QueryElementType.TableSource:
+                        {
+                            var table = (SqlTableSource)expr;
+                            table.Alias = FixUnderscore(table.Alias, $"T{table.SourceID}");
+                            break;
+                        }
+                    case QueryElementType.Column:
+                        {
+                            var column = (SqlColumn)expr;
+                            column.Alias = FixUnderscore(column.Alias, $"C{column.GetHashCode()}");
+                            break;
+                        }
+                }
+            });
+
+            if (statement.SelectQuery != null)
 				(new QueryVisitor()).Visit(statement.SelectQuery.Select, SetQueryParameter);
 
 	        statement = base.Finalize(statement);
