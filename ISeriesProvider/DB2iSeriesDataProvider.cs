@@ -262,9 +262,21 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
             switch (dataType.DataType)
             {
-                case DataType.UInt16: dataType = dataType.WithDataType(DataType.Int32); break;
-                case DataType.UInt32: dataType = dataType.WithDataType(DataType.Int64); break;
-                case DataType.UInt64: dataType = dataType.WithDataType(DataType.Decimal); break;
+                case DataType.UInt16:
+                    dataType = dataType.WithDataType(DataType.Int32);
+                    if (value != null)
+                        value = Convert.ToInt32(value);
+                    break;
+                case DataType.UInt32:
+                    dataType = dataType.WithDataType(DataType.Int64);
+                    if (value != null)
+                        value = Convert.ToInt64(value);
+                    break;
+                case DataType.UInt64:
+                    dataType = dataType.WithDataType(DataType.Decimal);
+                    if (value != null)
+                        value = Convert.ToDecimal(value);
+                    break;
                 case DataType.VarNumeric: dataType = dataType.WithDataType(DataType.Decimal); break;
                 case DataType.DateTime2: dataType = dataType.WithDataType(DataType.DateTime); break;
                 case DataType.Char:

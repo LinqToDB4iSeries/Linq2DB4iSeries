@@ -2,9 +2,9 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
   <metadata>
     <id>linq2db4iSeries</id>
-    <version>2.5.0.0</version>
-    <authors>Retail-Assist Ltd</authors>
-    <owners>Retail-Assist Ltd</owners>
+    <version>2.6.0.0</version>
+    <authors>Roy Chase</authors>
+    <owners>Roy Chase</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <licenseUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries/blob/master/MIT-LICENSE.txt</licenseUrl>
     <projectUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries</projectUrl>
@@ -14,7 +14,7 @@
     <repository type="git" url="https://github.com/LinqToDB4iSeries/Linq2DB4iSeries" />
     <dependencies>
       <group targetFramework=".NETFramework4.5">
-        <dependency id="linq2db" version="[2.5.0,2.5.9]" />
+        <dependency id="linq2db" version="[2.6.0,2.6.9]" />
       </group>
     </dependencies>
     <frameworkAssemblies>

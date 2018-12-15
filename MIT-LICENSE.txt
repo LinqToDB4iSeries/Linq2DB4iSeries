@@ -1,4 +1,4 @@
-Copyright (c) 2017 Roy Chase, Retail Assist <roy.chase@retail-assist.co.uk>
+Copyright (c) 2018 Roy Chase <roy.chase@retail-assist.co.uk>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
