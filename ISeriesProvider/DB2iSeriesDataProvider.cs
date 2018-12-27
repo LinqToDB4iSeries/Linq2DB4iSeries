@@ -58,6 +58,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
         public override string ConnectionNamespace => "";
         protected override string ConnectionTypeName => DB2iSeriesTools.ConnectionTypeName;
         protected override string DataReaderTypeName => DB2iSeriesTools.DataReaderTypeName;
+        public override string DbFactoryProviderName => "IBM.Data.DB2.iSeries";
+
         public string DummyTableName => DB2iSeriesTools.iSeriesDummyTableName();
 
         public override BulkCopyRowsCopied BulkCopy<T>(DataConnection dataConnection, BulkCopyOptions options, IEnumerable<T> source)
