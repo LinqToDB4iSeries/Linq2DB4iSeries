@@ -2,11 +2,11 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
   <metadata>
     <id>linq2db4iSeries</id>
-    <version>2.6.0.0</version>
+    <version>2.6.1.0</version>
     <authors>Roy Chase</authors>
     <owners>Roy Chase</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <licenseUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries/blob/master/MIT-LICENSE.txt</licenseUrl>
+	<license type="expression">MIT</license>
     <projectUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries</projectUrl>
     <iconUrl>https://raw.githubusercontent.com/LinqToDB4iSeries/Linq2DB4iSeries/master/NuGet/linq2db2i.png</iconUrl>
     <description>LINQ to DB is a data access technology that provides a run-time infrastructure for managing relational data as objects.  This package is a provider for DB2 on the IBM iSeries.</description>
