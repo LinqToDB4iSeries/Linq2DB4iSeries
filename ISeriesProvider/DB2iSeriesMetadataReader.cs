@@ -1,10 +1,13 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using LinqToDB.Metadata;
+using LinqToDB.Mapping;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
@@ -21,7 +24,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 	    public T[] GetAttributes<T>(Type type, MemberInfo memberInfo, bool inherit = true) where T : Attribute
 		{
-			if (typeof(T) == typeof(Sql.ExpressionAttribute))
+			if (typeof(Sql.ExpressionAttribute).IsAssignableFrom(typeof(T)))
 			{
 				switch (memberInfo.Name)
 				{
@@ -49,12 +52,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						}
 						break;
 					case "Truncate":
-						return new[] { (T)(object)new Sql.ExpressionAttribute(providerName, "Truncate({0}, 0)") };
-					case "DateAdd":
-						return new[] { (T)(object)new Sql.DatePartAttribute(providerName, "{{1}} + {0}", Precedence.Additive, true, new[] { "{0} Year", "({0} * 3) Month", "{0} Month", "{0} Day", "{0} Day", "({0} * 7) Day", "{0} Day", "{0} Hour", "{0} Minute", "{0} Second", "({0} * 1000) Microsecond" }, 0, 1, 2) };
-					case "DatePart":
-						return new[] { (T)(object)new Sql.DatePartAttribute(providerName, "{0}", false, new[] { null, null, null, null, null, null, "DayOfWeek", null, null, null, null }, 0, 1) };
-					case "TinyInt":
+                        return typeof(T) == typeof(Sql.ExtensionAttribute) ?
+                            new[] { (T)(object)new Sql.ExtensionAttribute(providerName, "Truncate({0}, 0)") } :
+                            new[] { (T)(object)new Sql.ExpressionAttribute(providerName, "Truncate({0}, 0)") };
+                    case "DateAdd":
+                        return new[] { (T)(object)new Sql.ExtensionAttribute(providerName, "") { ServerSideOnly = false, PreferServerSide = false, BuilderType = typeof(DateAddBuilderDB2i) } };
+                    case "DatePart":
+                        return new[] { (T)(object)new Sql.ExtensionAttribute(providerName, "") { ServerSideOnly = false, PreferServerSide = false, BuilderType = typeof(DatePartBuilderDB2i) } };
+                    case "DateDiff":
+                        return new[] { (T)(object)new Sql.ExtensionAttribute(providerName, "") { BuilderType = typeof(DateDiffBuilderDB2i) } };
+                    case "TinyInt":
 						return new[] { (T)(object)new Sql.ExpressionAttribute(providerName, "SmallInt") { ServerSideOnly = true } };
 					case "DefaultNChar":
 					case "DefaultNVarChar":
@@ -88,4 +95,104 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return new T[] { };
 		}
 	}
+
+    public class DateAddBuilderDB2i : Sql.IExtensionCallBuilder
+    {
+        public void Build(Sql.ISqExtensionBuilder builder)
+        {
+            var part = builder.GetValue<Sql.DateParts>("part");
+            var date = builder.GetExpression("date");
+            var number = builder.GetExpression("number");
+
+            string expStr;
+
+            switch (part)
+            {
+                case Sql.DateParts.Year: expStr = "{0} + {1} Year"; break;
+                case Sql.DateParts.Quarter: expStr = "{0} + ({1} * 3) Month"; break;
+                case Sql.DateParts.Month: expStr = "{0} + {1} Month"; break;
+                case Sql.DateParts.DayOfYear:
+                case Sql.DateParts.WeekDay:
+                case Sql.DateParts.Day: expStr = "{0} + {1} Day"; break;
+                case Sql.DateParts.Week: expStr = "{0} + ({1} * 7) Day"; break;
+                case Sql.DateParts.Hour: expStr = "{0} + {1} Hour"; break;
+                case Sql.DateParts.Minute: expStr = "{0} + {1} Minute"; break;
+                case Sql.DateParts.Second: expStr = "{0} + {1} Second"; break;
+                case Sql.DateParts.Millisecond: expStr = "{0} + ({1} * 1000) Microsecond"; break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            builder.ResultExpression = new SqlExpression(typeof(DateTime?), expStr, Precedence.Additive, date, number);
+        }
+    }
+
+    public class DatePartBuilderDB2i : Sql.IExtensionCallBuilder
+    {
+        public void Build(Sql.ISqExtensionBuilder builder)
+        {
+            string partStr;
+            var part = builder.GetValue<Sql.DateParts>("part");
+            switch (part)
+            {
+                case Sql.DateParts.Year: partStr = "YEAR({date})"; break;
+                case Sql.DateParts.Quarter: partStr = "QUARTER({date})"; break;
+                case Sql.DateParts.Month: partStr = "MONTH({date})"; break;
+                case Sql.DateParts.DayOfYear: partStr = "DAYOFYEAR({date})"; break;
+                case Sql.DateParts.Day: partStr = "DAY({date})"; break;
+                case Sql.DateParts.Week: partStr = "DAYOFYEAR({date}) / 7"; break;
+                case Sql.DateParts.WeekDay: partStr = "DAYOFWEEK({date})"; break;
+                case Sql.DateParts.Hour: partStr = "HOUR({date})"; break;
+                case Sql.DateParts.Minute: partStr = "MINUTE({date})"; break;
+                case Sql.DateParts.Second: partStr = "SECOND({date})"; break;
+                case Sql.DateParts.Millisecond: partStr = "MICROSECOND({date}) / 1000"; break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            builder.Expression = partStr;
+        }
+    }
+
+    public class DateDiffBuilderDB2i : Sql.IExtensionCallBuilder
+    {
+        public void Build(Sql.ISqExtensionBuilder builder)
+        {
+            var part = builder.GetValue<Sql.DateParts>(0);
+            var startDate = builder.GetExpression(1);
+            var endDate = builder.GetExpression(2);
+
+            var secondsExpr = builder.Mul<int>(builder.Sub<int>(
+                    new SqlFunction(typeof(int), "Days", endDate),
+                    new SqlFunction(typeof(int), "Days", startDate)),
+                new SqlValue(86400));
+
+            var midnight = builder.Sub<int>(
+                new SqlFunction(typeof(int), "MIDNIGHT_SECONDS", endDate),
+                new SqlFunction(typeof(int), "MIDNIGHT_SECONDS", startDate));
+
+            var resultExpr = builder.Add<int>(secondsExpr, midnight);
+
+            switch (part)
+            {
+                case Sql.DateParts.Day: resultExpr = builder.Div(resultExpr, 86400); break;
+                case Sql.DateParts.Hour: resultExpr = builder.Div(resultExpr, 3600); break;
+                case Sql.DateParts.Minute: resultExpr = builder.Div(resultExpr, 60); break;
+                case Sql.DateParts.Second: break;
+                case Sql.DateParts.Millisecond:
+                    resultExpr = builder.Add<int>(
+                        builder.Mul(resultExpr, 1000),
+                        builder.Div(
+                            builder.Sub<int>(
+                                new SqlFunction(typeof(int), "MICROSECOND", endDate),
+                                new SqlFunction(typeof(int), "MICROSECOND", startDate)),
+                            1000));
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            builder.ResultExpression = resultExpr;
+        }
+    }
 }

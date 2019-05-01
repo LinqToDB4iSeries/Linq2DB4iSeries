@@ -62,14 +62,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
         public string DummyTableName => DB2iSeriesTools.iSeriesDummyTableName();
 
-        public override BulkCopyRowsCopied BulkCopy<T>(DataConnection dataConnection, BulkCopyOptions options, IEnumerable<T> source)
+        public override BulkCopyRowsCopied BulkCopy<T>(ITable<T> table, BulkCopyOptions options, IEnumerable<T> source)
         {
             if (_bulkCopy == null)
                 _bulkCopy = new DB2iSeriesBulkCopy();
 
             return _bulkCopy.BulkCopy(
               options.BulkCopyType == BulkCopyType.Default ? DB2iSeriesTools.DefaultBulkCopyType : options.BulkCopyType,
-              dataConnection,
+              table,
               options,
               source);
         }
