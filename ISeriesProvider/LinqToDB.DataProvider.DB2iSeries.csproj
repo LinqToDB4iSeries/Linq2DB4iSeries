@@ -15,7 +15,7 @@
 		<GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
 	</PropertyGroup>
 	<PropertyGroup>
-		<Version>2.6.0.0</Version>
+		<Version>2.7.0.0</Version>
 		<PackageVersion>2.1.0.0</PackageVersion>
     <PublisherName>Retail-Assist Ltd</PublisherName>
     <Description>LINQ to DB is a data access technology that provides a run-time infrastructure for managing relational data as objects.  This package is a provider for DB2 on the IBM iSeries.</Description>
@@ -35,6 +35,8 @@
 	  <LangVersion>7.1</LangVersion>
 	  <RepositoryUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries</RepositoryUrl>
 	  <RepositoryType>git</RepositoryType>
+	  <AssemblyVersion>2.7.0.0</AssemblyVersion>
+	  <FileVersion>2.7.0.0</FileVersion>
 	</PropertyGroup>
 	
   
@@ -53,7 +55,7 @@
 		<Folder Include="Properties\" />
 	</ItemGroup>
 	<ItemGroup>
-	  <PackageReference Include="linq2db" Version="2.6.1" />
+	  <PackageReference Include="linq2db" Version="2.7.0" />
 	</ItemGroup>
 	<ItemGroup>
 	  <Reference Include="IBM.Data.DB2.iSeries">

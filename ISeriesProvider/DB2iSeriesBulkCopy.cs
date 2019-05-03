@@ -13,36 +13,31 @@ namespace LinqToDB.DataProvider.DB2iSeries
         const int MAX_ALLOWABLE_BATCH_SIZE = 100;
 
         protected override BulkCopyRowsCopied ProviderSpecificCopy<T>(
-          DataConnection dataConnection,
+          ITable<T> table,
           BulkCopyOptions options,
           IEnumerable<T> source)
         {
             throw new NotImplementedException("Not able to do bulk copy in DB2iSeries Provider.");
         }
 
-        protected override BulkCopyRowsCopied MultipleRowsCopy2<T>(DataConnection dataConnection, BulkCopyOptions options, IEnumerable<T> source, string from)
+        protected override BulkCopyRowsCopied MultipleRowsCopy2<T>(ITable<T> table, BulkCopyOptions options, IEnumerable<T> source, string from)
         {
             if ((options.MaxBatchSize ?? int.MaxValue) > MAX_ALLOWABLE_BATCH_SIZE)
             {
                 options.MaxBatchSize = MAX_ALLOWABLE_BATCH_SIZE;
             }
 
-            return MultipleRowsCopy2<T>(
-                new DB2iSeriesMultipleRowsHelper<T>(dataConnection, options),
-                dataConnection,
-                options,
-                source,
-                from);
+            return base.MultipleRowsCopy2(new DB2iSeriesMultipleRowsHelper<T>(table, options), source, from);
         }
 
-        protected override BulkCopyRowsCopied MultipleRowsCopy<T>(DataConnection dataConnection, BulkCopyOptions options, IEnumerable<T> source)
+        protected override BulkCopyRowsCopied MultipleRowsCopy<T>(ITable<T> table, BulkCopyOptions options, IEnumerable<T> source)
         {
             if ((options.MaxBatchSize ?? int.MaxValue) > MAX_ALLOWABLE_BATCH_SIZE)
             {
                 options.MaxBatchSize = MAX_ALLOWABLE_BATCH_SIZE;
             }
 
-            return MultipleRowsCopy2(dataConnection, options, source, " FROM " + DB2iSeriesTools.iSeriesDummyTableName());
+            return MultipleRowsCopy2(table, options, source, " FROM " + DB2iSeriesTools.iSeriesDummyTableName());
         }
     }
 }

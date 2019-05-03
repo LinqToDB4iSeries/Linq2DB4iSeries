@@ -8,8 +8,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 	class DB2iSeriesMultipleRowsHelper<T> : MultipleRowsHelper<T>
 	{
-		public DB2iSeriesMultipleRowsHelper(DataConnection dataConnection, BulkCopyOptions options) 
-		    : base(dataConnection, options)
+		public DB2iSeriesMultipleRowsHelper(ITable<T> table, BulkCopyOptions options) 
+		    : base(table, options)
 		{
         }
 
