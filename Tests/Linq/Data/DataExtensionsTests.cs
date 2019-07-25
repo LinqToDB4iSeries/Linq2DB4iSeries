@@ -40,7 +40,7 @@ namespace Tests.Data
 
 	    private static string ParamType(DataConnection conn, SqlDataType type)
 	    {
-	        var bldr = (DB2iSeriesSqlBuilder) conn.DataProvider.CreateSqlBuilder();
+	        var bldr = (DB2iSeriesSqlBuilder) conn.DataProvider.CreateSqlBuilder(conn.MappingSchema);
 	        var param = bldr.GetiSeriesType(type);
 	        return param;
 	    }
