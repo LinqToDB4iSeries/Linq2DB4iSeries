@@ -11,90 +11,104 @@ using LinqToDB.Mapping;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
-	using SqlQuery;
+    using SqlQuery;
 
-	class DB2iSeriesMetadataReader : IMetadataReader
-	{
-	    private readonly string providerName;
+    class DB2iSeriesMetadataReader : IMetadataReader
+    {
+        private readonly string providerName;
 
-	    public DB2iSeriesMetadataReader(string providerName)
-	    {
-	        this.providerName = providerName;
-	    }
+        public DB2iSeriesMetadataReader(string providerName)
+        {
+            this.providerName = providerName;
+        }
 
-	    public T[] GetAttributes<T>(Type type, MemberInfo memberInfo, bool inherit = true) where T : Attribute
-		{
-			if (typeof(Sql.ExpressionAttribute).IsAssignableFrom(typeof(T)))
-			{
-				switch (memberInfo.Name)
-				{
-					case "CharIndex":
-						return new[] { (T)(object)new Sql.FunctionAttribute("Locate") };
+        public T[] GetAttributes<T>(Type type, MemberInfo memberInfo, bool inherit = true) where T : Attribute
+        {
 
-					case "Trim":
-						if (memberInfo.ToString().EndsWith("(Char[])", StringComparison.CurrentCultureIgnoreCase))
-						{
-							return new[] { (T)(object)new Sql.ExpressionAttribute(providerName, "Strip({0}, B, {1})") };
-						}
-						break;
-					case "TrimLeft":
-						if (memberInfo.ToString().EndsWith("(Char[])", StringComparison.CurrentCultureIgnoreCase) ||
-							memberInfo.ToString().EndsWith("System.Nullable`1[System.Char])", StringComparison.CurrentCultureIgnoreCase))
-						{
-							return new[] { (T)(object)new Sql.ExpressionAttribute(providerName, "Strip({0}, L, {1})") };
-						}
-						break;
-					case "TrimRight":
-						if (memberInfo.ToString().EndsWith("(Char[])", StringComparison.CurrentCultureIgnoreCase) ||
-							memberInfo.ToString().EndsWith("System.Nullable`1[System.Char])", StringComparison.CurrentCultureIgnoreCase))
-						{
-							return new[] { (T)(object)new Sql.ExpressionAttribute(providerName, "Strip({0}, T, {1})") };
-						}
-						break;
-					case "Truncate":
-                        return typeof(T) == typeof(Sql.ExtensionAttribute) ?
-                            new[] { (T)(object)new Sql.ExtensionAttribute(providerName, "Truncate({0}, 0)") } :
-                            new[] { (T)(object)new Sql.ExpressionAttribute(providerName, "Truncate({0}, 0)") };
-                    case "DateAdd":
-                        return new[] { (T)(object)new Sql.ExtensionAttribute(providerName, "") { ServerSideOnly = false, PreferServerSide = false, BuilderType = typeof(DateAddBuilderDB2i) } };
-                    case "DatePart":
-                        return new[] { (T)(object)new Sql.ExtensionAttribute(providerName, "") { ServerSideOnly = false, PreferServerSide = false, BuilderType = typeof(DatePartBuilderDB2i) } };
-                    case "DateDiff":
-                        return new[] { (T)(object)new Sql.ExtensionAttribute(providerName, "") { BuilderType = typeof(DateDiffBuilderDB2i) } };
-                    case "TinyInt":
-						return new[] { (T)(object)new Sql.ExpressionAttribute(providerName, "SmallInt") { ServerSideOnly = true } };
-					case "DefaultNChar":
-					case "DefaultNVarChar":
-						return new[] { (T)(object)new Sql.FunctionAttribute(providerName, "Char") { ServerSideOnly = true } };
-					case "Substring":
-						return new[] { (T)(object)new Sql.FunctionAttribute(providerName, "Substr") { PreferServerSide = true } };
-					case "Atan2":
-						return new[] { (T)(object)new Sql.FunctionAttribute(providerName, "Atan2", 1, 0) };
-					case "Log":
-						return new[] { (T)(object)new Sql.FunctionAttribute(providerName, "Ln") };
-					case "Log10":
-						return new[] { (T)(object)new Sql.FunctionAttribute(providerName, "Log") };
-					case "NChar":
-					case "NVarChar":
-						return new[] { (T)(object)new Sql.FunctionAttribute(providerName, "Char") { ServerSideOnly = true } };
-					case "Replicate":
-						return new[] { (T)(object)new Sql.FunctionAttribute(providerName, "Repeat") };
-				}
-			}
+            switch (memberInfo.Name)
+            {
+                case "CharIndex":
+                    return GetFunctionExpression<T>(() => new Sql.FunctionAttribute("Locate"));
 
-			return new T[] { };
-		}
+                case "Trim":
+                    if (memberInfo.ToString().EndsWith("(Char[])", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        return GetExtensionExpression<T>(() => new Sql.ExtensionAttribute(providerName, "Strip({0}, B, {1})"));
+                    }
+                    break;
+                case "TrimLeft":
+                    if (memberInfo.ToString().EndsWith("(Char[])", StringComparison.CurrentCultureIgnoreCase) ||
+                        memberInfo.ToString().EndsWith("System.Nullable`1[System.Char])", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        return GetExtensionExpression<T>(() => new Sql.ExtensionAttribute(providerName, "Strip({0}, L, {1})"));
+                    }
+                    break;
+                case "TrimRight":
+                    if (memberInfo.ToString().EndsWith("(Char[])", StringComparison.CurrentCultureIgnoreCase) ||
+                        memberInfo.ToString().EndsWith("System.Nullable`1[System.Char])", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        return GetExtensionExpression<T>(() => new Sql.ExtensionAttribute(providerName, "Strip({0}, T, {1})"));
+                    }
+                    break;
+                case "Truncate":
+                    if (type != typeof(LinqExtensions)) //Do not handle TRUNCATE TABLE statement
+                        return GetExtensionExpression<T>(() => new Sql.ExtensionAttribute(providerName, "Truncate({0}, 0)"));
+                    break;
+                case "DateAdd":
+                    return GetExtensionExpression<T>(() => new Sql.ExtensionAttribute(providerName, "") { ServerSideOnly = false, PreferServerSide = false, BuilderType = typeof(DateAddBuilderDB2i) });
+                case "DatePart":
+                    return GetExtensionExpression<T>(() => new Sql.ExtensionAttribute(providerName, "") { ServerSideOnly = false, PreferServerSide = false, BuilderType = typeof(DatePartBuilderDB2i) });
+                case "DateDiff":
+                    return GetExtensionExpression<T>(() => new Sql.ExtensionAttribute(providerName, "") { BuilderType = typeof(DateDiffBuilderDB2i) } );
+                case "TinyInt":
+                    //return GetExtensionExpression<T>(() => new Sql.ExpressionAttribute(providerName, "SmallInt") { ServerSideOnly = true });
+                    return new[] { (T)(object)new Sql.ExpressionAttribute(providerName, "SmallInt") { ServerSideOnly = true } };
+                case "Substring":
+                    return GetFunctionExpression<T>(() => new Sql.FunctionAttribute(providerName, "Substr") { PreferServerSide = true });
+                case "Atan2":
+                    return GetFunctionExpression<T>(() => new Sql.FunctionAttribute(providerName, "Atan2", 1, 0));
+                case "Log":
+                    return GetFunctionExpression<T>(() => new Sql.FunctionAttribute(providerName, "Ln"));
+                case "Log10":
+                    return GetFunctionExpression<T>(() => new Sql.FunctionAttribute(providerName, "Log"));
+                case "DefaultNChar":
+                case "DefaultNVarChar":
+                case "NChar":
+                case "NVarChar":
+                    return GetFunctionExpression<T>(() => new Sql.FunctionAttribute(providerName, "Char") { ServerSideOnly = true });
+                case "Replicate":
+                    return GetFunctionExpression<T>(() => new Sql.FunctionAttribute(providerName, "Repeat"));
+            }
 
-		public MemberInfo[] GetDynamicColumns(Type type)
-		{
-			return new MemberInfo[] { };
-		}
+            return new T[] { };
+        }
 
-		public T[] GetAttributes<T>(Type type, bool inherit = true) where T : Attribute
-		{
-			return new T[] { };
-		}
-	}
+        private T[] GetExtensionExpression<T>(Func<Sql.ExpressionAttribute> build)
+        {
+            if (typeof(T) == typeof(Sql.ExpressionAttribute) || typeof(T) == typeof(Sql.ExtensionAttribute))
+                return new[] { (T)(object)build() };
+            else
+                return new T[] { };
+        }
+
+        private T[] GetFunctionExpression<T>(Func<Sql.ExpressionAttribute> build)
+        {
+            if (typeof(T) == typeof(Sql.ExpressionAttribute) || typeof(T) == typeof(Sql.FunctionAttribute))
+                return new[] { (T)(object)build() };
+            else
+                return new T[] { };
+        }
+
+        public MemberInfo[] GetDynamicColumns(Type type)
+        {
+            return new MemberInfo[] { };
+        }
+
+        public T[] GetAttributes<T>(Type type, bool inherit = true) where T : Attribute
+        {
+            return new T[] { };
+        }
+    }
 
     public class DateAddBuilderDB2i : Sql.IExtensionCallBuilder
     {

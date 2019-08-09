@@ -303,18 +303,18 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected override void BuildSelectClause(SelectQuery selectQuery)
 		{
-			if (selectQuery.HasUnion)
+			if (selectQuery.HasSetOperators)
 			{
 				// need to set any column aliases as the same as the top level one
 				var topquery = selectQuery;
 
-				while (topquery.ParentSelect != null && topquery.ParentSelect.HasUnion)
+				while (topquery.ParentSelect != null && topquery.ParentSelect.HasSetOperators)
 				{
 					topquery = topquery.ParentSelect;
 				}
 				var alia = selectQuery.Select.Columns.Select(c => c.Alias).ToArray();
 
-				selectQuery.Unions.ForEach((u) =>
+				selectQuery.SetOperators.ForEach((u) =>
 				{
 					int colNo = 0;
 					u.SelectQuery.Select.Columns
