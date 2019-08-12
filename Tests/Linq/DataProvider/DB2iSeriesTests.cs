@@ -156,9 +156,11 @@ namespace Tests.DataProvider
 			return value;
 		}
 
-
-		[Test, DataContextSource(false)]
-		public void TestDataTypes(string context)
+        
+        [Test, DataContextSource(false)]
+        //DecFloatTests break on AccessClient with cultures that have a different decimal point than period.
+        [SetCulture("en-US")]
+        public void TestDataTypes(string context)
 		{
 			using (var conn = new DataConnection(context))
 			{
@@ -321,7 +323,9 @@ namespace Tests.DataProvider
 		}
 
 		[Test, DataContextSource(false)]
-		public void TestNumerics(string context)
+        //Test uses string format to build sql values, invariant culture is needed
+        [SetCulture("en-US")]
+        public void TestNumerics(string context)
 		{
 			using (var conn = new DataConnection(context))
 			{
