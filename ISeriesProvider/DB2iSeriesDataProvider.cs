@@ -73,11 +73,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
               options,
               source);
         }
-        public override ISqlBuilder CreateSqlBuilder()
+        public override ISqlBuilder CreateSqlBuilder(MappingSchema mappingSchema)
         {
             return minLevel == DB2iSeriesLevels.V7_1_38 ?
-                new DB2iSeriesSqlBuilder7_2(GetSqlOptimizer(), SqlProviderFlags, MappingSchema.ValueToSqlConverter) :
-                new DB2iSeriesSqlBuilder(GetSqlOptimizer(), SqlProviderFlags, MappingSchema.ValueToSqlConverter);
+                new DB2iSeriesSqlBuilder7_2(GetSqlOptimizer(), SqlProviderFlags, mappingSchema.ValueToSqlConverter) :
+                new DB2iSeriesSqlBuilder(GetSqlOptimizer(), SqlProviderFlags, mappingSchema.ValueToSqlConverter);
         }
 
         public override ISchemaProvider GetSchemaProvider()
@@ -88,11 +88,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
         {
             return _sqlOptimizer;
         }
-        public override void InitCommand(DataConnection dataConnection, CommandType commandType, string commandText, DataParameter[] parameters)
+        public override void InitCommand(DataConnection dataConnection, CommandType commandType, string commandText, DataParameter[] parameters, bool withParameters)
         {
             dataConnection.DisposeCommand();
 
-            base.InitCommand(dataConnection, commandType, commandText, parameters);
+            base.InitCommand(dataConnection, commandType, commandText, parameters, withParameters);
         }
 
 	  //  protected override IDbConnection CreateConnectionInternal(string connectionString)
