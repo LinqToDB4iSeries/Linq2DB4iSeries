@@ -26,6 +26,6 @@
     </frameworkAssemblies>
   </metadata>
   <files>
-    <file src="..\ISeriesProvider\bin\Debug\net45\LinqToDB.DataProvider.DB2iSeries.dll" target="lib\net45\LinqToDB.DataProvider.DB2iSeries.dll" />
+    <file src="..\ISeriesProvider\bin\Release\net45\LinqToDB.DataProvider.DB2iSeries.dll" target="lib\net45\LinqToDB.DataProvider.DB2iSeries.dll" />
   </files>
 </package>
