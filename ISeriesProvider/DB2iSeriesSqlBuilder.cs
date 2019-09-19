@@ -508,7 +508,47 @@ namespace LinqToDB.DataProvider.DB2iSeries
             base.BuildUpdateQuery(statement, selectQuery, updateClause);
 	    }
 
-	    private ISqlExpression GetDateParm(IValueContainer parameter)
+        protected override void BuildWhereClause(SelectQuery selectQuery)
+        {
+            if (!BuildWhere(selectQuery))
+                return;
+
+            this.StringBuilder.Append(' ');
+
+            base.BuildWhereClause(selectQuery);
+        }
+
+        protected override void BuildHavingClause(SelectQuery selectQuery)
+        {
+            if (selectQuery.Having.SearchCondition.Conditions.Count == 0)
+                return;
+
+            this.StringBuilder.Append(' ');
+
+            base.BuildHavingClause(selectQuery);
+        }
+
+        protected override void BuildOrderByClause(SelectQuery selectQuery)
+        {
+            if (selectQuery.OrderBy.Items.Count == 0)
+                return;
+
+            this.StringBuilder.Append(' ');
+
+            base.BuildOrderByClause(selectQuery);
+        }
+
+        protected override void BuildGroupByClause(SelectQuery selectQuery)
+        {
+            if (selectQuery.GroupBy.Items.Count == 0)
+                return;
+
+            this.StringBuilder.Append(' ');
+
+            base.BuildGroupByClause(selectQuery);
+        }
+
+        private ISqlExpression GetDateParm(IValueContainer parameter)
 		{
 			if (parameter != null && parameter is SqlParameter)
 			{
