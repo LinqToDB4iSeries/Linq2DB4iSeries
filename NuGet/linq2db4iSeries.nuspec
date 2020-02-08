@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
   <metadata>
     <id>linq2db4iSeries</id>
-    <version>2.9.0.0</version>
+    <version>2.9.1.0</version>
     <authors>Roy Chase</authors>
     <owners>Roy Chase</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
