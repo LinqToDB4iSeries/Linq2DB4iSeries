@@ -416,8 +416,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
             var pType = p.GetType();
             if (pType.Name == "DB2Parameter")
                 return p.DB2Type.ToString();
-            else if (pType.Name == "MsDb2Parameter")
-                return p.MsDb2Type.ToString();
             else
                 return p.iDB2DbType.ToString();
         }
@@ -462,33 +460,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case QueryElementType.ExprExprPredicate:
 
 					var ep = (SqlPredicate.ExprExpr)predicate;
-
-                    if (ep.Expr1 != null && (ep.Expr1 is SqlExpression || ep.Expr1 is SqlField)
-                        && ep.Expr2 != null && ep.Expr2 is SqlParameter p2)
-                    {
-                        var p1 =
-                            (ep.Expr1 is SqlExpression tp1 && tp1.Parameters.Length == 1 && tp1.Parameters[0] is SqlField tmp1)
-                            ? 
-                            tmp1 : (ep.Expr1 is SqlField tmp2) 
-                                    ? 
-                                    tmp2 : null;
-                       
-                        if (p1 != null && p2.SystemType == typeof(DateTime))
-                        {
-                            if (p1.DataType == DataType.Date)
-                            {
-                                p2.DataType = DataType.Date;
-                                if (p2.Value != null)
-                                    p2.Value = ((DateTime)p2.Value).Date;
-                            }
-                            else if (p1.DataType == DataType.Time)
-                            {
-                                p2.DataType = DataType.Time;
-                                if (p2.Value != null)
-                                    p2.Value = new DateTime(1, 1, 1) + ((DateTime)p2.Value).TimeOfDay;
-                            }
-                        }
-                    }
 
                     if (ep.Expr1 is SqlFunction function && function.Name == "Date")
 					{
