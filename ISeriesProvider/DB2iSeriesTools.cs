@@ -24,7 +24,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public const string IdentityColumnSql = "identity_val_local()";
 		public const string MapGuidAsString = "MapGuidAsString";
 
-		public static string iSeriesDummyTableName(DB2iSeriesNamingConvention naming = DB2iSeriesNamingConvention.System)
+		public static string iSeriesDummyTableName(DB2iSeriesNamingConvention naming = DB2iSeriesNamingConvention.Sql)
 		{
 			var seperator = (naming == DB2iSeriesNamingConvention.System) ? "/" : ".";
 			return string.Format("SYSIBM{0}SYSDUMMY1", seperator);
