@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Data;
 using System.Linq;
 using LinqToDB.Common;
@@ -11,16 +10,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 {
 	using System.Linq;
 	using System.Linq.Expressions;
-    using System.Reflection;
-    using Configuration;
+	using System.Reflection;
+	using Configuration;
 	using Data;
-	
 
 	public static class DB2iSeriesTools
 	{
-		public const string AssemblyName = "IBM.Data.DB2.iSeries";
-		public const string ConnectionTypeName = AssemblyName + ".iDB2Connection, " + AssemblyName;
-		public const string DataReaderTypeName = AssemblyName + ".iDB2DataReader, " + AssemblyName;
 		public const string IdentityColumnSql = "identity_val_local()";
 		public const string MapGuidAsString = "MapGuidAsString";
 
@@ -55,78 +50,64 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 
 
-			if (DB2iSeriesProviderName.AllNames.Contains(css.Name) || new[] { DB2iSeriesProviderName.DB2, AssemblyName }.Contains(css.ProviderName))
+			if (DB2iSeriesProviderName.AllNames.Contains(css.Name) || new[] { DB2iSeriesProviderName.DB2, DB2iSeriesProviderAdapter.AssemblyName }.Contains(css.ProviderName))
 			{
-			    switch (css.Name)
-			    {
-			        case DB2iSeriesProviderName.DB2_73: return _db2iDataProvider_73;
-                    case DB2iSeriesProviderName.DB2_GAS: return _db2iDataProvider_gas;
-			        case DB2iSeriesProviderName.DB2_73_GAS: return _db2iDataProvider_73_gas;
-			    }
+				switch (css.Name)
+				{
+					case DB2iSeriesProviderName.DB2_73: return _db2iDataProvider_73;
+					case DB2iSeriesProviderName.DB2_GAS: return _db2iDataProvider_gas;
+					case DB2iSeriesProviderName.DB2_73_GAS: return _db2iDataProvider_73_gas;
+				}
 
-                if (AutoDetectProvider)
+				if (AutoDetectProvider)
 				{
 					try
 					{
-						var connectionType = Type.GetType(ConnectionTypeName, true);
-					    var serverVersionProp = connectionType
-					        .GetPropertiesEx(BindingFlags.Public | BindingFlags.Instance)
-					        .FirstOrDefault(p => p.Name == "ServerVersion");
 
-					    if (serverVersionProp != null)
-					    {
-					        var connectionCreator = DynamicDataProviderBase.CreateConnectionExpression(connectionType).Compile();
-					        var cs = string.IsNullOrWhiteSpace(connectionString) ? css.ConnectionString : connectionString;
+						var cs = string.IsNullOrWhiteSpace(connectionString) ? css.ConnectionString : connectionString;
 
-					        using (var conn = connectionCreator(cs))
-					        {
-					            conn.Open();
+						using (var conn = DB2iSeriesProviderAdapter.GetInstance().CreateConnection(cs))
+						{
+							conn.Open();
 
-					            var version = Expression.Lambda<Func<object>>(
-					                    Expression.Convert(
-					                        Expression.MakeMemberAccess(Expression.Constant(conn), serverVersionProp),
-					                        typeof(object)))
-					                .Compile()();
+							var serverVersion = conn.ServerVersion.Substring(0, 5);
 
-                                var serverVersion = version.ToString().Substring(0, 5);
+							string ptf;
+							int desiredLevel;
 
-					            string ptf;
-					            int desiredLevel;
+							switch (serverVersion)
+							{
+								case "07.03":
+									return _db2iDataProvider_73;
+								case "07.02":
+									ptf = "SF99702";
+									desiredLevel = 9;
+									break;
+								case "07.01":
+									ptf = "SF99701";
+									desiredLevel = 38;
+									break;
+								default:
+									return _db2iDataProvider;
+							}
 
-					            switch (serverVersion)
-					            {
-					                case "07.03":
-					                    return _db2iDataProvider_73;
-					                case "07.02":
-					                    ptf = "SF99702";
-					                    desiredLevel = 9;
-					                    break;
-					                case "07.01":
-					                    ptf = "SF99701";
-					                    desiredLevel = 38;
-					                    break;
-					                default:
-					                    return _db2iDataProvider;
-					            }
+							using (var cmd = conn.CreateCommand())
+							{
+								cmd.CommandText =
+									"SELECT MAX(PTF_GROUP_LEVEL) FROM QSYS2.GROUP_PTF_INFO WHERE PTF_GROUP_NAME = @p1 AND PTF_GROUP_STATUS = 'INSTALLED'";
+								var param = cmd.CreateParameter();
+								param.ParameterName = "p1";
+								param.Value = ptf;
 
-					            using (var cmd = conn.CreateCommand())
-					            {
-					                cmd.CommandText =
-					                    "SELECT MAX(PTF_GROUP_LEVEL) FROM QSYS2.GROUP_PTF_INFO WHERE PTF_GROUP_NAME = @p1 AND PTF_GROUP_STATUS = 'INSTALLED'";
-					                var param = cmd.CreateParameter();
-					                param.ParameterName = "p1";
-					                param.Value = ptf;
+								cmd.Parameters.Add(param);
 
-					                cmd.Parameters.Add(param);
+								var level = Converter.ChangeTypeTo<int>(cmd.ExecuteScalar());
 
-					                var level = Converter.ChangeTypeTo<int>(cmd.ExecuteScalar());
-
-					                return level < desiredLevel ? _db2iDataProvider : _db2iDataProvider_73;
-					            }
-					        }
-					    }
+								return level < desiredLevel ? _db2iDataProvider : _db2iDataProvider_73;
+							}
+						}
 					}
-					catch (Exception)
+					catch
 					{
 					}
 				}
@@ -181,52 +162,52 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 		}
 
-        #endregion
+		#endregion
 
-        #region CreateDataConnection
+		#region CreateDataConnection
 
-	    private static IDataProvider GetDataProvider(string providerName)
-	    {
-	        switch (providerName)
-	        {
+		private static IDataProvider GetDataProvider(string providerName)
+		{
+			switch (providerName)
+			{
 
-	            case DB2iSeriesProviderName.DB2_73: return _db2iDataProvider_73;
+				case DB2iSeriesProviderName.DB2_73: return _db2iDataProvider_73;
 
-	            case DB2iSeriesProviderName.DB2_GAS: return _db2iDataProvider_gas;
+				case DB2iSeriesProviderName.DB2_GAS: return _db2iDataProvider_gas;
 
-	            case DB2iSeriesProviderName.DB2_73_GAS: return _db2iDataProvider_73_gas;
+				case DB2iSeriesProviderName.DB2_73_GAS: return _db2iDataProvider_73_gas;
 
-	            default: return _db2iDataProvider;
+				default: return _db2iDataProvider;
 
-	        }
+			}
 
-        }
+		}
 
-	    public static DataConnection CreateDataConnection(string connectionString, string providerName)
-        {
-            return new DataConnection(GetDataProvider(providerName), connectionString);
-        }
+		public static DataConnection CreateDataConnection(string connectionString, string providerName)
+		{
+			return new DataConnection(GetDataProvider(providerName), connectionString);
+		}
 
-        public static DataConnection CreateDataConnection(IDbConnection connection, string providerName)
-        {
-            return new DataConnection(GetDataProvider(providerName), connection);
-        }
+		public static DataConnection CreateDataConnection(IDbConnection connection, string providerName)
+		{
+			return new DataConnection(GetDataProvider(providerName), connection);
+		}
 
-        public static DataConnection CreateDataConnection(IDbTransaction transaction, string providerName)
-        {
-            return new DataConnection(GetDataProvider(providerName), transaction);
-        }
+		public static DataConnection CreateDataConnection(IDbTransaction transaction, string providerName)
+		{
+			return new DataConnection(GetDataProvider(providerName), transaction);
+		}
 
-        #endregion
+		#endregion
 
-        #region BulkCopy
+		#region BulkCopy
 
-        public static BulkCopyType DefaultBulkCopyType = BulkCopyType.MultipleRows;
+		public static BulkCopyType DefaultBulkCopyType = BulkCopyType.MultipleRows;
 
 		public static BulkCopyRowsCopied MultipleRowsCopy<T>(DataConnection dataConnection,
-            IEnumerable<T> source,
-            int maxBatchSize = 1000,
-            Action<BulkCopyRowsCopied> rowsCopiedCallback = null) where T : class
+			IEnumerable<T> source,
+			int maxBatchSize = 1000,
+			Action<BulkCopyRowsCopied> rowsCopiedCallback = null) where T : class
 		{
 			return dataConnection.BulkCopy(new BulkCopyOptions
 			{
@@ -237,11 +218,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		}
 
 		public static BulkCopyRowsCopied ProviderSpecificBulkCopy<T>(DataConnection dataConnection,
-            IEnumerable<T> source,
-            int bulkCopyTimeout = 0,
-            bool keepIdentity = false,
-            int notifyAfter = 0,
-            Action<BulkCopyRowsCopied> rowsCopiedCallback = null) where T : class
+			IEnumerable<T> source,
+			int bulkCopyTimeout = 0,
+			bool keepIdentity = false,
+			int notifyAfter = 0,
+			Action<BulkCopyRowsCopied> rowsCopiedCallback = null) where T : class
 		{
 			return dataConnection.BulkCopy(new BulkCopyOptions
 			{

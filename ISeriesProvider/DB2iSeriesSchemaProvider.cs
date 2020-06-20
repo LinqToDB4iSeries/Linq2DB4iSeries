@@ -2,20 +2,23 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
-using LinqToDB.Extensions;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
 	using Common;
 	using Data;
-	using SchemaProvider;
-	using System.Data.Common;
+	using LinqToDB.SchemaProvider;
 
 	public class DB2iSeriesSchemaProvider : SchemaProviderBase
 	{
-		protected override List<ColumnInfo> GetColumns(DataConnection dataConnection)
+		private readonly DB2iSeriesDataProvider _provider;
+
+		public DB2iSeriesSchemaProvider(DB2iSeriesDataProvider provider)
+		{
+			_provider = provider;
+		}
+
+		protected override List<ColumnInfo> GetColumns(DataConnection dataConnection, GetSchemaOptions options)
 		{
 			var sql = $@"
 				Select 
@@ -85,7 +88,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 		}
 
-		protected override List<ForeignKeyInfo> GetForeignKeys(DataConnection dataConnection)
+		protected override IReadOnlyCollection<ForeignKeyInfo> GetForeignKeys(DataConnection dataConnection, IEnumerable<TableSchema> tables)
 		{
 			var sql = $@"
 		  Select ref.Constraint_Name 
@@ -119,7 +122,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return list;
 		}
 
-		protected override List<PrimaryKeyInfo> GetPrimaryKeys(DataConnection dataConnection)
+		protected override IReadOnlyCollection<PrimaryKeyInfo> GetPrimaryKeys(DataConnection dataConnection, IEnumerable<TableSchema> tables)
 		{
 			var sql = $@"
 		  Select cst.constraint_Name  
@@ -184,7 +187,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return list;
 		}
 
-		protected override List<ProcedureParameterInfo> GetProcedureParameters(DataConnection dataConnection)
+		protected override List<ProcedureParameterInfo> GetProcedureParameters(DataConnection dataConnection, IEnumerable<ProcedureInfo> procedures, GetSchemaOptions options)
 		{
 			var sql = $@"
 		  Select 
@@ -224,7 +227,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected override string GetProviderSpecificTypeNamespace()
 		{
-			return DB2iSeriesTools.AssemblyName;
+			return DB2iSeriesProviderAdapter.AssemblyName;
 		}
 
 		protected override List<TableInfo> GetTables(DataConnection dataConnection)
@@ -246,13 +249,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			var defaultSchema = dataConnection.Execute<string>("select current_schema from sysibm.sysdummy1");
 			Func<IDataReader, TableInfo> drf = (IDataReader dr) => new TableInfo
 			{
-			    CatalogName = dr["Catalog_Name"].ToString().TrimEnd(),
-			    Description = dr["Table_Text"].ToString().TrimEnd(),
-			    IsDefaultSchema = dr["System_Table_Schema"].ToString().TrimEnd() == defaultSchema,
-			    IsView = new[] { "L", "V" }.Contains<string>(dr["Table_Type"].ToString()),
-			    SchemaName = dr["Table_Schema"].ToString().TrimEnd(),
-			    TableID = dataConnection.Connection.Database + "." + dr["Table_Schema"].ToString().TrimEnd() + "." + dr["Table_Name"].ToString().TrimEnd(),
-			    TableName = dr["Table_Name"].ToString().TrimEnd()
+				CatalogName = dr["Catalog_Name"].ToString().TrimEnd(),
+				Description = dr["Table_Text"].ToString().TrimEnd(),
+				IsDefaultSchema = dr["System_Table_Schema"].ToString().TrimEnd() == defaultSchema,
+				IsView = new[] { "L", "V" }.Contains<string>(dr["Table_Type"].ToString()),
+				SchemaName = dr["Table_Schema"].ToString().TrimEnd(),
+				TableID = dataConnection.Connection.Database + "." + dr["Table_Schema"].ToString().TrimEnd() + "." + dr["Table_Name"].ToString().TrimEnd(),
+				TableName = dr["Table_Name"].ToString().TrimEnd()
 			};
 			var _list = dataConnection.Query(drf, sql).ToList();
 			return _list;
@@ -307,27 +310,19 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 		}
 
-        #endregion
+		#endregion
 
-	    private string GetLibList(DataConnection dataConnection)
-	    {
-	        if (dataConnection.Connection == null || dataConnection.Connection.GetType().Name != "iDB2Connection")
-	            throw new LinqToDBException("dataconnection is not iDB2Connection.");
+		private string GetLibList(DataConnection dataConnection)
+		{
+			// TODO: will be public in 3.0
+			//var connection = _provider.TryGetProviderConnection(dataConnection.Connection, dataConnection.MappingSchema);
+			var connection = InternalAPIs.TryGetProviderConnection(dataConnection.Connection, dataConnection.MappingSchema, _provider.Adapter.ConnectionType);
+			if (connection == null)
+				throw new LinqToDBException("dataconnection is not iDB2Connection.");
 
-	        var libListProp = dataConnection.Connection.GetType()
-	            .GetPropertiesEx(BindingFlags.Public | BindingFlags.Instance)
-	            .FirstOrDefault(p => p.Name == "LibraryList"); 
+			var liblist = _provider.Adapter.GetLibraryList(connection);
 
-	        if (libListProp == null)
-	            throw new LinqToDBException("iDB2Connection is missing LibraryList property, perhaps the IBM library has moved to non supported version");
-
-	        var liblist = Expression.Lambda<Func<object>>(
-	                Expression.Convert(
-	                    Expression.MakeMemberAccess(Expression.Constant(dataConnection.Connection), libListProp),
-	                    typeof(object)))
-	            .Compile()();
-
-            return string.Join("','", liblist.ToString().Split(','));
-	    }
-    }
+			return string.Join("','", liblist.ToString().Split(','));
+		}
+	}
 }

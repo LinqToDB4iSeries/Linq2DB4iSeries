@@ -1,11 +1,11 @@
 ﻿using System.Linq;
-using LinqToDB.Tools;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
-	using Extensions;
+	using LinqToDB.Extensions;
+	using LinqToDB.SqlQuery;
 	using SqlProvider;
-	using SqlQuery;
+
 	class DB2iSeriesSqlOptimizer : BasicSqlOptimizer
 	{
 
@@ -21,63 +21,63 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 		}
 
-	    private static string FixUnderscore(string text, string alternative)
-	    {
-	        if (string.IsNullOrWhiteSpace(text))
-	            return null;
+		private static string FixUnderscore(string text, string alternative)
+		{
+			if (string.IsNullOrWhiteSpace(text))
+				return null;
 
-           if (text.Equals("_"))
-	            return "underscore_";
+			if (text.Equals("_"))
+				return "underscore_";
 
-	        if (!text.All(t => "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".Contains(t)))
-	            return alternative;
-	            
-	        return text;
-        }
+			if (!text.All(t => "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".Contains(t)))
+				return alternative;
 
-	    public override SqlStatement Finalize(SqlStatement statement)
-	    {
-            new QueryVisitor().Visit(statement, expr =>
-            {
-                switch (expr.ElementType)
-                {
-                    case QueryElementType.SqlParameter:
-                        {
-                            var p = (SqlParameter)expr;
-                            p.Name = FixUnderscore(p.Name, $"P{p.GetHashCode()}");
-                            
-                            break;
-                        }
-                    case QueryElementType.TableSource:
-                        {
-                            var table = (SqlTableSource)expr;
-                            table.Alias = FixUnderscore(table.Alias, $"T{table.SourceID}");
-                            break;
-                        }
-                    case QueryElementType.Column:
-                        {
-                            var column = (SqlColumn)expr;
-                            column.Alias = FixUnderscore(column.Alias, $"C{column.GetHashCode()}");
-                            break;
-                        }
-                }
-            });
+			return text;
+		}
 
-            if (statement.SelectQuery != null)
+		public override SqlStatement Finalize(SqlStatement statement, bool inlineParameters)
+		{
+			new QueryVisitor().Visit(statement, expr =>
+			{
+				switch (expr.ElementType)
+				{
+					case QueryElementType.SqlParameter:
+						{
+							var p = (SqlParameter)expr;
+							p.Name = FixUnderscore(p.Name, $"P{p.GetHashCode()}");
+
+							break;
+						}
+					case QueryElementType.TableSource:
+						{
+							var table = (SqlTableSource)expr;
+							table.Alias = FixUnderscore(table.Alias, $"T{table.SourceID}");
+							break;
+						}
+					case QueryElementType.Column:
+						{
+							var column = (SqlColumn)expr;
+							column.Alias = FixUnderscore(column.Alias, $"C{column.GetHashCode()}");
+							break;
+						}
+				}
+			});
+
+			if (statement.SelectQuery != null)
 				(new QueryVisitor()).Visit(statement.SelectQuery.Select, SetQueryParameter);
 
-	        statement = base.Finalize(statement);
+			statement = base.Finalize(statement, inlineParameters);
 
-	        switch (statement.QueryType)
-	        {
-	            case QueryType.Delete:
-	                return GetAlternativeDelete((SqlDeleteStatement)statement);
-	            case QueryType.Update:
-	                return GetAlternativeUpdate((SqlUpdateStatement)statement);
-	            default:
-	                return statement;
-	        }
-        }
+			switch (statement.QueryType)
+			{
+				case QueryType.Delete:
+					return GetAlternativeDelete((SqlDeleteStatement)statement);
+				case QueryType.Update:
+					return GetAlternativeUpdate((SqlUpdateStatement)statement);
+				default:
+					return statement;
+			}
+		}
 
 		public override ISqlExpression ConvertExpression(ISqlExpression expr)
 		{
@@ -198,7 +198,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			var query = (SelectQuery)func.Parameters[0];
 
-            if (query.Select.Columns.Count == 0)
+			if (query.Select.Columns.Count == 0)
 				query.Select.Columns.Add(new SqlColumn(query, new SqlExpression("'.'")));
 
 			query.Select.Take(1, null);

@@ -86,7 +86,7 @@ namespace Tests.Model
 
 			//provider.SqlQuery = sql;
 
-			var statement = (SqlSelectStatement)optimizer.Finalize(new SqlSelectStatement(query));
+			var statement = (SqlSelectStatement)optimizer.Finalize(new SqlSelectStatement(query), InlineParameters);
 
 			var cc = provider.CommandCount(statement);
 			var sb = new StringBuilder();

@@ -56,7 +56,7 @@ namespace Tests
 
 			var traceCount = 0;
 
-			DataConnection.WriteTraceLine = (s1,s2) =>
+			DataConnection.WriteTraceLine = (s1,s2, s3) =>
 			{
 				if (traceCount < 10000)
 				{
@@ -73,7 +73,7 @@ namespace Tests
 //			Configuration.AvoidSpecificDataProviderAPI = true;
 			Configuration.Linq.TraceMapperExpression   = false;
 //			Configuration.Linq.GenerateExpressionTest  = true;
-			var assemblyPath = typeof(TestBase).AssemblyEx().GetPath();
+			var assemblyPath = typeof(TestBase).Assembly.GetPath();
 
 #if NETSTANDARD1_6
 			System.IO.Directory.SetCurrentDirectory(assemblyPath);
@@ -859,17 +859,19 @@ namespace Tests
 
 	public class DisableLogging : IDisposable
 	{
-		private readonly TraceSwitch _traceSwitch;
+		//private readonly TraceSwitch _traceSwitch;
 
 		public DisableLogging()
 		{
-			_traceSwitch = DataConnection.TraceSwitch;
+			// TODO: getter will be open in v3
+			//_traceSwitch = DataConnection.TraceSwitch;
 			DataConnection.TurnTraceSwitchOn(TraceLevel.Off);
 		}
 
 		public void Dispose()
 		{
-			DataConnection.TraceSwitch = _traceSwitch;
+			//DataConnection.TraceSwitch = _traceSwitch;
+			DataConnection.TurnTraceSwitchOn(TraceLevel.Warning);
 		}
 	}
 

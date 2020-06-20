@@ -1,26 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
-	using SqlProvider;
-	using SqlQuery;
 	using System.Data;
+	using LinqToDB.Mapping;
+	using LinqToDB.SqlProvider;
+	using LinqToDB.SqlQuery;
 
-	public class DB2iSeriesSqlBuilder : BasicSqlBuilder
+	public partial class DB2iSeriesSqlBuilder : BasicSqlBuilder
 	{
 		public static DB2iSeriesIdentifierQuoteMode IdentifierQuoteMode = DB2iSeriesIdentifierQuoteMode.None;
-	    protected readonly bool mapGuidAsString;
+		protected readonly bool mapGuidAsString;
 
-		public DB2iSeriesSqlBuilder(ISqlOptimizer sqlOptimizer, SqlProviderFlags sqlProviderFlags,
-			ValueToSqlConverter valueToSqlConverter)
-			: base(sqlOptimizer, sqlProviderFlags, valueToSqlConverter)
+		private readonly DB2iSeriesDataProvider _provider;
+
+		public DB2iSeriesSqlBuilder(
+			DB2iSeriesDataProvider provider,
+			MappingSchema mappingSchema,
+			ISqlOptimizer sqlOptimizer,
+			SqlProviderFlags sqlProviderFlags)
+			: this(mappingSchema, sqlOptimizer, sqlProviderFlags)
 		{
-			this.mapGuidAsString = sqlProviderFlags.CustomFlags.Contains(DB2iSeriesTools.MapGuidAsString);
+			_provider = provider;
+		}
+
+		// remote context
+		public DB2iSeriesSqlBuilder(
+			MappingSchema mappingSchema,
+			ISqlOptimizer sqlOptimizer,
+			SqlProviderFlags sqlProviderFlags)
+			: base(mappingSchema, sqlOptimizer, sqlProviderFlags)
+		{
+			mapGuidAsString = sqlProviderFlags.CustomFlags.Contains(DB2iSeriesTools.MapGuidAsString);
 		}
 
 		protected override string LimitFormat(SelectQuery selectQuery) => selectQuery.Select.SkipValue == null ? " FETCH FIRST {0} ROWS ONLY" : null;
@@ -51,7 +65,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					{
 						var dataType = SqlDataType.GetDataType(expr.SystemType);
 
-						expr = new SqlFunction(expr.SystemType, dataType.DataType.ToString(), expr);
+						expr = new SqlFunction(expr.SystemType, dataType.Type.DataType.ToString(), expr);
 					}
 				}
 				else if (expr is SqlValue && ((SqlValue)expr).Value == null)
@@ -75,36 +89,36 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public string GetiSeriesType(SqlDataType dataType)
 		{
-			switch (dataType.DataType)
+			switch (dataType.Type.DataType)
 			{
 				case DataType.Variant:
 				case DataType.Binary:
-					return $"BINARY({(dataType.Length == 0 ? 1 : dataType.Length)})";
+					return $"BINARY({(dataType.Type.Length == 0 ? 1 : dataType.Type.Length)})";
 				case DataType.Int64:
-                case DataType.UInt32:
+				case DataType.UInt32:
 					return "BIGINT";
 				case DataType.Blob:
-					return $"BLOB({(dataType.Length == 0 ? 1 : dataType.Length)})";
+					return $"BLOB({(dataType.Type.Length == 0 ? 1 : dataType.Type.Length)})";
 				case DataType.VarBinary:
-					return $"VARBINARY({(dataType.Length == 0 ? 1 : dataType.Length)})";
+					return $"VARBINARY({(dataType.Type.Length == 0 ? 1 : dataType.Type.Length)})";
 				case DataType.Char:
-				    return "CHAR";
+					return "CHAR";
 				case DataType.Date:
-				    return "DATE";
-                case DataType.UInt64:
-                    return "DECIMAL(28,0)";
-                case DataType.Decimal:
-                    return "DECIMAL";
+					return "DATE";
+				case DataType.UInt64:
+					return "DECIMAL(28,0)";
+				case DataType.Decimal:
+					return "DECIMAL";
 				case DataType.Double:
-				    return "DOUBLE";
-                case DataType.UInt16:
-			    case DataType.Int32:
-				    return "INTEGER";
+					return "DOUBLE";
+				case DataType.UInt16:
+				case DataType.Int32:
+					return "INTEGER";
 				case DataType.Single:
-				    return "REAL";
+					return "REAL";
 				case DataType.Int16:
 				case DataType.Boolean:
-                case DataType.Byte:
+				case DataType.Byte:
 					return "SMALLINT";
 				case DataType.Time:
 				case DataType.DateTimeOffset:
@@ -114,13 +128,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case DataType.DateTime2:
 					return "TIMESTAMP";
 				case DataType.VarChar:
-					return $"VARCHAR({(dataType.Length == 0 ? 1 : dataType.Length)})";
+					return $"VARCHAR({(dataType.Type.Length == 0 ? 1 : dataType.Type.Length)})";
 				case DataType.NVarChar:
-					return $"NVARCHAR({(dataType.Length == 0 ? 1 : dataType.Length)})";
+					return $"NVARCHAR({(dataType.Type.Length == 0 ? 1 : dataType.Type.Length)})";
 				case DataType.Guid:
 					return mapGuidAsString ? "CHAR(32)" : "char(16) for bit data";
 				default:
-					return dataType.DataType.ToString();
+					return dataType.Type.DataType.ToString();
 			}
 		}
 
@@ -144,13 +158,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected override void BuildCreateTableIdentityAttribute1(SqlField field) => StringBuilder.Append("GENERATED ALWAYS AS IDENTITY");
 
-		protected override void BuildDataType(SqlDataType type, bool createDbType = false)
+		protected override void BuildDataTypeFromDataType(SqlDataType type, bool forCreateTable)
 		{
-			switch (type.DataType)
+			switch (type.Type.DataType)
 			{
 				case DataType.DateTime: StringBuilder.Append("timestamp"); break;
 				case DataType.DateTime2: StringBuilder.Append("timestamp"); break;
-				default: base.BuildDataType(type, false); break;
+				default: base.BuildDataTypeFromDataType(type, forCreateTable); break;
 			}
 		}
 
@@ -183,8 +197,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		protected override void BuildInsertOrUpdateQueryAsMerge(SqlInsertOrUpdateStatement insertOrUpdate, string fromDummyTable)
 		{
 			var table = insertOrUpdate.Insert.Into;
-			var targetAlias = Convert(insertOrUpdate.SelectQuery.From.Tables[0].Alias, ConvertType.NameToQueryTableAlias).ToString();
-			var sourceAlias = Convert(GetTempAliases(1, "s")[0], ConvertType.NameToQueryTableAlias).ToString();
+			var targetAlias = Convert(new StringBuilder(), insertOrUpdate.SelectQuery.From.Tables[0].Alias, ConvertType.NameToQueryTableAlias).ToString();
+			var sourceAlias = Convert(new StringBuilder(), GetTempAliases(1, "s")[0], ConvertType.NameToQueryTableAlias).ToString();
 			var keys = insertOrUpdate.Update.Keys;
 
 			AppendIndent().Append("MERGE INTO ");
@@ -361,59 +375,62 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return statement is SqlInsertStatement insertStatement && insertStatement.Insert.WithIdentity ? 2 : 1;
 		}
 
-		public override object Convert(object value, ConvertType _convertType)
+		public override StringBuilder Convert(StringBuilder sb, string value, ConvertType convertType)
 		{
-			switch (_convertType)
+			switch (convertType)
 			{
 				case ConvertType.NameToQueryParameter:
-					return "@" + value.ToString();
+					return sb.Append("@").Append(value);
 				case ConvertType.NameToCommandParameter:
 				case ConvertType.NameToSprocParameter:
-					return ":" + value;
+					return sb.Append(":").Append(value);
 				case ConvertType.SprocParameterToName:
-					if (value != null)
-					{
-						var str = value.ToString();
-						return ((str.Length > 0 && str[0] == ':') ? str.Substring(1) : str);
-					}
-					break;
+					return sb.Append((value.Length > 0 && value[0] == ':') ? value.Substring(1) : value);
 				case ConvertType.NameToQueryField:
 				case ConvertType.NameToQueryFieldAlias:
 				case ConvertType.NameToQueryTable:
 				case ConvertType.NameToQueryTableAlias:
-					if (value != null && IdentifierQuoteMode != DB2iSeriesIdentifierQuoteMode.None)
+					if (IdentifierQuoteMode != DB2iSeriesIdentifierQuoteMode.None)
 					{
-						var name = value.ToString();
-						if (name.Length > 0 && name[0] == '"')
+						if (value.Length > 0 && value[0] == '"')
 						{
-							return name;
+							return sb.Append(value);
 						}
 						if (IdentifierQuoteMode == DB2iSeriesIdentifierQuoteMode.Quote ||
-							name.StartsWith("_") ||
-							name
+							value.StartsWith("_") ||
+							value
 
 #if NETFX_CORE
 								.ToCharArray()
 #endif
 							.Any((c) => char.IsWhiteSpace(c)))
 						{
-							return '"' + name + '"';
+							return sb.Append('"').Append(value).Append('"');
 						}
 					}
 					break;
 			}
-			return value;
+
+			return sb.Append(value);
 		}
 
 		protected override ISqlBuilder CreateSqlBuilder()
 		{
-			return new DB2iSeriesSqlBuilder(SqlOptimizer, SqlProviderFlags, ValueToSqlConverter);
+			return new DB2iSeriesSqlBuilder(MappingSchema, SqlOptimizer, SqlProviderFlags);
 		}
 
 		protected override string GetProviderTypeName(IDbDataParameter parameter)
 		{
-			dynamic p = parameter;
-			return p.iDB2DbType.ToString();
+			if (_provider != null)
+			{
+				// TODO: will be available in 3.0
+				//var param = _provider.TryGetProviderParameter(parameter, MappingSchema);
+				var param = InternalAPIs.TryGetProviderParameter(parameter, MappingSchema, _provider.Adapter.ParameterType);
+				if (param != null)
+					return _provider.Adapter.GetDbType(param).ToString();
+			}
+
+			return base.GetProviderTypeName(parameter);
 		}
 
 		protected override void BuildCreateTableNullAttribute(SqlField field, DefaultNullable defaulNullable)
@@ -448,7 +465,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 								newpredicate = new SqlPredicate.ExprExpr(p.Expr1, SqlPredicate.Operator.Equal, p.Expr2);
 						}
 						else
-							newpredicate = new SqlPredicate.Like(p.Expr1, p.IsNot, param2, p.Escape);
+							newpredicate = new SqlPredicate.Like(p.Expr1, p.IsNot, param2, p.Escape, p.IsSqlLike);
 					}
 
 					break;
@@ -461,7 +478,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					{
 						if (ep.Expr2 is SqlParameter parameter)
 						{
-							parameter.DataType = DataType.Date;
+							parameter.Type = parameter.Type.WithDataType(DataType.Date);
 						}
 					}
 
@@ -471,89 +488,89 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			base.BuildPredicate(newpredicate);
 		}
 
-	    protected override void BuildInsertQuery(SqlStatement statement, SqlInsertClause insertClause, bool addAlias)
-	    {
-	        BuildStep = Step.InsertClause; BuildInsertClause(statement, insertClause, addAlias);
-	        BuildStep = Step.WithClause; BuildWithClause(statement.GetWithClause());
+		protected override void BuildInsertQuery(SqlStatement statement, SqlInsertClause insertClause, bool addAlias)
+		{
+			BuildStep = Step.InsertClause; BuildInsertClause(statement, insertClause, addAlias);
+			BuildStep = Step.WithClause; BuildWithClause(statement.GetWithClause());
 
-            if (statement.QueryType == QueryType.Insert && statement.SelectQuery.From.Tables.Count != 0)
-	        {
-	            BuildStep = Step.SelectClause; BuildSelectClause(statement.SelectQuery);
-	            BuildStep = Step.FromClause; BuildFromClause(statement, statement.SelectQuery);
-	            BuildStep = Step.WhereClause; BuildWhereClause(statement.SelectQuery);
-	            BuildStep = Step.GroupByClause; BuildGroupByClause(statement.SelectQuery);
-	            BuildStep = Step.HavingClause; BuildHavingClause(statement.SelectQuery);
-	            BuildStep = Step.OrderByClause; BuildOrderByClause(statement.SelectQuery);
-	            BuildStep = Step.OffsetLimit; BuildOffsetLimit(statement.SelectQuery);
-	        }
+			if (statement.QueryType == QueryType.Insert && statement.SelectQuery.From.Tables.Count != 0)
+			{
+				BuildStep = Step.SelectClause; BuildSelectClause(statement.SelectQuery);
+				BuildStep = Step.FromClause; BuildFromClause(statement, statement.SelectQuery);
+				BuildStep = Step.WhereClause; BuildWhereClause(statement.SelectQuery);
+				BuildStep = Step.GroupByClause; BuildGroupByClause(statement.SelectQuery);
+				BuildStep = Step.HavingClause; BuildHavingClause(statement.SelectQuery);
+				BuildStep = Step.OrderByClause; BuildOrderByClause(statement.SelectQuery);
+				BuildStep = Step.OffsetLimit; BuildOffsetLimit(statement.SelectQuery);
+			}
 
-	        if (insertClause.WithIdentity)
-	            BuildGetIdentity(insertClause);
-	    }
+			if (insertClause.WithIdentity)
+				BuildGetIdentity(insertClause);
+		}
 
-	    protected override void BuildDeleteQuery(SqlDeleteStatement deleteStatement)
-	    {
-            if(deleteStatement.With != null)
-                throw new NotSupportedException("iSeries doesn't support Cte in Delete statement");
+		protected override void BuildDeleteQuery(SqlDeleteStatement deleteStatement)
+		{
+			if (deleteStatement.With != null)
+				throw new NotSupportedException("iSeries doesn't support Cte in Delete statement");
 
-	       base.BuildDeleteQuery(deleteStatement);
-	    }
+			base.BuildDeleteQuery(deleteStatement);
+		}
 
-	    protected override void BuildUpdateQuery(SqlStatement statement, SelectQuery selectQuery, SqlUpdateClause updateClause)
-	    {
-	        if (statement.GetWithClause() != null)
-	            throw new NotSupportedException("iSeries doesn't support Cte in Update statement");
-            
+		protected override void BuildUpdateQuery(SqlStatement statement, SelectQuery selectQuery, SqlUpdateClause updateClause)
+		{
+			if (statement.GetWithClause() != null)
+				throw new NotSupportedException("iSeries doesn't support Cte in Update statement");
 
-            base.BuildUpdateQuery(statement, selectQuery, updateClause);
-	    }
 
-        protected override void BuildWhereClause(SelectQuery selectQuery)
-        {
-            if (!BuildWhere(selectQuery))
-                return;
+			base.BuildUpdateQuery(statement, selectQuery, updateClause);
+		}
 
-            this.StringBuilder.Append(' ');
+		protected override void BuildWhereClause(SelectQuery selectQuery)
+		{
+			if (!BuildWhere(selectQuery))
+				return;
 
-            base.BuildWhereClause(selectQuery);
-        }
+			this.StringBuilder.Append(' ');
 
-        protected override void BuildHavingClause(SelectQuery selectQuery)
-        {
-            if (selectQuery.Having.SearchCondition.Conditions.Count == 0)
-                return;
+			base.BuildWhereClause(selectQuery);
+		}
 
-            this.StringBuilder.Append(' ');
+		protected override void BuildHavingClause(SelectQuery selectQuery)
+		{
+			if (selectQuery.Having.SearchCondition.Conditions.Count == 0)
+				return;
 
-            base.BuildHavingClause(selectQuery);
-        }
+			this.StringBuilder.Append(' ');
 
-        protected override void BuildOrderByClause(SelectQuery selectQuery)
-        {
-            if (selectQuery.OrderBy.Items.Count == 0)
-                return;
+			base.BuildHavingClause(selectQuery);
+		}
 
-            this.StringBuilder.Append(' ');
+		protected override void BuildOrderByClause(SelectQuery selectQuery)
+		{
+			if (selectQuery.OrderBy.Items.Count == 0)
+				return;
 
-            base.BuildOrderByClause(selectQuery);
-        }
+			this.StringBuilder.Append(' ');
 
-        protected override void BuildGroupByClause(SelectQuery selectQuery)
-        {
-            if (selectQuery.GroupBy.Items.Count == 0)
-                return;
+			base.BuildOrderByClause(selectQuery);
+		}
 
-            this.StringBuilder.Append(' ');
+		protected override void BuildGroupByClause(SelectQuery selectQuery)
+		{
+			if (selectQuery.GroupBy.Items.Count == 0)
+				return;
 
-            base.BuildGroupByClause(selectQuery);
-        }
+			this.StringBuilder.Append(' ');
 
-        private ISqlExpression GetDateParm(IValueContainer parameter)
+			base.BuildGroupByClause(selectQuery);
+		}
+
+		private ISqlExpression GetDateParm(IValueContainer parameter)
 		{
 			if (parameter != null && parameter is SqlParameter)
 			{
-				var p = ((SqlParameter)parameter);
-				p.DataType = DataType.Date;
+				var p = (SqlParameter)parameter;
+				p.Type = p.Type.WithDataType(DataType.Date);
 				return p;
 			}
 
@@ -561,19 +578,21 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		}
 
+		// TODO: actually SystemType cannot be null in v3, so probably this method is not needed?
 		private ISqlExpression GetParm(IValueContainer parameter, Type type)
 		{
 			if (type != null && parameter != null)
 			{
 				if (parameter is SqlValue)
 				{
-					if (((SqlValue)parameter).SystemType == null)
+					if (((SqlValue)parameter).ValueType.SystemType == null)
 						return new SqlValue(type, parameter.Value);
 				}
 				else if (parameter is SqlParameter)
 				{
-					var p = ((SqlParameter)parameter);
-					p.SystemType = p.SystemType ?? type;
+					var p = (SqlParameter)parameter;
+					if (p.Type.SystemType == null)
+						p.Type = p.Type.WithSystemType(type);
 					return p;
 				}
 			}

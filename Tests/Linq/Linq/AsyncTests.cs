@@ -162,7 +162,7 @@ namespace Tests.Linq
 
 			foreach (var value in values)
 			{
-				var param = new SqlParameter(value?.GetType() ?? typeof(int?), "p", value);
+				var param = new SqlParameter(new LinqToDB.Common.DbDataType(value?.GetType() ?? typeof(int?)), "p", value);
 				builder.AddParameter("values", param);
 			}
 		}

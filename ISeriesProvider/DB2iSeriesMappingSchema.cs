@@ -1,30 +1,25 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
-	using System.Reflection;
-	using Extensions;
 	using Mapping;
 	using SqlQuery;
 
 	public class DB2iSeriesMappingSchema : MappingSchema
-    { 
-	    public DB2iSeriesMappingSchema() : this(DB2iSeriesProviderName.DB2)
-	    {
-	    }
+	{
+		public DB2iSeriesMappingSchema() : this(DB2iSeriesProviderName.DB2)
+		{
+		}
 
-		public DB2iSeriesMappingSchema(string configuration) : base(configuration)
-        { 
-		    if (configuration != DB2iSeriesProviderName.DB2_GAS)
-		    {
-		        SetValueToSqlConverter(typeof(Guid), (sb, dt, v) => ConvertGuidToSql(sb, (Guid)v));
-            }
+		public DB2iSeriesMappingSchema(string configuration, params MappingSchema[] schemas) : base(configuration, schemas)
+		{
+			if (configuration != DB2iSeriesProviderName.DB2_GAS)
+			{
+				SetValueToSqlConverter(typeof(Guid), (sb, dt, v) => ConvertGuidToSql(sb, (Guid)v));
+			}
 
-	        ColumnNameComparer = StringComparer.OrdinalIgnoreCase;
+			ColumnNameComparer = StringComparer.OrdinalIgnoreCase;
 
 			SetDataType(typeof(string), new SqlDataType(DataType.NVarChar, typeof(string), 255));
 			SetValueToSqlConverter(typeof(string), (sb, dt, v) => ConvertStringToSql(sb, v.ToString()));
@@ -55,16 +50,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		private static void ConvertDateTimeToSql(StringBuilder stringBuilder, SqlDataType datatype, DateTime value)
 		{
 			var format = value.Millisecond == 0 ?
-						"'{0:yyyy-MM-dd HH:mm:ss}'":
+						"'{0:yyyy-MM-dd HH:mm:ss}'" :
 						"'{0:yyyy-MM-dd HH:mm:ss.fff}'";
 
-			if (datatype.DataType == DataType.Date)
+			if (datatype.Type.DataType == DataType.Date)
 				format = "'{0:yyyy-MM-dd}'";
 
-			if (datatype.DataType == DataType.Time)
+			if (datatype.Type.DataType == DataType.Time)
 			{
 				format = value.Millisecond == 0 ?
-							"'{0:HH:mm:ss}'":
+							"'{0:HH:mm:ss}'" :
 							"'{0:HH:mm:ss.fff}'";
 			}
 
@@ -87,5 +82,5 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			  .Append(s.Substring(16, 16))
 			  .Append("' as char(16) for bit data)");
 		}
-    }
+	}
 }

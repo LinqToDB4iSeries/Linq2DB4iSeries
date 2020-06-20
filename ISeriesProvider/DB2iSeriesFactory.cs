@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Reflection;
-using LinqToDB.Configuration;
-using LinqToDB.Linq;
+﻿using System.Collections.Generic;
 using System.Linq;
+using LinqToDB.Configuration;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
