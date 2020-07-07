@@ -230,9 +230,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case DataType.Blob:
 					base.SetParameter(dataConnection, parameter, "@" + name, dataType, value);
 
-					// TODO: exposed in v3
-					//var param = TryGetProviderParameter(parameter, dataConnection.MappingSchema);
-					var param = InternalAPIs.TryGetProviderParameter(parameter, dataConnection.MappingSchema, Adapter.ParameterType);
+					var param = TryGetProviderParameter(parameter, dataConnection.MappingSchema);
 					if (param != null)
 					{
 						Adapter.SetDbType(param, DB2iSeriesProviderAdapter.iDB2DbType.iDB2Blob);

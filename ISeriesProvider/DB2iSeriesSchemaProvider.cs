@@ -88,7 +88,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 		}
 
-		protected override IReadOnlyCollection<ForeignKeyInfo> GetForeignKeys(DataConnection dataConnection, IEnumerable<TableSchema> tables)
+		protected override IReadOnlyCollection<ForeignKeyInfo> GetForeignKeys(DataConnection dataConnection, IEnumerable<TableSchema> tables, GetSchemaOptions options)
 		{
 			var sql = $@"
 		  Select ref.Constraint_Name 
@@ -122,7 +122,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return list;
 		}
 
-		protected override IReadOnlyCollection<PrimaryKeyInfo> GetPrimaryKeys(DataConnection dataConnection, IEnumerable<TableSchema> tables)
+		protected override IReadOnlyCollection<PrimaryKeyInfo> GetPrimaryKeys(DataConnection dataConnection, IEnumerable<TableSchema> tables, GetSchemaOptions options)
 		{
 			var sql = $@"
 		  Select cst.constraint_Name  
@@ -148,7 +148,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return list;
 		}
 
-		protected override List<ProcedureInfo> GetProcedures(DataConnection dataConnection)
+		protected override List<ProcedureInfo> GetProcedures(DataConnection dataConnection, GetSchemaOptions options)
 		{
 			var sql = $@"
 		  Select
@@ -230,7 +230,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return DB2iSeriesProviderAdapter.AssemblyName;
 		}
 
-		protected override List<TableInfo> GetTables(DataConnection dataConnection)
+		protected override List<TableInfo> GetTables(DataConnection dataConnection, GetSchemaOptions options)
 		{
 			var sql = $@"
 				  Select 
@@ -314,9 +314,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		private string GetLibList(DataConnection dataConnection)
 		{
-			// TODO: will be public in 3.0
-			//var connection = _provider.TryGetProviderConnection(dataConnection.Connection, dataConnection.MappingSchema);
-			var connection = InternalAPIs.TryGetProviderConnection(dataConnection.Connection, dataConnection.MappingSchema, _provider.Adapter.ConnectionType);
+			var connection = _provider.TryGetProviderConnection(dataConnection.Connection, dataConnection.MappingSchema);
 			if (connection == null)
 				throw new LinqToDBException("dataconnection is not iDB2Connection.");
 

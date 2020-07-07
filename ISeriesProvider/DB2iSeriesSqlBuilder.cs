@@ -357,11 +357,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			base.BuildSql();
 		}
 
-		protected override void BuildSql()
-		{
-			AlternativeBuildSql(true, base.BuildSql, "\t0");
-		}
-
 		protected override IEnumerable<SqlColumn> GetSelectedColumns(SelectQuery selectQuery)
 		{
 			if (NeedSkip(selectQuery) && !selectQuery.OrderBy.IsEmpty)
@@ -423,9 +418,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			if (_provider != null)
 			{
-				// TODO: will be available in 3.0
-				//var param = _provider.TryGetProviderParameter(parameter, MappingSchema);
-				var param = InternalAPIs.TryGetProviderParameter(parameter, MappingSchema, _provider.Adapter.ParameterType);
+				var param = _provider.TryGetProviderParameter(parameter, MappingSchema);
 				if (param != null)
 					return _provider.Adapter.GetDbType(param).ToString();
 			}

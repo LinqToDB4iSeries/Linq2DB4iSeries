@@ -176,9 +176,7 @@
 				lock (_syncRoot)
 					if (_instance == null)
 					{
-						// TODO: v3
-						//var assembly = Common.Tools.TryLoadAssembly(AssemblyName, ProviderFactoryName);
-						var assembly = InternalAPIs.TryLoadAssembly(AssemblyName, ProviderFactoryName);
+						var assembly = Common.Tools.TryLoadAssembly(AssemblyName, ProviderFactoryName);
 						if (assembly == null)
 							throw new InvalidOperationException($"Cannot load assembly {AssemblyName}");
 

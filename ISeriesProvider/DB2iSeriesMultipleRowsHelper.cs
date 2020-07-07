@@ -27,9 +27,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				{
 					// TODO: SqlDataType(DataType) contructor will be returned in 3.0
 					if (column.DbType.Equals("time", StringComparison.CurrentCultureIgnoreCase))
-						columnType = new SqlDataType(DataType.Time, (int?)null);
+						columnType = new SqlDataType(DataType.Time);
 					else if (column.DbType.Equals("date", StringComparison.CurrentCultureIgnoreCase))
-						columnType = new SqlDataType(DataType.Date, (int?)null);
+						columnType = new SqlDataType(DataType.Date);
 				}
 
 				if (skipConvert(column) || value == null || !ValueConverter.TryConvert(StringBuilder, columnType, value))

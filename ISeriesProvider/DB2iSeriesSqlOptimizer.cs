@@ -13,6 +13,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 		}
 
+		public override SqlStatement TransformStatement(SqlStatement statement)
+		{
+			statement = SeparateDistinctFromPagination(statement, q => q.Select.SkipValue != null);
+			statement = ReplaceDistinctOrderByWithRowNumber(statement, q => q.Select.SkipValue != null);
+			statement = ReplaceTakeSkipWithRowNumber(statement, query => query.Select.SkipValue != null && SqlProviderFlags.GetIsSkipSupportedFlag(query), true);
+
+			return base.TransformStatement(statement);
+		}
+
 		private static void SetQueryParameter(IQueryElement element)
 		{
 			if (element.ElementType == QueryElementType.SqlParameter)
