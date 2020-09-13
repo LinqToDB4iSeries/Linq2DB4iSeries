@@ -25,22 +25,35 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return string.Format("SYSIBM{0}SYSDUMMY1", seperator);
 		}
 
-		static readonly DB2iSeriesDataProvider _db2iDataProvider = new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2, DB2iSeriesLevels.Any, false);
-		static readonly DB2iSeriesDataProvider _db2iDataProvider_gas = new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2_GAS, DB2iSeriesLevels.Any, true);
-		static readonly DB2iSeriesDataProvider _db2iDataProvider_73 = new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2_73, DB2iSeriesLevels.V7_1_38, false);
-		static readonly DB2iSeriesDataProvider _db2iDataProvider_73_gas = new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2_73_GAS, DB2iSeriesLevels.V7_1_38, true);
-
-		public static bool AutoDetectProvider { get; set; }
-
-		static DB2iSeriesTools()
+		static readonly Lazy<DB2iSeriesDataProvider> _db2iDataProvider = new Lazy<DB2iSeriesDataProvider>(() =>
 		{
-			AutoDetectProvider = true;
-			//DataConnection.AddDataProvider(DB2iSeriesProviderName.DB2, _db2iDataProvider);
-			DataConnection.AddDataProvider(DB2iSeriesProviderName.DB2_GAS, _db2iDataProvider_gas);
-			DataConnection.AddDataProvider(DB2iSeriesProviderName.DB2_73, _db2iDataProvider_73);
-			DataConnection.AddDataProvider(DB2iSeriesProviderName.DB2_73_GAS, _db2iDataProvider_73_gas);
-			DataConnection.AddProviderDetector(ProviderDetector);
-		}
+			var provider = new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2, DB2iSeriesLevels.Any, false);
+			DataConnection.AddDataProvider(provider);
+			return provider;
+		});
+
+		static readonly Lazy<DB2iSeriesDataProvider> _db2iDataProvider_gas = new Lazy<DB2iSeriesDataProvider>(() =>
+		{
+			var provider = new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2_GAS, DB2iSeriesLevels.Any, true);
+			DataConnection.AddDataProvider(provider);
+			return provider;
+		});
+
+		static readonly Lazy<DB2iSeriesDataProvider> _db2iDataProvider_73 = new Lazy<DB2iSeriesDataProvider>(() =>
+		{
+			var provider = new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2_73, DB2iSeriesLevels.V7_1_38, false);
+			DataConnection.AddDataProvider(provider);
+			return provider;
+		});
+
+		static readonly Lazy<DB2iSeriesDataProvider> _db2iDataProvider_73_gas = new Lazy<DB2iSeriesDataProvider>(() =>
+		{
+			var provider = new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2_73_GAS, DB2iSeriesLevels.V7_1_38, true);
+			DataConnection.AddDataProvider(provider);
+			return provider;
+		});
+
+		public static bool AutoDetectProvider { get; set; } = true;
 
 		private static IDataProvider ProviderDetector(IConnectionStringSettings css, string connectionString)
 		{
@@ -54,9 +67,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			{
 				switch (css.Name)
 				{
-					case DB2iSeriesProviderName.DB2_73: return _db2iDataProvider_73;
-					case DB2iSeriesProviderName.DB2_GAS: return _db2iDataProvider_gas;
-					case DB2iSeriesProviderName.DB2_73_GAS: return _db2iDataProvider_73_gas;
+					case DB2iSeriesProviderName.DB2_73: return _db2iDataProvider_73.Value;
+					case DB2iSeriesProviderName.DB2_GAS: return _db2iDataProvider_gas.Value;
+					case DB2iSeriesProviderName.DB2_73_GAS: return _db2iDataProvider_73_gas.Value;
 				}
 
 				if (AutoDetectProvider)
@@ -78,7 +91,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 							switch (serverVersion)
 							{
 								case "07.03":
-									return _db2iDataProvider_73;
+									return _db2iDataProvider_73.Value;
 								case "07.02":
 									ptf = "SF99702";
 									desiredLevel = 9;
@@ -88,7 +101,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 									desiredLevel = 38;
 									break;
 								default:
-									return _db2iDataProvider;
+									return _db2iDataProvider.Value;
 							}
 
 							using (var cmd = conn.CreateCommand())
@@ -103,7 +116,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 								var level = Converter.ChangeTypeTo<int>(cmd.ExecuteScalar());
 
-								return level < desiredLevel ? _db2iDataProvider : _db2iDataProvider_73;
+								return level < desiredLevel ? _db2iDataProvider.Value : _db2iDataProvider_73.Value;
 							}
 						}
 					}
@@ -115,55 +128,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return null;
 		}
 
-		#region OnInitialized
-
-		private static bool _isInitialized;
-		private static readonly object _syncAfterInitialized = new object();
-		private static ConcurrentBag<Action> _afterInitializedActions = new ConcurrentBag<Action>();
-
-		internal static void Initialized()
-		{
-			if (!_isInitialized)
-			{
-				lock (_syncAfterInitialized)
-				{
-					if (!_isInitialized)
-					{
-						_isInitialized = true;
-						foreach (var action in _afterInitializedActions)
-						{
-							action();
-						}
-						_afterInitializedActions = null;
-					}
-				}
-			}
-		}
-
-		public static void AfterInitialized(Action action)
-		{
-			if (_isInitialized)
-			{
-				action();
-			}
-			else
-			{
-				lock (_syncAfterInitialized)
-				{
-					if (_isInitialized)
-					{
-						action();
-					}
-					else
-					{
-						_afterInitializedActions.Add(action);
-					}
-				}
-			}
-		}
-
-		#endregion
-
 		#region CreateDataConnection
 
 		private static IDataProvider GetDataProvider(string providerName)
@@ -171,13 +135,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			switch (providerName)
 			{
 
-				case DB2iSeriesProviderName.DB2_73: return _db2iDataProvider_73;
+				case DB2iSeriesProviderName.DB2_73: return _db2iDataProvider_73.Value;
 
-				case DB2iSeriesProviderName.DB2_GAS: return _db2iDataProvider_gas;
+				case DB2iSeriesProviderName.DB2_GAS: return _db2iDataProvider_gas.Value;
 
-				case DB2iSeriesProviderName.DB2_73_GAS: return _db2iDataProvider_73_gas;
+				case DB2iSeriesProviderName.DB2_73_GAS: return _db2iDataProvider_73_gas.Value;
 
-				default: return _db2iDataProvider;
+				default: return _db2iDataProvider.Value;
 
 			}
 

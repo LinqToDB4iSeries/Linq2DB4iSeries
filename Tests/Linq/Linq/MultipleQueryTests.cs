@@ -33,6 +33,7 @@ namespace Tests.Linq
 		[Test, DataContextSource]
 		public void Test3(string context)
 		{
+			using (new AllowMultipleQuery())
 			using (var db = GetDataContext(context))
 				AreEqual(
 					from p in Parent select Child,

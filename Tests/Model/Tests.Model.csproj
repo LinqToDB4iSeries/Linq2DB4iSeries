@@ -4,6 +4,8 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>net452</TargetFrameworks>
+		<LangVersion>8.0</LangVersion>
+		<Nullable>enable</Nullable>
 		<AssemblyName>linq2db.Model</AssemblyName>
 		<Configurations>Debug;Release</Configurations>
 	</PropertyGroup>
@@ -26,11 +28,11 @@
 
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net452|AnyCPU'">
-	  <LangVersion>7.1</LangVersion>
+	  <LangVersion>8.0</LangVersion>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net452|AnyCPU'">
-	  <LangVersion>7.1</LangVersion>
+	  <LangVersion>8.0</LangVersion>
 	</PropertyGroup>
 
 	<ItemGroup>

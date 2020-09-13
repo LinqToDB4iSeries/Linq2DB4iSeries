@@ -18,4 +18,5 @@ Public Module VisualBasicCommon
 			Where Not t.BoolValue And (t.SmallIntValue = 5 Or t.SmallIntValue = 7 Or (t.SmallIntValue Or 2) = 10) _
 			Select t
 	End Function
+
 End Module

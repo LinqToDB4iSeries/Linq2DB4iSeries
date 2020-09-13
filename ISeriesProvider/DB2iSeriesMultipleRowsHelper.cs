@@ -12,10 +12,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			: base(table, options)
 		{
 		}
-
+		
 		public override void BuildColumns(object item, Func<ColumnDescriptor, bool> skipConvert = null)
 		{
-			skipConvert = skipConvert ?? (sc => false);
+			skipConvert = skipConvert ?? (_ => false);
 
 			for (var i = 0; i < Columns.Length; i++)
 			{
@@ -25,7 +25,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 				if (column.DbType != null)
 				{
-					// TODO: SqlDataType(DataType) contructor will be returned in 3.0
 					if (column.DbType.Equals("time", StringComparison.CurrentCultureIgnoreCase))
 						columnType = new SqlDataType(DataType.Time);
 					else if (column.DbType.Equals("date", StringComparison.CurrentCultureIgnoreCase))
@@ -36,9 +35,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				{
 					var name = ParameterName == "?" ? ParameterName : ParameterName + ++ParameterIndex;
 
-					if (value is DataParameter)
+					if (value is DataParameter parameter)
 					{
-						value = ((DataParameter)value).Value;
+						value = parameter.Value;
 					}
 
 					var dataParameter = new DataParameter(ParameterName == "?" ? ParameterName : "p" + ParameterIndex, value, column.DataType);
@@ -47,7 +46,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 					// wrap the parameter with a cast
 					var dbType = value == null ? columnType : DataConnection.MappingSchema.GetDataType(value.GetType());
-					var casttype = ((DB2iSeriesSqlBuilder)SqlBuilder).GetTypeForCast(dbType.Type.SystemType);
+					var casttype = ((DB2iSeriesSqlBuilder)SqlBuilder).GetiSeriesType(dbType);
+					
 					var nameWithCast = $"CAST(@{dataParameter.Name} AS {casttype})";
 
 					StringBuilder.Append(nameWithCast);

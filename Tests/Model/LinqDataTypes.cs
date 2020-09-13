@@ -8,21 +8,22 @@ namespace Tests.Model
 {
 	public class LinqDataTypes : IEquatable<LinqDataTypes>, IComparable
 	{
-		public int      ID;
-		public decimal  MoneyValue;
-		public DateTime DateTimeValue;
-		public bool     BoolValue;
-		public Guid     GuidValue;
-		public Binary   BinaryValue;
-		public short    SmallIntValue;
-		public string   StringValue;
+		public int       ID;
+		public decimal   MoneyValue;
+		public DateTime  DateTimeValue;
+		[Column(DataType = DataType.Int16, Configuration = ProviderName.Oracle)]
+		public bool      BoolValue;
+		public Guid      GuidValue;
+		public Binary?   BinaryValue;
+		public short     SmallIntValue;
+		public string?   StringValue;
 
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
 			return Equals(obj as LinqDataTypes);
 		}
 
-		public bool Equals(LinqDataTypes other)
+		public bool Equals(LinqDataTypes? other)
 		{
 			if (ReferenceEquals(null, other)) return false;
 			if (ReferenceEquals(this, other)) return true;
@@ -48,8 +49,11 @@ namespace Tests.Model
 			return ID;
 		}
 
-		public int CompareTo(object obj)
+		public int CompareTo(object? obj)
 		{
+			if (obj == null)
+				return 1;
+
 			return ID - ((LinqDataTypes)obj).ID;
 		}
 
@@ -79,19 +83,20 @@ namespace Tests.Model
 		[Column(DataType = DataType.DateTime2, Configuration = ProviderName.Oracle)]
 		[Column]                                        public DateTime? DateTimeValue;
 		[Column]                                        public DateTime? DateTimeValue2;
+		[Column(DataType = DataType.Int16, Configuration = ProviderName.Oracle)]
 		[Column]                                        public bool?     BoolValue;
 		[Column]                                        public Guid?     GuidValue;
 		[Column]                                        public short?    SmallIntValue;
 		[Column]                                        public int?      IntValue;
 		[Column]                                        public long?     BigIntValue;
-		[Column]                                        public string    StringValue;
+		[Column]                                        public string?   StringValue;
 
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
 			return Equals(obj as LinqDataTypes2);
 		}
 
-		public bool Equals(LinqDataTypes2 other)
+		public bool Equals(LinqDataTypes2? other)
 		{
 			if (ReferenceEquals(null, other)) return false;
 			if (ReferenceEquals(this, other)) return true;
@@ -104,7 +109,7 @@ namespace Tests.Model
 				other.DateTimeValue.HasValue == DateTimeValue.HasValue &&
 				(other.DateTimeValue == null ||
 				(
-					other.DateTimeValue.Value.Date   == DateTimeValue.Value.Date   &&
+					other.DateTimeValue.Value.Date   == DateTimeValue!.Value.Date  &&
 					other.DateTimeValue.Value.Hour   == DateTimeValue.Value.Hour   &&
 					other.DateTimeValue.Value.Minute == DateTimeValue.Value.Minute &&
 					other.DateTimeValue.Value.Second == DateTimeValue.Value.Second
@@ -116,8 +121,11 @@ namespace Tests.Model
 			return ID;
 		}
 
-		public int CompareTo(object obj)
+		public int CompareTo(object? obj)
 		{
+			if (obj == null)
+				return 1;
+
 			return ID - ((LinqDataTypes2)obj).ID;
 		}
 

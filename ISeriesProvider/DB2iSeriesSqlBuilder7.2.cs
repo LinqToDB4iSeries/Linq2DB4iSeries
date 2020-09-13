@@ -26,7 +26,7 @@
 
 		protected override ISqlBuilder CreateSqlBuilder()
 		{
-			return new DB2iSeriesSqlBuilder7_2(MappingSchema, SqlOptimizer, SqlProviderFlags);
+			return new DB2iSeriesSqlBuilder7_2(Provider, MappingSchema, SqlOptimizer, SqlProviderFlags);
 		}
 
 		protected override string OffsetFormat(SelectQuery selectQuery) => "OFFSET {0} ROWS";

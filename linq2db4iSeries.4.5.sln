@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27703.2000
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30204.135
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{B4CC1DAB-FF2D-4247-9A46-B7DE236981BB}"
 	ProjectSection(SolutionItems) = preProject
@@ -25,6 +25,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests\Linq\Tests.csproj", "{0C570479-D628-47BF-BC2B-3EFE244CDA67}"
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Tests.FSharp", "Tests\FSharp\Tests.FSharp.fsproj", "{23635427-BDD0-478B-9BDA-D9AA87A9873B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LinqToDB", "..\linq2db\Source\LinqToDB\LinqToDB.csproj", "{69096AFC-2D9B-461B-8F7F-61370D2EF422}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -134,6 +136,22 @@ Global
 		{23635427-BDD0-478B-9BDA-D9AA87A9873B}.Release|x64.Build.0 = Release|Any CPU
 		{23635427-BDD0-478B-9BDA-D9AA87A9873B}.Release|x86.ActiveCfg = Release|Any CPU
 		{23635427-BDD0-478B-9BDA-D9AA87A9873B}.Release|x86.Build.0 = Release|Any CPU
+		{69096AFC-2D9B-461B-8F7F-61370D2EF422}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{69096AFC-2D9B-461B-8F7F-61370D2EF422}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{69096AFC-2D9B-461B-8F7F-61370D2EF422}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{69096AFC-2D9B-461B-8F7F-61370D2EF422}.Debug|ARM.Build.0 = Debug|Any CPU
+		{69096AFC-2D9B-461B-8F7F-61370D2EF422}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{69096AFC-2D9B-461B-8F7F-61370D2EF422}.Debug|x64.Build.0 = Debug|Any CPU
+		{69096AFC-2D9B-461B-8F7F-61370D2EF422}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{69096AFC-2D9B-461B-8F7F-61370D2EF422}.Debug|x86.Build.0 = Debug|Any CPU
+		{69096AFC-2D9B-461B-8F7F-61370D2EF422}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{69096AFC-2D9B-461B-8F7F-61370D2EF422}.Release|Any CPU.Build.0 = Release|Any CPU
+		{69096AFC-2D9B-461B-8F7F-61370D2EF422}.Release|ARM.ActiveCfg = Release|Any CPU
+		{69096AFC-2D9B-461B-8F7F-61370D2EF422}.Release|ARM.Build.0 = Release|Any CPU
+		{69096AFC-2D9B-461B-8F7F-61370D2EF422}.Release|x64.ActiveCfg = Release|Any CPU
+		{69096AFC-2D9B-461B-8F7F-61370D2EF422}.Release|x64.Build.0 = Release|Any CPU
+		{69096AFC-2D9B-461B-8F7F-61370D2EF422}.Release|x86.ActiveCfg = Release|Any CPU
+		{69096AFC-2D9B-461B-8F7F-61370D2EF422}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

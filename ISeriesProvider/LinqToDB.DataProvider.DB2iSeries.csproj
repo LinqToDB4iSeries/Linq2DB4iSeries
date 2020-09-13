@@ -32,7 +32,7 @@
 		<PackageId>linq2db4iSeries</PackageId>
 	</PropertyGroup>
 	<PropertyGroup>
-	  <LangVersion>7.1</LangVersion>
+	  <LangVersion>8.0</LangVersion>
 	  <RepositoryUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries</RepositoryUrl>
 	  <RepositoryType>git</RepositoryType>
 	  <AssemblyVersion>2.9.1.0</AssemblyVersion>
@@ -55,11 +55,6 @@
 		<Folder Include="Properties\" />
 	</ItemGroup>
 	<ItemGroup>
-	  <PackageReference Include="linq2db" Version="3.0.0-rc.2" />
-	</ItemGroup>
-	<ItemGroup>
-	  <Reference Include="IBM.Data.DB2.iSeries">
-	    <HintPath>..\Redist\IBM.Data.DB2.iSeries.dll</HintPath>
-	  </Reference>
+	  <ProjectReference Include="..\..\linq2db\Source\LinqToDB\LinqToDB.csproj" />
 	</ItemGroup>
 </Project>

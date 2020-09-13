@@ -45,7 +45,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetCharField("NCHAR", (r, i) => r.GetString(i).TrimEnd(' '));
 
 			_sqlOptimizer = new DB2iSeriesSqlOptimizer(SqlProviderFlags);
-
+			
 			SetProviderField(Adapter.iDB2BigIntType, typeof(long), Adapter.GetiDB2BigIntReaderMethod, dataReaderType: Adapter.DataReaderType);
 			SetProviderField(Adapter.iDB2BinaryType, typeof(byte[]), Adapter.GetiDB2BinaryReaderMethod, dataReaderType: Adapter.DataReaderType);
 			SetProviderField(Adapter.iDB2BlobType, typeof(byte[]), Adapter.GetiDB2BlobReaderMethod, dataReaderType: Adapter.DataReaderType);
@@ -115,29 +115,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			base.InitCommand(dataConnection, commandType, commandText, parameters, withParameters);
 		}
-
-		//  protected override IDbConnection CreateConnectionInternal(string connectionString)
-		//  {
-		//      var vers73 = new[] { "7.1.38", "7.2", "7.3" };
-		//   var parts = connectionString.Split(';').ToList();
-		//   var gas = parts.FirstOrDefault(p => p.ToLower().StartsWith("mapguidasstring"));
-		//var minVer = parts.FirstOrDefault(p => p.ToLower().StartsWith("minver"));
-
-		//   if (!string.IsNullOrWhiteSpace(gas))
-		//   {
-		//    mapGuidAsString = gas.EndsWith("true", StringComparison.CurrentCultureIgnoreCase);
-		//    parts.Remove(gas);
-		//   }
-
-		//   if (!string.IsNullOrWhiteSpace(minVer))
-		//   {
-		//	minLevel = vers73.Any(v => minVer.EndsWith(v, StringComparison.CurrentCultureIgnoreCase)) ? DB2iSeriesLevels.V7_1_38 : DB2iSeriesLevels.Any;
-		//	parts.Remove(minVer);
-		//}
-
-		//   var conString = string.Join(";", parts);
-		//return base.CreateConnectionInternal(conString);
-		//  }
 
 		private static MappingSchema GetMappingSchema(bool mapGuidAsString, MappingSchema providerSchema)
 		{

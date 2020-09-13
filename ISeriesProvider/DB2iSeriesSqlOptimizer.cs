@@ -19,15 +19,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			statement = ReplaceDistinctOrderByWithRowNumber(statement, q => q.Select.SkipValue != null);
 			statement = ReplaceTakeSkipWithRowNumber(statement, query => query.Select.SkipValue != null && SqlProviderFlags.GetIsSkipSupportedFlag(query), true);
 
-			return base.TransformStatement(statement);
-		}
-
-		private static void SetQueryParameter(IQueryElement element)
-		{
-			if (element.ElementType == QueryElementType.SqlParameter)
+			return statement.QueryType switch
 			{
-				((SqlParameter)element).IsQueryParameter = false;
-			}
+				QueryType.Delete => GetAlternativeDelete((SqlDeleteStatement)statement),
+				QueryType.Update => GetAlternativeUpdate((SqlUpdateStatement)statement),
+				_ => statement,
+			};
 		}
 
 		private static string FixUnderscore(string text, string alternative)
@@ -72,25 +69,24 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				}
 			});
 
-			if (statement.SelectQuery != null)
-				(new QueryVisitor()).Visit(statement.SelectQuery.Select, SetQueryParameter);
-
-			statement = base.Finalize(statement, inlineParameters);
-
-			switch (statement.QueryType)
+			static void setQueryParameter(IQueryElement element)
 			{
-				case QueryType.Delete:
-					return GetAlternativeDelete((SqlDeleteStatement)statement);
-				case QueryType.Update:
-					return GetAlternativeUpdate((SqlUpdateStatement)statement);
-				default:
-					return statement;
+				if (element.ElementType == QueryElementType.SqlParameter)
+				{
+					((SqlParameter)element).IsQueryParameter = false;
+				}
 			}
+
+			if (statement.SelectQuery != null)
+				(new QueryVisitor()).Visit(statement.SelectQuery.Select, setQueryParameter);
+
+			return base.Finalize(statement, inlineParameters);
 		}
 
-		public override ISqlExpression ConvertExpression(ISqlExpression expr)
+		//Adds alt exists + handling for null scale
+		public override ISqlExpression ConvertExpression(ISqlExpression expr, bool withParameters)
 		{
-			expr = base.ConvertExpression(expr);
+			expr = base.ConvertExpression(expr, withParameters);
 			if (expr is SqlBinaryExpression)
 			{
 				var be = (SqlBinaryExpression)expr;
@@ -122,16 +118,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					case "Convert":
 						if (func.SystemType.ToUnderlying() == typeof(bool))
 						{
-							dynamic ex = AlternativeConvertToBoolean(func, 1);
+							var ex = AlternativeConvertToBoolean(func, 1, withParameters);
 							if (ex != null)
 							{
 								return ex;
 							}
 						}
-						if (func.Parameters[0] is SqlDataType)
+						if (func.Parameters[0] is SqlDataType sqlType)
 						{
-							dynamic type = (SqlDataType)func.Parameters[0];
-							if (type.Type == typeof(string) && func.Parameters[1].SystemType != typeof(string))
+							var type = sqlType.Type;
+							if (type.SystemType == typeof(string) && func.Parameters[1].SystemType != typeof(string))
 							{
 								return new SqlFunction(func.SystemType, "RTrim", new SqlFunction(typeof(string), "Char", func.Parameters[1]));
 							}
@@ -139,18 +135,21 @@ namespace LinqToDB.DataProvider.DB2iSeries
 							{
 								return new SqlFunction(func.SystemType, type.DataType.ToString(), func.Parameters[1], new SqlValue(type.Length));
 							}
-							else if (type.Precision > 0)
+							else if (type.Precision > 0 && type.Scale > 0)
 							{
 								return new SqlFunction(func.SystemType, type.DataType.ToString(), func.Parameters[1], new SqlValue(type.Precision), new SqlValue(type.Scale));
+							}
+							else if (type.Precision > 0)
+							{
+								return new SqlFunction(func.SystemType, type.DataType.ToString(), func.Parameters[1], new SqlValue(type.Precision));
 							}
 							else
 							{
 								return new SqlFunction(func.SystemType, type.DataType.ToString(), func.Parameters[1]);
 							}
 						}
-						if (func.Parameters[0] is SqlFunction)
+						if (func.Parameters[0] is SqlFunction f)
 						{
-							dynamic f = (SqlFunction)func.Parameters[0];
 							if (f.Name == "Char")
 								return new SqlFunction(func.SystemType, f.Name, func.Parameters[1]);
 
@@ -159,7 +158,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 							return new SqlFunction(func.SystemType, f.Name, func.Parameters[1], f.Parameters[0], f.Parameters[1]);
 						}
-						dynamic e = (SqlExpression)func.Parameters[0];
+						var e = (SqlExpression)func.Parameters[0];
 						return new SqlFunction(func.SystemType, e.Expr, func.Parameters[1]);
 					case "Millisecond":
 						return Div(new SqlFunction(func.SystemType, "Microsecond", func.Parameters), 1000);

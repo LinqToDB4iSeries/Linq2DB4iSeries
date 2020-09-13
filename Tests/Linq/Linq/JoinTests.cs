@@ -265,7 +265,8 @@ namespace Tests.Linq
         [Test, DataContextSource]
         public void GroupJoin2(string context)
         {
-            using (var db = GetDataContext(context))
+			using (new AllowMultipleQuery())
+			using (var db = GetDataContext(context))
             {
                 var q =
                     from p in db.Parent
@@ -289,42 +290,44 @@ namespace Tests.Linq
         [Test, DataContextSource]
         public void GroupJoin3(string context)
         {
-            using (var db = GetDataContext(context))
-            {
-                var q1 = Parent
-                    .GroupJoin(
-                        Child,
-                        p => p.ParentID,
-                        ch => ch.ParentID,
-                        (p, lj1) => new { p, lj1 = new { lj1 } }
-                    )
-                    .Where(t => t.p.ParentID == 2)
-                    .Select(t => new { t.p, t.lj1 });
+			using (new AllowMultipleQuery())
+			using (var db = GetDataContext(context))
+			{
+				var q1 = Parent
+					.GroupJoin(
+						Child,
+						p => p.ParentID,
+						ch => ch.ParentID,
+						(p, lj1) => new { p, lj1 = new { lj1 } }
+					)
+					.Where(t => t.p.ParentID == 2)
+					.Select(t => new { t.p, t.lj1 });
 
-                var list1 = q1.ToList();
+				var list1 = q1.ToList();
 
-                var q2 = db.Parent
-                    .GroupJoin(
-                        db.Child,
-                        p => p.ParentID,
-                        ch => ch.ParentID,
-                        (p, lj1) => new { p, lj1 = new { lj1 } }
-                    )
-                    .Where(t => t.p.ParentID == 2)
-                    .Select(t => new { t.p, t.lj1 });
+				var q2 = db.Parent
+					.GroupJoin(
+						db.Child,
+						p => p.ParentID,
+						ch => ch.ParentID,
+						(p, lj1) => new { p, lj1 = new { lj1 } }
+					)
+					.Where(t => t.p.ParentID == 2)
+					.Select(t => new { t.p, t.lj1 });
 
-                var list2 = q2.ToList();
+				var list2 = q2.ToList();
 
-                Assert.AreEqual(list1.Count, list2.Count);
-                Assert.AreEqual(list1[0].p.ParentID, list2[0].p.ParentID);
-                Assert.AreEqual(list1[0].lj1.lj1.Count(), list2[0].lj1.lj1.Count());
-            }
-        }
+				Assert.AreEqual(list1.Count, list2.Count);
+				Assert.AreEqual(list1[0].p.ParentID, list2[0].p.ParentID);
+				Assert.AreEqual(list1[0].lj1.lj1.Count(), list2[0].lj1.lj1.Count());
+			}
+		}
 
         [Test, DataContextSource]
         public void GroupJoin4(string context)
         {
-            using (var db = GetDataContext(context))
+			using (new AllowMultipleQuery())
+			using (var db = GetDataContext(context))
             {
                 var q1 =
                     from p in Parent
@@ -448,72 +451,74 @@ namespace Tests.Linq
         [Test, DataContextSource]
         public void GroupJoin6(string context)
         {
-            var n = 1;
+			var n = 1;
 
-            using (var db = GetDataContext(context))
-            {
-                var q1 =
-                    from p in Parent
-                    join c in Child on p.ParentID + n equals c.ParentID into lj
-                    where p.ParentID == 1
-                    select new { p, lj };
+			using (new AllowMultipleQuery())
+			using (var db = GetDataContext(context))
+			{
+				var q1 =
+					from p in Parent
+					join c in Child on p.ParentID + n equals c.ParentID into lj
+					where p.ParentID == 1
+					select new { p, lj };
 
-                var list1 = q1.ToList();
-                var ch1 = list1[0].lj.ToList();
+				var list1 = q1.ToList();
+				var ch1 = list1[0].lj.ToList();
 
-                var q2 =
-                    from p in db.Parent
-                    join c in db.Child on p.ParentID + n equals c.ParentID into lj
-                    where p.ParentID == 1
-                    select new { p, lj };
+				var q2 =
+					from p in db.Parent
+					join c in db.Child on p.ParentID + n equals c.ParentID into lj
+					where p.ParentID == 1
+					select new { p, lj };
 
-                var list2 = q2.ToList();
+				var list2 = q2.ToList();
 
-                Assert.AreEqual(list1.Count, list2.Count);
-                Assert.AreEqual(list1[0].p.ParentID, list2[0].p.ParentID);
-                Assert.AreEqual(list1[0].lj.Count(), list2[0].lj.Count());
+				Assert.AreEqual(list1.Count, list2.Count);
+				Assert.AreEqual(list1[0].p.ParentID, list2[0].p.ParentID);
+				Assert.AreEqual(list1[0].lj.Count(), list2[0].lj.Count());
 
-                var ch2 = list2[0].lj.ToList();
+				var ch2 = list2[0].lj.ToList();
 
-                Assert.AreEqual(ch1[0].ParentID, ch2[0].ParentID);
-                Assert.AreEqual(ch1[0].ChildID, ch2[0].ChildID);
-            }
-        }
+				Assert.AreEqual(ch1[0].ParentID, ch2[0].ParentID);
+				Assert.AreEqual(ch1[0].ChildID, ch2[0].ChildID);
+			}
+		}
 
         [Test, DataContextSource(ProviderName.Firebird)]
         public void GroupJoin7(string context)
         {
-            var n = 1;
+			var n = 1;
 
-            using (var db = GetDataContext(context))
-            {
-                var q1 =
-                    from p in Parent
-                    join c in Child on new { id = p.ParentID } equals new { id = c.ParentID - n } into j
-                    where p.ParentID == 1
-                    select new { p, j };
+			using (new AllowMultipleQuery())
+			using (var db = GetDataContext(context))
+			{
+				var q1 =
+					from p in Parent
+					join c in Child on new { id = p.ParentID } equals new { id = c.ParentID - n } into j
+					where p.ParentID == 1
+					select new { p, j };
 
-                var list1 = q1.ToList();
-                var ch1 = list1[0].j.ToList();
+				var list1 = q1.ToList();
+				var ch1 = list1[0].j.ToList();
 
-                var q2 =
-                    from p in db.Parent
-                    join c in db.Child on new { id = p.ParentID } equals new { id = c.ParentID - n } into j
-                    where p.ParentID == 1
-                    select new { p, j };
+				var q2 =
+					from p in db.Parent
+					join c in db.Child on new { id = p.ParentID } equals new { id = c.ParentID - n } into j
+					where p.ParentID == 1
+					select new { p, j };
 
-                var list2 = q2.ToList();
+				var list2 = q2.ToList();
 
-                Assert.AreEqual(list1.Count, list2.Count);
-                Assert.AreEqual(list1[0].p.ParentID, list2[0].p.ParentID);
-                Assert.AreEqual(list1[0].j.Count(), list2[0].j.Count());
+				Assert.AreEqual(list1.Count, list2.Count);
+				Assert.AreEqual(list1[0].p.ParentID, list2[0].p.ParentID);
+				Assert.AreEqual(list1[0].j.Count(), list2[0].j.Count());
 
-                var ch2 = list2[0].j.ToList();
+				var ch2 = list2[0].j.ToList();
 
-                Assert.AreEqual(ch1[0].ParentID, ch2[0].ParentID);
-                Assert.AreEqual(ch1[0].ChildID, ch2[0].ChildID);
-            }
-        }
+				Assert.AreEqual(ch1[0].ParentID, ch2[0].ParentID);
+				Assert.AreEqual(ch1[0].ChildID, ch2[0].ChildID);
+			}
+		}
 
         [Test, DataContextSource]
         public void GroupJoin8(string context)

@@ -49,26 +49,25 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		private static void ConvertDateTimeToSql(StringBuilder stringBuilder, SqlDataType datatype, DateTime value)
 		{
-			var format = value.Millisecond == 0 ?
-						"'{0:yyyy-MM-dd HH:mm:ss}'" :
-						"'{0:yyyy-MM-dd HH:mm:ss.fff}'";
-
-			if (datatype.Type.DataType == DataType.Date)
-				format = "'{0:yyyy-MM-dd}'";
-
-			if (datatype.Type.DataType == DataType.Time)
+			var format = datatype.Type.DataType switch
 			{
-				format = value.Millisecond == 0 ?
-							"'{0:HH:mm:ss}'" :
-							"'{0:HH:mm:ss.fff}'";
-			}
+				DataType.Date => "'{0:yyyy-MM-dd}'",
+
+				DataType.Time => value.Millisecond == 0 ?
+									"'{0:HH:mm:ss}'" :
+									"'{0:HH:mm:ss.fff}'",
+
+				_ => value.Millisecond == 0 ?
+						"'{0:yyyy-MM-dd HH:mm:ss}'" :
+						"'{0:yyyy-MM-dd HH:mm:ss.fff}'"
+			};
 
 			stringBuilder.AppendFormat(format, value);
 		}
 
 		private static void ConvertGuidToSql(StringBuilder stringBuilder, Guid value)
 		{
-			dynamic s = value.ToString("N");
+			var s = value.ToString("N");
 			stringBuilder
 			  .Append("Cast(x'")
 			  .Append(s.Substring(6, 2))

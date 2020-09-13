@@ -1,4 +1,5 @@
-﻿using System.Data.SqlTypes;
+﻿using System.Collections.Generic;
+using System.Data.SqlTypes;
 using System.Linq;
 using LinqToDB.SqlQuery;
 
@@ -6,8 +7,23 @@ namespace LinqToDB.DataProvider.DB2iSeries
 {
 	public partial class DB2iSeriesSqlBuilder
 	{
-		protected override bool MergeSourceValueTypeRequired(SqlValuesTable sourceEnumerable, int row, int column)
+		private bool MergeSourceValueTypeRequired(ISqlExpression expression)
 		{
+			return (expression is SqlParameter
+				|| (expression is SqlValue value
+					&& value.Value is null));
+		}
+
+
+		protected override bool MergeSourceValueTypeRequired(SqlValuesTable source, IReadOnlyList<ISqlExpression[]> rows, int row, int column)
+		{
+			var expr = rows[row][column];
+
+			if (MergeSourceValueTypeRequired(expr))
+				return true;
+			
+			//Base DB2 impl follows
+
 			// empty source (single row with all values == NULL)
 			if (row == -1)
 				return true;
@@ -17,36 +33,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				return false;
 
 			// add type hint only if column contains NULL in all rows
-			return sourceEnumerable.Rows.All(r => r[column] is SqlValue value && (value.Value == null
-				|| (value is INullable && ((INullable)value).IsNull)));
+			return rows.All(r => r[column] is SqlValue value && (value.Value == null
+				|| (value is INullable nullable && nullable.IsNull)));
 		}
-
-		//protected override void AddSourceValue(ValueToSqlConverter valueConverter, ColumnDescriptor column, SqlDataType columnType, object value, bool isFirstRow, bool isLastRow)
-		//{ 
-		//	if (value == null || value is INullable && ((INullable)value).IsNull)
-		//	{
-
-		//		var casttype = (columnType.DataType == DataType.Undefined) ?
-		//			((DB2iSeriesSqlBuilder)SqlBuilder).GetTypeForCast(columnType.Type):
-		//			((DB2iSeriesSqlBuilder)SqlBuilder).GetiSeriesType(SqlDataType.GetDataType(columnType.DataType)); 
-
-		//		Command.Append($"CAST(NULL AS {casttype})");
-  //              return;
-  //          }
-
-	 //       // avoid parameters in source due to low limits for parameters number in providers
-	 //       if (!valueConverter.TryConvert(Command, columnType, value))
-	 //       {
-		//        var colType = ((DB2iSeriesSqlBuilder) SqlBuilder).GetTypeForCast(value.GetType());
-
-		//		// we have to use parameter wrapped in a cast
-		//		var name = GetNextParameterName();
-		//        var fullName = SqlBuilder.Convert(name, ConvertType.NameToQueryParameter).ToString();
-				
-		//		Command.Append($"CAST({fullName} as {colType})");
-
-		//        AddParameter(new DataParameter(name, value, column.DataType));
-		//	}
-  //      }
 	}
 }

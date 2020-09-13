@@ -7,6 +7,7 @@
 		<NoWarn>$(NoWarn)</NoWarn>
 		<AssemblyName>linq2db.Tests.FSharp</AssemblyName>
 		<Configurations>Debug;Release</Configurations>
+		<Deterministic>false</Deterministic>
 	</PropertyGroup>
 
 	<PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -15,6 +16,10 @@
 		<DebugSymbols>true</DebugSymbols>
 		<DebugType>full</DebugType>
 		<Optimize>false</Optimize>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net452|AnyCPU'">
+	  <WarningLevel>1</WarningLevel>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -31,7 +36,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Update="FSharp.Core" Version="4.3.4" />
+	  <PackageReference Update="FSharp.Core" Version="4.7.2" />
 	  <PackageReference Update="System.ValueTuple" Version="4.3.1" />
 	</ItemGroup>
 	<!-- To modify your build process, add your task inside one of the targets below and uncomment it.

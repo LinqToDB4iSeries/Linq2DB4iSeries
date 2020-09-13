@@ -15,7 +15,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public static DB2iSeriesIdentifierQuoteMode IdentifierQuoteMode = DB2iSeriesIdentifierQuoteMode.None;
 		protected readonly bool mapGuidAsString;
 
-		private readonly DB2iSeriesDataProvider _provider;
+		protected readonly DB2iSeriesDataProvider Provider;
 
 		public DB2iSeriesSqlBuilder(
 			DB2iSeriesDataProvider provider,
@@ -24,7 +24,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SqlProviderFlags sqlProviderFlags)
 			: this(mappingSchema, sqlOptimizer, sqlProviderFlags)
 		{
-			_provider = provider;
+			Provider = provider;
 		}
 
 		// remote context
@@ -37,70 +37,161 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			mapGuidAsString = sqlProviderFlags.CustomFlags.Contains(DB2iSeriesTools.MapGuidAsString);
 		}
 
-		protected override string LimitFormat(SelectQuery selectQuery) => selectQuery.Select.SkipValue == null ? " FETCH FIRST {0} ROWS ONLY" : null;
+		#region Same as DB2 provider
 
-		protected override void BuildColumnExpression(SelectQuery selectQuery, ISqlExpression expr, string alias, ref bool addAlias) =>
-			BuildColumnExpression(selectQuery, expr, alias, ref addAlias, true);
-
-		protected void BuildColumnExpression(SelectQuery selectQuery, ISqlExpression expr, string alias, ref bool addAlias, bool wrapParameter)
+		protected override void BuildCreateTableIdentityAttribute1(SqlField field)
 		{
-			var wrap = false;
-			if (expr.SystemType == typeof(bool))
-			{
-				if (expr is SqlSearchCondition)
-				{
-					wrap = true;
-				}
-				else
-				{
-					wrap = expr is SqlExpression ex && ex.Expr == "{0}" && ex.Parameters.Length == 1 && ex.Parameters[0] is SqlSearchCondition;
-				}
-			}
+			StringBuilder.Append("GENERATED ALWAYS AS IDENTITY");
+		}
 
-			if (wrapParameter)
+		protected override void BuildEmptyInsert(SqlInsertClause insertClause)
+		{
+			StringBuilder.Append("VALUES");
+
+			foreach (var col in insertClause.Into.Fields)
+				StringBuilder.Append("(DEFAULT)");
+
+			StringBuilder.AppendLine();
+		}
+
+		protected override void BuildFunction(SqlFunction func)
+		{
+			func = ConvertFunctionParameters(func);
+			base.BuildFunction(func);
+		}
+
+		protected override void BuildInsertOrUpdateQuery(SqlInsertOrUpdateStatement insertOrUpdate)
+		{
+			BuildInsertOrUpdateQueryAsMerge(insertOrUpdate, $"FROM {DB2iSeriesTools.iSeriesDummyTableName()} FETCH FIRST 1 ROW ONLY");
+		}
+
+		protected override string LimitFormat(SelectQuery selectQuery)
+		{
+			return selectQuery.Select.SkipValue == null ? " FETCH FIRST {0} ROWS ONLY" : null;
+		}
+
+		//iDB2 added VarBinary
+		protected override void BuildDataTypeFromDataType(SqlDataType type, bool forCreateTable)
+		{
+			switch (type.Type.DataType)
 			{
-				if (expr is SqlParameter)
-				{
-					if (((SqlParameter)expr).Name != null)
+				case DataType.DateTime:
+				case DataType.DateTime2:
+					StringBuilder.Append("timestamp");
+					if (type.Type.Precision != null && type.Type.Precision != 6)
+						StringBuilder.Append($"({type.Type.Precision})");
+					return;
+				
+				case DataType.Boolean: StringBuilder.Append("smallint"); return;
+				case DataType.Guid: StringBuilder.Append("char(16) for bit data"); return;
+				case DataType.NVarChar:
+					if (type.Type.Length == null || type.Type.Length > 8168 || type.Type.Length < 1)
 					{
-						var dataType = SqlDataType.GetDataType(expr.SystemType);
-
-						expr = new SqlFunction(expr.SystemType, dataType.Type.DataType.ToString(), expr);
+						StringBuilder
+							.Append(type.Type.DataType)
+							.Append("(8168)");
+						return;
 					}
-				}
-				else if (expr is SqlValue && ((SqlValue)expr).Value == null)
-				{
-					var colType = GetTypeForCast(expr.SystemType);
 
-					expr = new SqlExpression(expr.SystemType, "Cast({0} as {1})", Precedence.Primary, expr, new SqlExpression(colType, Precedence.Primary));
-				}
+					break;
+				//iDB2
+				case DataType.UInt64:
+					StringBuilder.Append("DECIMAL(28,0)"); return;
+				case DataType.Byte:
+					StringBuilder.Append("smallint"); return;
+				case DataType.VarBinary:
+					if (type.Type.Length == null || type.Type.Length > 32704 || type.Type.Length < 1)
+					{
+						StringBuilder
+							.Append(type.Type.DataType)
+							.Append("(32704)");
+						return;
+					}
+
+					break;
 			}
 
-			if (wrap)
-			{
-				StringBuilder.Append("CASE WHEN ");
-			}
-			base.BuildColumnExpression(selectQuery, expr, alias, ref addAlias);
-			if (wrap)
-			{
-				StringBuilder.Append(" THEN 1 ELSE 0 END");
-			}
+			base.BuildDataTypeFromDataType(type, forCreateTable);
+		}
+
+		#endregion
+
+		#region Different from DB2 provider
+
+		//DB2 adds identity field handling
+		public override int CommandCount(SqlStatement statement)
+		{
+			return statement is SqlInsertStatement insertStatement && insertStatement.Insert.WithIdentity ? 2 : 1;
+		}
+
+		//DB2 adds truncate table handling
+		protected override void BuildCommand(SqlStatement selectQuery, int commandNumber) =>
+			StringBuilder.AppendLine($"SELECT {DB2iSeriesTools.IdentityColumnSql} FROM {DB2iSeriesTools.iSeriesDummyTableName()}");
+
+
+
+
+		#endregion
+
+		#region iDB2 specific
+
+		//OK
+		protected override void BuildDeleteQuery(SqlDeleteStatement deleteStatement)
+		{
+			if (deleteStatement.With != null)
+				throw new NotSupportedException("iSeries doesn't support Cte in Delete statement");
+
+			base.BuildDeleteQuery(deleteStatement);
+		}
+
+		//OK
+		protected override void BuildUpdateQuery(SqlStatement statement, SelectQuery selectQuery, SqlUpdateClause updateClause)
+		{
+			if (statement.GetWithClause() != null)
+				throw new NotSupportedException("iSeries doesn't support Cte in Update statement");
+
+
+			base.BuildUpdateQuery(statement, selectQuery, updateClause);
+		}
+
+		//OK
+		protected override IEnumerable<SqlColumn> GetSelectedColumns(SelectQuery selectQuery)
+		{
+			if (NeedSkip(selectQuery) && !selectQuery.OrderBy.IsEmpty)
+				return AlternativeGetSelectedColumns(selectQuery, () => base.GetSelectedColumns(selectQuery));
+
+			return base.GetSelectedColumns(selectQuery);
+		}
+
+		//OK
+		protected override ISqlBuilder CreateSqlBuilder()
+		{
+			return new DB2iSeriesSqlBuilder(Provider, MappingSchema, SqlOptimizer, SqlProviderFlags);
 		}
 
 		public string GetiSeriesType(SqlDataType dataType)
 		{
+			static string appendLength(SqlDataType type, string typeName, int max)
+			{
+				var length = (type.Type.Length == null || type.Type.Length > max || type.Type.Length < 1) ? max : type.Type.Length.Value;
+				return typeName + $"({length})";
+			}
+			
 			switch (dataType.Type.DataType)
 			{
 				case DataType.Variant:
 				case DataType.Binary:
-					return $"BINARY({(dataType.Type.Length == 0 ? 1 : dataType.Type.Length)})";
+					return appendLength(dataType, "BINARY", 255);
+					// dataType.Type.Length == null ? "BINARY" : $"BINARY({(dataType.Type.Length == 0 ? 1 : dataType.Type.Length)})";
 				case DataType.Int64:
 				case DataType.UInt32:
 					return "BIGINT";
 				case DataType.Blob:
-					return $"BLOB({(dataType.Type.Length == 0 ? 1 : dataType.Type.Length)})";
+					return appendLength(dataType, "BLOB", 2147483647);
+					//dataType.Type.Length == null ? "BLOB" : $"BLOB({(dataType.Type.Length == 0 ? 1 : dataType.Type.Length)})";
 				case DataType.VarBinary:
-					return $"VARBINARY({(dataType.Type.Length == 0 ? 1 : dataType.Type.Length)})";
+					return appendLength(dataType, "VARBINARY", 32704);
+					//dataType.Type.Length == null ? "VARBINARY" : $"VARBINARY({(dataType.Type.Length == 0 ? 1 : dataType.Type.Length)})";
 				case DataType.Char:
 					return "CHAR";
 				case DataType.Date:
@@ -126,11 +217,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case DataType.Timestamp:
 				case DataType.DateTime:
 				case DataType.DateTime2:
-					return "TIMESTAMP";
+					return "TIMESTAMP"; //add precision 1..12 default 6
 				case DataType.VarChar:
-					return $"VARCHAR({(dataType.Type.Length == 0 ? 1 : dataType.Type.Length)})";
+					return appendLength(dataType, "VARCHAR", 32704);
+					//$"VARCHAR({(dataType.Type.Length == 0 ? 1 : dataType.Type.Length)})";
 				case DataType.NVarChar:
-					return $"NVARCHAR({(dataType.Type.Length == 0 ? 1 : dataType.Type.Length)})";
+					return appendLength(dataType, "NVARCHAR", 32704);
+					//return $"NVARCHAR({(dataType.Type.Length == 0 ? 1 : dataType.Type.Length)})";
 				case DataType.Guid:
 					return mapGuidAsString ? "CHAR(32)" : "char(16) for bit data";
 				default:
@@ -138,62 +231,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 		}
 
-
-		public string GetTypeForCast(Type dataType)
-		{
-			string colType = "CHAR";
-
-			if (dataType != null)
-			{
-				var actualType = SqlDataType.GetDataType(dataType);
-
-				colType = GetiSeriesType(actualType);
-			}
-
-			return colType;
-		}
-
-		protected override void BuildCommand(SqlStatement selectQuery, int commandNumber) =>
-			StringBuilder.AppendLine($"SELECT {DB2iSeriesTools.IdentityColumnSql} FROM {DB2iSeriesTools.iSeriesDummyTableName()}");
-
-		protected override void BuildCreateTableIdentityAttribute1(SqlField field) => StringBuilder.Append("GENERATED ALWAYS AS IDENTITY");
-
-		protected override void BuildDataTypeFromDataType(SqlDataType type, bool forCreateTable)
-		{
-			switch (type.Type.DataType)
-			{
-				case DataType.DateTime: StringBuilder.Append("timestamp"); break;
-				case DataType.DateTime2: StringBuilder.Append("timestamp"); break;
-				default: base.BuildDataTypeFromDataType(type, forCreateTable); break;
-			}
-		}
-
-		protected override void BuildEmptyInsert(SqlInsertClause insertClause)
-		{
-			StringBuilder.Append("VALUES");
-			foreach (var col in insertClause.Into.Fields)
-			{
-				StringBuilder.Append("(DEFAULT)");
-			}
-			StringBuilder.AppendLine();
-		}
-
-		protected override void BuildFunction(SqlFunction func)
-		{
-			func = ConvertFunctionParameters(func);
-
-			base.BuildFunction(func);
-		}
-
+		//Why nop when statement is update?
 		protected override void BuildFromClause(SqlStatement statement, SelectQuery selectQuery)
 		{
 			if (!statement.IsUpdate())
 				base.BuildFromClause(statement, selectQuery);
 		}
 
-		protected override void BuildInsertOrUpdateQuery(SqlInsertOrUpdateStatement insertOrUpdate) =>
-			BuildInsertOrUpdateQueryAsMerge(insertOrUpdate, $"FROM {DB2iSeriesTools.iSeriesDummyTableName()} FETCH FIRST 1 ROW ONLY");
-
+		//Same as base but handles wrapping values in a cast
 		protected override void BuildInsertOrUpdateQueryAsMerge(SqlInsertOrUpdateStatement insertOrUpdate, string fromDummyTable)
 		{
 			var table = insertOrUpdate.Insert.Into;
@@ -214,14 +259,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				var key = keys[i];
 				var expr = key.Expression;
 
-				if (expr is SqlParameter || expr is SqlValue)
+				if (MergeSourceValueTypeRequired(expr))
 				{
-					var exprType = SqlDataType.GetDataType(expr.SystemType);
-					var asType = GetiSeriesType(exprType);
+					//var exprType = SqlDataType.GetDataType(expr.SystemType);
+					//var asType =
+					//	GetiSeriesType(exprType);
 
-					StringBuilder.Append("CAST(");
-					BuildExpression(expr, false, false);
-					StringBuilder.AppendFormat(" AS {0})", asType);
+					//StringBuilder.Append("CAST(");
+					//BuildExpression(expr, false, false);
+					//StringBuilder.AppendFormat(" AS {0})", asType);
+					BuildTypedExpression(SqlDataType.GetDataType(expr.SystemType), expr);
 				}
 				else
 					BuildExpression(expr, false, false);
@@ -285,36 +332,155 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				StringBuilder.Length--;
 		}
 
-		protected override void BuildUpdateSet(SelectQuery selectQuery, SqlUpdateClause updateClause)
+		//Used to expose basicbuilders method to 7.2 subclass - merging versions will remove this
+		protected void DefaultBuildSqlMethod()
 		{
-			AppendIndent()
-				.AppendLine("SET");
-
-			Indent++;
-
-			var first = true;
-
-			foreach (var expr in updateClause.Items)
-			{
-				if (!first)
-					StringBuilder.Append(',').AppendLine();
-				first = false;
-
-				AppendIndent();
-
-				BuildExpression(expr.Column, SqlProviderFlags.IsUpdateSetTableAliasSupported, true, false);
-				StringBuilder.Append(" = ");
-
-				var addAlias = false;
-
-				BuildColumnExpression(selectQuery, expr.Expression, null, ref addAlias, false);
-			}
-
-			Indent--;
-
-			StringBuilder.AppendLine();
+			base.BuildSql();
 		}
 
+
+		//Test like conversion not needed
+		protected override void BuildPredicate(ISqlPredicate predicate)
+		{
+			var newpredicate = predicate;
+
+			switch (predicate.ElementType)
+			{
+				//probably does nothing
+				case QueryElementType.LikePredicate:
+					var p = (SqlPredicate.Like)predicate;
+
+					var param2 = GetParm(p.Expr2 as IValueContainer, p.Expr1.SystemType);
+
+					if (param2 != null)
+					{
+						if (param2 is SqlValue value && value.Value == null)
+						{
+							if (p.IsNot)
+								newpredicate = new SqlPredicate.ExprExpr(p.Expr1, SqlPredicate.Operator.NotEqual, p.Expr2);
+							else
+								newpredicate = new SqlPredicate.ExprExpr(p.Expr1, SqlPredicate.Operator.Equal, p.Expr2);
+						}
+						else
+							newpredicate = new SqlPredicate.Like(p.Expr1, p.IsNot, param2, p.Escape, p.IsSqlLike);
+					}
+
+					break;
+
+				case QueryElementType.ExprExprPredicate:
+
+					var ep = (SqlPredicate.ExprExpr)predicate;
+
+					if (ep.Expr1 is SqlFunction function 
+						&& function.Name == "Date"
+						&& ep.Expr2 is SqlParameter parameter)
+							parameter.Type = parameter.Type.WithDataType(DataType.Date);
+						
+					break;
+			}
+
+			base.BuildPredicate(newpredicate);
+		}
+
+
+
+		//Added by contributor - check
+		protected override void BuildWhereClause(SelectQuery selectQuery)
+		{
+			if (!BuildWhere(selectQuery))
+				return;
+
+			this.StringBuilder.Append(' ');
+
+			base.BuildWhereClause(selectQuery);
+		}
+
+		//Added by contributor - check
+		protected override void BuildHavingClause(SelectQuery selectQuery)
+		{
+			if (selectQuery.Having.SearchCondition.Conditions.Count == 0)
+				return;
+
+			this.StringBuilder.Append(' ');
+
+			base.BuildHavingClause(selectQuery);
+		}
+
+		//Added by contributor - check
+		protected override void BuildOrderByClause(SelectQuery selectQuery)
+		{
+			if (selectQuery.OrderBy.Items.Count == 0)
+				return;
+
+			this.StringBuilder.Append(' ');
+
+			base.BuildOrderByClause(selectQuery);
+		}
+
+		//Added by contributor - check
+		protected override void BuildGroupByClause(SelectQuery selectQuery)
+		{
+			if (selectQuery.GroupBy.Items.Count == 0)
+				return;
+
+			this.StringBuilder.Append(' ');
+
+			base.BuildGroupByClause(selectQuery);
+		}
+
+		// TODO: actually SystemType cannot be null in v3, so probably this method is not needed?
+		private ISqlExpression GetParm(IValueContainer parameter, Type type)
+		{
+			if (type != null && parameter != null)
+			{
+				if (parameter is SqlValue value)
+				{
+					if (value.ValueType.SystemType == null)
+						return new SqlValue(type, parameter.Value);
+				}
+				else if (parameter is SqlParameter p)
+				{
+					if (p.Type.SystemType == null)
+						p.Type = p.Type.WithSystemType(type);
+					return p;
+				}
+			}
+			return null;
+		}
+
+		#endregion
+
+
+		
+
+		
+		//DB2 - except it injects two extra conversions to expression
+		protected override void BuildColumnExpression(SelectQuery selectQuery, ISqlExpression expr, string alias, ref bool addAlias)
+		{
+			var wrap = false;
+
+			if (expr.SystemType == typeof(bool))
+			{
+				if (expr is SqlSearchCondition)
+					wrap = true;
+				else
+					wrap = expr is SqlExpression ex && ex.Expr == "{0}" && ex.Parameters.Length == 1 && ex.Parameters[0] is SqlSearchCondition;
+			}
+
+			if ((expr is SqlParameter parameter && parameter.Name != null)
+				|| (expr is SqlValue value && value.Value == null))
+			{
+
+				var colType = GetiSeriesType(SqlDataType.GetDataType(expr.SystemType));
+					expr = new SqlExpression(expr.SystemType, "Cast({0} as {1})", Precedence.Primary, expr, new SqlExpression(colType, Precedence.Primary));
+			}
+
+			if (wrap) StringBuilder.Append("CASE WHEN ");
+			base.BuildColumnExpression(selectQuery, expr, alias, ref addAlias);
+			if (wrap) StringBuilder.Append(" THEN 1 ELSE 0 END");
+		}
+
+		//Same as DB2 - except adds limit 1?
 		protected override void BuildSelectClause(SelectQuery selectQuery)
 		{
 			if (selectQuery.HasSetOperators)
@@ -340,6 +506,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				});
 			}
 
+			//DB2 impl + Fetch 1 ?
 			if (selectQuery.From.Tables.Count == 0)
 			{
 				AppendIndent().AppendLine("SELECT");
@@ -352,35 +519,23 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 		}
 
-		protected void DefaultBuildSqlMethod()
-		{
-			base.BuildSql();
-		}
-
-		protected override IEnumerable<SqlColumn> GetSelectedColumns(SelectQuery selectQuery)
-		{
-			if (NeedSkip(selectQuery) && !selectQuery.OrderBy.IsEmpty)
-				return AlternativeGetSelectedColumns(selectQuery, () => base.GetSelectedColumns(selectQuery));
-
-			return base.GetSelectedColumns(selectQuery);
-		}
-
-		public override int CommandCount(SqlStatement statement)
-		{
-			return statement is SqlInsertStatement insertStatement && insertStatement.Insert.WithIdentity ? 2 : 1;
-		}
-
+		//Same as DB2  + quoteidentifier static
 		public override StringBuilder Convert(StringBuilder sb, string value, ConvertType convertType)
 		{
 			switch (convertType)
 			{
 				case ConvertType.NameToQueryParameter:
 					return sb.Append("@").Append(value);
+
 				case ConvertType.NameToCommandParameter:
 				case ConvertType.NameToSprocParameter:
 					return sb.Append(":").Append(value);
+
 				case ConvertType.SprocParameterToName:
-					return sb.Append((value.Length > 0 && value[0] == ':') ? value.Substring(1) : value);
+					return value.Length > 0 && value[0] == ':'
+							? sb.Append(value.Substring(1))
+							: sb.Append(value);
+
 				case ConvertType.NameToQueryField:
 				case ConvertType.NameToQueryFieldAlias:
 				case ConvertType.NameToQueryTable:
@@ -393,39 +548,30 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						}
 						if (IdentifierQuoteMode == DB2iSeriesIdentifierQuoteMode.Quote ||
 							value.StartsWith("_") ||
-							value
-
-#if NETFX_CORE
-								.ToCharArray()
-#endif
-							.Any((c) => char.IsWhiteSpace(c)))
-						{
+							value.StartsWith("_") ||
+							value.Any(c => char.IsLower(c) || char.IsWhiteSpace(c)))
 							return sb.Append('"').Append(value).Append('"');
-						}
 					}
 					break;
 			}
 
 			return sb.Append(value);
 		}
-
-		protected override ISqlBuilder CreateSqlBuilder()
-		{
-			return new DB2iSeriesSqlBuilder(MappingSchema, SqlOptimizer, SqlProviderFlags);
-		}
-
+		
+		//Sames as DB2 - db2 also has special check for decimal
 		protected override string GetProviderTypeName(IDbDataParameter parameter)
 		{
-			if (_provider != null)
+			if (Provider != null)
 			{
-				var param = _provider.TryGetProviderParameter(parameter, MappingSchema);
+				var param = Provider.TryGetProviderParameter(parameter, MappingSchema);
 				if (param != null)
-					return _provider.Adapter.GetDbType(param).ToString();
+					return Provider.Adapter.GetDbType(param).ToString();
 			}
 
 			return base.GetProviderTypeName(parameter);
 		}
 
+		//Same as base, except NULL - empty string
 		protected override void BuildCreateTableNullAttribute(SqlField field, DefaultNullable defaulNullable)
 		{
 			if (defaulNullable == DefaultNullable.Null && field.CanBeNull)
@@ -436,51 +582,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			StringBuilder.Append(field.CanBeNull ? " " : "NOT NULL");
 		}
-
-		protected override void BuildPredicate(ISqlPredicate predicate)
-		{
-			var newpredicate = predicate;
-
-			switch (predicate.ElementType)
-			{
-				case QueryElementType.LikePredicate:
-					var p = (SqlPredicate.Like)predicate;
-
-					var param2 = GetParm(p.Expr2 as IValueContainer, p.Expr1.SystemType);
-
-					if (param2 != null)
-					{
-						if (param2 is SqlValue value && value.Value == null)
-						{
-							if (p.IsNot)
-								newpredicate = new SqlPredicate.ExprExpr(p.Expr1, SqlPredicate.Operator.NotEqual, p.Expr2);
-							else
-								newpredicate = new SqlPredicate.ExprExpr(p.Expr1, SqlPredicate.Operator.Equal, p.Expr2);
-						}
-						else
-							newpredicate = new SqlPredicate.Like(p.Expr1, p.IsNot, param2, p.Escape, p.IsSqlLike);
-					}
-
-					break;
-
-				case QueryElementType.ExprExprPredicate:
-
-					var ep = (SqlPredicate.ExprExpr)predicate;
-
-					if (ep.Expr1 is SqlFunction function && function.Name == "Date")
-					{
-						if (ep.Expr2 is SqlParameter parameter)
-						{
-							parameter.Type = parameter.Type.WithDataType(DataType.Date);
-						}
-					}
-
-					break;
-			}
-
-			base.BuildPredicate(newpredicate);
-		}
-
+		
+		//Same as Base - except reversed first two steps
 		protected override void BuildInsertQuery(SqlStatement statement, SqlInsertClause insertClause, bool addAlias)
 		{
 			BuildStep = Step.InsertClause; BuildInsertClause(statement, insertClause, addAlias);
@@ -499,97 +602,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			if (insertClause.WithIdentity)
 				BuildGetIdentity(insertClause);
-		}
-
-		protected override void BuildDeleteQuery(SqlDeleteStatement deleteStatement)
-		{
-			if (deleteStatement.With != null)
-				throw new NotSupportedException("iSeries doesn't support Cte in Delete statement");
-
-			base.BuildDeleteQuery(deleteStatement);
-		}
-
-		protected override void BuildUpdateQuery(SqlStatement statement, SelectQuery selectQuery, SqlUpdateClause updateClause)
-		{
-			if (statement.GetWithClause() != null)
-				throw new NotSupportedException("iSeries doesn't support Cte in Update statement");
-
-
-			base.BuildUpdateQuery(statement, selectQuery, updateClause);
-		}
-
-		protected override void BuildWhereClause(SelectQuery selectQuery)
-		{
-			if (!BuildWhere(selectQuery))
-				return;
-
-			this.StringBuilder.Append(' ');
-
-			base.BuildWhereClause(selectQuery);
-		}
-
-		protected override void BuildHavingClause(SelectQuery selectQuery)
-		{
-			if (selectQuery.Having.SearchCondition.Conditions.Count == 0)
-				return;
-
-			this.StringBuilder.Append(' ');
-
-			base.BuildHavingClause(selectQuery);
-		}
-
-		protected override void BuildOrderByClause(SelectQuery selectQuery)
-		{
-			if (selectQuery.OrderBy.Items.Count == 0)
-				return;
-
-			this.StringBuilder.Append(' ');
-
-			base.BuildOrderByClause(selectQuery);
-		}
-
-		protected override void BuildGroupByClause(SelectQuery selectQuery)
-		{
-			if (selectQuery.GroupBy.Items.Count == 0)
-				return;
-
-			this.StringBuilder.Append(' ');
-
-			base.BuildGroupByClause(selectQuery);
-		}
-
-		private ISqlExpression GetDateParm(IValueContainer parameter)
-		{
-			if (parameter != null && parameter is SqlParameter)
-			{
-				var p = (SqlParameter)parameter;
-				p.Type = p.Type.WithDataType(DataType.Date);
-				return p;
-			}
-
-			return null;
-
-		}
-
-		// TODO: actually SystemType cannot be null in v3, so probably this method is not needed?
-		private ISqlExpression GetParm(IValueContainer parameter, Type type)
-		{
-			if (type != null && parameter != null)
-			{
-				if (parameter is SqlValue)
-				{
-					if (((SqlValue)parameter).ValueType.SystemType == null)
-						return new SqlValue(type, parameter.Value);
-				}
-				else if (parameter is SqlParameter)
-				{
-					var p = (SqlParameter)parameter;
-					if (p.Type.SystemType == null)
-						p.Type = p.Type.WithSystemType(type);
-					return p;
-				}
-			}
-			return null;
 		}
 	}
 }
