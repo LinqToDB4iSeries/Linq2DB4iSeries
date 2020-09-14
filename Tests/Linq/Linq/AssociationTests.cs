@@ -182,6 +182,7 @@ namespace Tests.Linq
 		[Test, DataContextSource]
 		public void GroupBy2(string context)
 		{
+			using (new GuardGrouping(false))
 			using (var db = GetDataContext(context))
 				AreEqual(
 					(from ch in Child group ch by ch.Parent1).ToList().Select(g => g.Key),
@@ -191,6 +192,7 @@ namespace Tests.Linq
 		[Test, DataContextSource]
 		public async Task GroupBy2Async(string context)
 		{
+			using (new GuardGrouping(false))
 			using (var db = GetDataContext(context))
 				AreEqual(
 						   (from ch in Child group ch by ch.Parent1).ToList().Select(g => g.Key),

@@ -2,12 +2,14 @@
 	<!--<Import Project="..\..\Build\linq2db.Default.props" />-->
 
 	<PropertyGroup>
-		<TargetFrameworks>net452</TargetFrameworks>
+		<TargetFrameworks>net46</TargetFrameworks>
 		<NoWarn>$(NoWarn);CS0649;CS0429</NoWarn>
 		<AssemblyName>linq2db.Tests.Base</AssemblyName>
 		<Configurations>Debug;Release</Configurations>
 		<SignAssembly>false</SignAssembly>
 		<DelaySign>false</DelaySign>
+		<LangVersion>8.0</LangVersion>
+		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -16,6 +18,7 @@
 
 	<ItemGroup>
 		<Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
+		<ProjectReference Include="..\..\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj" />
 		<ProjectReference Include="..\Model\Tests.Model.csproj" />
 
 		<PackageReference Include="System.Collections.Immutable" Version="1.4.0" />
@@ -23,6 +26,8 @@
 		<PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
 		<PackageReference Include="NUnit" Version="3.12.0" />
 		<PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
+		<PackageReference Include="JetBrains.Annotations" Version="2020.1.0" />
+		
 	</ItemGroup>
 
 
@@ -46,12 +51,17 @@
 		<Reference Include="System.Windows.Forms" />
 	</ItemGroup>
 
+	<ItemGroup Condition="'$(TargetFramework)' == 'net46' ">
+		<Reference Include="System.Data.Linq" />
+		<Reference Include="System.ServiceModel" />
+	</ItemGroup>
+
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net452|AnyCPU'">
-	  <LangVersion>7.1</LangVersion>
+	  <LangVersion>8.0</LangVersion>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net452|AnyCPU'">
-	  <LangVersion>7.1</LangVersion>
+	  <LangVersion>8.0</LangVersion>
 	</PropertyGroup>
 
 	<ItemGroup>

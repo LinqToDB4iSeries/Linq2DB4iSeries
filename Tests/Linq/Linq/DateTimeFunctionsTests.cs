@@ -482,17 +482,17 @@ namespace Tests.Linq
             }
         }
 
-        [Test, DataContextSource(ProviderName.Informix)]
-        public void AddDaysFromColumn(string context)
-        {
-            using (var db = GetDataContext(context))
-            {
-                var needsFix = db.ProviderNeedsTimeFix(context);
+        //[Test, DataContextSource(ProviderName.Informix)]
+        //public void AddDaysFromColumn(string context)
+        //{
+        //    using (var db = GetDataContext(context))
+        //    {
+        //        var needsFix = db.ProviderNeedsTimeFix(context);
 
-                AreEqual(Types.Select(t => TestUtils.FixTime(t.DateTimeValue.AddDays(t.SmallIntValue), needsFix)),
-                    db.Types.Select(t => t.DateTimeValue.AddDays(t.SmallIntValue)));
-            }
-        }
+        //        AreEqual(Types.Select(t => TestUtils.FixTime(t.DateTimeValue.AddDays(t.SmallIntValue), needsFix)),
+        //            db.Types.Select(t => t.DateTimeValue.AddDays(t.SmallIntValue)));
+        //    }
+        //}
 
         [Test, DataContextSource(ProviderName.Informix)]
         public void AddWeekFromColumn(string context)

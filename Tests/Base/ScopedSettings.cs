@@ -18,4 +18,20 @@ namespace Tests
 			_onExit();
 		}
 	}
+
+	public class FirebirdQuoteMode : IDisposable
+	{
+		private readonly FirebirdIdentifierQuoteMode _oldMode;
+
+		public FirebirdQuoteMode(FirebirdIdentifierQuoteMode mode)
+		{
+			_oldMode = FirebirdConfiguration.IdentifierQuoteMode;
+			FirebirdConfiguration.IdentifierQuoteMode = mode;
+		}
+
+		void IDisposable.Dispose()
+		{
+			FirebirdConfiguration.IdentifierQuoteMode = _oldMode;
+		}
+	}
 }

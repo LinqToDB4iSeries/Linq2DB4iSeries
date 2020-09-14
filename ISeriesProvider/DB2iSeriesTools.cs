@@ -55,6 +55,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static bool AutoDetectProvider { get; set; } = true;
 
+		public static void RegisterProviderDetector()
+		{
+			DataConnection.AddProviderDetector(ProviderDetector);
+		}
+
 		private static IDataProvider ProviderDetector(IConnectionStringSettings css, string connectionString)
 		{
 			if (css.IsGlobal)

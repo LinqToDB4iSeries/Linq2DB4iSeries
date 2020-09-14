@@ -232,8 +232,9 @@ namespace Tests.Linq
         [Test, DataContextSource]
         public void Issue528Test1(string context)
         {
-            //using (new AllowMultipleQuery())
-            using (var db = GetDataContext(context))
+			//using (new AllowMultipleQuery())
+			using (new GuardGrouping(false))
+			using (var db = GetDataContext(context))
             {
                 var expected = Person.GroupBy(_ => _.FirstName).Select(_ => new { _.Key, Data = _.ToList() });
                 var result = db.Person.GroupBy(_ => _.FirstName).Select(_ => new { _.Key, Data = _.ToList() });
@@ -250,8 +251,9 @@ namespace Tests.Linq
         [Test, DataContextSource]
         public void Issue528Test2(string context)
         {
-            //using (new AllowMultipleQuery())
-            using (var db = GetDataContext(context))
+			//using (new AllowMultipleQuery())
+			using (new GuardGrouping(false))
+			using (var db = GetDataContext(context))
             {
                 var expected = Person.GroupBy(_ => _.FirstName).Select(_ => new { _.Key, Data = _.ToList() }).ToList();
                 var result = db.Person.GroupBy(_ => _.FirstName).Select(_ => new { _.Key, Data = _.ToList() }).ToList();
@@ -268,8 +270,9 @@ namespace Tests.Linq
         [Test, DataContextSource]
         public void Issue528Test3(string context)
         {
-            //using (new AllowMultipleQuery())
-            using (var db = GetDataContext(context))
+			//using (new AllowMultipleQuery())
+			using (new GuardGrouping(false))
+			using (var db = GetDataContext(context))
             {
                 var expected = Person.GroupBy(_ => _.FirstName).Select(_ => new { _.Key, Data = _ });
                 var result = db.Person.GroupBy(_ => _.FirstName).Select(_ => new { _.Key, Data = _ });

@@ -17,6 +17,7 @@ namespace Tests.Linq
 		{
 			LinqToDB.Common.Configuration.Linq.PreloadGroups = true;
 
+			using (new GuardGrouping(false))
 			using (var db = GetDataContext(context))
 			{
 				db.BeginTransaction();
@@ -47,6 +48,7 @@ namespace Tests.Linq
 		{
 			LinqToDB.Common.Configuration.Linq.PreloadGroups = false;
 
+			using (new GuardGrouping(false))
 			using (var db = GetDataContext(context))
 			{
 				var q =
@@ -165,6 +167,7 @@ namespace Tests.Linq
 		[Test, DataContextSource]
 		public void Simple10(string context)
 		{
+			using (new GuardGrouping(false))
 			using (var db = GetDataContext(context))
 			{
 				var expected = (from ch in Child group ch by ch.ParentID into g select g).ToList().OrderBy(p => p.Key).ToList();
@@ -1675,6 +1678,7 @@ namespace Tests.Linq
 		public void FirstGroupBy(string context)
 		{
 			using (new AllowMultipleQuery())
+			using (new GuardGrouping(false))
 			using (var db = GetDataContext(context))
 			{
 				Assert.AreEqual(
@@ -1809,7 +1813,7 @@ namespace Tests.Linq
 		public void GroupByGuard(string context)
 		{
 			using (new AllowMultipleQuery())
-			using (new GuardGrouping())
+			using (new GuardGrouping(true))
 			using (var db = GetDataContext(context))
 			{
 				// group on client

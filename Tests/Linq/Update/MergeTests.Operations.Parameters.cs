@@ -68,12 +68,6 @@ namespace Tests.xUpdate
 
                 switch (context)
                 {
-                    case DB2iSeriesProviderName.DB2:
-                    case DB2iSeriesProviderName.DB2_GAS:
-                    case DB2iSeriesProviderName.DB2_73:
-                    case DB2iSeriesProviderName.DB2_73_GAS:
-						parametersCount = 5;
-                        break;
                     case ProviderName.DB2:
                         parametersCount = 1;
                         break;
@@ -141,12 +135,6 @@ namespace Tests.xUpdate
 
                 switch (context)
                 {
-                    case DB2iSeriesProviderName.DB2:
-                    case DB2iSeriesProviderName.DB2_GAS:
-                    case DB2iSeriesProviderName.DB2_73:
-                    case DB2iSeriesProviderName.DB2_73_GAS:
-						parametersCount = 4;
-                        break;
                     case ProviderName.DB2:
                         parametersCount = 1;
                         break;
@@ -335,9 +323,7 @@ namespace Tests.xUpdate
                 AssertRowCount(1, rows, context);
 
                 var paramcount = 1;
-                if (context.Contains("iSeries"))
-                    paramcount = 0;
-
+                
                 Assert.AreEqual(paramcount, db.LastQuery.Count(x => x == GetParameterToken(context)));
 
                 var result = GetTarget(db).Where(x => x.Id == 3).ToList();

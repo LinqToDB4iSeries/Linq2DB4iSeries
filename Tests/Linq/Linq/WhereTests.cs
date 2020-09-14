@@ -290,16 +290,6 @@ namespace Tests.Linq
 		}
 
 		[Test, DataContextSource]
-		public void ComparasionNullCheckOff(string context)
-		{
-			using (new WithoutComparasionNullCheck())
-			using (var db = GetDataContext(context))
-				AreEqual(
-					   Parent.Where(p => p.Value1 != 1 && p.Value1 != null),
-					db.Parent.Where(p => p.Value1 != 1));
-		}
-
-		[Test, DataContextSource]
 		public void NotTest(string context)
 		{
 			using (var db = GetDataContext(context))
