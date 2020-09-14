@@ -212,9 +212,8 @@ namespace Tests.Linq
         }
 
         [Test, Combinatorial]
-        // Delete with Cte not supported on iSeries
         public void CteTestDelete(
-            //[CteContextSource(true, ProviderName.Oracle, ProviderName.OracleManaged, ProviderName.OracleNative, DB2iSeriesProviderName.DB2_73, DB2iSeriesProviderName.DB2, DB2iSeriesProviderName.DB2_GAS, DB2iSeriesProviderName.DB2_73_GAS)]
+            //[CteContextSource(true, ProviderName.Oracle, ProviderName.OracleManaged, ProviderName.OracleNative)]
             [CteContextSource(false)]
             string context)
         {
@@ -234,7 +233,6 @@ namespace Tests.Linq
         }
 
         [Test, Combinatorial]
-        // Delete with Cte not supported on iSeries
         public void CteTestUpdate(
             [CteContextSource(false)]
             string context)

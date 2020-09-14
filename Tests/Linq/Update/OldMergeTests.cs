@@ -38,7 +38,7 @@ namespace Tests.xUpdate
 		}
 
 		//[Test, DataContextSource(false,
-		//	ProviderName.Access, ProviderName.DB2, "DB2.iSeries", ProviderName.Firebird, ProviderName.Informix, ProviderName.OracleNative, ProviderName.OracleManaged,
+		//	ProviderName.Access, ProviderName.DB2, ProviderName.Firebird, ProviderName.Informix, ProviderName.OracleNative, ProviderName.OracleManaged,
 		//	ProviderName.MySql, TestProvName.MariaDB,
 		//	ProviderName.PostgreSQL, ProviderName.SQLite, ProviderName.SqlCe, ProviderName.SqlServer2000, ProviderName.SqlServer2005, ProviderName.Sybase)]
 		public void MergeWithDelete(string context)
@@ -50,7 +50,7 @@ namespace Tests.xUpdate
 		}
 
 		//[Test, DataContextSource(false,
-		//	ProviderName.Access, ProviderName.DB2, "DB2.iSeries", ProviderName.Firebird, ProviderName.Informix, ProviderName.OracleNative, ProviderName.OracleManaged,
+		//	ProviderName.Access, ProviderName.DB2, ProviderName.Firebird, ProviderName.Informix, ProviderName.OracleNative, ProviderName.OracleManaged,
 		//	ProviderName.MySql, TestProvName.MariaDB, ProviderName.SapHana,
 		//	ProviderName.PostgreSQL, ProviderName.SQLite, ProviderName.SqlCe, ProviderName.SqlServer2000, ProviderName.SqlServer2005, ProviderName.Sybase)]
 		public void MergeWithDeletePredicate1(string context)
@@ -62,7 +62,7 @@ namespace Tests.xUpdate
 		}
 
 		//[Test, DataContextSource(false,
-		//	ProviderName.Access, ProviderName.DB2, "DB2.iSeries", ProviderName.Firebird, ProviderName.Informix, ProviderName.OracleNative, ProviderName.OracleManaged,
+		//	ProviderName.Access, ProviderName.DB2, ProviderName.Firebird, ProviderName.Informix, ProviderName.OracleNative, ProviderName.OracleManaged,
 		//	ProviderName.MySql, TestProvName.MariaDB, ProviderName.SapHana,
 		//	ProviderName.PostgreSQL, ProviderName.SQLite, ProviderName.SqlCe, ProviderName.SqlServer2000, ProviderName.SqlServer2005, ProviderName.Sybase)]
 		public void MergeWithDeletePredicate2(string context)
@@ -74,7 +74,7 @@ namespace Tests.xUpdate
 		}
 
 		//[Test, DataContextSource(false,
-		//	ProviderName.Access, ProviderName.DB2, "DB2.iSeries", ProviderName.Firebird, ProviderName.Informix, ProviderName.OracleNative, ProviderName.OracleManaged,
+		//	ProviderName.Access, ProviderName.DB2, ProviderName.Firebird, ProviderName.Informix, ProviderName.OracleNative, ProviderName.OracleManaged,
 		//	ProviderName.MySql, TestProvName.MariaDB,
 		//	ProviderName.PostgreSQL, ProviderName.SQLite, ProviderName.SqlCe, ProviderName.SqlServer2000, ProviderName.SqlServer2005, ProviderName.Sybase)]
 		public void MergeWithDeletePredicate3(string context)
@@ -87,7 +87,7 @@ namespace Tests.xUpdate
 		}
 
 		//[Test, DataContextSource(false,
-		//	ProviderName.Access, ProviderName.DB2, "DB2.iSeries", ProviderName.Firebird, ProviderName.Informix, ProviderName.OracleNative, ProviderName.OracleManaged,
+		//	ProviderName.Access, ProviderName.DB2, ProviderName.Firebird, ProviderName.Informix, ProviderName.OracleNative, ProviderName.OracleManaged,
 		//	ProviderName.MySql, TestProvName.MariaDB,
 		//	ProviderName.PostgreSQL, ProviderName.SQLite, ProviderName.SqlCe, ProviderName.SqlServer2000, ProviderName.SqlServer2005, ProviderName.Sybase)]
 		public void MergeWithDeletePredicate4(string context)
@@ -102,7 +102,7 @@ namespace Tests.xUpdate
 		}
 
 		//[Test, DataContextSource(false,
-		//	ProviderName.Access, ProviderName.DB2, "DB2.iSeries", ProviderName.Firebird, ProviderName.Informix, ProviderName.OracleNative, ProviderName.OracleManaged,
+		//	ProviderName.Access, ProviderName.DB2, ProviderName.Firebird, ProviderName.Informix, ProviderName.OracleNative, ProviderName.OracleManaged,
 		//	ProviderName.MySql, TestProvName.MariaDB,
 		//	ProviderName.PostgreSQL, ProviderName.SQLite, ProviderName.SqlCe, ProviderName.SqlServer2000, ProviderName.SqlServer2005, ProviderName.Sybase)]
 		public void MergeWithDeletePredicate5(string context)
@@ -122,7 +122,7 @@ namespace Tests.xUpdate
 		}
 
 		//[Test, DataContextSource(false,
-		//	ProviderName.Access, ProviderName.DB2, "DB2.iSeries", ProviderName.Firebird, ProviderName.Informix, ProviderName.OracleNative, ProviderName.OracleManaged,
+		//	ProviderName.Access, ProviderName.DB2, ProviderName.Firebird, ProviderName.Informix, ProviderName.OracleNative, ProviderName.OracleManaged,
 		//	ProviderName.MySql, TestProvName.MariaDB,
 		//	ProviderName.PostgreSQL, ProviderName.SQLite, ProviderName.SqlCe, ProviderName.SqlServer2000, ProviderName.SqlServer2005, ProviderName.Sybase)]
 		public void MergeChar1(string context)
@@ -147,7 +147,7 @@ namespace Tests.xUpdate
 		}
 
 		//[Test, DataContextSource(false,
-		//	ProviderName.Access, ProviderName.DB2, "DB2.iSeries", ProviderName.Firebird, ProviderName.Informix, ProviderName.OracleNative, ProviderName.OracleManaged,
+		//	ProviderName.Access, ProviderName.DB2, ProviderName.Firebird, ProviderName.Informix, ProviderName.OracleNative, ProviderName.OracleManaged,
 		//	ProviderName.MySql, TestProvName.MariaDB,
 		//	ProviderName.PostgreSQL, ProviderName.SQLite, ProviderName.SqlCe, ProviderName.SqlServer2000, ProviderName.SqlServer2005, ProviderName.Sybase)]
 		public void MergeChar2(string context)

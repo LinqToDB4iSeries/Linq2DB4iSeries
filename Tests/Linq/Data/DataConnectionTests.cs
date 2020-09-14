@@ -10,7 +10,6 @@ using LinqToDB.DataProvider.SqlServer;
 namespace Tests.Data
 {
 	using System.Configuration;
-	using LinqToDB.DataProvider.DB2iSeries;
 	using Model;
 
 	[TestFixture]

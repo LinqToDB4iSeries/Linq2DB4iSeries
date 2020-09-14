@@ -4,29 +4,45 @@ DROP TABLE Patient
 GO
 DROP TABLE Person
 GO
-CREATE TABLE Person( 
-    PersonID   INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY NOT NULL,
-    FirstName  NVARCHAR(50) NOT NULL,
-    LastName   NVARCHAR(50) NOT NULL,
-    MiddleName NVARCHAR(50) ,
-    Gender     NCHAR(1)     NOT NULL
+DROP TABLE InheritanceParent
+GO
+
+CREATE TABLE InheritanceParent
+(
+	InheritanceParentId INTEGER       PRIMARY KEY NOT NULL,
+	TypeDiscriminator   INTEGER                       Default NULL,
+	Name                NVARCHAR(50)                   Default NULL
 )
 GO
+
+DROP TABLE InheritanceChild
+GO
+
+CREATE TABLE InheritanceChild
+(
+	InheritanceChildId  INTEGER      PRIMARY KEY NOT NULL,
+	InheritanceParentId INTEGER                  NOT NULL,
+	TypeDiscriminator   INTEGER                      Default NULL,
+	Name                NVARCHAR(50)                  Default NULL
+)
+GO
+
+CREATE TABLE Person( 
+	PersonID   INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY NOT NULL,
+	FirstName  NVARCHAR(50) NOT NULL,
+	LastName   NVARCHAR(50) NOT NULL,
+	MiddleName NVARCHAR(50) ,
+	Gender     NCHAR(1)     NOT NULL
+)
+GO
+
 INSERT INTO Person (FirstName, LastName, Gender) VALUES ('John',   'Pupkin',    'M')
 GO
 INSERT INTO Person (FirstName, LastName, Gender) VALUES ('Tester', 'Testerson', 'M')
 GO
-INSERT INTO Person (FirstName, LastName, Gender) VALUES ( 'Miss', 'Scarlet', 'F')
+INSERT INTO Person (FirstName, LastName, Gender) VALUES ('Jane',   'Doe',       'F')
 GO
-INSERT INTO Person (FirstName, LastName, Gender) VALUES ('Rev', 'Green', 'M')
-GO
-INSERT INTO Person (FirstName, LastName, Gender) VALUES ('Col', 'Mustard', 'M')
-GO
-INSERT INTO Person (FirstName, LastName, Gender) VALUES ('Mrs','Peacock', 'F')
-GO
-INSERT INTO Person (FirstName, LastName, Gender) VALUES ('Prof', 'Plum','M')
-GO
-INSERT INTO Person (FirstName, LastName, Gender) VALUES ('Mrs', 'White', 'F')
+INSERT INTO Person (FirstName, LastName, MiddleName, Gender) VALUES ('Jürgen', 'König', 'Ko', 'M')
 GO
 
 -- Doctor Table Extension

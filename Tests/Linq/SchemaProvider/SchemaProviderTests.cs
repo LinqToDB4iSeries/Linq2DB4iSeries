@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using LinqToDB.DataProvider.DB2iSeries;
 using NUnit.Framework;
 
 namespace Tests.SchemaProvider

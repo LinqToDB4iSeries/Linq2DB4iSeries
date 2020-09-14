@@ -3,7 +3,6 @@ using System.Data.SqlClient;
 using System.Linq;
 
 using LinqToDB;
-using LinqToDB.DataProvider.DB2iSeries;
 using NUnit.Framework;
 
 // ReSharper disable once CheckNamespace

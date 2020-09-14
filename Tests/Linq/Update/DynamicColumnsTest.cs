@@ -5,7 +5,7 @@ using LinqToDB.Mapping;
 using NUnit.Framework;
 using Tests.Model;
 
-namespace Tests.Update
+namespace Tests.xUpdate
 {
 	[TestFixture]
 	public class DynamicColumnsTests : TestBase

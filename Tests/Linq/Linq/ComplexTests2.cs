@@ -8,7 +8,7 @@ using System.Threading;
 using Tests.Model;
 
 
-namespace Tests.ComplexTests2
+namespace Tests.Linq.ComplexTests2
 {
 	/// <summary>
 	/// Tests:
