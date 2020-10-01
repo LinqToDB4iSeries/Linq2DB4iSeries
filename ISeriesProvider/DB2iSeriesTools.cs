@@ -1,30 +1,15 @@
 ﻿using System;
-using System.Collections.Concurrent;
+using System.Linq;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using LinqToDB.Common;
-using LinqToDB.Extensions;
+using LinqToDB.Configuration;
+using LinqToDB.Data;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
-	using System.Linq;
-	using System.Linq.Expressions;
-	using System.Reflection;
-	using Configuration;
-	using Data;
-
 	public static class DB2iSeriesTools
 	{
-		public const string IdentityColumnSql = "identity_val_local()";
-		public const string MapGuidAsString = "MapGuidAsString";
-
-		public static string iSeriesDummyTableName(DB2iSeriesNamingConvention naming = DB2iSeriesNamingConvention.System)
-		{
-			var seperator = (naming == DB2iSeriesNamingConvention.System) ? "/" : ".";
-			return string.Format("SYSIBM{0}SYSDUMMY1", seperator);
-		}
-
 		static readonly Lazy<DB2iSeriesDataProvider> _db2iDataProvider = new Lazy<DB2iSeriesDataProvider>(() =>
 		{
 			var provider = new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2, DB2iSeriesLevels.Any, false);
@@ -53,6 +38,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return provider;
 		});
 
+		#region AutoDetection
+
 		public static bool AutoDetectProvider { get; set; } = true;
 
 		public static void RegisterProviderDetector()
@@ -67,89 +54,97 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				return null;
 			}
 
-
 			if (DB2iSeriesProviderName.AllNames.Contains(css.Name) || new[] { DB2iSeriesProviderName.DB2, DB2iSeriesProviderAdapter.AssemblyName }.Contains(css.ProviderName))
 			{
-				switch (css.Name)
+				return css.Name switch
 				{
-					case DB2iSeriesProviderName.DB2_73: return _db2iDataProvider_73.Value;
-					case DB2iSeriesProviderName.DB2_GAS: return _db2iDataProvider_gas.Value;
-					case DB2iSeriesProviderName.DB2_73_GAS: return _db2iDataProvider_73_gas.Value;
-				}
-
-				if (AutoDetectProvider)
-				{
-					try
-					{
-
-						var cs = string.IsNullOrWhiteSpace(connectionString) ? css.ConnectionString : connectionString;
-
-						using (var conn = DB2iSeriesProviderAdapter.GetInstance().CreateConnection(cs))
-						{
-							conn.Open();
-
-							var serverVersion = conn.ServerVersion.Substring(0, 5);
-
-							string ptf;
-							int desiredLevel;
-
-							switch (serverVersion)
-							{
-								case "07.03":
-									return _db2iDataProvider_73.Value;
-								case "07.02":
-									ptf = "SF99702";
-									desiredLevel = 9;
-									break;
-								case "07.01":
-									ptf = "SF99701";
-									desiredLevel = 38;
-									break;
-								default:
-									return _db2iDataProvider.Value;
-							}
-
-							using (var cmd = conn.CreateCommand())
-							{
-								cmd.CommandText =
-									"SELECT MAX(PTF_GROUP_LEVEL) FROM QSYS2.GROUP_PTF_INFO WHERE PTF_GROUP_NAME = @p1 AND PTF_GROUP_STATUS = 'INSTALLED'";
-								var param = cmd.CreateParameter();
-								param.ParameterName = "p1";
-								param.Value = ptf;
-
-								cmd.Parameters.Add(param);
-
-								var level = Converter.ChangeTypeTo<int>(cmd.ExecuteScalar());
-
-								return level < desiredLevel ? _db2iDataProvider.Value : _db2iDataProvider_73.Value;
-							}
-						}
-					}
-					catch
-					{
-					}
-				}
+					DB2iSeriesProviderName.DB2 => _db2iDataProvider.Value,
+					DB2iSeriesProviderName.DB2_73 => _db2iDataProvider_73.Value,
+					DB2iSeriesProviderName.DB2_GAS => _db2iDataProvider_gas.Value,
+					DB2iSeriesProviderName.DB2_73_GAS => _db2iDataProvider_73_gas.Value,
+					_ => AutoDetectDataProvider(
+							AutoDetectProvider ?
+							string.IsNullOrWhiteSpace(connectionString) ? css.ConnectionString : connectionString :
+							(string)null)
+				};
 			}
 			return null;
 		}
 
+		private static DB2iSeriesDataProvider AutoDetectDataProvider(string connectionString)
+		{
+			try
+			{
+				var minLevel = GetServerMinLevel(connectionString);
+
+				return minLevel switch
+				{
+					DB2iSeriesLevels.V7_1_38 => _db2iDataProvider_73.Value,
+					_ => _db2iDataProvider.Value,
+				};
+			}
+			catch(Exception e)
+			{
+				throw new LinqToDBException($"Failed to detect DB2iSeries provider from given string: {connectionString}. Error: {e.Message}");
+			}
+		}
+
+		private static DB2iSeriesLevels GetServerMinLevel(string connectionString)
+		{
+			using (var conn = DB2iSeriesProviderAdapter.GetInstance().CreateConnection(connectionString))
+			{
+				conn.Open();
+
+				var serverVersionParts = conn.ServerVersion.Substring(0, 5).Split('.');
+				var major = int.Parse(serverVersionParts.First());
+				var minor = int.Parse(serverVersionParts.Last());
+
+				if (major > 7 || minor > 2)
+					return DB2iSeriesLevels.V7_1_38;
+
+				if (major == 7
+					&& (minor == 1 || minor == 2))
+				{
+					var patchLevel = GetMaxPatchLevel(conn, major, minor);
+					if ((minor == 1 && patchLevel > 38)
+						|| (minor == 2 && patchLevel > 9))
+						return DB2iSeriesLevels.V7_1_38;
+				}
+
+				return DB2iSeriesLevels.Any;
+			}
+		}
+
+		private static int GetMaxPatchLevel(DB2iSeriesProviderAdapter.iDB2Connection connection, int major, int minor)
+		{
+			using (var cmd = connection.CreateCommand())
+			{
+				cmd.CommandText =
+					"SELECT MAX(PTF_GROUP_LEVEL) FROM QSYS2.GROUP_PTF_INFO WHERE PTF_GROUP_NAME = @p1 AND PTF_GROUP_STATUS = 'INSTALLED'";
+				var param = cmd.CreateParameter();
+				param.ParameterName = "p1";
+				param.Value = $"SF99{major:D1}{minor:D2}";
+
+				cmd.Parameters.Add(param);
+
+				return Converter.ChangeTypeTo<int>(cmd.ExecuteScalar());
+			}
+		}
+
+		#endregion
+
 		#region CreateDataConnection
 
-		private static IDataProvider GetDataProvider(string providerName)
+		public static IDataProvider GetDataProvider(string providerName)
 		{
-			switch (providerName)
+			return providerName switch
 			{
-
-				case DB2iSeriesProviderName.DB2_73: return _db2iDataProvider_73.Value;
-
-				case DB2iSeriesProviderName.DB2_GAS: return _db2iDataProvider_gas.Value;
-
-				case DB2iSeriesProviderName.DB2_73_GAS: return _db2iDataProvider_73_gas.Value;
-
-				default: return _db2iDataProvider.Value;
-
-			}
-
+				DB2iSeriesProviderName.DB2 => _db2iDataProvider.Value,
+				DB2iSeriesProviderName.DB2_73 => _db2iDataProvider_73.Value,
+				DB2iSeriesProviderName.DB2_GAS => _db2iDataProvider_gas.Value,
+				DB2iSeriesProviderName.DB2_73_GAS => _db2iDataProvider_73_gas.Value,
+				_ => throw new ArgumentOutOfRangeException(nameof(providerName), $"'{providerName}' is not a valid DB2iSeries provider name.")
+			};
 		}
 
 		public static DataConnection CreateDataConnection(string connectionString, string providerName)
@@ -173,6 +168,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static BulkCopyType DefaultBulkCopyType = BulkCopyType.MultipleRows;
 
+		[Obsolete("Please use the BulkCopy extension methods within DataConnectionExtensions")]
 		public static BulkCopyRowsCopied MultipleRowsCopy<T>(DataConnection dataConnection,
 			IEnumerable<T> source,
 			int maxBatchSize = 1000,
@@ -186,6 +182,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}, source);
 		}
 
+		[Obsolete("Please use the BulkCopy extension methods within DataConnectionExtensions")]
 		public static BulkCopyRowsCopied ProviderSpecificBulkCopy<T>(DataConnection dataConnection,
 			IEnumerable<T> source,
 			int bulkCopyTimeout = 0,
@@ -204,6 +201,5 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		}
 
 		#endregion
-
 	}
 }

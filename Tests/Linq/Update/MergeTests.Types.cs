@@ -2,678 +2,730 @@
 using System.Linq;
 
 using LinqToDB;
-using LinqToDB.Data;
-using LinqToDB.DataProvider.DB2iSeries;
 using LinqToDB.Mapping;
 
 using NUnit.Framework;
 
 namespace Tests.xUpdate
 {
-    using Model;
+	public partial class MergeTests : TestBase
+	{
+		[Table("unspecified")]
+		class MergeTypes
+		{
+			[Column("Id")]
+			[PrimaryKey]
+			public int Id;
 
-    public partial class MergeTests : TestBase
-    {
-        [Table("unspecified")]
-        class MergeTypes
-        {
-            [Column("Id")]
-            [PrimaryKey]
-            public int Id;
+			[Column("Field1")]
+			public int? FieldInt32;
 
-            [Column("Field1")]
-            public int? FieldInt32;
+			[Column(IsColumn = false, Configuration = ProviderName.Access)]
+			[Column("FieldInt64")]
+			public long? FieldInt64;
 
-            [Column(IsColumn = false, Configuration = ProviderName.Access)]
-            [Column("FieldInt64")]
-            public long? FieldInt64;
+			[Column(IsColumn = false, Configuration = ProviderName.Sybase)]
+			[Column("FieldBoolean")]
+			public bool? FieldBoolean;
 
-            [Column(IsColumn = false, Configuration = ProviderName.Sybase)]
-            [Column("FieldBoolean")]
-            public bool? FieldBoolean;
+			[Column("FieldString")]
+			public string? FieldString;
 
-            [Column("FieldString")]
-            public string FieldString;
+			[Column(IsColumn = false, Configuration = ProviderName.Informix)]
+			[Column("FieldNString")]
+			public string? FieldNString;
 
-            [Column(IsColumn = false, Configuration = ProviderName.Informix)]
-            [Column("FieldNString")]
-            public string FieldNString;
+			[Column("FieldChar")]
+			public char? FieldChar;
 
-            [Column("FieldChar")]
-            public char? FieldChar;
+			[Column(IsColumn = false, Configuration = ProviderName.Informix)]
+			[Column("FieldNChar")]
+			public char? FieldNChar;
 
-            [Column(IsColumn = false, Configuration = ProviderName.Informix)]
-            [Column("FieldNChar")]
-            public char? FieldNChar;
+			[Column("FieldFloat")]
+			public float? FieldFloat;
 
-            [Column("FieldFloat")]
-            public float? FieldFloat;
+			[Column(IsColumn = false, Configuration = ProviderName.Firebird)] // disabled due to test data
+			[Column("FieldDouble")]
+			public double? FieldDouble;
 
-            [Column(IsColumn = false, Configuration = ProviderName.Firebird)] // disabled due to test data
-            [Column("FieldDouble")]
-            public double? FieldDouble;
+			[Column("FieldDateTime", Configuration = ProviderName.Sybase, DataType = DataType.DateTime)]
+			[Column("FieldDateTime")]
+			public DateTime? FieldDateTime;
 
-            [Column("FieldDateTime", Configuration = ProviderName.Sybase, DataType = DataType.DateTime)]
-            [Column("FieldDateTime")]
-            public DateTime? FieldDateTime;
-
-            [Column(IsColumn = false, Configuration = ProviderName.Sybase)]
-            [Column(IsColumn = false, Configuration = ProviderName.DB2)]
-            [Column(IsColumn = false, Configuration = DB2iSeriesProviderName.DB2)]
-            [Column(IsColumn = false, Configuration = DB2iSeriesProviderName.DB2_GAS)]
-            [Column(IsColumn = false, Configuration = DB2iSeriesProviderName.DB2_73)]
-            [Column(IsColumn = false, Configuration = DB2iSeriesProviderName.DB2_73_GAS)]
+			[Column(IsColumn = false, Configuration = ProviderName.Sybase)]
+			[Column(IsColumn = false, Configuration = ProviderName.DB2)]
+			[Column(IsColumn = false, Configuration = TestProvName.DB2i)]
+			[Column(IsColumn = false, Configuration = TestProvName.DB2iGAS)]
+			[Column(IsColumn = false, Configuration = TestProvName.DB2i73)]
+			[Column(IsColumn = false, Configuration = TestProvName.DB2i73GAS)]
 			[Column(IsColumn = false, Configuration = ProviderName.SqlServer2000)]
-            [Column(IsColumn = false, Configuration = ProviderName.SqlServer2005)]
-            [Column(IsColumn = false, Configuration = ProviderName.SqlCe)]
-            [Column(IsColumn = false, Configuration = ProviderName.Informix)]
-            [Column(IsColumn = false, Configuration = ProviderName.Firebird)]
-            [Column(IsColumn = false, Configuration = ProviderName.Access)]
-            [Column(IsColumn = false, Configuration = ProviderName.MySql)]
-            [Column(IsColumn = false, Configuration = ProviderName.SQLite)]
-            [Column(IsColumn = false, Configuration = ProviderName.SapHana)]
-            [Column("FieldDateTime2")]
-            public DateTimeOffset? FieldDateTime2;
+			[Column(IsColumn = false, Configuration = ProviderName.SqlServer2005)]
+			[Column(IsColumn = false, Configuration = ProviderName.SqlCe)]
+			[Column(IsColumn = false, Configuration = ProviderName.Informix)]
+			[Column(IsColumn = false, Configuration = ProviderName.Firebird)]
+			[Column(IsColumn = false, Configuration = ProviderName.Access)]
+			[Column(IsColumn = false, Configuration = ProviderName.MySql)]
+			[Column(IsColumn = false, Configuration = ProviderName.MySqlConnector)]
+			[Column(IsColumn = false, Configuration = ProviderName.SQLite)]
+			[Column(IsColumn = false, Configuration = ProviderName.SapHana)]
+			[Column(Configuration = ProviderName.Oracle, Precision = 7)]
+			[Column("FieldDateTime2")]
+			public DateTimeOffset? FieldDateTime2;
 
-            [Column(IsColumn = false, Configuration = ProviderName.Firebird)]
-            [Column(IsColumn = false, Configuration = ProviderName.Oracle)]
-            [Column(IsColumn = false, Configuration = ProviderName.OracleManaged)]
-            [Column(IsColumn = false, Configuration = ProviderName.OracleNative)]
-            [Column(IsColumn = false, Configuration = ProviderName.Informix)] // for some reason it breaks merge
-            [Column("FieldBinary")]
-            public byte[] FieldBinary;
+			[Column(IsColumn = false, Configuration = ProviderName.Firebird)]
+			[Column(IsColumn = false, Configuration = ProviderName.Oracle)]
+			[Column(IsColumn = false, Configuration = ProviderName.Informix)] // for some reason it breaks merge
+			[Column("FieldBinary")]
+			public byte[]? FieldBinary;
 
-            [Column(IsColumn = false, Configuration = ProviderName.Informix)]
-            [Column("FieldGuid")]
-            public Guid? FieldGuid;
+			[Column(IsColumn = false, Configuration = ProviderName.Informix)]
+			[Column("FieldGuid")]
+			public Guid? FieldGuid;
 
-            [Column(IsColumn = false, Configuration = ProviderName.SQLite)]
-            [Column("FieldDecimal")]
-            public decimal? FieldDecimal;
+			[Column(IsColumn = false, Configuration = ProviderName.SQLite)]
+			[Column("FieldDecimal")]
+			public decimal? FieldDecimal;
 
-            [Column(IsColumn = false, Configuration = ProviderName.SqlServer2000)]
-            [Column(IsColumn = false, Configuration = ProviderName.SqlServer2005)]
-            [Column(IsColumn = false, Configuration = ProviderName.Oracle)]
-            [Column(IsColumn = false, Configuration = ProviderName.OracleManaged)]
-            [Column(IsColumn = false, Configuration = ProviderName.OracleNative)]
-            [Column(IsColumn = false, Configuration = ProviderName.SqlCe)]
-            [Column("FieldDate", Configuration = ProviderName.Informix, DataType = DataType.Date)]
-            [Column("FieldDate", Configuration = ProviderName.Sybase, DataType = DataType.Date)]
-            [Column("FieldDate", DataType = DataType.Date, Configuration = DB2iSeriesProviderName.DB2)]
-            [Column("FieldDate", DataType = DataType.Date, Configuration = DB2iSeriesProviderName.DB2_GAS)]
-            [Column("FieldDate")]
-            public DateTime? FieldDate;
+			[Column(IsColumn = false, Configuration = ProviderName.SqlServer2000)]
+			[Column(IsColumn = false, Configuration = ProviderName.SqlServer2005)]
+			[Column(IsColumn = false, Configuration = ProviderName.Oracle)]
+			[Column(IsColumn = false, Configuration = ProviderName.SqlCe)]
+			[Column("FieldDate"     , Configuration = ProviderName.Informix, DataType = DataType.Date)]
+			[Column("FieldDate"     , Configuration = ProviderName.Sybase  , DataType = DataType.Date)]
+			[Column("FieldDate" 	, Configuration = TestProvName.DB2i, DataType = DataType.Date)]
+			[Column("FieldDate", Configuration = TestProvName.DB2iGAS, DataType = DataType.Date)]
+			[Column("FieldDate", Configuration = TestProvName.DB2i73, DataType = DataType.Date)]
+			[Column("FieldDate", Configuration = TestProvName.DB2i73GAS, DataType = DataType.Date)]
+			[Column("FieldDate")]
+			public DateTime? FieldDate;
 
-            [Column(IsColumn = false, Configuration = ProviderName.Firebird)]
-            [Column(IsColumn = false, Configuration = ProviderName.SqlServer2000)]
-            [Column(IsColumn = false, Configuration = ProviderName.SqlServer2005)]
-            [Column(IsColumn = false, Configuration = ProviderName.MySql)]
-            [Column(IsColumn = false, Configuration = ProviderName.Oracle)]
-            [Column(IsColumn = false, Configuration = ProviderName.OracleManaged)]
-            [Column(IsColumn = false, Configuration = ProviderName.OracleNative)]
-            [Column(IsColumn = false, Configuration = ProviderName.SqlCe)]
-            [Column(IsColumn = false, Configuration = ProviderName.SQLite)]
-            [Column("FieldTime", Configuration = ProviderName.Sybase, DataType = DataType.Time)]
-            [Column("FieldTime")]
-            public TimeSpan? FieldTime;
+			[Column(IsColumn = false, Configuration = ProviderName.Firebird)]
+			[Column(IsColumn = false, Configuration = ProviderName.SqlServer2000)]
+			[Column(IsColumn = false, Configuration = ProviderName.SqlServer2005)]
+			[Column(IsColumn = false, Configuration = TestProvName.MySql55)]
+			[Column(IsColumn = false, Configuration = ProviderName.Oracle)]
+			[Column(IsColumn = false, Configuration = ProviderName.SqlCe)]
+			[Column(IsColumn = false, Configuration = ProviderName.SQLite)]
+			[Column("FieldTime"     , Configuration = ProviderName.Sybase, DataType = DataType.Time)]
+			[Column("FieldTime")]
+			public TimeSpan? FieldTime;
 
-            [Column("FieldEnumString", DataType = DataType.NVarChar, Configuration = DB2iSeriesProviderName.DB2)]
-            [Column("FieldEnumString", DataType = DataType.NVarChar, Configuration = DB2iSeriesProviderName.DB2_GAS)]
-            [Column("FieldEnumString", DataType = DataType.NVarChar, Configuration = DB2iSeriesProviderName.DB2_73)]
-            [Column("FieldEnumString", DataType = DataType.NVarChar, Configuration = DB2iSeriesProviderName.DB2_73_GAS)]
 			[Column("FieldEnumString")]
-            public StringEnum? FieldEnumString;
+			public StringEnum? FieldEnumString;
 
-            [Column("FieldEnumNumber", DataType = DataType.Int32, Configuration = DB2iSeriesProviderName.DB2)]
-            [Column("FieldEnumNumber", DataType = DataType.Int32, Configuration = DB2iSeriesProviderName.DB2_GAS)]
-			[Column("FieldEnumNumber", DataType = DataType.Int32, Configuration = DB2iSeriesProviderName.DB2_73)]
-            [Column("FieldEnumNumber", DataType = DataType.Int32, Configuration = DB2iSeriesProviderName.DB2_73_GAS)]
 			[Column("FieldEnumNumber")]
-            public NumberEnum? FieldEnumNumber;
-        }
+			public NumberEnum? FieldEnumNumber;
+		}
 
-        public enum StringEnum
-        {
-            [MapValue("FIRST")]
-            Value1,
-            [MapValue("\b", Configuration = ProviderName.Informix)]
-            [MapValue("\b", Configuration = ProviderName.PostgreSQL)]
-            [MapValue("\b", Configuration = ProviderName.SqlCe)]
-            [MapValue("\b", Configuration = ProviderName.Sybase)]
-            [MapValue("\b", Configuration = ProviderName.SapHana)]
-            [MapValue("\b", Configuration = ProviderName.DB2)]
-            [MapValue("\b", Configuration = DB2iSeriesProviderName.DB2)]
-            [MapValue("\b", Configuration = DB2iSeriesProviderName.DB2_GAS)]
-            [MapValue("\b", Configuration = DB2iSeriesProviderName.DB2_73)]
-            [MapValue("\b", Configuration = DB2iSeriesProviderName.DB2_73_GAS)]
+		public enum StringEnum
+		{
+			[MapValue("FIRST")]
+			Value1,
+			[MapValue("\b", Configuration = ProviderName.Informix)]
+			[MapValue("\b", Configuration = ProviderName.PostgreSQL)]
+			[MapValue("\b", Configuration = ProviderName.SqlCe)]
+			[MapValue("\b", Configuration = ProviderName.Sybase)]
+			[MapValue("\b", Configuration = ProviderName.SapHana)]
+			[MapValue("\b", Configuration = ProviderName.DB2)]
+			[MapValue("\b", Configuration = TestProvName.DB2i)]
+			[MapValue("\b", Configuration = TestProvName.DB2iGAS)]
+			[MapValue("\b", Configuration = TestProvName.DB2i73)]
+			[MapValue("\b", Configuration = TestProvName.DB2i73GAS)]
 			[MapValue("\0")]
-            Value2,
-            [MapValue("_", Configuration = ProviderName.Oracle)]
-            [MapValue("_", Configuration = ProviderName.OracleManaged)]
-            [MapValue("_", Configuration = ProviderName.OracleNative)]
-            [MapValue("_", Configuration = ProviderName.Sybase)]
-            [MapValue("")]
-            Value3,
-            [MapValue(null)]
-            Value4
-        }
+			Value2,
+			[MapValue("_", Configuration = ProviderName.Oracle)]
+			[MapValue("_", Configuration = ProviderName.Sybase)]
+			[MapValue("")]
+			Value3,
+			[MapValue(null)]
+			Value4
+		}
 
-        public enum NumberEnum
-        {
-            [MapValue(int.MinValue + 1)]
-            Value1,
-            [MapValue(int.MaxValue)]
-            Value2,
-            [MapValue(0)]
-            Value3,
-            [MapValue(null)]
-            Value4
-        }
+		public enum NumberEnum
+		{
+			[MapValue(int.MinValue + 1)]
+			Value1,
+			[MapValue(int.MaxValue)]
+			Value2,
+			[MapValue(0)]
+			Value3,
+			[MapValue(null)]
+			Value4
+		}
 
-        private static ITable<MergeTypes> GetTypes1(IDataContext db)
-        {
-            return db.GetTable<MergeTypes>().TableName("TestMerge1");
-        }
+		private static ITable<MergeTypes> GetTypes1(IDataContext db)
+		{
+			return db.GetTable<MergeTypes>().TableName("TestMerge1");
+		}
 
-        private static ITable<MergeTypes> GetTypes2(IDataContext db)
-        {
-            return db.GetTable<MergeTypes>().TableName("TestMerge2");
-        }
+		private static ITable<MergeTypes> GetTypes2(IDataContext db)
+		{
+			return db.GetTable<MergeTypes>().TableName("TestMerge2");
+		}
 
-        private void PrepareTypesData(IDataContext db)
-        {
-            using (new DisableLogging())
-            {
-                GetTypes1(db).Delete();
-                GetTypes2(db).Delete();
+		private void PrepareTypesData(IDataContext db)
+		{
+			//using (new DisableLogging())
+			{
+				GetTypes1(db).Delete();
+				GetTypes2(db).Delete();
 
-                foreach (var record in InitialTypes1Data)
-                {
-                    db.Insert(record, "TestMerge1");
-                }
+				foreach (var record in InitialTypes1Data)
+				{
+					db.Insert(record, "TestMerge1");
+				}
 
-                foreach (var record in InitialTypes2Data)
-                {
-                    db.Insert(record, "TestMerge2");
-                }
-            }
-        }
+				foreach (var record in InitialTypes2Data)
+				{
+					db.Insert(record, "TestMerge2");
+				}
+			}
+		}
 
-        private static readonly MergeTypes[] InitialTypes1Data = new[]
-        {
-            new MergeTypes()
-            {
-                Id              = 1,
-            },
-            new MergeTypes()
-            {
-                Id              = 2,
-                FieldInt32      = int.MinValue + 1,
-                FieldInt64      = long.MinValue + 1,
-                FieldBoolean    = true,
-                FieldString     = "normal strinG",
-                FieldNString    = "всЁ нормально",
-                FieldChar       = '*',
-                FieldNChar      = 'ё',
-                FieldFloat      = -3.40282002E+38f, //float.MinValue,
+		private static readonly MergeTypes[] InitialTypes1Data = new[]
+		{
+			new MergeTypes()
+			{
+				Id              = 1,
+			},
+			new MergeTypes()
+			{
+				Id              = 2,
+				FieldInt32      = int.MinValue + 1,
+				FieldInt64      = long.MinValue + 1,
+				FieldBoolean    = true,
+				FieldString     = "normal strinG",
+				FieldNString    = "всЁ нормально",
+				FieldChar       = '*',
+				FieldNChar      = 'ё',
+				FieldFloat      = -3.40282002E+38f, //float.MinValue,
 				FieldDouble     = double.MinValue,
-                FieldDateTime   = new DateTime(2000, 11, 12, 21, 14, 15, 167),
-                FieldDateTime2  = new DateTimeOffset(2000, 11, 22, 13, 14, 15, 1, TimeSpan.FromMinutes(15)).AddTicks(1234567),
-                FieldBinary     = new byte[0],
-                FieldGuid       = Guid.Empty,
-                FieldDecimal    = 12345678.9012345678M,
-                FieldDate       = new DateTime(2000, 11, 23),
-                FieldTime       = new TimeSpan(0, 9, 44, 33, 888).Add(TimeSpan.FromTicks(7654321)),
-                FieldEnumString = StringEnum.Value1,
-                FieldEnumNumber = NumberEnum.Value4
-            },
-            new MergeTypes()
-            {
-                Id              = 3,
-                FieldInt32      = int.MaxValue,
-                FieldInt64      = long.MaxValue,
-                FieldBoolean    = false,
-                FieldString     = "test\r\n\v\b\t\f",
-                FieldNString    = "ЙЦУКЩывапрм\r\nq",
-                FieldChar       = '&',
-                FieldNChar      = '>',
-                FieldFloat      = 3.40282002E+38f, //float.MaxValue,
+				FieldDateTime   = new DateTime(2000, 11, 12, 21, 14, 15, 167),
+				FieldDateTime2  = new DateTimeOffset(2000, 11, 22, 13, 14, 15, 1, TimeSpan.FromMinutes(15)).AddTicks(1234567),
+				FieldBinary     = new byte[0],
+				FieldGuid       = Guid.Empty,
+				FieldDecimal    = 12345678.9012345678M,
+				FieldDate       = new DateTime(2000, 11, 23),
+				FieldTime       = new TimeSpan(0, 9, 44, 33, 888).Add(TimeSpan.FromTicks(7654321)),
+				FieldEnumString = StringEnum.Value1,
+				FieldEnumNumber = NumberEnum.Value4
+			},
+			new MergeTypes()
+			{
+				Id              = 3,
+				FieldInt32      = int.MaxValue,
+				FieldInt64      = long.MaxValue,
+				FieldBoolean    = false,
+				FieldString     = "test\r\n\v\b\t\f",
+				FieldNString    = "ЙЦУКЩывапрм\r\nq",
+				FieldChar       = '&',
+				FieldNChar      = '>',
+				FieldFloat      = 3.40282002E+38f, //float.MaxValue,
 				FieldDouble     = double.MaxValue,
-                FieldDateTime   = new DateTime(2001, 10, 12, 21, 14, 15, 167),
-                FieldDateTime2  = new DateTimeOffset(2001, 11, 22, 13, 14, 15, 0, TimeSpan.FromMinutes(-15)).AddTicks(1234567),
-                FieldBinary     = new byte[] { 0, 1, 2, 3, 0, 4 },
-                FieldGuid       = new Guid("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"),
-                FieldDecimal    = -99999999.9999999999M,
-                FieldDate       = new DateTime(2123, 11, 23),
-                FieldTime       = new TimeSpan(0, 0, 44, 33, 876).Add(TimeSpan.FromTicks(7654321)),
-                FieldEnumString = StringEnum.Value2,
-                FieldEnumNumber = NumberEnum.Value3
-            },
-            new MergeTypes()
-            {
-                Id              = 4,
-                FieldInt32      = -123,
-                FieldInt64      = 987,
-                FieldBoolean    = null,
-                FieldString     = "`~!@#$%^&*()_+{}|[]\\",
-                FieldNString    = "<>?/.,;'щЩ\":",
-                FieldChar       = '\r',
-                FieldNChar      = '\n',
-                FieldFloat      = 1.1755e-38f, //float.Epsilon,
+				FieldDateTime   = new DateTime(2001, 10, 12, 21, 14, 15, 167),
+				FieldDateTime2  = new DateTimeOffset(2001, 11, 22, 13, 14, 15, 0, TimeSpan.FromMinutes(-15)).AddTicks(1234567),
+				FieldBinary     = new byte[] { 0, 1, 2, 3, 0, 4 },
+				FieldGuid       = new Guid("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"),
+				FieldDecimal    = -99999999.9999999999M,
+				FieldDate       = new DateTime(2123, 11, 23),
+				FieldTime       = new TimeSpan(0, 0, 44, 33, 876).Add(TimeSpan.FromTicks(7654321)),
+				FieldEnumString = StringEnum.Value2,
+				FieldEnumNumber = NumberEnum.Value3
+			},
+			new MergeTypes()
+			{
+				Id              = 4,
+				FieldInt32      = -123,
+				FieldInt64      = 987,
+				FieldBoolean    = null,
+				FieldString     = "`~!@#$%^&*()_+{}|[]\\",
+				FieldNString    = "<>?/.,;'щЩ\":",
+				FieldChar       = '\r',
+				FieldNChar      = '\n',
+				FieldFloat      = 1.1755e-38f, //float.Epsilon,
 				FieldDouble     = -2.2250738585072014e-308d, //-double.Epsilon,
 				FieldDateTime   = new DateTime(2098, 10, 12, 21, 14, 15, 997),
-                FieldDateTime2  = new DateTimeOffset(2001, 11, 22, 13, 14, 15, 999, TimeSpan.FromMinutes(99)).AddTicks(1234567),
-                FieldBinary     = new byte[] { 255, 200, 100, 50, 20, 0 },
-                FieldGuid       = new Guid("ffffffff-ffff-ffff-ffff-ffffffffffff"),
-                FieldDecimal    = 99999999.9999999999M,
-                FieldDate       = new DateTime(3210, 11, 23),
-                FieldTime       = TimeSpan.Zero,
-                FieldEnumString = StringEnum.Value3,
-                FieldEnumNumber = NumberEnum.Value2
-            }
-        };
+				FieldDateTime2  = new DateTimeOffset(2001, 11, 22, 13, 14, 15, 999, TimeSpan.FromMinutes(99)).AddTicks(1234567),
+				FieldBinary     = new byte[] { 255, 200, 100, 50, 20, 0 },
+				FieldGuid       = new Guid("ffffffff-ffff-ffff-ffff-ffffffffffff"),
+				FieldDecimal    = 99999999.9999999999M,
+				FieldDate       = new DateTime(3210, 11, 23),
+				FieldTime       = TimeSpan.Zero,
+				FieldEnumString = StringEnum.Value3,
+				FieldEnumNumber = NumberEnum.Value2
+			}
+		};
 
-        private static readonly MergeTypes[] InitialTypes2Data = new[]
-        {
-            new MergeTypes()
-            {
-                Id              = 3,
-                FieldInt32      = -123,
-                FieldInt64      = 987,
-                FieldBoolean    = null,
-                FieldString     = "<>?/.,;'zZ\":",
-                FieldNString    = "`~!@#$%^&*()_+{}|[]\\",
-                FieldChar       = '\f',
-                FieldNChar      = '\v',
-                FieldFloat      = -1.1755e-38f, //-float.Epsilon,
+		private static readonly MergeTypes[] InitialTypes2Data = new MergeTypes[]
+		{
+			new MergeTypes()
+			{
+				Id              = 3,
+				FieldInt32      = -123,
+				FieldInt64      = 987,
+				FieldBoolean    = null,
+				FieldString     = "<>?/.,;'zZ\":",
+				FieldNString    = "`~!@#$%^&*()_+{}|[]\\",
+				FieldChar       = '\f',
+				FieldNChar      = '\v',
+				FieldFloat      = -1.1755e-38f, //-float.Epsilon,
 				FieldDouble     = 2.2250738585072014e-308d, //double.Epsilon,
 				FieldDateTime   = new DateTime(2098, 10, 12, 21, 14, 15, 907),
-                FieldDateTime2  = new DateTimeOffset(2001, 11, 22, 13, 14, 15, 111, TimeSpan.FromMinutes(-99)).AddTicks(-9876543),
-                FieldBinary     = new byte[] { 255, 200, 100, 50, 20, 0 },
-                FieldGuid       = new Guid("ffffffff-ffff-ffff-FFFF-ffffffffffff"),
-                FieldDecimal    = -0.123M,
-                FieldDate       = new DateTime(3210, 11, 23),
-                FieldTime       = TimeSpan.FromHours(24).Add(TimeSpan.FromTicks(-1)),
-                FieldEnumString = StringEnum.Value4,
-                FieldEnumNumber = NumberEnum.Value1
-            },
-            new MergeTypes()
-            {
-                Id              = 4,
-                FieldInt32      = int.MaxValue,
-                FieldInt64      = long.MaxValue,
-                FieldBoolean    = false,
-                FieldString     = "test\r\n\v\b\t",
-                FieldNString    = "ЙЦУКЩывапрм\r\nq",
-                FieldChar       = '1',
-                FieldNChar      = ' ',
-                FieldFloat      = 3.40282002E+38f, //float.MaxValue,
+				FieldDateTime2  = new DateTimeOffset(2001, 11, 22, 13, 14, 15, 111, TimeSpan.FromMinutes(-99)).AddTicks(-9876543),
+				FieldBinary     = new byte[] { 255, 200, 100, 50, 20, 0 },
+				FieldGuid       = new Guid("ffffffff-ffff-ffff-FFFF-ffffffffffff"),
+				FieldDecimal    = -0.123M,
+				FieldDate       = new DateTime(3210, 11, 23),
+				FieldTime       = TimeSpan.FromHours(24).Add(TimeSpan.FromTicks(-1)),
+				FieldEnumString = StringEnum.Value4,
+				FieldEnumNumber = NumberEnum.Value1
+			},
+			new MergeTypes()
+			{
+				Id              = 4,
+				FieldInt32      = int.MaxValue,
+				FieldInt64      = long.MaxValue,
+				FieldBoolean    = false,
+				FieldString     = "test\r\n\v\b\t",
+				FieldNString    = "ЙЦУКЩывапрм\r\nq",
+				FieldChar       = '1',
+				FieldNChar      = ' ',
+				FieldFloat      = 3.40282002E+38f, //float.MaxValue,
 				FieldDouble     = double.MaxValue,
-                FieldDateTime   = new DateTime(2001, 10, 12, 21, 14, 15, 167),
-                FieldDateTime2  = new DateTimeOffset(2001, 11, 22, 13, 14, 15, 321, TimeSpan.FromMinutes(-15)),
-                FieldBinary     = new byte[] { 0, 1, 2, 3, 0, 4 },
-                FieldGuid       = new Guid("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"),
-                FieldDecimal    = -99999999.9999999999M,
-                FieldDate       = new DateTime(2123, 11, 23),
-                FieldTime       = new TimeSpan(0, 14, 44, 33, 234),
-                FieldEnumString = StringEnum.Value2,
-                FieldEnumNumber = NumberEnum.Value3
-            },
-            new MergeTypes()
-            {
-                Id              = 5,
-                FieldInt32      = -123,
-                FieldInt64      = 987,
-                FieldBoolean    = null,
-                FieldString     = "<>?/.,;'zZ\":",
-                FieldNString    = "`~!@#$%^&*()_+{}|[]\\",
-                FieldChar       = ' ',
-                FieldNChar      = ' ',
-                FieldFloat      = -1.1755e-38f, //-float.Epsilon,
+				FieldDateTime   = new DateTime(2001, 10, 12, 21, 14, 15, 167),
+				FieldDateTime2  = new DateTimeOffset(2001, 11, 22, 13, 14, 15, 321, TimeSpan.FromMinutes(-15)),
+				FieldBinary     = new byte[] { 0, 1, 2, 3, 0, 4 },
+				FieldGuid       = new Guid("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"),
+				FieldDecimal    = -99999999.9999999999M,
+				FieldDate       = new DateTime(2123, 11, 23),
+				FieldTime       = new TimeSpan(0, 14, 44, 33, 234),
+				FieldEnumString = StringEnum.Value2,
+				FieldEnumNumber = NumberEnum.Value3
+			},
+			new MergeTypes()
+			{
+				Id              = 5,
+				FieldInt32      = -123,
+				FieldInt64      = 987,
+				FieldBoolean    = null,
+				FieldString     = "<>?/.,;'zZ\":",
+				FieldNString    = "`~!@#$%^&*()_+{}|[]\\",
+				FieldChar       = ' ',
+				FieldNChar      = ' ',
+				FieldFloat      = -1.1755e-38f, //-float.Epsilon,
 				FieldDouble     = 2.2250738585072014e-308d, //double.Epsilon,
 				FieldDateTime   = new DateTime(2098, 10, 12, 21, 14, 15, 913),
-                FieldDateTime2  = new DateTimeOffset(2001, 11, 22, 13, 14, 15, 0, TimeSpan.FromMinutes(-99)),
-                FieldBinary     = new byte[] { 255, 200, 100, 50, 20, 0 },
-                FieldGuid       = new Guid("ffffffff-ffff-ffff-FFFF-ffffffffffff"),
-                FieldDecimal    = -0.123M,
-                FieldDate       = new DateTime(3210, 11, 23),
-                FieldTime       = TimeSpan.FromHours(24).Add(TimeSpan.FromTicks(-1)),
-                FieldEnumString = StringEnum.Value4,
-                FieldEnumNumber = NumberEnum.Value1
-            },
-            new MergeTypes()
-            {
-                Id              = 6,
-                FieldInt32      = int.MaxValue,
-                FieldInt64      = long.MaxValue,
-                FieldBoolean    = false,
-                FieldString     = "test\r\n\v\b\t \r ",
-                FieldNString    = "ЙЦУКЩывапрм\r\nq \r ",
-                FieldChar       = '-',
-                FieldNChar      = '~',
-                FieldFloat      = 3.40282002E+38f, //float.MaxValue,
+				FieldDateTime2  = new DateTimeOffset(2001, 11, 22, 13, 14, 15, 0, TimeSpan.FromMinutes(-99)),
+				FieldBinary     = new byte[] { 255, 200, 100, 50, 20, 0 },
+				FieldGuid       = new Guid("ffffffff-ffff-ffff-FFFF-ffffffffffff"),
+				FieldDecimal    = -0.123M,
+				FieldDate       = new DateTime(3210, 11, 23),
+				FieldTime       = TimeSpan.FromHours(24).Add(TimeSpan.FromTicks(-1)),
+				FieldEnumString = StringEnum.Value4,
+				FieldEnumNumber = NumberEnum.Value1
+			},
+			new MergeTypes()
+			{
+				Id              = 6,
+				FieldInt32      = int.MaxValue,
+				FieldInt64      = long.MaxValue,
+				FieldBoolean    = false,
+				FieldString     = "test\r\n\v\b\t \r ",
+				FieldNString    = "ЙЦУКЩывапрм\r\nq \r ",
+				FieldChar       = '-',
+				FieldNChar      = '~',
+				FieldFloat      = 3.40282002E+38f, //float.MaxValue,
 				FieldDouble     = double.MaxValue,
-                FieldDateTime   = new DateTime(2001, 10, 12, 21, 14, 15, 167),
-                FieldDateTime2  = new DateTimeOffset(2001, 11, 22, 13, 14, 15, 999, TimeSpan.FromMinutes(-15)),
-                FieldBinary     = new byte[] { 0, 1, 2, 3, 0, 4 },
-                FieldGuid       = new Guid("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"),
-                FieldDecimal    = -99999999.9999999999M,
-                FieldDate       = new DateTime(2123, 11, 23),
-                FieldTime       = new TimeSpan(0, 22, 44, 33, 0),
-                FieldEnumString = StringEnum.Value2,
-                FieldEnumNumber = NumberEnum.Value3
-            }
-        };
+				FieldDateTime   = new DateTime(2001, 10, 12, 21, 14, 15, 167),
+				FieldDateTime2  = new DateTimeOffset(2001, 11, 22, 13, 14, 15, 999, TimeSpan.FromMinutes(-15)),
+				FieldBinary     = new byte[] { 0, 1, 2, 3, 0, 4 },
+				FieldGuid       = new Guid("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"),
+				FieldDecimal    = -99999999.9999999999M,
+				FieldDate       = new DateTime(2123, 11, 23),
+				FieldTime       = new TimeSpan(0, 22, 44, 33, 0),
+				FieldEnumString = StringEnum.Value2,
+				FieldEnumNumber = NumberEnum.Value3
+			}
+		};
 
-        [Test, DataContextSource(false, ProviderName.SQLiteMS)]
-        public void TestMergeTypes(string context)
-        {
-            using (var db = new TestDataConnection(context))
-            {
-                PrepareTypesData(db);
+		[ActiveIssue(Configurations = new[]
+		{
+			ProviderName.SapHanaNative
+#if AZURE
+			,TestProvName.AllSybase
+		//[ActiveIssue("need to configure sybase docker image to use utf8 character set", Configuration = TestProvName.AllSybase)]
+#endif
+		}, Details = "Native provider from SAP HANA 2 SPS04 045 cannot digest null/DBNull/byte[0] binary parameters")]
+		[Test]
+		public void TestMergeTypes([DataSources(true, ProviderName.SQLiteMS)] string context)
+		{
+			var isIDS = IsIDSProvider(context);
 
-                var result1 = GetTypes1(db).OrderBy(x => x.Id).ToList();
-                var result2 = GetTypes2(db).OrderBy(x => x.Id).ToList();
+			using (var db = GetDataContext(context))
+			{
+				PrepareTypesData(db);
 
-                Assert.AreEqual(InitialTypes1Data.Length, result1.Count);
-                Assert.AreEqual(InitialTypes2Data.Length, result2.Count);
+				var result1 = GetTypes1(db).OrderBy(_ => _.Id).ToList();
+				var result2 = GetTypes2(db).OrderBy(_ => _.Id).ToList();
 
-                for (var i = 0; i < InitialTypes1Data.Length; i++)
-                {
-                    AssertTypesRow(InitialTypes1Data[i], result1[i], context);
-                }
+				Assert.AreEqual(InitialTypes1Data.Length, result1.Count);
+				Assert.AreEqual(InitialTypes2Data.Length, result2.Count);
 
-                for (var i = 0; i < InitialTypes2Data.Length; i++)
-                {
-                    AssertTypesRow(InitialTypes2Data[i], result2[i], context);
-                }
-            }
-        }
+				var provider = GetProviderName(context, out var _);
+				for (var i = 0; i < InitialTypes1Data.Length; i++)
+				{
+					AssertTypesRow(InitialTypes1Data[i], result1[i], provider, isIDS);
+				}
 
-        private void AssertTypesRow(MergeTypes expected, MergeTypes actual, string context)
-        {
-            Assert.AreEqual(expected.Id, actual.Id);
-            Assert.AreEqual(expected.FieldInt32, actual.FieldInt32);
+				for (var i = 0; i < InitialTypes2Data.Length; i++)
+				{
+					AssertTypesRow(InitialTypes2Data[i], result2[i], provider, isIDS);
+				}
+			}
+		}
 
-            if (context != ProviderName.Access)
-                Assert.AreEqual(expected.FieldInt64, actual.FieldInt64);
+		private void AssertTypesRow(MergeTypes expected, MergeTypes actual, string provider, bool isIDS)
+		{
+			Assert.AreEqual(expected.Id, actual.Id);
+			Assert.AreEqual(expected.FieldInt32, actual.FieldInt32);
 
-            if (context != ProviderName.Sybase)
-                if (context != ProviderName.Access)
-                    Assert.AreEqual(expected.FieldBoolean, actual.FieldBoolean);
-                else
-                    Assert.AreEqual(expected.FieldBoolean ?? false, actual.FieldBoolean);
+			if (!provider.StartsWith("Access"))
+				Assert.AreEqual(expected.FieldInt64, actual.FieldInt64);
 
-            AssertString(expected.FieldString, actual.FieldString, context);
-            AssertNString(expected.FieldNString, actual.FieldNString, context);
+			if (provider != ProviderName.Sybase && provider != ProviderName.SybaseManaged)
+				if (!provider.StartsWith("Access"))
+					Assert.AreEqual(expected.FieldBoolean, actual.FieldBoolean);
+				else
+					Assert.AreEqual(expected.FieldBoolean ?? false, actual.FieldBoolean);
 
-            AssertChar(expected.FieldChar, actual.FieldChar, context);
+			AssertString(expected.FieldString, actual.FieldString, provider, isIDS);
+			AssertNString(expected.FieldNString, actual.FieldNString, provider);
 
-            AssertNChar(expected.FieldChar, actual.FieldChar, context);
+			AssertChar(expected.FieldChar, actual.FieldChar, provider);
 
-            Assert.AreEqual(expected.FieldFloat, actual.FieldFloat);
+			AssertNChar(expected.FieldChar, actual.FieldChar, provider);
 
-            AssertDateTime(expected.FieldDateTime, actual.FieldDateTime, context);
+			Assert.AreEqual(expected.FieldFloat, actual.FieldFloat);
 
-            AssertDateTimeOffset(expected.FieldDateTime2, actual.FieldDateTime2, context);
+			if (   provider != ProviderName.Firebird
+				&& provider != TestProvName.Firebird3)
+				Assert.AreEqual(expected.FieldDouble, actual.FieldDouble);
 
-            AssertBinary(expected.FieldBinary, actual.FieldBinary, context);
+			AssertDateTime(expected.FieldDateTime, actual.FieldDateTime, provider);
 
-            if (context != ProviderName.Informix)
-                Assert.AreEqual(expected.FieldGuid, actual.FieldGuid);
+			AssertDateTimeOffset(expected.FieldDateTime2, actual.FieldDateTime2, provider);
 
-            if (context != ProviderName.SQLiteClassic && context != ProviderName.SQLiteMS)
-                Assert.AreEqual(expected.FieldDecimal, actual.FieldDecimal);
+			AssertBinary(expected.FieldBinary, actual.FieldBinary, provider);
 
-            if (context != ProviderName.SqlServer2000
-                && context != ProviderName.SqlServer2005
-                && context != ProviderName.SqlCe
-                && context != ProviderName.Oracle
-                && context != ProviderName.OracleManaged
-                && context != ProviderName.OracleNative)
-                Assert.AreEqual(expected.FieldDate, actual.FieldDate);
+			if (!provider.Contains(ProviderName.Informix))
+				Assert.AreEqual(expected.FieldGuid, actual.FieldGuid);
 
-            AssertTime(expected.FieldTime, actual.FieldTime, context);
+			if (!provider.Contains("SQLite"))
+				Assert.AreEqual(expected.FieldDecimal, actual.FieldDecimal);
 
-            if (expected.FieldEnumString == StringEnum.Value4)
-                Assert.IsNull(actual.FieldEnumString);
-            else
-                Assert.AreEqual(expected.FieldEnumString, actual.FieldEnumString);
+			if (   provider != ProviderName.SqlServer2000
+				&& provider != ProviderName.SqlServer2005
+				&& provider != ProviderName.SqlCe
+				&& !provider.Contains("Oracle"))
+				Assert.AreEqual(expected.FieldDate, actual.FieldDate);
 
-            if (expected.FieldEnumNumber == NumberEnum.Value4)
-                Assert.IsNull(actual.FieldEnumNumber);
-            else
-                Assert.AreEqual(expected.FieldEnumNumber, actual.FieldEnumNumber);
-        }
+			AssertTime(expected.FieldTime, actual.FieldTime, provider);
 
-        private static void AssertNString(string expected, string actual, string context)
-        {
-            if (expected != null)
-            {
-                if (context == ProviderName.Sybase)
-                    expected = expected.TrimEnd(' ');
-            }
+			if (expected.FieldEnumString == StringEnum.Value4)
+				Assert.IsNull(actual.FieldEnumString);
+			else
+				Assert.AreEqual(expected.FieldEnumString, actual.FieldEnumString);
 
-            if (context != ProviderName.Informix)
-                Assert.AreEqual(expected, actual);
-        }
+			if (expected.FieldEnumNumber == NumberEnum.Value4)
+				Assert.IsNull(actual.FieldEnumNumber);
+			else
+				Assert.AreEqual(expected.FieldEnumNumber, actual.FieldEnumNumber);
+		}
 
-        private static void AssertBinary(byte[] expected, byte[] actual, string context)
-        {
-            if (context == ProviderName.Informix
-                || context == ProviderName.Oracle
-                || context == ProviderName.OracleManaged
-                || context == ProviderName.OracleNative
-                || context == ProviderName.Firebird
-                )
-                return;
+		private static void AssertNString(string? expected, string? actual, string provider)
+		{
+			if (expected != null)
+			{
+				if (   provider == ProviderName.Sybase
+					|| provider == ProviderName.SybaseManaged
+					|| provider == ProviderName.SqlCe)
+					expected = expected.TrimEnd(' ');
+			}
 
-            if (expected != null)
-            {
-                if (context == ProviderName.Sybase)
-                {
-                    while (expected.Length > 1 && expected[expected.Length - 1] == 0)
-                        expected = expected.Take(expected.Length - 1).ToArray();
+			if (!provider.Contains(ProviderName.Informix))
+				Assert.AreEqual(expected, actual);
+		}
 
-                    if (expected.Length == 0)
-                        expected = new byte[] { 0 };
-                }
-            }
+		private static void AssertBinary(byte[]? expected, byte[]? actual, string provider)
+		{
+			if (provider.Contains(ProviderName.Informix)
+				|| provider.Contains("Oracle")
+				|| provider == ProviderName.Firebird
+				|| provider == TestProvName.Firebird3)
+				return;
 
-            Assert.AreEqual(expected, actual);
-        }
+			if (expected != null)
+			{
+				if (provider == ProviderName.Sybase || provider == ProviderName.SybaseManaged)
+				{
+					while (expected.Length > 1 && expected[expected.Length - 1] == 0)
+						expected = expected.Take(expected.Length - 1).ToArray();
 
-        private static void AssertDateTimeOffset(DateTimeOffset? expected, DateTimeOffset? actual, string context)
-        {
-            if (expected != null)
-            {
-                if (context == ProviderName.Oracle
-                    || context == ProviderName.OracleManaged
-                    || context == ProviderName.OracleNative)
-                {
-                    var trimmable = expected.Value.Ticks % 10;
-                    if (trimmable >= 5)
-                        trimmable -= 10;
+					 if (expected.Length == 0)
+						expected = new byte[] { 0 };
+				}
+			}
 
-                    expected = expected.Value.AddTicks(-trimmable);
-                }
+			Assert.AreEqual(expected, actual);
+		}
 
-                if (context == ProviderName.PostgreSQL)
-                    expected = expected.Value.AddTicks(-expected.Value.Ticks % 10);
-            }
+		private static void AssertDateTimeOffset(DateTimeOffset? expected, DateTimeOffset? actual, string provider)
+		{
+			if (expected != null)
+			{
+				if (provider.Contains(ProviderName.PostgreSQL))
+					expected = expected.Value.AddTicks(-expected.Value.Ticks % 10);
+			}
 
-            if (context != ProviderName.SqlServer2000
-                && context != ProviderName.SqlServer2005
-                && context != ProviderName.SqlCe
-                && context != ProviderName.Informix
-                && context != ProviderName.Firebird
+			if (   provider != ProviderName.SqlServer2000
+				&& provider != ProviderName.SqlServer2005
+				&& provider != ProviderName.SqlCe
+				&& !provider.Contains(ProviderName.Informix)
+				&& provider != ProviderName.Firebird
+				&& provider != TestProvName.Firebird3
+				&& provider != ProviderName.MySql
+				&& provider != ProviderName.MySqlConnector
+				&& provider != TestProvName.MySql55
+				&& provider != TestProvName.MariaDB
+				&& !provider.StartsWith("Access")
+				&& provider != ProviderName.SQLiteClassic
+				&& provider != TestProvName.SQLiteClassicMiniProfilerMapped
+				&& provider != TestProvName.SQLiteClassicMiniProfilerUnmapped
+				&& provider != ProviderName.SQLiteMS
+				&& provider != ProviderName.Sybase
+				&& provider != ProviderName.SybaseManaged
+				&& provider != ProviderName.DB2
+				&& !TestProvName.IsiSeries(provider)
+				&& !provider.StartsWith(ProviderName.SapHana))
+				Assert.AreEqual(expected, actual);
+		}
 
-                && context != ProviderName.MySql
+		private static void AssertChar(char? expected, char? actual, string provider)
+		{
+			if (expected != null)
+			{
+				if (expected == ' '
+					&& (   provider == ProviderName.MySql
+						|| provider == ProviderName.MySqlConnector
+						|| provider == TestProvName.MariaDB
+						|| provider == TestProvName.MySql55
+						|| TestProvName.IsiSeries(provider)
+						// after migration to 2.4.126 provider + SPS4, hana or provider started to trim spaces on insert for some reason
+						|| provider.StartsWith(ProviderName.SapHana)))
+					expected = '\0';
+				
+			}
 
-                && context != TestProvName.MariaDB
-                && context != ProviderName.Access
-                && context != ProviderName.SQLiteClassic
-                && context != ProviderName.SQLiteMS
-                && context != ProviderName.Sybase
-                && context != ProviderName.DB2
-                && !DB2iSeriesProviderName.AllNames.Contains(context)
-                && context != ProviderName.SapHana)
-                Assert.AreEqual(expected, actual);
-        }
+			Assert.AreEqual(expected, actual);
+		}
 
-        private static void AssertChar(char? expected, char? actual, string context)
-        {
-            if (expected != null && DB2iSeriesProviderName.AllNames.Contains(context) && expected == ' ')
-            {
-                expected = char.MinValue;
-            }
+		private static void AssertNChar(char? expected, char? actual, string provider)
+		{
+			if (expected != null)
+			{
+				if (expected == ' '
+					&& (provider == ProviderName.MySql
+						|| provider == ProviderName.MySqlConnector
+						|| provider == TestProvName.MariaDB
+						|| provider == TestProvName.MySql55
+						|| TestProvName.IsiSeries(provider)
+						// after migration to 2.4.126 provider + SPS4, hana or provider started to trim spaces on insert for some reason
+						|| provider.StartsWith(ProviderName.SapHana)))
+					expected = '\0';
+			}
 
-            Assert.AreEqual(expected, actual);
-        }
+			Assert.AreEqual(expected, actual);
+		}
 
-        private static void AssertNChar(char? expected, char? actual, string context)
-        {
-            if (expected != null && DB2iSeriesProviderName.AllNames.Contains(context) && expected == ' ')
-            {
-                expected = char.MinValue;
-            }
+		private static void AssertDateTime(DateTime? expected, DateTime? actual, string provider)
+		{
+			if (expected != null)
+			{
+				if ((provider == ProviderName.MySql || provider == ProviderName.MySqlConnector)
+					&& expected.Value.Millisecond > 500) expected = expected.Value.AddSeconds(1);
 
-            Assert.AreEqual(expected, actual);
-        }
+				if (provider == ProviderName.Sybase || provider == ProviderName.SybaseManaged)
+				{
+					switch (expected.Value.Millisecond % 10)
+					{
+						case 1:
+						case 4:
+						case 7:
+							expected = expected.Value.AddMilliseconds(-1);
+							break;
+						case 2:
+						case 5:
+						case 9:
+							expected = expected.Value.AddMilliseconds(1);
+							break;
+						case 8:
+							expected = expected.Value.AddMilliseconds(-2);
+							break;
+					}
+				}
 
-        private static void AssertDateTime(DateTime? expected, DateTime? actual, string context)
-        {
-            if (expected != null)
-            {
+				if (   provider == ProviderName.MySql
+					|| provider == ProviderName.MySqlConnector
+					|| provider == TestProvName.MariaDB
+					|| provider == TestProvName.MySql55
+					|| provider == ProviderName.AccessOdbc
+					|| provider.Contains("Oracle"))
+					expected = expected.Value.AddMilliseconds(-expected.Value.Millisecond);
+			}
 
+			Assert.AreEqual(expected, actual);
+		}
 
-                if (context == ProviderName.Sybase)
-                {
-                    switch (expected.Value.Millisecond % 10)
-                    {
-                        case 1:
-                        case 4:
-                        case 7:
-                            expected = expected.Value.AddMilliseconds(-1);
-                            break;
-                        case 2:
-                        case 5:
-                        case 9:
-                            expected = expected.Value.AddMilliseconds(1);
-                            break;
-                        case 8:
-                            expected = expected.Value.AddMilliseconds(-2);
-                            break;
-                    }
-                }
-            }
+		private static void AssertString(string? expected, string? actual, string provider, bool isIDS)
+		{
+			if (expected != null)
+			{
+				switch (provider)
+				{
+					case ProviderName.Sybase:
+					case ProviderName.SybaseManaged:
+					case ProviderName.SqlCe:
+						expected = expected.TrimEnd(' ');
+						break;
+					case ProviderName.Informix:
+						expected = isIDS ? expected : expected.TrimEnd('\t', ' ');
+						break;
+				}
+			}
 
-            Assert.AreEqual(expected, actual);
-        }
+			Assert.AreEqual(expected, actual);
+		}
 
-        private static void AssertString(string expected, string actual, string context)
-        {
-            if (expected != null)
-            {
-                switch (context)
-                {
-                    case ProviderName.Sybase:
-                        expected = expected.TrimEnd(' ');
-                        break;
-                    case ProviderName.Informix:
-                        expected = expected.TrimEnd('\t', ' ');
-                        break;
-                }
-            }
+		private static void AssertTime(TimeSpan? expected, TimeSpan? actual, string provider)
+		{
+			if (   provider == ProviderName.SqlServer2000
+				|| provider == ProviderName.SqlServer2005
+				|| provider.Contains("Oracle")
+				|| provider == ProviderName.SqlCe
+				|| provider == ProviderName.SQLiteClassic
+				|| provider == TestProvName.SQLiteClassicMiniProfilerMapped
+				|| provider == TestProvName.SQLiteClassicMiniProfilerUnmapped
+				|| provider == ProviderName.SQLiteMS
+				|| provider == TestProvName.MySql55
+				|| provider == ProviderName.Firebird
+				|| provider == TestProvName.Firebird3)
+				return;
 
-            Assert.AreEqual(expected, actual);
-        }
+			if (expected != null)
+			{
+				switch (TestProvName.GetFamily(provider))
+				{
+					case ProviderName.Sybase        :
+					case ProviderName.SybaseManaged :
+						expected = TimeSpan.FromTicks((expected.Value.Ticks / 10000) * 10000);
+						switch (expected.Value.Milliseconds % 10)
+						{
+							case 1:
+							case 4:
+							case 7:
+								expected = expected.Value.Add(TimeSpan.FromMilliseconds(-1));
+								break;
+							case 2:
+							case 5:
+							case 9:
+								expected = expected.Value.Add(TimeSpan.FromMilliseconds(1));
+								break;
+							case 8:
+								expected = expected.Value.Add(TimeSpan.FromMilliseconds(2));
+								break;
+						}
 
-        private static void AssertTime(TimeSpan? expected, TimeSpan? actual, string context)
-        {
+						if (expected == TimeSpan.FromDays(1))
+							expected = expected.Value.Add(TimeSpan.FromMilliseconds(-4));
 
-            if (expected != null)
-            {
-                switch (context)
-                {
-                    case ProviderName.Sybase:
-                        expected = TimeSpan.FromTicks((expected.Value.Ticks / 10000) * 10000);
-                        switch (expected.Value.Milliseconds % 10)
-                        {
-                            case 1:
-                            case 4:
-                            case 7:
-                                expected = expected.Value.Add(TimeSpan.FromMilliseconds(-1));
-                                break;
-                            case 2:
-                            case 5:
-                            case 9:
-                                expected = expected.Value.Add(TimeSpan.FromMilliseconds(1));
-                                break;
-                            case 8:
-                                expected = expected.Value.Add(TimeSpan.FromMilliseconds(2));
-                                break;
-                        }
+						break;
+					case ProviderName.Firebird      :
+					case TestProvName.Firebird3     :
+						expected = TimeSpan.FromTicks((expected.Value.Ticks / 1000) * 1000);
+						break;
+					case ProviderName.InformixDB2   :
+					case ProviderName.Informix      :
+						expected = TimeSpan.FromTicks((expected.Value.Ticks / 100) * 100);
+						break;
+					case ProviderName.PostgreSQL    :
+					case ProviderName.PostgreSQL92  :
+					case ProviderName.PostgreSQL93  :
+					case ProviderName.PostgreSQL95  :
+					case TestProvName.PostgreSQL10  :
+					case TestProvName.PostgreSQL11  :
+						expected = TimeSpan.FromTicks((expected.Value.Ticks / 10) * 10);
+						break;
+					case ProviderName.DB2           :
+					case ProviderName.Access        :
+					case ProviderName.AccessOdbc    :
+					case ProviderName.SapHanaNative :
+					case ProviderName.SapHanaOdbc   :
+					case TestProvName.MariaDB       :
+						expected = TimeSpan.FromTicks((expected.Value.Ticks / 10000000) * 10000000);
+						break;
+					case ProviderName.MySqlConnector:
+					case ProviderName.MySql         :
+						var msecs = expected.Value.Milliseconds;
+						if (msecs > 500)
+						{
+							expected = expected.Value.Add(TimeSpan.FromSeconds(1));
+						}
 
-                        if (expected == TimeSpan.FromDays(1))
-                            expected = expected.Value.Add(TimeSpan.FromMilliseconds(-4));
+						expected = TimeSpan.FromTicks((expected.Value.Ticks / 10000000) * 10000000);
 
-                        break;
-                    case ProviderName.Firebird:
-                        expected = TimeSpan.FromTicks((expected.Value.Ticks / 1000) * 1000);
-                        break;
-                    case ProviderName.Informix:
-                        expected = TimeSpan.FromTicks((expected.Value.Ticks / 100) * 100);
-                        break;
-                    case ProviderName.PostgreSQL:
-                        expected = TimeSpan.FromTicks((expected.Value.Ticks / 10) * 10);
-                        break;
-                    case ProviderName.DB2:
-                    case DB2iSeriesProviderName.DB2:
-                    case DB2iSeriesProviderName.DB2_GAS:
-                    case DB2iSeriesProviderName.DB2_73:
-                    case DB2iSeriesProviderName.DB2_73_GAS:
-					case ProviderName.Access:
-                    case ProviderName.SapHana:
-                        expected = TimeSpan.FromTicks((expected.Value.Ticks / 10000000) * 10000000);
-                        break;
-                }
-            }
+						break;
+				}
+			}
 
-            Assert.AreEqual(expected, actual);
-        }
+			Assert.AreEqual(expected, actual);
+		}
 
-        [Test, MergeDataContextSource(ProviderName.Informix, ProviderName.Sybase)]
-        public void TestTypesInsertByMerge(string context)
-        {
-            using (var db = new TestDataConnection(context))
-            {
-                using (new DisableLogging())
-                {
-                    GetTypes1(db).Delete();
-                    GetTypes2(db).Delete();
-                }
+		[Test]
+		public void TestTypesInsertByMerge([MergeDataContextSource(
+			TestProvName.AllInformix, ProviderName.Sybase, ProviderName.SybaseManaged)]
+			string context)
+		{
+			var isIDS = IsIDSProvider(context);
 
-                GetTypes1(db).Merge().Using(InitialTypes1Data).OnTargetKey().InsertWhenNotMatched().Merge();
+			using (var db = GetDataContext(context))
+			{
+				using (new DisableLogging())
+				{
+					GetTypes1(db).Delete();
+					GetTypes2(db).Delete();
+				}
 
-                GetTypes2(db).Merge().Using(InitialTypes2Data).OnTargetKey().InsertWhenNotMatched().Merge();
+				GetTypes1(db).Merge().Using(InitialTypes1Data).OnTargetKey().InsertWhenNotMatched().Merge();
+				GetTypes2(db).Merge().Using(InitialTypes2Data).OnTargetKey().InsertWhenNotMatched().Merge();
 
-                var result1 = GetTypes1(db).OrderBy(x => x.Id).ToList();
-                var result2 = GetTypes2(db).OrderBy(x => x.Id).ToList();
+				var result1 = GetTypes1(db).OrderBy(_ => _.Id).ToList();
+				var result2 = GetTypes2(db).OrderBy(_ => _.Id).ToList();
 
-                Assert.AreEqual(InitialTypes1Data.Length, result1.Count);
-                Assert.AreEqual(InitialTypes2Data.Length, result2.Count);
+				Assert.AreEqual(InitialTypes1Data.Length, result1.Count);
+				Assert.AreEqual(InitialTypes2Data.Length, result2.Count);
 
-                for (var i = 0; i < InitialTypes1Data.Length; i++)
-                {
-                    AssertTypesRow(InitialTypes1Data[i], result1[i], context);
-                }
+				var provider = GetProviderName(context, out var _);
+				for (var i = 0; i < InitialTypes1Data.Length; i++)
+				{
+					AssertTypesRow(InitialTypes1Data[i], result1[i], provider, isIDS);
+				}
 
-                for (var i = 0; i < InitialTypes2Data.Length; i++)
-                {
-                    AssertTypesRow(InitialTypes2Data[i], result2[i], context);
-                }
-            }
-        }
-    }
+				for (var i = 0; i < InitialTypes2Data.Length; i++)
+				{
+					AssertTypesRow(InitialTypes2Data[i], result2[i], provider, isIDS);
+				}
+			}
+		}
+	}
 }

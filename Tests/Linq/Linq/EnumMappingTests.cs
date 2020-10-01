@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Linq;
 using System.Linq.Expressions;
+#if NET46
+using System.ServiceModel;
+#endif
 
 using LinqToDB;
 using LinqToDB.Mapping;
@@ -9,9 +12,10 @@ using NUnit.Framework;
 
 namespace Tests.Linq
 {
+	using LinqToDB.Common;
 	using Model;
 
-	[TestFixture, Category("MapValue")]
+	[TestFixture]
 	public class EnumMappingTests : TestBase
 	{
 		enum TestEnum1
@@ -38,42 +42,57 @@ namespace Tests.Linq
 			Value2,
 		}
 
+		enum UndefinedEnum
+		{
+			[MapValue(ProviderName.Access, 11), MapValue(11L)]
+			Value1,
+			[MapValue(ProviderName.Access, 12), MapValue(12L)]
+			Value2,
+		}
+
 		[Table("LinqDataTypes")]
 		class TestTable1
 		{
-			[PrimaryKey, Column("ID")] public int Id;
-			[Column("BigIntValue")] public TestEnum1 TestField;
+			[PrimaryKey, Column("ID")] public int       Id;
+			[Column("BigIntValue")]    public TestEnum1 TestField;
 		}
 
 		[Table("LinqDataTypes")]
 		class TestTable2
 		{
-			[PrimaryKey, Column("ID")] public int Id;
-			[Column("BigIntValue")] public TestEnum21 TestField;
-			[Column("IntValue")] public TestEnum3 Int32Field;
+			[PrimaryKey, Column("ID")] public int        Id;
+			[Column("BigIntValue")]    public TestEnum21 TestField;
+			[Column("IntValue")]       public TestEnum3  Int32Field;
 		}
 
 		[Table("LinqDataTypes")]
 		class NullableTestTable1
 		{
-			[PrimaryKey, Column("ID")] public int? Id;
-			[Column("BigIntValue")] public TestEnum1? TestField;
+			[PrimaryKey, Column("ID")] public int?       Id;
+			[Column("BigIntValue")]    public TestEnum1? TestField;
 		}
 
 		[Table("LinqDataTypes")]
 		class NullableTestTable2
 		{
-			[PrimaryKey, Column("ID")] public int? Id;
-			[Column("BigIntValue")] public TestEnum21? TestField;
-			[Column("IntValue")] public TestEnum3? Int32Field;
+			[PrimaryKey, Column("ID")] public int?        Id;
+			[Column("BigIntValue")]    public TestEnum21? TestField;
+			[Column("IntValue")]       public TestEnum3?  Int32Field;
 		}
 
 		[Table("LinqDataTypes")]
 		class RawTable
 		{
-			[PrimaryKey, Column("ID")] public int Id;
-			[Column("BigIntValue")] public long TestField;
-			[Column("IntValue")] public int Int32Field;
+			[PrimaryKey, Column("ID")] public int  Id;
+			[Column("BigIntValue")]    public long TestField;
+			[Column("IntValue")]       public int  Int32Field;
+		}
+
+		[Table("LinqDataTypes")]
+		class UndefinedValueTest
+		{
+			[PrimaryKey, Column("ID")] public int?          Id;
+			[Column("BigIntValue")]    public UndefinedEnum TestField;
 		}
 
 		class Cleaner : IDisposable
@@ -108,10 +127,10 @@ namespace Tests.Linq
 
 		const long VAL2 = 12;
 		const long VAL1 = 11;
-		const int RID = 101;
+		const int  RID  = 101;
 
-		[Test, DataContextSource]
-		public void EnumMapInsert1(string context)
+		[Test]
+		public void EnumMapInsert1([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -126,8 +145,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapInsert2(string context)
+		[Test]
+		public void EnumMapInsert2([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -142,8 +161,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapInsert3(string context)
+		[Test]
+		public void EnumMapInsert3([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -159,8 +178,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapInsert4(string context)
+		[Test]
+		public void EnumMapInsert4([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -175,8 +194,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapWhere1(string context)
+		[Test]
+		public void EnumMapWhere1([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -192,8 +211,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapWhere2(string context)
+		[Test]
+		public void EnumMapWhere2([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -209,8 +228,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapWhere3(string context)
+		[Test]
+		public void EnumMapWhere3([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -228,8 +247,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapWhere4(string context)
+		[Test]
+		public void EnumMapWhere4([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -247,8 +266,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapUpdate1(string context)
+		[Test]
+		public void EnumMapUpdate1([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -272,8 +291,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapUpdate2(string context)
+		[Test]
+		public void EnumMapUpdate2([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -297,8 +316,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapUpdate3(string context)
+		[Test]
+		public void EnumMapUpdate3([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -322,8 +341,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapUpdate4(string context)
+		[Test]
+		public void EnumMapUpdate4([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -347,8 +366,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapSelectAnon1(string context)
+		[Test]
+		public void EnumMapSelectAnon1([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -369,8 +388,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapSelectAnon2(string context)
+		[Test]
+		public void EnumMapSelectAnon2([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -391,8 +410,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapSelectAnon3(string context)
+		[Test]
+		public void EnumMapSelectAnon3([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -413,8 +432,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapSelectAnon4(string context)
+		[Test]
+		public void EnumMapSelectAnon4([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -435,8 +454,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapDelete1(string context)
+		[Test]
+		public void EnumMapDelete1([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -451,8 +470,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapDelete2(string context)
+		[Test]
+		public void EnumMapDelete2([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -467,8 +486,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapDelete3(string context)
+		[Test]
+		public void EnumMapDelete3([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -484,8 +503,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapDelete4(string context)
+		[Test]
+		public void EnumMapDelete4([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -501,8 +520,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapSet1(string context)
+		[Test]
+		public void EnumMapSet1([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -521,8 +540,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapSet2(string context)
+		[Test]
+		public void EnumMapSet2([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -541,8 +560,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapSet3(string context)
+		[Test]
+		public void EnumMapSet3([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -560,8 +579,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapSet4(string context)
+		[Test]
+		public void EnumMapSet4([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -580,8 +599,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapSet5(string context)
+		[Test]
+		public void EnumMapSet5([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -600,8 +619,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapSet6(string context)
+		[Test]
+		public void EnumMapSet6([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -619,8 +638,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapContains1(string context)
+		[Test]
+		public void EnumMapContains1([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -636,8 +655,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapContains2(string context)
+		[Test]
+		public void EnumMapContains2([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -652,8 +671,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapContains3(string context)
+		[Test]
+		public void EnumMapContains3([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -669,8 +688,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapContains4(string context)
+		[Test]
+		public void EnumMapContains4([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -686,8 +705,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapSelectNull1(string context)
+		[Test]
+		public void EnumMapSelectNull1([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -707,8 +726,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapSelectNull2(string context)
+		[Test]
+		public void EnumMapSelectNull2([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -728,8 +747,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapWhereNull1(string context)
+		[Test]
+		public void EnumMapWhereNull1([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -747,8 +766,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapWhereNull2(string context)
+		[Test]
+		public void EnumMapWhereNull2([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -766,8 +785,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapInsertObject1(string context)
+		[Test]
+		public void EnumMapInsertObject1([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -782,8 +801,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapInsertObject2(string context)
+		[Test]
+		public void EnumMapInsertObject2([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -798,8 +817,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapInsertObject3(string context)
+		[Test]
+		public void EnumMapInsertObject3([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -815,8 +834,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapInsertObject4(string context)
+		[Test]
+		public void EnumMapInsertObject4([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -831,8 +850,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapInsertFromSelectWithParam1(string context)
+		[Test]
+		public void EnumMapInsertFromSelectWithParam1([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -859,8 +878,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapInsertFromSelectWithParam2(string context)
+		[Test]
+		public void EnumMapInsertFromSelectWithParam2([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -887,8 +906,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapInsertFromSelectWithParam3(string context)
+		[Test]
+		public void EnumMapInsertFromSelectWithParam3([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -915,8 +934,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapInsertFromSelectWithParam4(string context)
+		[Test]
+		public void EnumMapInsertFromSelectWithParam4([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -943,8 +962,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapDeleteEquals1(string context)
+		[Test]
+		public void EnumMapDeleteEquals1([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -959,8 +978,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapDeleteEquals2(string context)
+		[Test]
+		public void EnumMapDeleteEquals2([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -975,8 +994,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapDeleteEquals3(string context)
+		[Test]
+		public void EnumMapDeleteEquals3([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -992,8 +1011,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapDeleteEquals4(string context)
+		[Test]
+		public void EnumMapDeleteEquals4([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -1009,8 +1028,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapCustomPredicate1(string context)
+		[Test]
+		public void EnumMapCustomPredicate1([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -1030,8 +1049,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapCustomPredicate2(string context)
+		[Test]
+		public void EnumMapCustomPredicate2([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -1054,9 +1073,9 @@ namespace Tests.Linq
 		[Table("LinqDataTypes")]
 		class TestTable3
 		{
-			[PrimaryKey] public int ID;
+			[PrimaryKey]            public int        ID;
 			[Column("BigIntValue")] public TestEnum1? TargetType;
-			[Column("IntValue")] public int? TargetID;
+			[Column("IntValue")]    public int?       TargetID;
 		}
 
 		struct ObjectReference
@@ -1072,8 +1091,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void Test_4_1_18_Regression1(string context)
+		[Test]
+		public void Test_4_1_18_Regression1([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -1095,17 +1114,17 @@ namespace Tests.Linq
 
 				Assert.AreEqual(1, result.Length);
 				Assert.NotNull(result[0].Target);
-				Assert.AreEqual(10, result[0].Target.Value.TargetID);
-				Assert.AreEqual(TestEnum1.Value2, result[0].Target.Value.TargetType);
+				Assert.AreEqual(10, result[0].Target!.Value.TargetID);
+				Assert.AreEqual(TestEnum1.Value2, result[0].Target!.Value.TargetType);
 			}
 		}
 
 		[Table("LinqDataTypes")]
 		class TestTable4
 		{
-			[PrimaryKey] public int ID;
+			[PrimaryKey]            public int        ID;
 			[Column("BigIntValue")] public TestEnum2? TargetType;
-			[Column("IntValue")] public int? TargetID;
+			[Column("IntValue")]    public int?       TargetID;
 		}
 
 		struct ObjectReference2
@@ -1121,8 +1140,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void Test_4_1_18_Regression2(string context)
+		[Test]
+		public void Test_4_1_18_Regression2([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -1144,8 +1163,8 @@ namespace Tests.Linq
 
 				Assert.AreEqual(1, result.Length);
 				Assert.NotNull(result[0].Target);
-				Assert.AreEqual(10, result[0].Target.Value.TargetID);
-				Assert.AreEqual(TestEnum2.Value2, result[0].Target.Value.TargetType);
+				Assert.AreEqual(10, result[0].Target!.Value.TargetID);
+				Assert.AreEqual(TestEnum2.Value2, result[0].Target!.Value.TargetType);
 			}
 		}
 
@@ -1159,8 +1178,8 @@ namespace Tests.Linq
 			return val;
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapSelectNull_Regression(string context)
+		[Test]
+		public void EnumMapSelectNull_Regression([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -1191,12 +1210,12 @@ namespace Tests.Linq
 		[Table("LinqDataTypes", IsColumnAttributeRequired = false)]
 		class TestTable5
 		{
-			public int ID;
+			public int      ID;
 			public TestFlag IntValue;
 		}
 
-		[Test, DataContextSource(ProviderName.Access)]
-		public void TestFlagEnum(string context)
+		[Test]
+		public void TestFlagEnum([DataSources(TestProvName.AllAccess)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -1211,8 +1230,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapIntermediateObject1(string context)
+		[Test]
+		public void EnumMapIntermediateObject1([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -1230,8 +1249,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapIntermediateObject2(string context)
+		[Test]
+		public void EnumMapIntermediateObject2([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -1249,8 +1268,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapIntermediateObject3(string context)
+		[Test]
+		public void EnumMapIntermediateObject3([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -1268,8 +1287,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void EnumMapIntermediateObject4(string context)
+		[Test]
+		public void EnumMapIntermediateObject4([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db))
@@ -1290,49 +1309,49 @@ namespace Tests.Linq
 		[Table("LinqDataTypes")]
 		class NullableTestTable01
 		{
-			[PrimaryKey, Column("ID")] public int? Id;
-			[Column("IntValue")] public NullableEnum01 Value;
+			[PrimaryKey, Column("ID")] public int?           Id;
+			[Column("IntValue")]       public NullableEnum01 Value;
 		}
 
 		[Table("LinqDataTypes")]
 		class NullableTestTable02
 		{
-			[PrimaryKey, Column("ID")] public int? Id;
-			[Column("IntValue")] public NullableEnum01? Value;
+			[PrimaryKey, Column("ID")] public int?            Id;
+			[Column("IntValue")]       public NullableEnum01? Value;
 		}
 
 		[Table("LinqDataTypes")]
 		class NullableTestTable03
 		{
-			[PrimaryKey, Column("ID")] public int? Id;
-			[Column("StringValue")] public NullableEnum02 Value;
+			[PrimaryKey, Column("ID")] public int?           Id;
+			[Column("StringValue")]    public NullableEnum02 Value;
 		}
 
 		[Table("LinqDataTypes")]
 		class NullableTestTable04
 		{
-			[PrimaryKey, Column("ID")] public int? Id;
-			[Column("StringValue")] public NullableEnum02? Value;
+			[PrimaryKey, Column("ID")] public int?            Id;
+			[Column("StringValue")]    public NullableEnum02? Value;
 		}
 
 		[Table("LinqDataTypes")]
 		class NullableTestTable05
 		{
-			[PrimaryKey, Column("ID")] public int? Id;
-			[Column("IntValue")] public NullableEnum03 Value;
+			[PrimaryKey, Column("ID")] public int?           Id;
+			[Column("IntValue")]       public NullableEnum03 Value;
 		}
 
 		[Table("LinqDataTypes")]
 		class NullableTestTable06
 		{
-			[PrimaryKey, Column("ID")] public int? Id;
-			[Column("IntValue")] public NullableEnum03? Value;
+			[PrimaryKey, Column("ID")] public int?            Id;
+			[Column("IntValue")]       public NullableEnum03? Value;
 		}
 
 		enum NullableEnum01
 		{
-			[MapValue(11)] Value1 = 3,
-			[MapValue(22)] Value2,
+			[MapValue(11)]   Value1 = 3,
+			[MapValue(22)]   Value2,
 			[MapValue(null)] Value3
 		}
 
@@ -1345,21 +1364,21 @@ namespace Tests.Linq
 
 		enum NullableEnum03
 		{
-			[MapValue(11)] Value1 = 3,
-			[MapValue(0)] Value2,
+			[MapValue(11)]   Value1 = 3,
+			[MapValue(0)]    Value2,
 			[MapValue(null)] Value3
 		}
 
 		[Table("LinqDataTypes")]
 		class RawTable2
 		{
-			[PrimaryKey, Column("ID")] public int Id;
-			[Column("IntValue")] public int? Int32;
-			[Column("StringValue")] public string String;
+			[PrimaryKey, Column("ID")] public int     Id;
+			[Column("IntValue")]       public int?    Int32;
+			[Column("StringValue")]    public string? String;
 		}
 
-		[DataContextSource]
-		public void NullableEnumWithNullValue01(string context)
+		[Test]
+		public void NullableEnumWithNullValue01([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db, 3))
@@ -1406,8 +1425,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[DataContextSource]
-		public void NullableEnumWithNullValue02(string context)
+		[Test]
+		public void NullableEnumWithNullValue02([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db, 4))
@@ -1453,7 +1472,7 @@ namespace Tests.Linq
 
 				Assert.AreEqual(RID + 2, records[2].Id);
 				Assert.AreEqual(RID + 2, rawRecords[2].Id);
-				// for nullable enum on read null is preffered before mapped value
+				// for nullable enum on read null is preferred before mapped value
 				Assert.IsNull(records[2].Value);
 				Assert.IsNull(rawRecords[2].Int32);
 
@@ -1464,8 +1483,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[DataContextSource]
-		public void NullableEnumWithNullValue03(string context)
+		[Test]
+		public void NullableEnumWithNullValue03([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db, 3))
@@ -1512,8 +1531,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[DataContextSource]
-		public void NullableEnumWithNullValue04(string context)
+		[Test]
+		public void NullableEnumWithNullValue04([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db, 4))
@@ -1559,7 +1578,7 @@ namespace Tests.Linq
 
 				Assert.AreEqual(RID + 2, records[2].Id);
 				Assert.AreEqual(RID + 2, rawRecords[2].Id);
-				// for nullable enum on read null is preffered before mapped value
+				// for nullable enum on read null is preferred before mapped value
 				Assert.IsNull(records[2].Value);
 				Assert.IsNull(rawRecords[2].String);
 
@@ -1570,8 +1589,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[DataContextSource]
-		public void NullableEnumWithNullValue05(string context)
+		[Test]
+		public void NullableEnumWithNullValue05([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db, 3))
@@ -1618,8 +1637,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[DataContextSource]
-		public void NullableEnumWithNullValue06(string context)
+		[Test]
+		public void NullableEnumWithNullValue06([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (new Cleaner(db, 4))
@@ -1665,7 +1684,7 @@ namespace Tests.Linq
 
 				Assert.AreEqual(RID + 2, records[2].Id);
 				Assert.AreEqual(RID + 2, rawRecords[2].Id);
-				// for nullable enum on read null is preffered before mapped value
+				// for nullable enum on read null is preferred before mapped value
 				Assert.IsNull(records[2].Value);
 				Assert.IsNull(rawRecords[2].Int32);
 
@@ -1673,6 +1692,474 @@ namespace Tests.Linq
 				Assert.AreEqual(RID + 3, rawRecords[3].Id);
 				Assert.IsNull(records[3].Value);
 				Assert.IsNull(rawRecords[3].Int32);
+			}
+		}
+
+		[Test]
+		public void EnumMappingWriteUndefinedValue([DataSources] string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				using (new Cleaner(db))
+				{
+					db.GetTable<UndefinedValueTest>().Insert(() => new UndefinedValueTest
+					{
+						Id = RID,
+						TestField = (UndefinedEnum)5
+					});
+
+					var result = db.GetTable<RawTable>()
+						.Select(r => new { r.Id, r.TestField })
+						.Where(r => r.Id == RID)
+						.ToList();
+
+					Assert.AreEqual(1, result.Count);
+					Assert.AreEqual(5, result[0].TestField);
+				}
+			}
+		}
+
+		[Test]
+		public void EnumMappingReadUndefinedValue([DataSources] string context)
+		{
+			GetProviderName(context, out var isLinqService);
+
+			using (var db = GetDataContext(context))
+			{
+				using (new Cleaner(db))
+				{
+					db.GetTable<RawTable>().Insert(() => new RawTable
+					{
+						Id = RID,
+						TestField = 5
+					});
+
+#if NET46
+					if (isLinqService)
+					{
+						Assert.Throws<FaultException<ExceptionDetail>>(() =>
+							db.GetTable<UndefinedValueTest>()
+								.Select(r => new { r.Id, r.TestField })
+								.Where(r => r.Id == RID)
+								.ToList());
+					}
+					else
+#endif
+					Assert.Throws<LinqToDBConvertException>(() =>
+						db.GetTable<UndefinedValueTest>()
+							.Select(r => new { r.Id, r.TestField })
+							.Where(r => r.Id == RID)
+							.ToList());
+				}
+			}
+		}
+
+		[Table]
+		public class Issue1622Table
+		{
+			[PrimaryKey]
+			public int Id { get; set; }
+			[Column]
+			public string? SomeText { get; set; }
+		}
+
+		public enum Issue1622Enum
+		{
+			Value1, Value2
+		}
+
+		[Sql.Expression("{0} = {1}", InlineParameters = true, ServerSideOnly = true, IsPredicate = true)]
+		public static bool SomeComparison(string? column, Issue1622Enum value) => throw new InvalidOperationException();
+
+		[Test]
+		public void Issue1622Test([DataSources] string context)
+		{
+			var ms = new MappingSchema();
+			using (var db = GetDataContext(context, ms))
+			{
+				ms.SetValueToSqlConverter(typeof(Issue1622Enum),
+					(sb, dt, v) =>
+					{
+						sb.Append("'").Append(((Issue1622Enum)v).ToString()).Append("_suffix'");
+					});
+
+				using (var table = db.CreateLocalTable<Issue1622Table>())
+				{
+					var item = new Issue1622Table() { Id = 1, SomeText = "Value1_suffix" };
+					db.Insert(item);
+
+					var res = table.Where(e => SomeComparison(e.SomeText, Issue1622Enum.Value1)).Single();
+					var res2 = table.Where(e => e.Id == 1).Single();
+
+					Assert.That(item.Id, Is.EqualTo(res.Id));
+					Assert.That(item.SomeText, Is.EqualTo(res.SomeText));
+					Assert.That(item.Id, Is.EqualTo(res2.Id));
+					Assert.That(item.SomeText, Is.EqualTo(res2.SomeText));
+				}
+			}
+		}
+
+		public enum CharEnum
+		{
+			[MapValue('A')]
+			A = 6,
+			[MapValue('B')]
+			B = 5,
+			[MapValue('C')]
+			C = 4
+		}
+
+		public enum CharEnumS : ushort
+		{
+			[MapValue('A')]
+			A = 6,
+			[MapValue('B')]
+			B = 5,
+			[MapValue('C')]
+			C = 4
+		}
+
+		public enum CharEnumL : ulong
+		{
+			[MapValue('A')]
+			A = 0xFFFFFFFFFFFFFFFF,
+			[MapValue('B')]
+			B = 0xFFFFFFFFFFFFFFFE,
+			[MapValue('C')]
+			C = 0xFFFFFFFFFFFFFFFD
+		}
+
+		[Table]
+		public class EnumCardinality
+		{
+			[Column]
+			public int Id { get; set; }
+
+			[Column] public CharEnum   Property1 { get; set; }
+			[Column] public CharEnum?  Property2 { get; set; }
+			[Column] public CharEnumS  Property3 { get; set; }
+			[Column] public CharEnumS? Property4 { get; set; }
+			[Column] public CharEnumL  Property5 { get; set; }
+			[Column] public CharEnumL? Property6 { get; set; }
+
+			public static EnumCardinality[] Seed { get; }
+				= new[]
+				{
+					new EnumCardinality() { Id = 1, Property1 = CharEnum.A, Property2 = CharEnum.A, Property3 = CharEnumS.A, Property4 = CharEnumS.A, Property5 = CharEnumL.A, Property6 = CharEnumL.A },
+					new EnumCardinality() { Id = 2, Property1 = CharEnum.B, Property2 = CharEnum.B, Property3 = CharEnumS.B, Property4 = CharEnumS.B, Property5 = CharEnumL.B, Property6 = CharEnumL.B },
+					new EnumCardinality() { Id = 3, Property1 = CharEnum.C, Property2 = CharEnum.C, Property3 = CharEnumS.C, Property4 = CharEnumS.C, Property5 = CharEnumL.C, Property6 = CharEnumL.C },
+				};
+		}
+
+		[Test]
+		public void TestCardinalityOperators_Less([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property1 < CharEnum.B).Single();
+
+				Assert.AreEqual(1, res.Id);
+				Assert.AreEqual(CharEnum.A, res.Property1);
+			}
+		}
+
+		[Test]
+		public void TestCardinalityOperators_LessOrEqual([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property1 <= CharEnum.A).Single();
+
+				Assert.AreEqual(1, res.Id);
+				Assert.AreEqual(CharEnum.A, res.Property1);
+			}
+		}
+
+		[Test]
+		public void TestCardinalityOperators_Greater([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property1 > CharEnum.B).Single();
+
+				Assert.AreEqual(3, res.Id);
+				Assert.AreEqual(CharEnum.C, res.Property1);
+			}
+		}
+
+		[Test]
+		public void TestCardinalityOperators_GreaterOrEqual([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property1 >= CharEnum.C).Single();
+
+				Assert.AreEqual(3, res.Id);
+				Assert.AreEqual(CharEnum.C, res.Property1);
+			}
+		}
+
+		[Test]
+		public void TestCardinalityOperators_Less_Nullable([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property2 < CharEnum.B).Single();
+
+				Assert.AreEqual(1, res.Id);
+				Assert.AreEqual(CharEnum.A, res.Property2);
+			}
+		}
+
+		[Test]
+		public void TestCardinalityOperators_LessOrEqual_Nullable([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property2 <= CharEnum.A).Single();
+
+				Assert.AreEqual(1, res.Id);
+				Assert.AreEqual(CharEnum.A, res.Property2);
+			}
+		}
+
+		[Test]
+		public void TestCardinalityOperators_Greater_Nullable([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property2 > CharEnum.B).Single();
+
+				Assert.AreEqual(3, res.Id);
+				Assert.AreEqual(CharEnum.C, res.Property2);
+			}
+		}
+
+		[Test]
+		public void TestCardinalityOperators_GreaterOrEqual_Nullable([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property2 >= CharEnum.C).Single();
+
+				Assert.AreEqual(3, res.Id);
+				Assert.AreEqual(CharEnum.C, res.Property2);
+			}
+		}
+
+		[Test]
+		public void TestCardinalityOperators_Less_Short([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property3 < CharEnumS.B).Single();
+
+				Assert.AreEqual(1, res.Id);
+				Assert.AreEqual(CharEnumS.A, res.Property3);
+			}
+		}
+
+		[Test]
+		public void TestCardinalityOperators_LessOrEqual_Short([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property3 <= CharEnumS.A).Single();
+
+				Assert.AreEqual(1, res.Id);
+				Assert.AreEqual(CharEnumS.A, res.Property3);
+			}
+		}
+
+		[Test]
+		public void TestCardinalityOperators_Greater_Short([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property3 > CharEnumS.B).Single();
+
+				Assert.AreEqual(3, res.Id);
+				Assert.AreEqual(CharEnumS.C, res.Property3);
+			}
+		}
+
+		[Test]
+		public void TestCardinalityOperators_GreaterOrEqual_Short([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property3 >= CharEnumS.C).Single();
+
+				Assert.AreEqual(3, res.Id);
+				Assert.AreEqual(CharEnumS.C, res.Property3);
+			}
+		}
+
+		[Test]
+		public void TestCardinalityOperators_Less_Short_Nullable([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property4 < CharEnumS.B).Single();
+
+				Assert.AreEqual(1, res.Id);
+				Assert.AreEqual(CharEnumS.A, res.Property4);
+			}
+		}
+
+		[Test]
+		public void TestCardinalityOperators_LessOrEqual_Short_Nullable([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property4 <= CharEnumS.A).Single();
+
+				Assert.AreEqual(1, res.Id);
+				Assert.AreEqual(CharEnumS.A, res.Property4);
+			}
+		}
+
+		[Test]
+		public void TestCardinalityOperators_Greater_Short_Nullable([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property4 > CharEnumS.B).Single();
+
+				Assert.AreEqual(3, res.Id);
+				Assert.AreEqual(CharEnumS.C, res.Property4);
+			}
+		}
+
+		[Test]
+		public void TestCardinalityOperators_GreaterOrEqual_Short_Nullable([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property4 >= CharEnumS.C).Single();
+
+				Assert.AreEqual(3, res.Id);
+				Assert.AreEqual(CharEnumS.C, res.Property4);
+			}
+		}
+
+		[Test]
+		public void TestCardinalityOperators_Less_Long([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property5 < CharEnumL.B).Single();
+
+				Assert.AreEqual(1, res.Id);
+				Assert.AreEqual(CharEnumL.A, res.Property5);
+			}
+		}
+
+		[Test]
+		public void TestCardinalityOperators_LessOrEqual_Long([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property5 <= CharEnumL.A).Single();
+
+				Assert.AreEqual(1, res.Id);
+				Assert.AreEqual(CharEnumL.A, res.Property5);
+			}
+		}
+
+		[Test]
+		public void TestCardinalityOperators_Greater_Long([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property5 > CharEnumL.B).Single();
+
+				Assert.AreEqual(3, res.Id);
+				Assert.AreEqual(CharEnumL.C, res.Property5);
+			}
+		}
+
+		[Test]
+		public void TestCardinalityOperators_GreaterOrEqual_Long([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property5 >= CharEnumL.C).Single();
+
+				Assert.AreEqual(3, res.Id);
+				Assert.AreEqual(CharEnumL.C, res.Property5);
+			}
+		}
+
+		[Test]
+		public void TestCardinalityOperators_Less_Long_Nullable([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property6 < CharEnumL.B).Single();
+
+				Assert.AreEqual(1, res.Id);
+				Assert.AreEqual(CharEnumL.A, res.Property6);
+			}
+		}
+
+		[Test]
+		public void TestCardinalityOperators_LessOrEqual_Long_Nullable([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property6 <= CharEnumL.A).Single();
+
+				Assert.AreEqual(1, res.Id);
+				Assert.AreEqual(CharEnumL.A, res.Property6);
+			}
+		}
+
+		[Test]
+		public void TestCardinalityOperators_Greater_Long_Nullable([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property6 > CharEnumL.B).Single();
+
+				Assert.AreEqual(3, res.Id);
+				Assert.AreEqual(CharEnumL.C, res.Property6);
+			}
+		}
+
+		[Test]
+		public void TestCardinalityOperators_GreaterOrEqual_Long_Nullable([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using (var db    = GetDataContext(context))
+			using (var table = db.CreateLocalTable(EnumCardinality.Seed))
+			{
+				var res = table.Where(_ => _.Property6 >= CharEnumL.C).Single();
+
+				Assert.AreEqual(3, res.Id);
+				Assert.AreEqual(CharEnumL.C, res.Property6);
 			}
 		}
 	}

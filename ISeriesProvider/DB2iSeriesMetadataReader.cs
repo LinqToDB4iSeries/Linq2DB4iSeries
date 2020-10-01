@@ -5,6 +5,7 @@ using LinqToDB.Metadata;
 namespace LinqToDB.DataProvider.DB2iSeries
 {
 	using SqlQuery;
+	using System.Linq;
 
 	class DB2iSeriesMetadataReader : IMetadataReader
 	{
@@ -64,17 +65,22 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						return GetFunction<T>(() => new Sql.FunctionAttribute(providerName, "Substr") { PreferServerSide = true });
 					case "Atan2":
 						return GetFunction<T>(() => new Sql.FunctionAttribute(providerName, "Atan2", 1, 0));
-					case "Log":
-						return GetFunction<T>(() => new Sql.FunctionAttribute(providerName, "Ln"));
+					case "Log" when memberInfo is MethodInfo logMethod:
+						if (logMethod.GetParameters().Length == 1)
+							return GetFunction<T>(() => new Sql.FunctionAttribute(providerName, "Ln"));
+						break;
 					case "Log10":
-						return GetFunction<T>(() => new Sql.FunctionAttribute(providerName, "Log"));
+						return GetFunction<T>(() => new Sql.FunctionAttribute(providerName, "Log10"));
 					case "DefaultNChar":
 					case "DefaultNVarChar":
 					case "NChar":
 					case "NVarChar":
-						return GetFunction<T>(() => new Sql.FunctionAttribute(providerName, "Char") { ServerSideOnly = true });
+						return GetFunction<T>(() => new Sql.FunctionAttribute(providerName, "Graphic") { ServerSideOnly = true });
 					case "Replicate":
 						return GetFunction<T>(() => new Sql.FunctionAttribute(providerName, "Repeat"));
+					case "StringAggregate" when memberInfo is MethodInfo stringAggregateMethod:
+						var firstParameter = stringAggregateMethod.GetParameters().Any(x => x.Name == "selector") ? "selector" : "source";
+						return GetExtension<T>(() => new Sql.ExtensionAttribute(providerName, "LISTAGG({" + firstParameter + "}, {separator}){_}{aggregation_ordering?}") { IsAggregate = true, ChainPrecedence = 10 });
 				}
 			}
 
@@ -128,17 +134,17 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			switch (part)
 			{
-				case Sql.DateParts.Year: expStr = "{0} + {1} Year"; break;
-				case Sql.DateParts.Quarter: expStr = "{0} + ({1} * 3) Month"; break;
-				case Sql.DateParts.Month: expStr = "{0} + {1} Month"; break;
+				case Sql.DateParts.Year: expStr = "{0} + ({1}) Year"; break;
+				case Sql.DateParts.Quarter: expStr = "{0} + (({1}) * 3) Month"; break;
+				case Sql.DateParts.Month: expStr = "{0} + ({1}) Month"; break;
 				case Sql.DateParts.DayOfYear:
 				case Sql.DateParts.WeekDay:
-				case Sql.DateParts.Day: expStr = "{0} + {1} Day"; break;
-				case Sql.DateParts.Week: expStr = "{0} + ({1} * 7) Day"; break;
-				case Sql.DateParts.Hour: expStr = "{0} + {1} Hour"; break;
-				case Sql.DateParts.Minute: expStr = "{0} + {1} Minute"; break;
-				case Sql.DateParts.Second: expStr = "{0} + {1} Second"; break;
-				case Sql.DateParts.Millisecond: expStr = "{0} + ({1} * 1000) Microsecond"; break;
+				case Sql.DateParts.Day: expStr = "{0} + ({1}) Day"; break;
+				case Sql.DateParts.Week: expStr = "{0} + (({1}) * 7) Day"; break;
+				case Sql.DateParts.Hour: expStr = "{0} + ({1}) Hour"; break;
+				case Sql.DateParts.Minute: expStr = "{0} + ({1}) Minute"; break;
+				case Sql.DateParts.Second: expStr = "{0} + ({1}) Second"; break;
+				case Sql.DateParts.Millisecond: expStr = "{0} + (({1}) * 1000) Microsecond"; break;
 				default:
 					throw new ArgumentOutOfRangeException();
 			}

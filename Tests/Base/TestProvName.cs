@@ -1,29 +1,44 @@
-﻿namespace Tests
+﻿using System.Linq;
+
+namespace Tests
 {
 	public static class TestProvName
 	{
-		public const string SqlAzure          = "SqlAzure";
-		public const string MariaDB           = "MariaDB";
+		public const string SqlAzure = "SqlAzure";
+		public const string MariaDB = "MariaDB";
 		/// <summary>
 		/// MySQL 5.5
 		/// Features:
 		/// - supports year(2) type
 		/// - fractional seconds not supported
 		/// </summary>
-		public const string MySql55           = "MySql55";
-		public const string Firebird3         = "Firebird3";
-		public const string Northwind         = "Northwind";
-		public const string NorthwindSQLite   = "Northwind.SQLite";
+		public const string MySql55 = "MySql55";
+		public const string Firebird3 = "Firebird3";
+		public const string Northwind = "Northwind";
+		public const string NorthwindSQLite = "Northwind.SQLite";
 		public const string NorthwindSQLiteMS = "Northwind.SQLite.MS";
-		public const string PostgreSQL10      = "PostgreSQL.10";
-		public const string PostgreSQL11      = "PostgreSQL.11";
-		public const string Oracle11Native    = "Oracle.11.Native";
-		public const string Oracle11Managed   = "Oracle.11.Managed";
+		public const string PostgreSQL10 = "PostgreSQL.10";
+		public const string PostgreSQL11 = "PostgreSQL.11";
+		public const string Oracle11Native = "Oracle.11.Native";
+		public const string Oracle11Managed = "Oracle.11.Managed";
 
 		public const string DB2i = "DB2.iSeries";
 		public const string DB2iGAS = "DB2.iSeries.GAS";
 		public const string DB2i73 = "DB2.iSeries.73";
 		public const string DB2i73GAS = "DB2.iSeries.73.GAS";
+
+		public static readonly string[] AlliSeriesArray = new[] { DB2i, DB2i73, DB2i73GAS, DB2iGAS };
+		public static readonly string AlliSeries = string.Join(",", AlliSeriesArray);
+
+		public static bool IsiSeries(string provider) => provider.StartsWith(DB2i);
+		public static string GetFamily(string provider)
+		{
+			if (IsiSeries(provider)
+				|| new[] { LinqToDB.ProviderName.DB2, LinqToDB.ProviderName.DB2LUW, LinqToDB.ProviderName.DB2zOS }.Contains(provider))
+				return LinqToDB.ProviderName.DB2;
+			else
+				return provider;
+		}
 
 		/// <summary>
 		/// SQLite classic provider wrapped into MiniProfiler without mappings to provider types configured.

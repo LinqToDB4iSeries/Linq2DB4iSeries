@@ -8,60 +8,62 @@ using LinqToDB.Mapping;
 
 using NUnit.Framework;
 
-
 namespace Tests.Linq
 {
 	using Model;
+#if NET46
+	using System.ServiceModel;
+#endif
 
 	[TestFixture]
 	public class MappingTests : TestBase
 	{
-		[Test, DataContextSource]
-		public void Enum1(string context)
+		[Test]
+		public void Enum1([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in Person where new[] { Gender.Male }.Contains(p.Gender) select p,
+					from p in    Person where new[] { Gender.Male }.Contains(p.Gender) select p,
 					from p in db.Person where new[] { Gender.Male }.Contains(p.Gender) select p);
 		}
 
-		[Test, DataContextSource]
-		public void Enum2(string context)
+		[Test]
+		public void Enum2([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in Person where p.Gender == Gender.Male select p,
+					from p in    Person where p.Gender == Gender.Male select p,
 					from p in db.Person where p.Gender == Gender.Male select p);
 		}
 
-		[Test, DataContextSource]
-		public void Enum21(string context)
+		[Test]
+		public void Enum21([DataSources] string context)
 		{
 			var gender = Gender.Male;
 
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in Person where p.Gender == gender select p,
+					from p in    Person where p.Gender == gender select p,
 					from p in db.Person where p.Gender == gender select p);
 		}
 
-		[Test, DataContextSource]
-		public void Enum3(string context)
+		[Test]
+		public void Enum3([DataSources] string context)
 		{
 			var fm = Gender.Female;
 
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in Person where p.Gender != fm select p,
+					from p in    Person where p.Gender != fm select p,
 					from p in db.Person where p.Gender != fm select p);
 		}
 
-		[Test, DataContextSource]
-		public void Enum4(string context)
+		[Test]
+		public void Enum4([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in Parent4 where p.Value1 == TypeValue.Value1 select p,
+					from p in    Parent4 where p.Value1 == TypeValue.Value1 select p,
 					from p in db.Parent4 where p.Value1 == TypeValue.Value1 select p);
 		}
 
@@ -71,35 +73,33 @@ namespace Tests.Linq
 			var value = ConvertTo<TypeValue>.From(1);
 
 			Assert.AreEqual(TypeValue.Value1, value);
-			Assert.AreEqual(10, (int)value);
+			Assert.AreEqual(10,               (int)value);
 		}
 
-		[Test, DataContextSource]
-		public void Enum5(string context)
+		[Test]
+		public void Enum5([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in Parent4 where p.Value1 == TypeValue.Value3 select p,
+					from p in    Parent4 where p.Value1 == TypeValue.Value3 select p,
 					from p in db.Parent4 where p.Value1 == TypeValue.Value3 select p);
 		}
 
-		[Test, DataContextSource]
-		public void Enum6(string context)
+		[Test]
+		public void Enum6([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from p in Parent4
-					join c in Child on p.ParentID equals c.ParentID
-					where p.Value1 == TypeValue.Value1
-					select p,
+					from p in    Parent4
+					join c in    Child on p.ParentID equals c.ParentID
+					where p.Value1 == TypeValue.Value1 select p,
 					from p in db.Parent4
 					join c in db.Child on p.ParentID equals c.ParentID
-					where p.Value1 == TypeValue.Value1
-					select p);
+					where p.Value1 == TypeValue.Value1 select p);
 		}
 
-		[Test, DataContextSource]
-		public void Enum7(string context)
+		[Test]
+		public void Enum7([DataSources] string context)
 		{
 			var v1 = TypeValue.Value1;
 
@@ -118,12 +118,12 @@ namespace Tests.Linq
 		[Table("Parent")]
 		class TestParent
 		{
-			[Column] public int ParentID;
+			[Column] public int       ParentID;
 			[Column] public TestValue Value1;
 		}
 
-		[Test, DataContextSource]
-		public void Enum81(string context)
+		[Test]
+		public void Enum81([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 				db.GetTable<TestParent>().Where(p => p.Value1 == TestValue.Value1).ToList();
@@ -134,8 +134,8 @@ namespace Tests.Linq
 			public TestValue ID;
 		}
 
-		[Test, DataContextSource]
-		public void Enum812(string context)
+		[Test]
+		public void Enum812([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 				db.GetTable<LinqDataTypes>()
@@ -143,8 +143,8 @@ namespace Tests.Linq
 					.Count();
 		}
 
-		[Test, DataContextSource]
-		public void Enum82(string context)
+		[Test]
+		public void Enum82([DataSources] string context)
 		{
 			var testValue = TestValue.Value1;
 			using (var db = GetDataContext(context))
@@ -159,18 +159,18 @@ namespace Tests.Linq
 			[MapValue("O")] Other,
 		}
 
-		[Table("Person", IsColumnAttributeRequired = false)]
+		[Table("Person", IsColumnAttributeRequired=false)]
 		public class Person9
 		{
-			public int PersonID;
-			public string FirstName;
-			public string LastName;
-			public string MiddleName;
+			public int     PersonID;
+			public string  FirstName = null!;
+			public string  LastName = null!;
+			public string? MiddleName;
 			public Gender9 Gender;
 		}
 
-		[Test, DataContextSource]
-		public void Enum9(string context)
+		[Test]
+		public void Enum9([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 				db.GetTable<Person9>().Where(p => p.PersonID == 1 && p.Gender == Gender9.Male).ToList();
@@ -179,7 +179,7 @@ namespace Tests.Linq
 		[Table("Parent")]
 		public class ParentObject
 		{
-			[Column] public int ParentID;
+			[Column]                      public int   ParentID;
 			[Column("Value1", ".Value1")] public Inner Value = new Inner();
 
 			public class Inner
@@ -188,8 +188,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void Inner1(string context)
+		[Test]
+		public void Inner1([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -199,8 +199,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void Inner2(string context)
+		[Test]
+		public void Inner2([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -210,22 +210,22 @@ namespace Tests.Linq
 			}
 		}
 
-		[Table(Name = "Child")]
+		[Table(Name="Child")]
 		public class ChildObject
 		{
 			[Column] public int ParentID;
 			[Column] public int ChildID;
 
-			[Association(ThisKey = "ParentID", OtherKey = "ParentID")]
-			public ParentObject Parent;
+			[Association(ThisKey="ParentID", OtherKey="ParentID")]
+			public ParentObject? Parent;
 		}
 
-		[Test, DataContextSource]
-		public void Inner3(string context)
+		[Test]
+		public void Inner3([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
-				var e = db.GetTable<ChildObject>().First(c => c.Parent.Value.Value1 == 1);
+				var e = db.GetTable<ChildObject>().First(c => c.Parent!.Value.Value1 == 1);
 				Assert.AreEqual(1, e.ParentID);
 			}
 		}
@@ -235,20 +235,20 @@ namespace Tests.Linq
 			public int MyValue;
 		}
 
-		[Table(Name = "Parent")]
+		[Table(Name="Parent")]
 		class MyParent
 		{
 			[Column] public MyInt ParentID;
-			[Column] public int? Value1;
+			[Column] public int?  Value1;
 		}
 
 		class MyMappingSchema : MappingSchema
 		{
 			public MyMappingSchema()
 			{
-				SetConvertExpression<Int64, MyInt>(n => new MyInt { MyValue = (int)n });
-				SetConvertExpression<Int32, MyInt>(n => new MyInt { MyValue = n });
-				SetConvertExpression<MyInt, DataParameter>(n => new DataParameter { Value = n.MyValue });
+				SetConvertExpression<long,MyInt>         (n => new MyInt { MyValue = (int)n });
+				SetConvertExpression<int,MyInt>          (n => new MyInt { MyValue =      n });
+				SetConvertExpression<MyInt,DataParameter>(n => new DataParameter { Value = n.MyValue });
 			}
 		}
 
@@ -259,7 +259,7 @@ namespace Tests.Linq
 		{
 			using (var db = new TestDataConnection().AddMappingSchema(_myMappingSchema))
 			{
-				var list = db.GetTable<MyParent>().ToList();
+				var _ = db.GetTable<MyParent>().ToList();
 			}
 		}
 
@@ -268,7 +268,7 @@ namespace Tests.Linq
 		{
 			using (var db = new TestDataConnection().AddMappingSchema(_myMappingSchema))
 			{
-				var list = db.GetTable<MyParent>()
+				var _ = db.GetTable<MyParent>()
 					.Select(t => new MyParent { ParentID = t.ParentID, Value1 = t.Value1 })
 					.ToList();
 			}
@@ -277,7 +277,7 @@ namespace Tests.Linq
 		[Test]
 		public void MyType3()
 		{
-			using (var db = new TestDataConnection().AddMappingSchema(_myMappingSchema) as TestDataConnection)
+			using (var db = (TestDataConnection) new TestDataConnection().AddMappingSchema(_myMappingSchema))
 			{
 				try
 				{
@@ -293,7 +293,7 @@ namespace Tests.Linq
 		[Test]
 		public void MyType4()
 		{
-			using (var db = new TestDataConnection().AddMappingSchema(_myMappingSchema) as TestDataConnection)
+			using (var db = (TestDataConnection) new TestDataConnection().AddMappingSchema(_myMappingSchema))
 			{
 				try
 				{
@@ -310,7 +310,7 @@ namespace Tests.Linq
 		[Test]
 		public void MyType5()
 		{
-			using (var db = new TestDataConnection().AddMappingSchema(_myMappingSchema) as TestDataConnection)
+			using (var db = (TestDataConnection) new TestDataConnection().AddMappingSchema(_myMappingSchema))
 			{
 				try
 				{
@@ -326,7 +326,7 @@ namespace Tests.Linq
 		[Table("Parent")]
 		class MyParent1
 		{
-			[Column] public int ParentID;
+			[Column] public int  ParentID;
 			[Column] public int? Value1;
 
 			public string Value2 { get { return "1"; } }
@@ -334,36 +334,36 @@ namespace Tests.Linq
 			public int GetValue() { return 2; }
 		}
 
-		[Test, DataContextSource]
-		public void MapIgnore1(string context)
+		[Test]
+		public void MapIgnore1([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-								  Parent.Select(p => new { p.ParentID, Value2 = "1" }),
+					              Parent    .Select(p => new { p.ParentID,   Value2 = "1" }),
 					db.GetTable<MyParent1>().Select(p => new { p.ParentID, p.Value2 }));
 		}
 
-		[Test, DataContextSource]
-		public void MapIgnore2(string context)
+		[Test]
+		public void MapIgnore2([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-								  Parent.Select(p => new { p.ParentID, Length = 1 }),
+					              Parent    .Select(p => new { p.ParentID,          Length = 1 }),
 					db.GetTable<MyParent1>().Select(p => new { p.ParentID, p.Value2.Length }));
 		}
 
-		[Test, DataContextSource]
-		public void MapIgnore3(string context)
+		[Test]
+		public void MapIgnore3([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-								  Parent.Select(p => new { p.ParentID, Value = 2 }),
+					              Parent    .Select(p => new { p.ParentID, Value = 2            }),
 					db.GetTable<MyParent1>().Select(p => new { p.ParentID, Value = p.GetValue() }));
 		}
 
-		public class Entity { public int Id { get; set; } }
+		public class     Entity    { public int Id { get; set; } }
 		public interface IDocument { int Id { get; set; } }
-		public class Document : Entity, IDocument { }
+		public class     Document : Entity, IDocument { }
 
 		[Test]
 		public void TestMethod()
@@ -383,14 +383,14 @@ namespace Tests.Linq
 			[Column] public Gender Gender;
 		}
 
-		[Test, DataContextSource]
-		public void Issue171Test(string context)
+		[Test]
+		public void Issue171Test([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
-				db.GetTable<Table171>()
-					.Where(t => t.Gender == Gender.Male)
-					.Select(t => new { value = (int)t.Gender })
-					.ToList();
+			db.GetTable<Table171>()
+				.Where (t => t.Gender == Gender.Male)
+				.Select(t => new { value = (int)t.Gender })
+				.ToList();
 		}
 
 		[Table("Child")]
@@ -400,8 +400,8 @@ namespace Tests.Linq
 			int ChildID { get; set; }
 		}
 
-		[Test, DataContextSource]
-		public void TestInterfaceMapping1(string context)
+		[Test]
+		public void TestInterfaceMapping1([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -411,8 +411,8 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void TestInterfaceMapping2(string context)
+		[Test]
+		public void TestInterfaceMapping2([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -420,6 +420,127 @@ namespace Tests.Linq
 
 				Assert.AreEqual(1, results.Count);
 				Assert.AreEqual(32, results[0].ChildID);
+			}
+		}
+
+		[Table("Person")]
+		public class BadMapping
+		{
+			[Column("FirstName")]
+			public int NotInt { get; set; }
+
+			[Column("LastName")]
+			public BadEnum BadEnum { get; set; }
+		}
+
+		public enum BadEnum
+		{
+			[MapValue("SOME_VALUE")]
+			Value = 1
+		}
+
+		[Test]
+		public void ColumnMappingException1([DataSources] string context)
+		{
+			GetProviderName(context, out var isLinqService);
+
+			using (var db = GetDataContext(context))
+			{
+#if NET46
+				if (isLinqService)
+				{
+					var fe = Assert.Throws<FaultException<ExceptionDetail>>(() => db.GetTable<BadMapping>().Select(_ => new { _.NotInt }).ToList());
+					Assert.True(fe.Message.ToLowerInvariant().Contains("firstname"));
+				}
+				else
+#endif
+				{
+					var ex = Assert.Throws<LinqToDBConvertException>(() => db.GetTable<BadMapping>().Select(_ => new { _.NotInt }).ToList());
+					// field name casing depends on database
+					Assert.AreEqual("firstname", ex.ColumnName!.ToLowerInvariant());
+
+				}
+
+			}
+		}
+
+		[Test]
+		public void ColumnMappingException2([DataSources] string context)
+		{
+			GetProviderName(context, out var isLinqService);
+
+			using (var db = GetDataContext(context))
+			{
+#if NET46
+				if (isLinqService)
+				{
+					var fe = Assert.Throws<FaultException<ExceptionDetail>>(() => db.GetTable<BadMapping>().Select(_ => new { _.BadEnum }).ToList());
+					Assert.True(fe.Message.Contains("Cannot convert value 'Pupkin' to type 'Tests.Linq.MappingTests+BadEnum'"));
+				}
+				else
+#endif
+				{
+					var ex = Assert.Throws<LinqToDBConvertException>(() => db.GetTable<BadMapping>().Select(_ => new { _.BadEnum }).ToList());
+					Assert.AreEqual("lastname", ex.ColumnName!.ToLower());
+				}
+			}
+		}
+
+		[Test, ActiveIssue(1592)]
+		public void Issue1592CallbackWithDefaultMappingSchema([DataSources] string context)
+		{
+			bool result = false;
+
+			MappingSchema.Default.EntityDescriptorCreatedCallback = (ms, ed) =>
+			{
+				result = true;
+			};
+
+			using (var db = GetDataContext(context))
+			{
+				db.GetTable<Person>().FirstOrDefault();
+
+				Assert.IsTrue(result);
+			}
+		}
+
+		[ActiveIssue(1592)]
+		[Test]
+		public void Issue1592CallbackWithContextProperty([DataSources] string context)
+		{
+			bool result = false;
+
+			using (var db = GetDataContext(context))
+			{
+				db.MappingSchema.EntityDescriptorCreatedCallback = (ms, ed) =>
+				{
+					result = true;
+				};
+
+				db.GetTable<Person>().FirstOrDefault();
+
+				Assert.IsTrue(result);
+			}
+		}
+
+		[Test, ActiveIssue(1592)]
+		public void Issue1592CallbackWithContextConstructor([DataSources] string context)
+		{
+			bool result = false;
+
+			var mappingSchema = new MappingSchema
+			{
+				EntityDescriptorCreatedCallback = (ms, ed) =>
+				{
+					result = true;
+				}
+			};
+
+			using (var db = GetDataContext(context, mappingSchema))
+			{
+				db.GetTable<Person>().FirstOrDefault();
+
+				Assert.IsTrue(result);
 			}
 		}
 	}

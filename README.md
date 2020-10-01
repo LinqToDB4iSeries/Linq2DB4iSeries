@@ -10,7 +10,7 @@ Installing the Linq2Db4iSeries NuGetPackage will automatically install the Linq2
 
 ### Prerequisits
 
-IBM do not provide a standalone install of the IBM.Data.DB2.iSeries packages nor do they provide a NuGet package for them.  They are include with iSeries Access for Windows (http://www.ibm.com/support/knowledgecenter/ssw_ibm_i_72/rzaij/rzaijrzaijinstall.htm) which will need to be installed onto each machine that runs the software.
+The IBM ADO.net providers are include with iSeries Access Client Solutions for Windows package(https://www-01.ibm.com/marketing/iwm/platform/mrs/assets?source=swg-ia) which will need to be installed onto each machine that runs the software.
 
 ## Usage
 

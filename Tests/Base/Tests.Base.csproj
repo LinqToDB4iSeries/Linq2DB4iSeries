@@ -19,7 +19,9 @@
 	<ItemGroup>
 		<Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
 		<ProjectReference Include="..\..\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj" />
+		<ProjectReference Include="..\LinqToDB.Tools\LinqToDB.Tools.csproj" />
 		<ProjectReference Include="..\Model\Tests.Model.csproj" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="1.1.1" />
 
 		<PackageReference Include="System.Collections.Immutable" Version="1.4.0" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.2" />

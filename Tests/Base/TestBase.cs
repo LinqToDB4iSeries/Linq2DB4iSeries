@@ -274,54 +274,8 @@ namespace Tests
 		public static readonly string? DefaultProvider;
 		public static readonly HashSet<string> SkipCategories;
 
-		public static readonly List<string> Providers = new List<string>
-		{
-#if NET46
-			ProviderName.Sybase,
-			ProviderName.OracleNative,
-			TestProvName.Oracle11Native,
-			ProviderName.Informix,
-#endif
-			ProviderName.SqlCe,
-			ProviderName.Access,
-			ProviderName.AccessOdbc,
-			ProviderName.DB2,
-			ProviderName.InformixDB2,
-			ProviderName.SQLiteClassic,
-			TestProvName.SQLiteClassicMiniProfilerMapped,
-			TestProvName.SQLiteClassicMiniProfilerUnmapped,
-			ProviderName.SybaseManaged,
-			ProviderName.OracleManaged,
-			TestProvName.Oracle11Managed,
-			ProviderName.Firebird,
-			TestProvName.Firebird3,
-			ProviderName.SqlServer2008,
-			ProviderName.SqlServer2012,
-			ProviderName.SqlServer2014,
-			ProviderName.SqlServer2017,
-			ProviderName.SqlServer2000,
-			ProviderName.SqlServer2005,
-			TestProvName.SqlAzure,
-			ProviderName.PostgreSQL,
-			ProviderName.PostgreSQL92,
-			ProviderName.PostgreSQL93,
-			ProviderName.PostgreSQL95,
-			TestProvName.PostgreSQL10,
-			TestProvName.PostgreSQL11,
-			ProviderName.MySql,
-			ProviderName.MySqlConnector,
-			TestProvName.MySql55,
-			TestProvName.MariaDB,
-			ProviderName.SQLiteMS,
-			ProviderName.SapHanaNative,
-			ProviderName.SapHanaOdbc,
-
-			TestProvName.DB2i,
-			TestProvName.DB2iGAS,
-			TestProvName.DB2i73,
-			TestProvName.DB2i73GAS,
-		};
-
+		public static readonly List<string> Providers = new List<string>(TestProvName.AlliSeriesArray);
+		
 		protected ITestDataContext GetDataContext(string configuration, MappingSchema? ms = null)
 		{
 			if (configuration.EndsWith(".LinqService"))

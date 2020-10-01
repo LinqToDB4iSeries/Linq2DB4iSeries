@@ -19,7 +19,7 @@
 		<PackageVersion>2.9.0.0</PackageVersion>
     <PublisherName>Retail-Assist Ltd</PublisherName>
     <Description>LINQ to DB is a data access technology that provides a run-time infrastructure for managing relational data as objects.  This package is a provider for DB2 on the IBM iSeries.</Description>
-		<Authors>Roy Chase</Authors>
+		<Authors>Roy Chase, Nikos Sarris</Authors>
 		<Company>Retail-Assist Ltd</Company>
 		<AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
 		<PackageReleaseNotes></PackageReleaseNotes>

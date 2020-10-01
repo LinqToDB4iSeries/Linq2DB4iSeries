@@ -29,21 +29,21 @@ namespace Tests.DataProvider
 		{
 			using (var conn = new DataConnection(context))
 			{
-				Assert.That(conn.Execute<string>("SELECT cast(@p as varchar(10)) FROM SYSIBM.SYSDUMMY1", new {p = 1}),
+				Assert.That(conn.Execute<string>("SELECT cast(@p as varchar(10)) FROM SYSIBM.SYSDUMMY1", new { p = 1 }),
 					Is.EqualTo("1"));
-				Assert.That(conn.Execute<string>("SELECT cast(@p as varchar(10)) FROM SYSIBM.SYSDUMMY1", new {p = "1"}),
+				Assert.That(conn.Execute<string>("SELECT cast(@p as varchar(10)) FROM SYSIBM.SYSDUMMY1", new { p = "1" }),
 					Is.EqualTo("1"));
 				Assert.That(
-					conn.Execute<int>("SELECT cast(@p as varchar(10)) FROM SYSIBM.SYSDUMMY1", new {p = new DataParameter {Value = 1}}),
+					conn.Execute<int>("SELECT cast(@p as varchar(10)) FROM SYSIBM.SYSDUMMY1", new { p = new DataParameter { Value = 1 } }),
 					Is.EqualTo(1));
 				Assert.That(
 					conn.Execute<string>("SELECT cast(@p as varchar(10)) FROM SYSIBM.SYSDUMMY1",
-						new {p1 = new DataParameter {Value = "1"}}), Is.EqualTo("1"));
+						new { p1 = new DataParameter { Value = "1" } }), Is.EqualTo("1"));
 				Assert.That(
-					conn.Execute<int>("SELECT cast(@p1 as int) + cast(@p2 as int) FROM SYSIBM.SYSDUMMY1", new {p1 = 2, p2 = 3}),
+					conn.Execute<int>("SELECT cast(@p1 as int) + cast(@p2 as int) FROM SYSIBM.SYSDUMMY1", new { p1 = 2, p2 = 3 }),
 					Is.EqualTo(5));
 				Assert.That(
-					conn.Execute<int>("SELECT cast(@p2 as int) + cast(@p1 as int) FROM SYSIBM.SYSDUMMY1", new {p2 = 2, p1 = 3}),
+					conn.Execute<int>("SELECT cast(@p2 as int) + cast(@p1 as int) FROM SYSIBM.SYSDUMMY1", new { p2 = 2, p1 = 3 }),
 					Is.EqualTo(5));
 			}
 		}
@@ -72,7 +72,7 @@ namespace Tests.DataProvider
 
 			// Get NULL value.
 			//
-			Debug.WriteLine("{0} {1}:{2} -> NULL", fieldName, (object) type.Name, dataType);
+			Debug.WriteLine("{0} {1}:{2} -> NULL", fieldName, (object)type.Name, dataType);
 
 			var sql = string.Format(GetNullSql, fieldName, tableName);
 			var value = conn.Execute<T>(sql);
@@ -89,7 +89,7 @@ namespace Tests.DataProvider
 				{
 					// Get NULL ID with dataType.
 					//
-					Debug.WriteLine("{0} {1}:{2} -> NULL ID with dataType", fieldName, (object) type.Name, dataType);
+					Debug.WriteLine("{0} {1}:{2} -> NULL ID with dataType", fieldName, (object)type.Name, dataType);
 					id = conn.Execute<int?>(sql, new DataParameter("p", value, dataType), new DataParameter("p1", value, dataType),
 						new DataParameter("p2", value, dataType));
 					Assert.That(id, Is.EqualTo(1));
@@ -99,8 +99,8 @@ namespace Tests.DataProvider
 				{
 					// Get NULL ID with default dataType.
 					//
-					Debug.WriteLine("{0} {1}:{2} -> NULL ID with default dataType", fieldName, (object) type.Name, dataType);
-					id = conn.Execute<int?>(sql, new {p = value, p1 = value, p2 = value});
+					Debug.WriteLine("{0} {1}:{2} -> NULL ID with default dataType", fieldName, (object)type.Name, dataType);
+					id = conn.Execute<int?>(sql, new { p = value, p1 = value, p2 = value });
 					Assert.That(id, Is.EqualTo(1));
 				}
 
@@ -108,7 +108,7 @@ namespace Tests.DataProvider
 				{
 					// Get NULL ID without dataType.
 					//
-					Debug.WriteLine("{0} {1}:{2} -> NULL ID without dataType", fieldName, (object) type.Name, dataType);
+					Debug.WriteLine("{0} {1}:{2} -> NULL ID without dataType", fieldName, (object)type.Name, dataType);
 					id = conn.Execute<int?>(sql, new DataParameter("p", value, dataType), new DataParameter("p1", value, dataType),
 						new DataParameter("p2", value, dataType));
 					Assert.That(id, Is.EqualTo(1));
@@ -117,7 +117,7 @@ namespace Tests.DataProvider
 
 			// Get value.
 			//
-			Debug.WriteLine("{0} {1}:{2} -> value", fieldName, (object) type.Name, dataType);
+			Debug.WriteLine("{0} {1}:{2} -> value", fieldName, (object)type.Name, dataType);
 			sql = string.Format(GetValueSql, fieldName, tableName);
 			value = conn.Execute<T>(sql);
 
@@ -129,7 +129,7 @@ namespace Tests.DataProvider
 				{
 					// Get value ID with dataType.
 					//
-					Debug.WriteLine("{0} {1}:{2} -> value ID with dataType", fieldName, (object) type.Name, dataType);
+					Debug.WriteLine("{0} {1}:{2} -> value ID with dataType", fieldName, (object)type.Name, dataType);
 					id = conn.Execute<int?>(sql, new DataParameter("p", value, dataType));
 					Assert.That(id, Is.EqualTo(2));
 				}
@@ -138,8 +138,8 @@ namespace Tests.DataProvider
 				{
 					// Get value ID with default dataType.
 					//
-					Debug.WriteLine("{0} {1}:{2} -> value ID with default dataType", fieldName, (object) type.Name, dataType);
-					id = conn.Execute<int?>(sql, new {p = value});
+					Debug.WriteLine("{0} {1}:{2} -> value ID with default dataType", fieldName, (object)type.Name, dataType);
+					id = conn.Execute<int?>(sql, new { p = value });
 					Assert.That(id, Is.EqualTo(2));
 				}
 
@@ -147,7 +147,7 @@ namespace Tests.DataProvider
 				{
 					// Get value ID without dataType.
 					//
-					Debug.WriteLine("{0} {1}:{2} -> value ID without dataType", fieldName, (object) type.Name, dataType);
+					Debug.WriteLine("{0} {1}:{2} -> value ID without dataType", fieldName, (object)type.Name, dataType);
 					id = conn.Execute<int?>(sql, new DataParameter("p", value));
 					Assert.That(id, Is.EqualTo(2));
 				}
@@ -156,11 +156,11 @@ namespace Tests.DataProvider
 			return value;
 		}
 
-        
-        [Test, DataContextSource(false)]
-        //DecFloatTests break on AccessClient with cultures that have a different decimal point than period.
-        [SetCulture("en-US")]
-        public void TestDataTypes(string context)
+
+		[Test, DataContextSource(false)]
+		//DecFloatTests break on AccessClient with cultures that have a different decimal point than period.
+		[SetCulture("en-US")]
+		public void TestDataTypes(string context)
 		{
 			using (var conn = new DataConnection(context))
 			{
@@ -187,14 +187,14 @@ namespace Tests.DataProvider
 				Assert.That(TestType<string>(conn, "dbclobDataType", DataType.NText), Is.EqualTo("890"));
 
 				Assert.That(TestType<byte[]>(conn, "binaryDataType", DataType.Binary),
-					Is.EqualTo(new byte[] {0xF1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}));
-				Assert.That(TestType<byte[]>(conn, "varbinaryDataType", DataType.VarBinary), Is.EqualTo(new byte[] {0xF4}));
+					Is.EqualTo(new byte[] { 0xF1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }));
+				Assert.That(TestType<byte[]>(conn, "varbinaryDataType", DataType.VarBinary), Is.EqualTo(new byte[] { 0xF4 }));
 				Assert.That(
 					TestType<byte[]>(conn, "blobDataType", DataType.Blob, skipDefaultNull: true, skipUndefinedNull: true,
-						skipDefault: true, skipUndefined: true), Is.EqualTo(new byte[] {0xF2, 0xF3, 0xF4}));
+						skipDefault: true, skipUndefined: true), Is.EqualTo(new byte[] { 0xF2, 0xF3, 0xF4 }));
 				Assert.That(
 					TestType<byte[]>(conn, "blobDataType", DataType.VarBinary, skipDefaultNull: true, skipUndefinedNull: true,
-						skipDefault: true, skipUndefined: true), Is.EqualTo(new byte[] {0xF2, 0xF3, 0xF4}));
+						skipDefault: true, skipUndefined: true), Is.EqualTo(new byte[] { 0xF2, 0xF3, 0xF4 }));
 
 				Assert.That(TestType<string>(conn, "graphicDataType", DataType.VarChar), Is.EqualTo("graphic   "));
 				Assert.That(TestType<string>(conn, "vargraphicDataType", DataType.VarChar), Is.EqualTo("vargraphic"));
@@ -227,7 +227,7 @@ namespace Tests.DataProvider
 				Assert.That(TestType<iDB2Decimal?>(conn, "decimalDataType", DataType.Decimal).ToString(),
 					Is.EqualTo(new iDB2Decimal(666m).ToString()));
 				Assert.That(TestType<iDB2Binary>(conn, "varbinaryDataType", DataType.VarBinary).ToString(),
-					Is.EqualTo(new iDB2Binary(new byte[] {0xF4}).ToString()));
+					Is.EqualTo(new iDB2Binary(new byte[] { 0xF4 }).ToString()));
 				Assert.That(TestType<iDB2DecFloat16?>(conn, "decfloat16DataType", DataType.Decimal),
 					Is.EqualTo(new iDB2DecFloat16(888.456m)));
 				Assert.That(TestType<iDB2DecFloat34?>(conn, "decfloat34DataType", DataType.Decimal).ToString(),
@@ -250,7 +250,7 @@ namespace Tests.DataProvider
 				"real"
 			}.Except(skipTypes))
 			{
-				var sqlValue = expectedValue is bool ? (bool) (object) expectedValue ? 1 : 0 : (object) expectedValue;
+				var sqlValue = expectedValue is bool ? (bool)(object)expectedValue ? 1 : 0 : (object)expectedValue;
 				var sql = string.Format("SELECT Cast({0} as {1}) FROM SYSIBM.SYSDUMMY1", sqlValue ?? "NULL", sqlType);
 				Debug.WriteLine(sql + " -> " + typeof(T));
 				Assert.That(conn.Execute<T>(sql), Is.EqualTo(expectedValue));
@@ -302,14 +302,14 @@ namespace Tests.DataProvider
 			Debug.WriteLine("{0} -> DataType.{1}", typeof(T), dataType);
 			string sql1 = $"SELECT cast(@p as {castType}) FROM SYSIBM.SYSDUMMY1";
 
-			Assert.That(conn.Execute<T>(sql1, new DataParameter {Name = "p", DataType = dataType, Value = expectedValue}),
+			Assert.That(conn.Execute<T>(sql1, new DataParameter { Name = "p", DataType = dataType, Value = expectedValue }),
 				Is.EqualTo(expectedValue));
 			Debug.WriteLine("{0} -> auto", typeof(T));
 			Assert.That(
 				conn.Execute<T>($"SELECT cast(@p as {castType}) FROM SYSIBM.SYSDUMMY1",
-					new DataParameter {Name = "p", Value = expectedValue}), Is.EqualTo(expectedValue));
+					new DataParameter { Name = "p", Value = expectedValue }), Is.EqualTo(expectedValue));
 			Debug.WriteLine("{0} -> new", typeof(T));
-			Assert.That(conn.Execute<T>($"SELECT cast(@p as {castType}) FROM SYSIBM.SYSDUMMY1", new {p = expectedValue}),
+			Assert.That(conn.Execute<T>($"SELECT cast(@p as {castType}) FROM SYSIBM.SYSDUMMY1", new { p = expectedValue }),
 				Is.EqualTo(expectedValue));
 		}
 
@@ -318,13 +318,13 @@ namespace Tests.DataProvider
 		{
 			TestNumeric<T>(conn, expectedValue, dataType);
 			TestNumeric<T?>(conn, expectedValue, dataType);
-			TestNumeric<T?>(conn, (T?) null, dataType);
+			TestNumeric<T?>(conn, (T?)null, dataType);
 		}
 
 		[Test, DataContextSource(false)]
-        //Test uses string format to build sql values, invariant culture is needed
-        [SetCulture("en-US")]
-        public void TestNumerics(string context)
+		//Test uses string format to build sql values, invariant culture is needed
+		[SetCulture("en-US")]
+		public void TestNumerics(string context)
 		{
 			using (var conn = new DataConnection(context))
 			{
@@ -486,10 +486,10 @@ namespace Tests.DataProvider
 
 				Assert.That(
 					conn.Execute<char>("SELECT CAST(@p as nvarchar(10)) FROM SYSIBM.SYSDUMMY1",
-						new DataParameter {Name = "p", Value = '1'}), Is.EqualTo('1'));
+						new DataParameter { Name = "p", Value = '1' }), Is.EqualTo('1'));
 				Assert.That(
 					conn.Execute<char?>("SELECT CAST(@p as nvarchar(10)) FROM SYSIBM.SYSDUMMY1",
-						new DataParameter {Name = "p", Value = '1'}), Is.EqualTo('1'));
+						new DataParameter { Name = "p", Value = '1' }), Is.EqualTo('1'));
 			}
 		}
 
@@ -528,15 +528,15 @@ namespace Tests.DataProvider
 					conn.Execute<string>("SELECT cast(@p as nvarchar(10)) FROM SYSIBM.SYSDUMMY1", DataParameter.NText("p", "123")),
 					Is.EqualTo("123"));
 				Assert.That(
-					conn.Execute<string>("SELECT cast(@p as nvarchar(10)) FROM SYSIBM.SYSDUMMY1", DataParameter.Create("p", "123")),
+					conn.Execute<string>("SELECT cast(@p as nclob(10)) FROM SYSIBM.SYSDUMMY1", DataParameter.Create("p", "123")),
 					Is.EqualTo("123"));
 
 				Assert.That(
 					conn.Execute<string>("SELECT cast(@p as nvarchar(10)) FROM SYSIBM.SYSDUMMY1",
-						DataParameter.Create("p", (string) null)), Is.EqualTo(null));
+						DataParameter.Create("p", (string)null)), Is.EqualTo(null));
 				Assert.That(
 					conn.Execute<string>("SELECT cast(@p as nvarchar(10)) FROM SYSIBM.SYSDUMMY1",
-						new DataParameter {Name = "p", Value = "1"}), Is.EqualTo("1"));
+						new DataParameter { Name = "p", Value = "1" }), Is.EqualTo("1"));
 			}
 		}
 
@@ -544,8 +544,8 @@ namespace Tests.DataProvider
 		public void TestBinary(string context)
 		{
 			// results are going to be bytes from EDCIDC character set
-			var arr1 = new byte[] {241, 242};
-			var arr2 = new byte[] {241, 242, 243, 244};
+			var arr1 = new byte[] { 241, 242 };
+			var arr2 = new byte[] { 241, 242, 243, 244 };
 
 			using (var conn = new DataConnection(context))
 			{
@@ -581,7 +581,7 @@ namespace Tests.DataProvider
 						DataParameter.Create("p", guid)), Is.EqualTo(guid));
 				Assert.That(
 					conn.Execute<Guid>("SELECT Cast(@p as char(16) for bit data) FROM SYSIBM.SYSDUMMY1",
-						new DataParameter {Name = "p", Value = guid}), Is.EqualTo(guid));
+						new DataParameter { Name = "p", Value = guid }), Is.EqualTo(guid));
 			}
 		}
 
@@ -655,29 +655,34 @@ namespace Tests.DataProvider
 		{
 			using (var conn = new DataConnection(context))
 			{
-				Assert.That(conn.Execute<string>("SELECT cast(@p as nvarchar(10)) FROM SYSIBM.SYSDUMMY1", new {p = TestEnum.AA}),
+				Assert.That(conn.Execute<string>("SELECT cast(@p as nvarchar(10)) FROM SYSIBM.SYSDUMMY1", new { p = TestEnum.AA }),
 					Is.EqualTo("A"));
 				Assert.That(
-					conn.Execute<string>("SELECT cast(@p as nvarchar(10)) FROM SYSIBM.SYSDUMMY1", new {p = (TestEnum?) TestEnum.BB}),
+					conn.Execute<string>("SELECT cast(@p as nvarchar(10)) FROM SYSIBM.SYSDUMMY1", new { p = (TestEnum?)TestEnum.BB }),
 					Is.EqualTo("B"));
 				Assert.That(
 					conn.Execute<string>("SELECT cast(@p as nvarchar(10)) FROM SYSIBM.SYSDUMMY1",
-						new {p = ConvertTo<string>.From((TestEnum?) TestEnum.AA)}), Is.EqualTo("A"));
+						new { p = ConvertTo<string>.From((TestEnum?)TestEnum.AA) }), Is.EqualTo("A"));
 				Assert.That(
 					conn.Execute<string>("SELECT cast(@p as nvarchar(10)) FROM SYSIBM.SYSDUMMY1",
-						new {p = ConvertTo<string>.From(TestEnum.AA)}), Is.EqualTo("A"));
+						new { p = ConvertTo<string>.From(TestEnum.AA) }), Is.EqualTo("A"));
 				Assert.That(
 					conn.Execute<string>("SELECT cast(@p as nvarchar(10)) FROM SYSIBM.SYSDUMMY1",
-						new {p = conn.MappingSchema.GetConverter<TestEnum?, string>()(TestEnum.AA)}), Is.EqualTo("A"));
+						new { p = conn.MappingSchema.GetConverter<TestEnum?, string>()(TestEnum.AA) }), Is.EqualTo("A"));
 			}
 		}
 
 		[Table(Name = "ALLTYPES")]
 		public class ALLTYPE
 		{
-			[PrimaryKey, Identity] public int ID { get; set; } // INTEGER
-			[Column(DbType = "bigint"), Nullable] public long? BIGINTDATATYPE { get; set; } // BIGINT
-			[Column(DbType = "int"), Nullable] public int? INTDATATYPE { get; set; } // INTEGER
+			[PrimaryKey, Identity]
+			public int ID { get; set; } // INTEGER
+
+			[Column(DbType = "bigint"), Nullable]
+			public long? BIGINTDATATYPE { get; set; } // BIGINT
+
+			[Column(DbType = "int"), Nullable]
+			public int? INTDATATYPE { get; set; } // INTEGER
 
 			[Column(DbType = "smallint"), Nullable]
 			public short? SMALLINTDATATYPE { get; set; } // SMALLINT
@@ -691,14 +696,20 @@ namespace Tests.DataProvider
 			[Column(DbType = "decfloat(34)"), Nullable]
 			public decimal? DECFLOAT34DATATYPE { get; set; } // DECFLOAT34
 
-			[Column(DbType = "real"), Nullable] public float? REALDATATYPE { get; set; } // REAL
-			[Column(DbType = "double"), Nullable] public double? DOUBLEDATATYPE { get; set; } // DOUBLE
-			[Column(DbType = "char(1)"), Nullable] public char CHARDATATYPE { get; set; } // CHARACTER
+			[Column(DbType = "real"), Nullable]
+			public float? REALDATATYPE { get; set; } // REAL
+
+			[Column(DbType = "double"), Nullable]
+			public double? DOUBLEDATATYPE { get; set; } // DOUBLE
+
+			[Column(DbType = "char(1)"), Nullable]
+			public char CHARDATATYPE { get; set; } // CHARACTER
 
 			[Column(DbType = "varchar(20)"), Nullable]
 			public string VARCHARDATATYPE { get; set; } // VARCHAR(20)
 
-			[Column(DbType = "clob"), Nullable] public string CLOBDATATYPE { get; set; } // CLOB(1048576)
+			[Column(DbType = "clob"), Nullable]
+			public string CLOBDATATYPE { get; set; } // CLOB(1048576)
 
 			[Column(DbType = "dbclob(100)"), Nullable]
 			public string DBCLOBDATATYPE { get; set; } // DBCLOB(100)
@@ -709,7 +720,8 @@ namespace Tests.DataProvider
 			[Column(DbType = "varbinary(20)"), Nullable]
 			public object VARBINARYDATATYPE { get; set; } // VARBINARY(20)
 
-			[Column, Nullable] public byte[] BLOBDATATYPE { get; set; } // BLOB(10)
+			[Column(DbType = "blob"), Nullable]
+			public byte[] BLOBDATATYPE { get; set; } // BLOB(10)
 
 			[Column(DbType = "graphic(10)"), Nullable]
 			public string GRAPHICDATATYPE { get; set; } // GRAPHIC(10)
@@ -717,13 +729,17 @@ namespace Tests.DataProvider
 			[Column(DbType = "vargraphic(10)"), Nullable]
 			public string VARGRAPHICDATATYPE { get; set; } // GRAPHIC(10)
 
-			[Column(DbType = "date"), Nullable] public DateTime? DATEDATATYPE { get; set; } // DATE
-			[Column(DbType = "time"), Nullable] public TimeSpan? TIMEDATATYPE { get; set; } // TIME
+			[Column(DbType = "date"), Nullable]
+			public DateTime? DATEDATATYPE { get; set; } // DATE
+
+			[Column(DbType = "time"), Nullable]
+			public TimeSpan? TIMEDATATYPE { get; set; } // TIME
 
 			[Column(DbType = "timestamp"), Nullable]
 			public DateTime? TIMESTAMPDATATYPE { get; set; } // TIMESTAMP
 
-			[Column, Nullable] public string XMLDATATYPE { get; set; } // XML
+			[Column, Nullable]
+			public string XMLDATATYPE { get; set; } // XML
 		}
 
 		void BulkCopyTest(string context, BulkCopyType bulkCopyType, int maxSize, int batchSize)
@@ -745,7 +761,7 @@ namespace Tests.DataProvider
 							ID = 2000 + n,
 							BIGINTDATATYPE = 3000 + n,
 							INTDATATYPE = 4000 + n,
-							SMALLINTDATATYPE = (short) (5000 + n),
+							SMALLINTDATATYPE = (short)(5000 + n),
 							DECIMALDATATYPE = 6000 + n,
 							DECFLOAT16DATATYPE = 7000 + n,
 							DECFLOAT34DATATYPE = 7000 + n,
@@ -757,7 +773,7 @@ namespace Tests.DataProvider
 							DBCLOBDATATYPE = null,
 							BINARYDATATYPE = null,
 							VARBINARYDATATYPE = null,
-							BLOBDATATYPE = new byte[] {1, 2, 3},
+							BLOBDATATYPE = new byte[] { 1, 2, 3 },
 							GRAPHICDATATYPE = "abc",
 							VARGRAPHICDATATYPE = "xyz",
 							DATEDATATYPE = DateTime.Now.Date,
@@ -792,7 +808,7 @@ namespace Tests.DataProvider
 			using (var db = new DataConnection(context))
 			{
 				db.BulkCopy(
-					new BulkCopyOptions {BulkCopyType = BulkCopyType.MultipleRows},
+					new BulkCopyOptions { BulkCopyType = BulkCopyType.MultipleRows },
 					Enumerable.Range(0, 10).Select(n =>
 						new LinqDataTypes
 						{
@@ -801,7 +817,7 @@ namespace Tests.DataProvider
 							DateTimeValue = new DateTime(2001, 1, 11, 1, 11, 21, 100),
 							BoolValue = true,
 							GuidValue = Guid.NewGuid(),
-							SmallIntValue = (short) n
+							SmallIntValue = (short)n
 						}
 					));
 
@@ -819,7 +835,7 @@ namespace Tests.DataProvider
 					var data = new byte[500000];
 
 					for (var i = 0; i < data.Length; i++)
-						data[i] = (byte) (i % byte.MaxValue);
+						data[i] = (byte)(i % byte.MaxValue);
 
 					conn.GetTable<ALLTYPE>().Insert(() => new ALLTYPE
 					{
@@ -848,7 +864,7 @@ namespace Tests.DataProvider
 					var sb = new StringBuilder();
 
 					for (var i = 0; i < 100000; i++)
-						sb.Append(((char) ((i % (byte.MaxValue - 31)) + 32)).ToString());
+						sb.Append(((char)((i % (byte.MaxValue - 31)) + 32)).ToString());
 
 					var data = sb.ToString();
 
@@ -895,8 +911,8 @@ namespace Tests.DataProvider
 				var results = person.ToArray();
 
 				Assert.AreEqual(2, results.Count());
-				Assert.AreEqual("Peacock", results.First().LastName);
-				Assert.AreEqual("Plum", results.Last().LastName);
+				Assert.AreEqual("Pupkin", results.First().LastName);
+				Assert.AreEqual("Testerson", results.Last().LastName);
 			}
 		}
 
@@ -910,8 +926,8 @@ namespace Tests.DataProvider
 				var results = person.ToArray();
 
 				Assert.AreEqual(2, results.Count());
-				Assert.AreEqual("Scarlet", results.First().LastName);
-				Assert.AreEqual("Pupkin", results.Last().LastName);
+				Assert.AreEqual("König", results.First().LastName);
+				Assert.AreEqual("Doe", results.Last().LastName);
 			}
 		}
 
@@ -942,38 +958,38 @@ namespace Tests.DataProvider
 			}
 		}
 
-	    [Table("InsertOrUpdateByte")]
-	    class MergeTypesByte
-	    {
-	        [Column("Id", IsIdentity = true)] [PrimaryKey] public int Id { get; set; }
+		[Table("InsertOrUpdateByte")]
+		class MergeTypesByte
+		{
+			[Column("Id", IsIdentity = true)] [PrimaryKey] public int Id { get; set; }
 
-	        [Column("FieldByteAsDecimal", DataType = DataType.Decimal, Length = 2, Precision = 0)] public byte FieldByte { get; set; }
+			[Column("FieldByteAsDecimal", DataType = DataType.Decimal, Length = 2, Precision = 0)] public byte FieldByte { get; set; }
 
-	        [Column("FieldULongAsDecimal", DataType = DataType.Decimal, Length = 20, Precision = 0)] public ulong FieldULong { get; set; }
-        }
+			[Column("FieldULongAsDecimal", DataType = DataType.Decimal, Length = 20, Precision = 0)] public ulong FieldULong { get; set; }
+		}
 
-	    [Test, DataContextSource(false)]
-	    public void InsertOrUpdateWithIntegers(string context)
-	    {
-	        using (var db = new TestDataConnection(context))
-	        {
-	            LinqToDB.ITable<MergeTypesByte> table;
-	            using (new DisableLogging())
-	            {
-	                db.DropTable<MergeTypesByte>(throwExceptionIfNotExists: false);
-	                table = db.CreateTable<MergeTypesByte>();
-	            }
+		[Test, DataContextSource(false)]
+		public void InsertOrUpdateWithIntegers(string context)
+		{
+			using (var db = new TestDataConnection(context))
+			{
+				LinqToDB.ITable<MergeTypesByte> table;
+				using (new DisableLogging())
+				{
+					db.DropTable<MergeTypesByte>(throwExceptionIfNotExists: false);
+					table = db.CreateTable<MergeTypesByte>();
+				}
 
-	            ulong val = long.MaxValue;
+				ulong val = long.MaxValue;
 
-                table.InsertOrUpdate(
-	                () => new MergeTypesByte { FieldByte = 27, FieldULong = val },
-	                s => new MergeTypesByte { FieldByte = 27, FieldULong = val },
-	                () => new MergeTypesByte { FieldByte = 22, FieldULong = val }
-	            );
+				table.InsertOrUpdate(
+					() => new MergeTypesByte { FieldByte = 27, FieldULong = val },
+					s => new MergeTypesByte { FieldByte = 27, FieldULong = val },
+					() => new MergeTypesByte { FieldByte = 22, FieldULong = val }
+				);
 
-	            Assert.AreEqual(1, table.Count());
-	        }
-	    }
-    }
+				Assert.AreEqual(1, table.Count());
+			}
+		}
+	}
 }

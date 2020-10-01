@@ -236,16 +236,10 @@ public class a_CreateData : TestBase
 	[Test, Order(0)]
 	public void CreateDatabase([CreateDatabaseSources] string context)
 	{
-		switch (context)
+		if (TestProvName.IsiSeries(context))
 		{
-			case TestProvName.DB2i:
-			case TestProvName.DB2i73:
-				RunScript(context, "\nGO\n", "DB2iSeries");
-				break;
-			case TestProvName.DB2iGAS:
-			case TestProvName.DB2i73GAS:
-				RunScript(context, "\nGO\n", "DB2iSeries.GAS");
-				break;
+			var script = context.Contains("GAS") ? "DB2iSeriesGAS" : "DB2iSeries";
+			RunScript(context, "\nGO\n", script);
 		}
 	}
 }

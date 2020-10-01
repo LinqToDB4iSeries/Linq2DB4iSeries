@@ -9,12 +9,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	using Mapping;
 	using SchemaProvider;
 	using SqlProvider;
+	using System.Threading;
+	using System.Threading.Tasks;
 
 	public class DB2iSeriesDataProvider : DynamicDataProviderBase<DB2iSeriesProviderAdapter>
 	{
-		private DB2iSeriesLevels minLevel;
-
-		private bool mapGuidAsString;
+		private readonly DB2iSeriesLevels minLevel;
+		private readonly bool mapGuidAsString;
 
 		public DB2iSeriesDataProvider() : this(DB2iSeriesProviderName.DB2, DB2iSeriesLevels.Any, false)
 		{
@@ -23,7 +24,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public DB2iSeriesDataProvider(string name, DB2iSeriesLevels minLevel, bool mapGuidAsString)
 			: base(
 				  name,
-				  GetMappingSchema(mapGuidAsString, DB2iSeriesProviderAdapter.GetInstance().MappingSchema),
+				  GetMappingSchema(name, mapGuidAsString, DB2iSeriesProviderAdapter.GetInstance().MappingSchema),
 				  DB2iSeriesProviderAdapter.GetInstance())
 		{
 			this.minLevel = minLevel;
@@ -39,11 +40,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SqlProviderFlags.IsCommonTableExpressionsSupported = true;
 			
 			if(mapGuidAsString)
-				SqlProviderFlags.CustomFlags.Add(DB2iSeriesTools.MapGuidAsString);
+				SqlProviderFlags.CustomFlags.Add(Constants.ProviderFlags.MapGuidAsString);
 
-			SetCharField("CHAR", (r, i) => r.GetString(i).TrimEnd(' '));
-			SetCharField("NCHAR", (r, i) => r.GetString(i).TrimEnd(' '));
-
+			SetCharField(Constants.DbTypes.Char, (r, i) => r.GetString(i).TrimEnd(' '));
+			SetCharField(Constants.DbTypes.NChar, (r, i) => r.GetString(i).TrimEnd(' '));
+			
 			_sqlOptimizer = new DB2iSeriesSqlOptimizer(SqlProviderFlags);
 			
 			SetProviderField(Adapter.iDB2BigIntType, typeof(long), Adapter.GetiDB2BigIntReaderMethod, dataReaderType: Adapter.DataReaderType);
@@ -53,7 +54,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetProviderField(Adapter.iDB2CharBitDataType, typeof(byte[]), Adapter.GetiDB2CharBitDataReaderMethod, dataReaderType: Adapter.DataReaderType);
 			SetProviderField(Adapter.iDB2ClobType, typeof(string), Adapter.GetiDB2ClobReaderMethod, dataReaderType: Adapter.DataReaderType);
 			SetProviderField(Adapter.iDB2DataLinkType, typeof(string), Adapter.GetiDB2DataLinkReaderMethod, dataReaderType: Adapter.DataReaderType);
-			SetProviderField(Adapter.iDB2DateType, typeof(System.DateTime), Adapter.GetiDB2DateReaderMethod, dataReaderType: Adapter.DataReaderType);
+			SetProviderField(Adapter.iDB2DateType, typeof(DateTime), Adapter.GetiDB2DateReaderMethod, dataReaderType: Adapter.DataReaderType);
 			SetProviderField(Adapter.iDB2DbClobType, typeof(string), Adapter.GetiDB2DbClobReaderMethod, dataReaderType: Adapter.DataReaderType);
 			SetProviderField(Adapter.iDB2DecFloat16Type, typeof(decimal), Adapter.GetiDB2DecFloat16ReaderMethod, dataReaderType: Adapter.DataReaderType);
 			SetProviderField(Adapter.iDB2DecFloat34Type, typeof(decimal), Adapter.GetiDB2DecFloat34ReaderMethod, dataReaderType: Adapter.DataReaderType);
@@ -65,8 +66,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetProviderField(Adapter.iDB2RealType, typeof(float), Adapter.GetiDB2RealReaderMethod, dataReaderType: Adapter.DataReaderType);
 			SetProviderField(Adapter.iDB2RowidType, typeof(byte[]), Adapter.GetiDB2RowidReaderMethod, dataReaderType: Adapter.DataReaderType);
 			SetProviderField(Adapter.iDB2SmallIntType, typeof(short), Adapter.GetiDB2SmallIntReaderMethod, dataReaderType: Adapter.DataReaderType);
-			SetProviderField(Adapter.iDB2TimeType, typeof(System.DateTime), Adapter.GetiDB2TimeReaderMethod, dataReaderType: Adapter.DataReaderType);
-			SetProviderField(Adapter.iDB2TimeStampType, typeof(System.DateTime), Adapter.GetiDB2TimeStampReaderMethod, dataReaderType: Adapter.DataReaderType);
+			SetProviderField(Adapter.iDB2TimeType, typeof(DateTime), Adapter.GetiDB2TimeReaderMethod, dataReaderType: Adapter.DataReaderType);
+			SetProviderField(Adapter.iDB2TimeStampType, typeof(DateTime), Adapter.GetiDB2TimeStampReaderMethod, dataReaderType: Adapter.DataReaderType);
 			SetProviderField(Adapter.iDB2VarBinaryType, typeof(byte[]), Adapter.GetiDB2VarBinaryReaderMethod, dataReaderType: Adapter.DataReaderType);
 			SetProviderField(Adapter.iDB2VarCharType, typeof(string), Adapter.GetiDB2VarCharReaderMethod, dataReaderType: Adapter.DataReaderType);
 			SetProviderField(Adapter.iDB2VarCharBitDataType, typeof(byte[]), Adapter.GetiDB2VarCharBitDataReaderMethod, dataReaderType: Adapter.DataReaderType);
@@ -76,23 +77,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		
 		readonly DB2iSeriesSqlOptimizer _sqlOptimizer;
-		DB2iSeriesBulkCopy _bulkCopy;
-
-		#region "overrides"
-
-		public string DummyTableName => DB2iSeriesTools.iSeriesDummyTableName();
-
-		public override BulkCopyRowsCopied BulkCopy<T>(ITable<T> table, BulkCopyOptions options, IEnumerable<T> source)
-		{
-			if (_bulkCopy == null)
-				_bulkCopy = new DB2iSeriesBulkCopy();
-
-			return _bulkCopy.BulkCopy(
-			  options.BulkCopyType == BulkCopyType.Default ? DB2iSeriesTools.DefaultBulkCopyType : options.BulkCopyType,
-			  table,
-			  options,
-			  source);
-		}
+		
 		public override ISqlBuilder CreateSqlBuilder(MappingSchema mappingSchema)
 		{
 			return minLevel == DB2iSeriesLevels.V7_1_38 ?
@@ -104,6 +89,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			return new DB2iSeriesSchemaProvider(this);
 		}
+
 		public override ISqlOptimizer GetSqlOptimizer()
 		{
 			return _sqlOptimizer;
@@ -116,23 +102,23 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			base.InitCommand(dataConnection, commandType, commandText, parameters, withParameters);
 		}
 
-		private static MappingSchema GetMappingSchema(bool mapGuidAsString, MappingSchema providerSchema)
+		private static MappingSchema GetMappingSchema(string configuration, bool mapGuidAsString, MappingSchema providerSchema)
 		{
 			return mapGuidAsString
-				? new DB2iSeriesMappingSchema(DB2iSeriesProviderName.DB2_GAS, providerSchema)
-				: new DB2iSeriesMappingSchema(DB2iSeriesProviderName.DB2, providerSchema);
+				? (MappingSchema)new DB2iSeriesGuidAsStringMappingSchema(configuration, providerSchema)
+				: new DB2iSeriesMappingSchema(configuration, providerSchema);
 		}
 
 		public override void SetParameter(DataConnection dataConnection, IDbDataParameter parameter, string name, DbDataType dataType, object value)
 		{
-			if (value is sbyte)
+			if (value is sbyte @sbyte)
 			{
-				value = (short)(sbyte)value;
+				value = (short)@sbyte;
 				dataType = dataType.WithDataType(DataType.Int16);
 			}
-			else if (value is byte)
+			else if (value is byte @byte)
 			{
-				value = (short)(byte)value;
+				value = (short)@byte;
 				dataType = dataType.WithDataType(DataType.Int16);
 			}
 
@@ -159,39 +145,35 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case DataType.VarChar:
 				case DataType.NChar:
 				case DataType.NVarChar:
-					if (value is Guid) value = ((Guid)value).ToString("D");
-					else if (value is bool)
-						value = Common.ConvertTo<char>.From((bool)value);
+				case DataType.Text:
+				case DataType.NText:
+					if (value is Guid textGuid) value = textGuid.ToString("D");
+					else if (value is bool textBool)
+						value = ConvertTo<char>.From(textBool);
 					break;
 				case DataType.Boolean:
 				case DataType.Int16:
-					if (value is bool)
+					if (value is bool boolean)
 					{
-						value = (bool)value ? 1 : 0;
+						value = boolean ? 1 : 0;
 						dataType = dataType.WithDataType(DataType.Int16);
 					}
 					break;
 				case DataType.Guid:
-					if (value is Guid)
-					{
-						if (mapGuidAsString)
-						{
-							value = ((Guid)value).ToString("D");
-							dataType = dataType.WithDataType(DataType.NVarChar);
-						}
-						else
-						{
-							value = ((Guid) value).ToByteArray();
-							dataType = dataType.WithDataType(DataType.VarBinary);
-						}
-					}
-					if (value == null)
-						dataType = dataType.WithDataType(DataType.VarBinary);
+					dataType = dataType.WithDataType(
+						mapGuidAsString ? DataType.NVarChar : DataType.VarBinary);
+
+					if (value is Guid guid)
+						value = mapGuidAsString ? 
+							(object)guid.ToString("D") : guid.ToByteArray();
+						
 					break;
 				case DataType.Binary:
 				case DataType.VarBinary:
-					if (value is Guid) value = ((Guid)value).ToByteArray();
-					else if (parameter.Size == 0 && value != null && value.GetType().Name == "DB2Binary")
+					if (value is Guid varBinaryGuid) value = varBinaryGuid.ToByteArray();
+					else if (parameter.Size == 0 && value != null && 
+						(value.GetType() == Adapter.iDB2BinaryType 
+						|| value.GetType() == Adapter.iDB2BinaryType))
 					{
 						dynamic v = value;
 						if (v.IsNull)
@@ -199,25 +181,92 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					}
 					break;
 				case DataType.Time:
-					if (value is TimeSpan)
+					//Time parameters will only accept iDb2Time or string representation of time
+					if (value is TimeSpan timeSpan)
 					{
-						value = new DateTime(((TimeSpan)value).Ticks);
+						value = DB2iSeriesSqlBuilder.ConvertTimeToSql(timeSpan, false);
+					}
+					else if (value is DateTime dateTime)
+					{
+						value = DB2iSeriesSqlBuilder.ConvertDateTimeToSql(DataType.Time, dateTime, false);
+					}
+					else if (value is DateTimeOffset dateTimeOffset)
+					{
+						value = DB2iSeriesSqlBuilder.ConvertDateTimeToSql(DataType.Time, dateTimeOffset.DateTime, false);
 					}
 					break;
-				case DataType.Blob:
-					base.SetParameter(dataConnection, parameter, "@" + name, dataType, value);
-
-					var param = TryGetProviderParameter(parameter, dataConnection.MappingSchema);
-					if (param != null)
-					{
-						Adapter.SetDbType(param, DB2iSeriesProviderAdapter.iDB2DbType.iDB2Blob);
-					}
-					return;
 			}
 
 			base.SetParameter(dataConnection, parameter, "@" + name, dataType, value);
 		}
+
+		protected override void SetParameterType(DataConnection dataConnection, IDbDataParameter parameter, DbDataType dataType)
+		{
+			DB2iSeriesProviderAdapter.iDB2DbType? type = null;
+			switch (dataType.DataType)
+			{
+				case DataType.Blob: type = DB2iSeriesProviderAdapter.iDB2DbType.iDB2Blob; break;
+			}
+
+			if (type != null)
+			{
+				var param = TryGetProviderParameter(parameter, dataConnection.MappingSchema);
+				if (param != null)
+				{
+					Adapter.SetDbType(param, type.Value);
+					return;
+				}
+			}
+
+			base.SetParameterType(dataConnection, parameter, dataType);
+		}
+
+		#region BulkCopy
+
+		DB2iSeriesBulkCopy _bulkCopy;
+
+		public override BulkCopyRowsCopied BulkCopy<T>(ITable<T> table, BulkCopyOptions options, IEnumerable<T> source)
+		{
+			if (_bulkCopy == null)
+				_bulkCopy = new DB2iSeriesBulkCopy();
+
+			return _bulkCopy.BulkCopy(
+			  options.BulkCopyType == BulkCopyType.Default ? DB2iSeriesTools.DefaultBulkCopyType : options.BulkCopyType,
+			  table,
+			  options,
+			  source);
+		}
+
+		public override Task<BulkCopyRowsCopied> BulkCopyAsync<T>(ITable<T> table, BulkCopyOptions options, IEnumerable<T> source, CancellationToken cancellationToken)
+		{
+			if (_bulkCopy == null)
+				_bulkCopy = new DB2iSeriesBulkCopy();
+
+			return _bulkCopy.BulkCopyAsync(
+			  options.BulkCopyType == BulkCopyType.Default ? DB2iSeriesTools.DefaultBulkCopyType : options.BulkCopyType,
+			  table,
+			  options,
+			  source,
+			  cancellationToken);
+		}
+
+#if !NETFRAMEWORK
+		public override BulkCopyRowsCopied BulkCopyAsync<T>(ITable<T> table, BulkCopyOptions options, IAsyncEnumerable<T> source, CancellationToken cancellationToken)
+		{
+			if (_bulkCopy == null)
+				_bulkCopy = new DB2iSeriesBulkCopy();
+
+			return _bulkCopy.BulkCopyAsync(
+			  options.BulkCopyType == BulkCopyType.Default ? DB2iSeriesTools.DefaultBulkCopyType : options.BulkCopyType,
+			  table,
+			  options,
+			  source,
+			  cancellationToken);
+		}
+#endif
 		#endregion
+
+		#region Expressions
 
 		private static void LoadExpressions(string providerName, bool mapGuidAsString)
 		{
@@ -269,5 +318,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				Linq.Expressions.M(() => Sql.Log(0.0, 0)),
 				Linq.Expressions.N(() => Linq.Expressions.L<Double?, Double?, Double?>((m, n) => Sql.Log(n) / Sql.Log(m))));
 		}
+
+		#endregion
 	}
 }

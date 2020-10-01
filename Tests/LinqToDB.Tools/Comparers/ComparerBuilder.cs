@@ -24,7 +24,7 @@ namespace LinqToDB.Tools.Comparers
 		/// <returns>GetEqualsFunc function.</returns>
 		/// <typeparam name="T">The type of objects to compare.</typeparam>
 		[Pure]
-		public static Func<T,T,bool> GetEqualsFunc<T>()
+		public static Func<T, T, bool> GetEqualsFunc<T>()
 			=> GetEqualsFunc<T>(TypeAccessor.GetAccessor<T>().Members.Where(m => m.GetAttribute<IgnoreComparisonAttribute>() == null));
 
 		/// <summary>
@@ -34,7 +34,7 @@ namespace LinqToDB.Tools.Comparers
 		/// <returns>GetEqualsFunc function.</returns>
 		/// <typeparam name="T">The type of objects to compare.</typeparam>
 		[Pure]
-		public static Func<T,T,bool> GetEqualsFunc<T>([InstantHandle] IEnumerable<MemberAccessor> members)
+		public static Func<T, T, bool> GetEqualsFunc<T>([InstantHandle] IEnumerable<MemberAccessor> members)
 			=> CreateEqualsFunc<T>(members.Select(m => m.GetterExpression));
 
 		/// <summary>
@@ -44,7 +44,7 @@ namespace LinqToDB.Tools.Comparers
 		/// <returns>GetEqualsFunc function.</returns>
 		/// <typeparam name="T">The type of objects to compare.</typeparam>
 		[Pure]
-		public static Func<T,T,bool> GetEqualsFunc<T>(params Expression<Func<T,object?>>[] members)
+		public static Func<T, T, bool> GetEqualsFunc<T>(params Expression<Func<T, object?>>[] members)
 			=> CreateEqualsFunc<T>(members);
 
 		/// <summary>
@@ -53,7 +53,7 @@ namespace LinqToDB.Tools.Comparers
 		/// <returns>GetHashCode function.</returns>
 		/// <typeparam name="T">The type of objects to compare.</typeparam>
 		[Pure]
-		public static Func<T,int> GetGetHashCodeFunc<T>()
+		public static Func<T, int> GetGetHashCodeFunc<T>()
 			=> GetGetHashCodeFunc<T>(TypeAccessor.GetAccessor<T>().Members.Where(m => m.GetAttribute<IgnoreComparisonAttribute>() == null));
 
 		static readonly int _randomSeed = new Random(unchecked((int)DateTime.Now.Ticks)).Next();
@@ -65,7 +65,7 @@ namespace LinqToDB.Tools.Comparers
 		/// <returns>GetHashCode function.</returns>
 		/// <typeparam name="T">The type of objects to compare.</typeparam>
 		[Pure]
-		public static Func<T,int> GetGetHashCodeFunc<T>([InstantHandle] IEnumerable<MemberAccessor> members)
+		public static Func<T, int> GetGetHashCodeFunc<T>([InstantHandle] IEnumerable<MemberAccessor> members)
 			=> CreateGetHashCodeFunc<T>(members.Select(m => m.GetterExpression));
 
 		/// <summary>
@@ -75,23 +75,23 @@ namespace LinqToDB.Tools.Comparers
 		/// <returns>GetHashCode function.</returns>
 		/// <typeparam name="T">The type of objects to compare.</typeparam>
 		[Pure]
-		public static Func<T,int> GetGetHashCodeFunc<T>(params Expression<Func<T, object?>>[] members)
+		public static Func<T, int> GetGetHashCodeFunc<T>(params Expression<Func<T, object?>>[] members)
 			=> CreateGetHashCodeFunc<T>(members);
 
 		class Comparer<T> : EqualityComparer<T>
 		{
-			public Comparer(Func<T,T,bool> equals, Func<T,int> getHashCode)
+			public Comparer(Func<T, T, bool> equals, Func<T, int> getHashCode)
 			{
-				_equals      = equals;
+				_equals = equals;
 				_getHashCode = getHashCode;
 			}
 
-			readonly Func<T,T,bool> _equals;
-			readonly Func<T,int>    _getHashCode;
+			readonly Func<T, T, bool> _equals;
+			readonly Func<T, int> _getHashCode;
 
-			public override bool Equals     (T x, T y) => x != null ? y != null && _equals(x, y) : y == null;
+			public override bool Equals(T x, T y) => x != null ? y != null && _equals(x, y) : y == null;
 
-			public override int  GetHashCode(T obj)    => obj == null ? 0 : _getHashCode(obj);
+			public override int GetHashCode(T obj) => obj == null ? 0 : _getHashCode(obj);
 
 			internal static Comparer<T>? DefaultInstance;
 		}
@@ -124,7 +124,7 @@ namespace LinqToDB.Tools.Comparers
 		/// <returns>Instance of <see cref="T:System.Collections.Generic.IEqualityComparer`1" />.</returns>
 		/// <typeparam name="T">The type of objects to compare.</typeparam>
 		[Pure]
-		public static IEqualityComparer<T> GetEqualityComparer<T>(params Expression<Func<T,object?>>[] membersToCompare)
+		public static IEqualityComparer<T> GetEqualityComparer<T>(params Expression<Func<T, object?>>[] membersToCompare)
 		{
 			if (membersToCompare == null) throw new ArgumentNullException(nameof(membersToCompare));
 			return new Comparer<T>(CreateEqualsFunc<T>(membersToCompare), CreateGetHashCodeFunc<T>(membersToCompare));
@@ -149,7 +149,7 @@ namespace LinqToDB.Tools.Comparers
 		/// <typeparam name="T">The type of objects to compare.</typeparam>
 		[Pure]
 		public static IEqualityComparer<T> GetEqualityComparer<T>(
-			[InstantHandle] Func<TypeAccessor<T>,IEnumerable<MemberAccessor>> membersToCompare)
+			[InstantHandle] Func<TypeAccessor<T>, IEnumerable<MemberAccessor>> membersToCompare)
 		{
 			if (membersToCompare == null) throw new ArgumentNullException(nameof(membersToCompare));
 
@@ -166,7 +166,7 @@ namespace LinqToDB.Tools.Comparers
 		/// <typeparam name="T">The type of objects to compare.</typeparam>
 		[Pure]
 		public static IEqualityComparer<T> GetEqualityComparer<T>(
-			[InstantHandle] Func<MemberAccessor,bool> memberPredicate)
+			[InstantHandle] Func<MemberAccessor, bool> memberPredicate)
 		{
 			if (memberPredicate == null) throw new ArgumentNullException(nameof(memberPredicate));
 
@@ -175,7 +175,7 @@ namespace LinqToDB.Tools.Comparers
 		}
 
 		[Pure]
-		static Func<T,T,bool> CreateEqualsFunc<T>(IEnumerable<LambdaExpression> membersToCompare)
+		static Func<T, T, bool> CreateEqualsFunc<T>(IEnumerable<LambdaExpression> membersToCompare)
 		{
 			var x = Expression.Parameter(typeof(T), "x");
 			var y = Expression.Parameter(typeof(T), "y");
@@ -184,8 +184,8 @@ namespace LinqToDB.Tools.Comparers
 			{
 				var arg0 = RemoveCastToObject(me.GetBody(x));
 				var arg1 = RemoveCastToObject(me.GetBody(y));
-				var eq   = GetEqualityComparerExpression(arg1.Type);
-				var mi   = eq.Type.GetMethods().Single(m => m.IsPublic && m.Name == "Equals" && m.GetParameters().Length == 2);
+				var eq = GetEqualityComparerExpression(arg1.Type);
+				var mi = eq.Type.GetMethods().Single(m => m.IsPublic && m.Name == "Equals" && m.GetParameters().Length == 2);
 
 				Expression expr = Expression.Call(eq, mi, arg0, arg1);
 
@@ -196,7 +196,7 @@ namespace LinqToDB.Tools.Comparers
 				.DefaultIfEmpty(Expression.Constant(true))
 				.Aggregate(Expression.AndAlso);
 
-			return Expression.Lambda<Func<T,T,bool>>(expression, x, y).Compile();
+			return Expression.Lambda<Func<T, T, bool>>(expression, x, y).Compile();
 		}
 
 		static Expression GetEqualityComparerExpression(Type type)
@@ -211,9 +211,9 @@ namespace LinqToDB.Tools.Comparers
 						? type.GetElementType()
 						: type.GetGenericArguments()[0])
 					: typeof(EnumerableEqualityComparer);
-			else if (type.IsClass &&  (type.Name.StartsWith("<>") || !type.GetMethods().Any(m => m.Name == "Equals" && m.DeclaringType == type)))
+			else if (type.IsClass && (type.Name.StartsWith("<>") || !type.GetMethods().Any(m => m.Name == "Equals" && m.DeclaringType == type)))
 				return Expression.Call(_getEqualityComparerMethodInfo.MakeGenericMethod(type));
-			else 
+			else
 				comparerType = typeof(EqualityComparer<>).MakeGenericType(type);
 
 			var constructors = comparerType.GetConstructors();
@@ -232,9 +232,9 @@ namespace LinqToDB.Tools.Comparers
 		}
 
 		[Pure]
-		static Func<T,int> CreateGetHashCodeFunc<T>(IEnumerable<LambdaExpression> membersToCompare)
+		static Func<T, int> CreateGetHashCodeFunc<T>(IEnumerable<LambdaExpression> membersToCompare)
 		{
-			var parameter  = Expression.Parameter(typeof(T), "parameter");
+			var parameter = Expression.Parameter(typeof(T), "parameter");
 			var expression = membersToCompare.Aggregate(
 				(Expression)Expression.Constant(_randomSeed),
 				(e, me) =>

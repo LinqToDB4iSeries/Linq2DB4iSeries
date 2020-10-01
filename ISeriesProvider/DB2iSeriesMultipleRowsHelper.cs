@@ -46,9 +46,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 					// wrap the parameter with a cast
 					var dbType = value == null ? columnType : DataConnection.MappingSchema.GetDataType(value.GetType());
-					var casttype = ((DB2iSeriesSqlBuilder)SqlBuilder).GetiSeriesType(dbType);
+					var casttype = DataConnection.MappingSchema.GetDbTypeForCast(dbType).ToSqlString();
 					
-					var nameWithCast = $"CAST(@{dataParameter.Name} AS {casttype})";
+					var nameWithCast = casttype is null ? 
+						$"@{dataParameter.Name}" : 
+						$"CAST(@{dataParameter.Name} AS {casttype})";
 
 					StringBuilder.Append(nameWithCast);
 				}

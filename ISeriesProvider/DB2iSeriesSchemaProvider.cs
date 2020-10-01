@@ -2,13 +2,12 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using LinqToDB.SchemaProvider;
+using LinqToDB.Common;
+using LinqToDB.Data;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
-	using Common;
-	using Data;
-	using LinqToDB.SchemaProvider;
-
 	public class DB2iSeriesSchemaProvider : SchemaProviderBase
 	{
 		private readonly DB2iSeriesDataProvider _provider;
@@ -30,10 +29,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				"CLOB" => DataType.Text,
 				"DATALINK" => DataType.Undefined,
 				"DATE" => DataType.Date,
-				"DBCLOB" => DataType.Undefined,
+				"DBCLOB" => DataType.NText,
 				"DECIMAL" => DataType.Decimal,
 				"DOUBLE" => DataType.Double,
-				"GRAPHIC" => DataType.Text,
+				"GRAPHIC" => DataType.NChar,
 				"INTEGER" => DataType.Int32,
 				"NUMERIC" => DataType.Decimal,
 				"REAL" => DataType.Single,
@@ -44,7 +43,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				"VARBINARY" => DataType.VarBinary,
 				"VARCHAR" => DataType.VarChar,
 				"VARCHAR FOR BIT DATA" => DataType.VarBinary,
-				"VARGRAPHIC" => DataType.Text,
+				"VARGRAPHIC" => DataType.NVarChar,
+				"NCHAR" => DataType.NChar,
+				"NVARCHAR" => DataType.NVarChar,
+				"NCLOB" => DataType.NText,
+				"DECFLOAT" => DataType.Decimal,
 				_ => DataType.Undefined,
 			};
 		}
@@ -241,7 +244,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				  , Table_Text
 				  , Table_Type
 				  , System_Table_Schema
-				  From QSYS2/SYSTABLES 
+				  From QSYS2{GetDelimiter(dataConnection)}SYSTABLES 
 				  Where Table_Type In('L', 'P', 'T', 'V')
 				  And System_Table_Schema in ('{GetLibList(dataConnection)}')	
 				  Order By System_Table_Schema, System_Table_Name
@@ -254,7 +257,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				CatalogName = dr["Catalog_Name"].ToString().TrimEnd(),
 				Description = dr["Table_Text"].ToString().TrimEnd(),
 				IsDefaultSchema = dr["System_Table_Schema"].ToString().TrimEnd() == defaultSchema,
-				IsView = new[] { "L", "V" }.Contains<string>(dr["Table_Type"].ToString()),
+				IsView = new[] { "L", "V" }.Contains(dr["Table_Type"].ToString()),
 				SchemaName = dr["Table_Schema"].ToString().TrimEnd(),
 				TableID = dataConnection.Connection.Database + "." + dr["Table_Schema"].ToString().TrimEnd() + "." + dr["Table_Name"].ToString().TrimEnd(),
 				TableName = dr["Table_Name"].ToString().TrimEnd()

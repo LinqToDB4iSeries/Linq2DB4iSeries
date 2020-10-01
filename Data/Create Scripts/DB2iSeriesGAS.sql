@@ -189,6 +189,7 @@ CREATE TABLE AllTypes(
     , binaryDataType           binary(20)              Default NULL
     , blobDataType             blob                    Default NULL
     , charDataType             char(1)                 Default NULL
+	, char20DataType           char(20)     CCSID 1208 Default NULL															
     , CharForBitDataType       char(5) for bit data    Default NULL
     , clobDataType             clob          CCSID 1208          Default NULL
     , dataLinkDataType         dataLink                Default NULL

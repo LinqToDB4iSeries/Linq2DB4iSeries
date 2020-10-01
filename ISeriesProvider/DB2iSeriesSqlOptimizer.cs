@@ -5,10 +5,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	using LinqToDB.Extensions;
 	using LinqToDB.SqlQuery;
 	using SqlProvider;
+	using System.Collections.Generic;
 
 	class DB2iSeriesSqlOptimizer : BasicSqlOptimizer
 	{
-
 		public DB2iSeriesSqlOptimizer(SqlProviderFlags sqlProviderFlags) : base(sqlProviderFlags)
 		{
 		}
@@ -27,7 +27,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			};
 		}
 
-		private static string FixUnderscore(string text, string alternative)
+		private static string SanitizeAliasOrParameterName(string text, string alternative)
 		{
 			if (string.IsNullOrWhiteSpace(text))
 				return null;
@@ -43,6 +43,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public override SqlStatement Finalize(SqlStatement statement, bool inlineParameters)
 		{
+			static long getAbsoluteHashCode(object o) => (long)o.GetHashCode() + (long)int.MaxValue;
+			
 			new QueryVisitor().Visit(statement, expr =>
 			{
 				switch (expr.ElementType)
@@ -50,20 +52,20 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					case QueryElementType.SqlParameter:
 						{
 							var p = (SqlParameter)expr;
-							p.Name = FixUnderscore(p.Name, $"P{p.GetHashCode()}");
+							p.Name = SanitizeAliasOrParameterName(p.Name, $"P{getAbsoluteHashCode(p)}");
 
 							break;
 						}
 					case QueryElementType.TableSource:
 						{
 							var table = (SqlTableSource)expr;
-							table.Alias = FixUnderscore(table.Alias, $"T{table.SourceID}");
+							table.Alias = SanitizeAliasOrParameterName(table.Alias, $"T{table.SourceID}");
 							break;
 						}
 					case QueryElementType.Column:
 						{
 							var column = (SqlColumn)expr;
-							column.Alias = FixUnderscore(column.Alias, $"C{column.GetHashCode()}");
+							column.Alias = SanitizeAliasOrParameterName(column.Alias, $"C{getAbsoluteHashCode(column)}");
 							break;
 						}
 				}
@@ -87,9 +89,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public override ISqlExpression ConvertExpression(ISqlExpression expr, bool withParameters)
 		{
 			expr = base.ConvertExpression(expr, withParameters);
-			if (expr is SqlBinaryExpression)
+			if (expr is SqlBinaryExpression be)
 			{
-				var be = (SqlBinaryExpression)expr;
 				switch (be.Operation)
 				{
 					case "%":
@@ -108,9 +109,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						return be.SystemType == typeof(string) ? new SqlBinaryExpression(be.SystemType, be.Expr1, "||", be.Expr2, be.Precedence) : expr;
 				}
 			}
-			else if (expr is SqlFunction)
+			else if (expr is SqlFunction func)
 			{
-				var func = (SqlFunction)expr;
 				switch (func.Name)
 				{
 					case "EXISTS":
@@ -150,7 +150,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						}
 						if (func.Parameters[0] is SqlFunction f)
 						{
-							if (f.Name == "Char")
+							//Conversion is setup with the datatype as the left operand. Character datatypes are presented as 
+							//functions e.g. VarChar(1000). DB2 has a convert function for almost all datatypes named after the type.
+							//So Linq2db Convert(VarChar(1000),SomeValue) needs to be converted to VarChar(SomeValue)
+							if (f.Name == "Char" || f.Name == "Graphic" || f.Name == "VarChar" || f.Name == "VarGraphic")
 								return new SqlFunction(func.SystemType, f.Name, func.Parameters[1]);
 
 							if (f.Parameters.Length == 1)
@@ -188,15 +191,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						return new SqlFunction(func.SystemType, "Decimal", func.Parameters[0], new SqlValue(19), new SqlValue(4));
 					case "SmallMoney":
 						return new SqlFunction(func.SystemType, "Decimal", func.Parameters[0], new SqlValue(10), new SqlValue(4));
-					case "VarChar":
-						if (func.Parameters[0].SystemType.ToUnderlying() == typeof(decimal))
-						{
-							return new SqlFunction(func.SystemType, "Char", func.Parameters[0]);
-						}
-						break;
+					//case "VarChar":
+					//	if (func.Parameters.Any() && func.Parameters[0].SystemType.ToUnderlying() != typeof(string))
+					//	{
+					//		return new SqlFunction(func.SystemType, "VarChar");
+					//	}
+					//	break;
 					case "NChar":
 					case "NVarChar":
-						return new SqlFunction(func.SystemType, "Char", func.Parameters);
+						return new SqlFunction(func.SystemType, "Graphic", func.Parameters);
 				}
 			}
 			return expr;

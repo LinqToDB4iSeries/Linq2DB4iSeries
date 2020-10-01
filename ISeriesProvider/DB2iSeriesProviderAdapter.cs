@@ -198,7 +198,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						var iDB2BlobType = loadType("iDB2Blob", DataType.Blob);
 						var iDB2CharType = loadType("iDB2Char", DataType.Char);
 						var iDB2CharBitDataType = loadType("iDB2CharBitData", DataType.Binary);
-						var iDB2ClobType = loadType("iDB2Clob", DataType.NText);
+						var iDB2ClobType = loadType("iDB2Clob", DataType.Text);
 						var iDB2DataLinkType = loadType("iDB2DataLink", DataType.NText);
 						var iDB2DateType = loadType("iDB2Date", DataType.Date);
 						var iDB2DbClobType = loadType("iDB2DbClob", DataType.NText);
@@ -206,7 +206,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						var iDB2DecFloat34Type = loadType("iDB2DecFloat34", DataType.Decimal);
 						var iDB2DecimalType = loadType("iDB2Decimal", DataType.Decimal);
 						var iDB2DoubleType = loadType("iDB2Double", DataType.Double);
-						var iDB2GraphicType = loadType("iDB2Graphic", DataType.NText);
+						var iDB2GraphicType = loadType("iDB2Graphic", DataType.NChar);
 						var iDB2IntegerType = loadType("iDB2Integer", DataType.Int32);
 						var iDB2NumericType = loadType("iDB2Numeric", DataType.Decimal);
 						var iDB2RealType = loadType("iDB2Real", DataType.Single);
@@ -217,7 +217,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						var iDB2VarBinaryType = loadType("iDB2VarBinary", DataType.VarBinary);
 						var iDB2VarCharType = loadType("iDB2VarChar", DataType.VarChar);
 						var iDB2VarCharBitDataType = loadType("iDB2VarCharBitData", DataType.VarBinary);
-						var iDB2VarGraphicType = loadType("iDB2VarGraphic", DataType.NText);
+						var iDB2VarGraphicType = loadType("iDB2VarGraphic", DataType.NVarChar);
 						var iDB2XmlType = loadType("iDB2Xml", DataType.Xml);
 
 						var typeMapper = new TypeMapper();

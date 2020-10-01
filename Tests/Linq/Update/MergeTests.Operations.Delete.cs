@@ -2,9 +2,9 @@
 using System.Linq;
 
 using LinqToDB;
-using LinqToDB.Data;
 
 using NUnit.Framework;
+using NUnit.Framework.Constraints;
 
 namespace Tests.xUpdate
 {
@@ -12,11 +12,15 @@ namespace Tests.xUpdate
 
 	public partial class MergeTests
 	{
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleManaged, ProviderName.OracleNative,
-			ProviderName.Sybase, ProviderName.SapHana, ProviderName.Firebird, ProviderName.Firebird)]
-		public void SameSourceDelete(string context)
+		[Test]
+		public void SameSourceDelete([MergeDataContextSource(
+			TestProvName.AllOracle,
+			TestProvName.AllSybase,
+			TestProvName.AllSapHana,
+			TestProvName.AllFirebird)]
+			string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -29,7 +33,7 @@ namespace Tests.xUpdate
 					.DeleteWhenMatched()
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				AssertRowCount(2, rows, context);
 
@@ -40,11 +44,16 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleNative, ProviderName.OracleManaged,
-			ProviderName.Sybase, ProviderName.Informix, ProviderName.SapHana, ProviderName.Firebird)]
-		public void SameSourceDeleteWithPredicate(string context)
+		[Test]
+		public void SameSourceDeleteWithPredicate([MergeDataContextSource(
+			TestProvName.AllOracle,
+			TestProvName.AllInformix,
+			TestProvName.AllSybase,
+			TestProvName.AllSapHana,
+			TestProvName.AllFirebird)]
+			string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -57,7 +66,7 @@ namespace Tests.xUpdate
 					.DeleteWhenMatchedAnd((t, s) => s.Id == 4)
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				AssertRowCount(1, rows, context);
 
@@ -69,11 +78,14 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleNative, ProviderName.OracleManaged,
-			ProviderName.Sybase, ProviderName.Informix, ProviderName.SapHana, ProviderName.Firebird)]
-		public void DeletePartialSourceProjection_KnownFieldInCondition(string context)
+		[Test]
+		public void DeletePartialSourceProjection_KnownFieldInCondition([MergeDataContextSource(
+			TestProvName.AllOracle,
+			ProviderName.Sybase, ProviderName.SybaseManaged, TestProvName.AllInformix,
+			TestProvName.AllSapHana, TestProvName.AllFirebird)]
+			string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -86,7 +98,7 @@ namespace Tests.xUpdate
 					.DeleteWhenMatchedAnd((t, s) => s.Id == 4)
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				AssertRowCount(1, rows, context);
 
@@ -98,11 +110,14 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleNative, ProviderName.OracleManaged,
-			ProviderName.Sybase, ProviderName.Informix, ProviderName.SapHana, ProviderName.Firebird)]
-		public void DeleteWithPredicatePartialSourceProjection_UnknownFieldInCondition(string context)
+		[Test]
+		public void DeleteWithPredicatePartialSourceProjection_UnknownFieldInCondition([MergeDataContextSource(
+			TestProvName.AllOracle,
+			ProviderName.Sybase, ProviderName.SybaseManaged, TestProvName.AllInformix,
+			TestProvName.AllSapHana, ProviderName.Firebird)]
+			string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -111,22 +126,25 @@ namespace Tests.xUpdate
 				var exception = Assert.Catch(
 					() => table
 					.Merge()
-					.Using(GetSource1(db).Select(x => new TestMapping1() { Id = x.Id, Field1 = x.Field1 }))
+					.Using(GetSource1(db).Select(_ => new TestMapping1() { Id = _.Id, Field1 = _.Field1 }))
 					.OnTargetKey()
 					.DeleteWhenMatchedAnd((t, s) => s.Field2 == 4)
 					.Merge());
 
 				Assert.IsInstanceOf<LinqToDBException>(exception);
-				Assert.True(exception.Message.EndsWith("Field2' cannot be converted to SQL."));
+				Assert.That(exception.Message,  Does.EndWith(".Field2' cannot be converted to SQL."));
 			}
 		}
 
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleNative, ProviderName.OracleManaged,
-			ProviderName.Sybase, ProviderName.SqlServer2008, ProviderName.SqlServer2012, ProviderName.SqlServer2014,
-			TestProvName.SqlAzure, ProviderName.Informix, ProviderName.SapHana, ProviderName.Firebird)]
-		public void SameSourceDeleteWithPredicateDelete(string context)
+		[Test]
+		public void SameSourceDeleteWithPredicateDelete([MergeDataContextSource(
+			TestProvName.AllOracle,
+			ProviderName.Sybase, ProviderName.SybaseManaged, ProviderName.SqlServer2008,
+			ProviderName.SqlServer2012, ProviderName.SqlServer2014, ProviderName.SqlServer2017, TestProvName.SqlAzure,
+			TestProvName.AllInformix, TestProvName.AllSapHana, ProviderName.Firebird)]
+			string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -140,7 +158,7 @@ namespace Tests.xUpdate
 					.DeleteWhenMatched()
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				AssertRowCount(2, rows, context);
 
@@ -151,11 +169,13 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleManaged, ProviderName.OracleNative,
-			ProviderName.Sybase, ProviderName.SapHana, ProviderName.Firebird)]
-		public void OtherSourceDelete(string context)
+		[Test]
+		public void OtherSourceDelete([MergeDataContextSource(
+			TestProvName.AllOracle,
+			ProviderName.Sybase, ProviderName.SybaseManaged, TestProvName.AllSapHana, ProviderName.Firebird)]
+			string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -168,7 +188,7 @@ namespace Tests.xUpdate
 					.DeleteWhenMatched()
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				AssertRowCount(1, rows, context);
 
@@ -180,11 +200,13 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleManaged, ProviderName.OracleNative,
-			ProviderName.Sybase, ProviderName.SapHana, ProviderName.Firebird)]
-		public void OtherSourceDeletePartialSourceProjection_UnknownFieldInMatch(string context)
+		[Test]
+		public void OtherSourceDeletePartialSourceProjection_UnknownFieldInMatch([MergeDataContextSource(
+			TestProvName.AllOracle,
+			ProviderName.Sybase, ProviderName.SybaseManaged, TestProvName.AllSapHana, ProviderName.Firebird)]
+			string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -193,21 +215,24 @@ namespace Tests.xUpdate
 				var exception = Assert.Catch(
 					() => table
 					.Merge()
-					.Using(GetSource1(db).Select(x => new TestMapping1() { Id = x.Id, Field1 = x.Field1 }))
+					.Using(GetSource1(db).Select(_ => new TestMapping1() { Id = _.Id, Field1 = _.Field1 }))
 					.On((t, s) => s.Field2 == 3)
 					.DeleteWhenMatched()
 					.Merge());
 
 				Assert.IsInstanceOf<LinqToDBException>(exception);
-				Assert.True(exception.Message.EndsWith("Field2' cannot be converted to SQL."));
+				Assert.That(exception.Message, Does.EndWith(".Field2' cannot be converted to SQL."));
 			}
 		}
 
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleNative, ProviderName.OracleManaged,
-			ProviderName.Sybase, ProviderName.Informix, ProviderName.SapHana, ProviderName.Firebird)]
-		public void OtherSourceDeleteWithPredicate(string context)
+		[Test]
+		public void OtherSourceDeleteWithPredicate([MergeDataContextSource(
+			TestProvName.AllOracle,
+			ProviderName.Sybase, ProviderName.SybaseManaged, TestProvName.AllInformix,
+			TestProvName.AllSapHana, ProviderName.Firebird)]
+			string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -220,7 +245,7 @@ namespace Tests.xUpdate
 					.DeleteWhenMatchedAnd((t, s) => t.Id == 4)
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				AssertRowCount(1, rows, context);
 
@@ -232,11 +257,14 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleNative, ProviderName.OracleManaged,
-			ProviderName.Sybase, ProviderName.Informix, ProviderName.SapHana, ProviderName.Firebird)]
-		public void AnonymousSourceDeleteWithPredicate(string context)
+		[Test]
+		public void AnonymousSourceDeleteWithPredicate([MergeDataContextSource(
+			TestProvName.AllOracle,
+			ProviderName.Sybase, ProviderName.SybaseManaged, TestProvName.AllInformix,
+			TestProvName.AllSapHana, ProviderName.Firebird)]
+			string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -244,20 +272,20 @@ namespace Tests.xUpdate
 
 				var rows = table
 					.Merge()
-					.Using(GetSource2(db).Select(x => new
+					.Using(GetSource2(db).Select(_ => new
 					{
-						Key = x.OtherId,
-						Field01 = x.OtherField1,
-						Field02 = x.OtherField2,
-						Field03 = x.OtherField3,
-						Field04 = x.OtherField4,
-						Field05 = x.OtherField5,
+						Key = _.OtherId,
+						Field01 = _.OtherField1,
+						Field02 = _.OtherField2,
+						Field03 = _.OtherField3,
+						Field04 = _.OtherField4,
+						Field05 = _.OtherField5,
 					}))
 					.On((t, s) => s.Key == t.Id)
 					.DeleteWhenMatchedAnd((t, s) => s.Key == 4)
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				AssertRowCount(1, rows, context);
 
@@ -270,11 +298,14 @@ namespace Tests.xUpdate
 		}
 
 		// Oracle: implicit Delete to UpdateWithDelete conversion failed here
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleManaged, ProviderName.OracleNative,
-			ProviderName.Sybase, ProviderName.Informix, ProviderName.SapHana, ProviderName.Firebird)]
-		public void AnonymousListSourceDeleteWithPredicate(string context)
+		[Test]
+		public void AnonymousListSourceDeleteWithPredicate([MergeDataContextSource(
+			TestProvName.AllOracle,
+			ProviderName.Sybase, ProviderName.SybaseManaged, TestProvName.AllInformix,
+			TestProvName.AllSapHana, ProviderName.Firebird)]
+			string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -282,20 +313,20 @@ namespace Tests.xUpdate
 
 				var rows = table
 					.Merge()
-					.Using(GetSource2(db).ToList().Select(x => new
+					.Using(GetSource2(db).ToList().Select(_ => new
 					{
-						Key = x.OtherId,
-						Field01 = x.OtherField1,
-						Field02 = x.OtherField2,
-						Field03 = x.OtherField3,
-						Field04 = x.OtherField4,
-						Field05 = x.OtherField5,
+						Key = _.OtherId,
+						Field01 = _.OtherField1,
+						Field02 = _.OtherField2,
+						Field03 = _.OtherField3,
+						Field04 = _.OtherField4,
+						Field05 = _.OtherField5,
 					}))
 					.On((t, s) => s.Key == t.Id)
 					.DeleteWhenMatchedAnd((t, s) => s.Key == 4)
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				AssertRowCount(1, rows, context);
 
@@ -307,11 +338,14 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleManaged, ProviderName.OracleNative,
-			ProviderName.Sybase, ProviderName.Informix, ProviderName.SapHana, ProviderName.Firebird)]
-		public void DeleteReservedAndCaseNames(string context)
+		[Test]
+		public void DeleteReservedAndCaseNames([MergeDataContextSource(
+			TestProvName.AllOracle,
+			ProviderName.Sybase, ProviderName.SybaseManaged, TestProvName.AllInformix,
+			TestProvName.AllSapHana, ProviderName.Firebird)]
+			string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -319,20 +353,20 @@ namespace Tests.xUpdate
 
 				var rows = table
 					.Merge()
-					.Using(GetSource2(db).Select(x => new
+					.Using(GetSource2(db).Select(_ => new
 					{
-						select = x.OtherId,
-						Field = x.OtherField1,
-						field = x.OtherField2,
-						insert = x.OtherField3,
-						order = x.OtherField4,
-						by = x.OtherField5
+						select = _.OtherId,
+						Field = _.OtherField1,
+						field = _.OtherField2,
+						insert = _.OtherField3,
+						order = _.OtherField4,
+						by = _.OtherField5
 					}))
 					.On((t, s) => s.select == t.Id)
 					.DeleteWhenMatchedAnd((t, s) => s.select == 4)
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				AssertRowCount(1, rows, context);
 
@@ -344,11 +378,14 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleNative, ProviderName.OracleManaged,
-			ProviderName.Sybase, ProviderName.Informix, ProviderName.SapHana, ProviderName.Firebird)]
-		public void DeleteReservedAndCaseNamesFromList(string context)
+		[Test]
+		public void DeleteReservedAndCaseNamesFromList([MergeDataContextSource(
+			TestProvName.AllOracle,
+			ProviderName.Sybase, ProviderName.SybaseManaged, TestProvName.AllInformix,
+			TestProvName.AllSapHana, ProviderName.Firebird)]
+			string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -356,20 +393,20 @@ namespace Tests.xUpdate
 
 				var rows = table
 					.Merge()
-					.Using(GetSource2(db).ToList().Select(x => new
+					.Using(GetSource2(db).ToList().Select(_ => new
 					{
-						update = x.OtherId,
-						Update = x.OtherField1,
-						UPDATE = x.OtherField2,
-						uPDATE = x.OtherField3,
-						UpDaTe = x.OtherField4,
-						upDATE = x.OtherField5
+						update = _.OtherId,
+						Update = _.OtherField1,
+						UPDATE = _.OtherField2,
+						uPDATE = _.OtherField3,
+						UpDaTe = _.OtherField4,
+						upDATE = _.OtherField5
 					}))
 					.On((t, s) => s.update == t.Id)
 					.DeleteWhenMatchedAnd((t, s) => s.update == 4)
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				AssertRowCount(1, rows, context);
 
@@ -381,10 +418,13 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleNative, ProviderName.OracleManaged, ProviderName.Sybase)]
-		public void DeleteFromPartialSourceProjection_MissingKeyField(string context)
+		[Test]
+		public void DeleteFromPartialSourceProjection_MissingKeyField([MergeDataContextSource(
+			TestProvName.AllOracle,
+			ProviderName.Sybase, ProviderName.SybaseManaged, TestProvName.AllSapHana)]
+			string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -393,13 +433,13 @@ namespace Tests.xUpdate
 				var exception = Assert.Catch(
 					() => table
 						.Merge()
-						.Using(table.Select(x => new TestMapping1() { Field1 = x.Field1 }))
+						.Using(table.Select(_ => new TestMapping1() { Field1 = _.Field1 }))
 						.OnTargetKey()
 						.DeleteWhenMatched()
 						.Merge());
 
 				Assert.IsInstanceOf<LinqToDBException>(exception);
-				Assert.True(exception.Message.EndsWith("Id' cannot be converted to SQL."));
+				Assert.That(exception.Message, Does.EndWith(".Id' cannot be converted to SQL."));
 			}
 		}
 	}

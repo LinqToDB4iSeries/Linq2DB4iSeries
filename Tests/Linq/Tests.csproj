@@ -30,8 +30,10 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 		<ProjectReference Include="..\..\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj" />
+		<ProjectReference Include="..\LinqToDB.AspNet\LinqToDB.AspNet.csproj" />
 		<ProjectReference Include="..\Model\Tests.Model.csproj" />
 		<ProjectReference Include="..\Base\Tests.Base.csproj" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="1.1.1" />
 		
 		<PackageReference Include="System.Collections.Immutable" Version="1.4.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
@@ -39,6 +41,7 @@
 		<PackageReference Include="NUnit" Version="3.12.0" />
 		<PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
 		<PackageReference Include="Humanizer.Core" Version="2.2.0" />
+		<PackageReference Include="System.ValueTuple" Version="4.5.0" />
 	</ItemGroup>
 
 
@@ -80,6 +83,7 @@
 	  <Reference Include="IBM.Data.DB2.iSeries">
 	    <HintPath>..\..\Redist\IBM.Data.DB2.iSeries.dll</HintPath>
 	  </Reference>
+	  <Reference Include="System.Transactions" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -22,8 +22,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			var expr = rows[row][column];
 
-			if (MergeSourceValueTypeRequired(expr))
-				return true;
+			if (!MergeSourceValueTypeRequired(expr))
+				return false;
 			
 			//Base DB2 impl follows
 

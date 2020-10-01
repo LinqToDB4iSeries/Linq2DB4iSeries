@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<!--<Import Project="..\..\Build\linq2db.Source.props" />-->
+
+	<PropertyGroup>
+		<TargetFramework>net46</TargetFramework>
+		<LangVersion>8.0</LangVersion>
+		<Nullable>enable</Nullable>
+		<AssemblyName>linq2db.Tools</AssemblyName>
+		<Configurations>Debug;Release</Configurations>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<AssemblyName>linq2db.Tools</AssemblyName>
+		<RootNamespace>LinqToDB.Tools</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="jetbrains.annotations" Version="2020.1.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj" />
+	</ItemGroup>
+
+</Project>

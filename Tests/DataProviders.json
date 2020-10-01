@@ -35,22 +35,22 @@
 			"DB2.iSeries" : 
 			{ 
 				"Provider"         : "DB2.iSeries",    
-				"ConnectionString" : "Data Source={ISERIES}; Persist Security Info=True;User ID={USERNAME};Password={PASSWORD};Library List=LINQ2DB;Default Collection=LINQ2DB;Naming=1" 
+				"ConnectionString" : "Data Source={ISERIES}; Persist Security Info=True;User ID={USERNAME};Password={PASSWORD};Library List=LINQ2DB;Default Collection=LINQ2DB;Naming=0" 
 			},
 			"DB2.iSeries.GAS" : 
 			{ 
 				"Provider"         : "DB2.iSeries.GAS",    
-				"ConnectionString" : "Data Source={ISERIES}; Persist Security Info=True;User ID={USERNAME};Password={PASSWORD};Library List=LINQ2DBGAS;Default Collection=LINQ2DBGAS;Naming=1" 
+				"ConnectionString" : "Data Source={ISERIES}; Persist Security Info=True;User ID={USERNAME};Password={PASSWORD};Library List=LINQ2DBGAS;Default Collection=LINQ2DBGAS;Naming=0" 
 			},
 			"DB2.iSeries.73" : 
 			{ 
 				"Provider"         : "DB2.iSeries.73",    
-				"ConnectionString" : "Data Source={ISERIES}; Persist Security Info=True;User ID={USERNAME};Password={PASSWORD};Library List=LINQ2DB73;Default Collection=LINQ2DB73;Naming=1" 
+				"ConnectionString" : "Data Source={ISERIES}; Persist Security Info=True;User ID={USERNAME};Password={PASSWORD};Library List=LINQ2DB73;Default Collection=LINQ2DB73;Naming=0" 
 			},
 			"DB2.iSeries.73.GAS" : 
 			{ 
 				"Provider"         : "DB2.iSeries.73.GAS",    
-				"ConnectionString" : "Data Source={ISERIES}; Persist Security Info=True;User ID={USERNAME};Password={PASSWORD};Library List=LINQ2DB73G;Default Collection=LINQ2DB73G;Naming=1" 
+				"ConnectionString" : "Data Source={ISERIES}; Persist Security Info=True;User ID={USERNAME};Password={PASSWORD};Library List=LINQ2DB73G;Default Collection=LINQ2DB73G;Naming=0" 
 			}
 		}
 	}
