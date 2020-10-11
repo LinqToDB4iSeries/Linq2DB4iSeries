@@ -1474,6 +1474,8 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 			{
+				db.InlineParameters = true;
+
 				var id = 1;
 				var query = from p in db.GetTable<Parent>()
 					where p.ParentID == id

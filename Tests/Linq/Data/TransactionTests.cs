@@ -16,7 +16,7 @@ namespace Tests.Data
 	public class TransactionTests : TestBase
 	{
 		[Test]
-		public async Task DataContextBeginTransactionAsync([DataSources(false)] string context)
+		public async Task DataContextBeginTransactionAsync([DataSources(false, TestProvName.DB2iOleDb)] string context)
 		{
 			using (var db = new DataContext(context))
 			{
@@ -38,7 +38,7 @@ namespace Tests.Data
 		}
 
 		[Test]
-		public async Task DataContextOpenOrBeginTransactionAsync([DataSources(false)] string context)
+		public async Task DataContextOpenOrBeginTransactionAsync([DataSources(false, TestProvName.DB2iOleDb)] string context)
 		{
 			var tid = Thread.CurrentThread.ManagedThreadId;
 
@@ -54,7 +54,7 @@ namespace Tests.Data
 		}
 
 		[Test]
-		public async Task DataContextCommitTransactionAsync([DataSources(false)] string context)
+		public async Task DataContextCommitTransactionAsync([DataSources(false, TestProvName.DB2iOleDb)] string context)
 		{
 			using (var db = new DataContext(context))
 			using (var tr = await db.BeginTransactionAsync())
@@ -80,7 +80,7 @@ namespace Tests.Data
 		}
 
 		[Test]
-		public async Task DataContextRollbackTransactionAsync([DataSources(false)] string context)
+		public async Task DataContextRollbackTransactionAsync([DataSources(false, TestProvName.DB2iOleDb)] string context)
 		{
 			using (var db = new DataContext(context))
 			using (var tr = await db.BeginTransactionAsync())
@@ -97,7 +97,7 @@ namespace Tests.Data
 		}
 
 		[Test]
-		public async Task DataConnectionBeginTransactionAsync([DataSources(false)] string context)
+		public async Task DataConnectionBeginTransactionAsync([DataSources(false, TestProvName.DB2iOleDb)] string context)
 		{
 			var tid = Thread.CurrentThread.ManagedThreadId;
 
@@ -113,7 +113,7 @@ namespace Tests.Data
 		}
 
 		[Test]
-		public async Task DataConnectionCommitTransactionAsync([DataSources(false)] string context)
+		public async Task DataConnectionCommitTransactionAsync([DataSources(false, TestProvName.DB2iOleDb)] string context)
 		{
 			using (var db = new DataConnection(context))
 			using (await db.BeginTransactionAsync())
@@ -139,7 +139,7 @@ namespace Tests.Data
 		}
 
 		[Test]
-		public async Task DataConnectionRollbackTransactionAsync([DataSources(false)] string context)
+		public async Task DataConnectionRollbackTransactionAsync([DataSources(false, TestProvName.DB2iOleDb)] string context)
 		{
 			using (var db = new DataConnection(context))
 			using (await db.BeginTransactionAsync())
@@ -157,7 +157,7 @@ namespace Tests.Data
 		}
 
 		[Test]
-		public void AutoRollbackTransaction([DataSources(false)] string context)
+		public void AutoRollbackTransaction([DataSources(false, TestProvName.DB2iOleDb)] string context)
 		{
 			using (var db = new TestDataConnection(context))
 			{
@@ -182,7 +182,7 @@ namespace Tests.Data
 		}
 
 		[Test]
-		public void CommitTransaction([DataSources(false)] string context)
+		public void CommitTransaction([DataSources(false, TestProvName.DB2iOleDb)] string context)
 		{
 			using (var db = new TestDataConnection(context))
 			{
@@ -208,7 +208,7 @@ namespace Tests.Data
 		}
 
 		[Test]
-		public void RollbackTransaction([DataSources(false)] string context)
+		public void RollbackTransaction([DataSources(false, TestProvName.DB2iOleDb)] string context)
 		{
 			using (var db = new TestDataConnection(context))
 			{

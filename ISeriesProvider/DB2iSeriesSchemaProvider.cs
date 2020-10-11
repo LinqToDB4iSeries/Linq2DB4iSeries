@@ -5,14 +5,15 @@ using System.Linq;
 using LinqToDB.SchemaProvider;
 using LinqToDB.Common;
 using LinqToDB.Data;
+using System.Data.Common;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
 	public class DB2iSeriesSchemaProvider : SchemaProviderBase
 	{
-		private readonly DB2iSeriesDataProvider _provider;
+		private readonly IDB2iSeriesDataProvider _provider;
 
-		public DB2iSeriesSchemaProvider(DB2iSeriesDataProvider provider)
+		public DB2iSeriesSchemaProvider(IDB2iSeriesDataProvider provider)
 		{
 			_provider = provider;
 		}
@@ -54,7 +55,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected override List<ColumnInfo> GetColumns(DataConnection dataConnection, GetSchemaOptions options)
 		{
-			var delimiter = GetDelimiter(dataConnection);
+			var delimiter = dataConnection.GetDelimiter();
 			var sql = $@"
 				Select 
 				  Column_text 
@@ -62,14 +63,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				, Is_Identity
 				, Is_Nullable
 				, Length
-				, COALESCE(Numeric_Scale,0) Numeric_Scale
+				, COALESCE(Numeric_Scale , 0) Numeric_Scale
 				, Ordinal_Position
 				, Column_Name
 				, Table_Name
 				, Table_Schema
 				, Column_Name
 				From QSYS2{delimiter}SYSCOLUMNS
-				where System_Table_Schema in('{GetLibList(dataConnection)}')
+				where System_Table_Schema in('{dataConnection.GetLibList()}')
 				 ";
 
 			ColumnInfo drf(IDataReader dr)
@@ -94,7 +95,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected override IReadOnlyCollection<ForeignKeyInfo> GetForeignKeys(DataConnection dataConnection, IEnumerable<TableSchema> tables, GetSchemaOptions options)
 		{
-			var delimiter = GetDelimiter(dataConnection);
+			var delimiter = dataConnection.GetDelimiter();
 			var sql = $@"
 			  Select ref.Constraint_Name 
 			  , fk.Ordinal_Position
@@ -108,7 +109,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			  Join QSYS2{delimiter}SYSKEYCST fk on(fk.Constraint_Schema, fk.Constraint_Name) = (ref.Constraint_Schema, ref.Constraint_Name)
 			  Join QSYS2{delimiter}SYSKEYCST uk on(uk.Constraint_Schema, uk.Constraint_Name) = (ref.Unique_Constraint_Schema, ref.Unique_Constraint_Name)
 			  Where uk.Ordinal_Position = fk.Ordinal_Position
-			  And fk.System_Table_Schema in('{GetLibList(dataConnection)}')
+			  And fk.System_Table_Schema in('{dataConnection.GetLibList()}')
 			  Order By ThisSchema, ThisTable, Constraint_Name, Ordinal_Position
 			  ";
 
@@ -128,7 +129,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected override IReadOnlyCollection<PrimaryKeyInfo> GetPrimaryKeys(DataConnection dataConnection, IEnumerable<TableSchema> tables, GetSchemaOptions options)
 		{
-			var delimiter = GetDelimiter(dataConnection);
+			var delimiter = dataConnection.GetDelimiter();
 			var sql = $@"
 			  Select cst.constraint_Name  
 				   , cst.table_SCHEMA
@@ -137,7 +138,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				   , col.Column_Name   
 			  From QSYS2{delimiter}SYSKEYCST col
 			  Join QSYS2{delimiter}SYSCST    cst On(cst.constraint_SCHEMA, cst.constraint_NAME, cst.constraint_type) = (col.constraint_SCHEMA, col.constraint_NAME, 'PRIMARY KEY')
-			  And cst.System_Table_Schema in('{GetLibList(dataConnection)}')
+			  And cst.System_Table_Schema in('{dataConnection.GetLibList()}')
 			  Order By cst.table_SCHEMA, cst.table_NAME, col.Ordinal_position
 			  ";
 
@@ -164,8 +165,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			  , Routine_Type
 			  , Specific_Name
 			  , Specific_Schema
-			  From QSYS2{GetDelimiter(dataConnection)}SYSROUTINES 
-			  Where Specific_Schema in('{GetLibList(dataConnection)}')
+			  From QSYS2{dataConnection.GetDelimiter()}SYSROUTINES 
+			  Where Specific_Schema in('{dataConnection.GetLibList()}')
 			  Order By Specific_Schema, Specific_Name
 			  ";
 
@@ -204,8 +205,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			  , Parameter_Name
 			  , Specific_Name
 			  , Specific_Schema
-			  From QSYS2{GetDelimiter(dataConnection)}SYSPARMS 
-			  where Specific_Schema in('{GetLibList(dataConnection)}')
+			  From QSYS2{dataConnection.GetDelimiter()}SYSPARMS 
+			  where Specific_Schema in('{dataConnection.GetLibList()}')
 			  Order By Specific_Schema, Specific_Name, Parameter_Name
 			  ";
 
@@ -231,7 +232,35 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected override string GetProviderSpecificTypeNamespace()
 		{
-			return DB2iSeriesProviderAdapter.AssemblyName;
+			return _provider.ProviderType switch
+			{
+				DB2iSeriesAdoProviderType.AccessClient => DB2iSeriesProviderAdapter.AssemblyName,
+				DB2iSeriesAdoProviderType.Odbc => OdbcProviderAdapter.AssemblyName,
+				DB2iSeriesAdoProviderType.OleDb => OleDbProviderAdapter.AssemblyName,
+				DB2iSeriesAdoProviderType.DB2 => throw new NotImplementedException(),
+				_ => throw new LinqToDBException($"Unsupported DataProvider {_provider.Name} for iSeries SchemaProvider")
+			};
+		}
+
+		protected override List<DataTypeInfo> GetDataTypes(DataConnection dataConnection)
+		{
+			if (_provider.ProviderType == DB2iSeriesAdoProviderType.Odbc)
+			{
+				DataTypesSchema = ((DbConnection)dataConnection.Connection).GetSchema("DataTypes");
+
+				return DataTypesSchema.AsEnumerable()
+					.Select(t => new DataTypeInfo
+					{
+						TypeName = t.Field<string>("TypeName"),
+						DataType = t.Field<string>("TypeName") == "XML" ? "System.String" : t.Field<string>("DataType"),
+						CreateFormat = t.Field<string>("CreateFormat"),
+						CreateParameters = t.Field<string>("CreateParameters"),
+						ProviderDbType = t.Field<string>("TypeName") == "XML" ? (int)OdbcProviderAdapter.OdbcType.NText : t.Field<int>("ProviderDbType"),
+					})
+					.ToList();
+			}
+			else
+				return base.GetDataTypes(dataConnection);
 		}
 
 		protected override List<TableInfo> GetTables(DataConnection dataConnection, GetSchemaOptions options)
@@ -244,9 +273,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				  , Table_Text
 				  , Table_Type
 				  , System_Table_Schema
-				  From QSYS2{GetDelimiter(dataConnection)}SYSTABLES 
+				  From QSYS2{dataConnection.GetDelimiter()}SYSTABLES 
 				  Where Table_Type In('L', 'P', 'T', 'V')
-				  And System_Table_Schema in ('{GetLibList(dataConnection)}')	
+				  And System_Table_Schema in ('{dataConnection.GetLibList()}')	
 				  Order By System_Table_Schema, System_Table_Name
 				 ";
 
@@ -311,33 +340,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				default:
 					throw new NotImplementedException($"unknown data type: {ci.DataType}");
 			}
-		}
-
-		private IDbConnection GetProviderConnection(DataConnection dataConnection)
-		{
-			var connection = _provider.TryGetProviderConnection(dataConnection.Connection, dataConnection.MappingSchema);
-			if (connection == null)
-				throw new LinqToDBException("Dataconnection is not iDB2Connection.");
-
-			return connection;
-		}
-
-		private string GetLibList(DataConnection dataConnection)
-		{
-			var connection = GetProviderConnection(dataConnection);
-
-			var liblist = _provider.Adapter.GetLibraryList(connection);
-
-			return string.Join("','", liblist.ToString().Split(','));
-		}
-
-		private string GetDelimiter(DataConnection dataConnection)
-		{
-			var connection = GetProviderConnection(dataConnection);
-
-			var naming = _provider.Adapter.GetNamingConvention(connection);
-
-			return naming == DB2iSeriesProviderAdapter.iDB2NamingConvention.SQL ? "." : "/";
 		}
 
 		#endregion

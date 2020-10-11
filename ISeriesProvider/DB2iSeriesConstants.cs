@@ -47,9 +47,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static class SQL
 		{
+			public static string Delimiter(DB2iSeriesProviderAdapter.iDB2NamingConvention naming = DB2iSeriesProviderAdapter.iDB2NamingConvention.SQL)
+				=> naming == DB2iSeriesProviderAdapter.iDB2NamingConvention.SQL ? "." : "/";
+
+			public static string Delimiter(DB2iSeriesNamingConvention naming = DB2iSeriesNamingConvention.Sql)
+				=> naming == DB2iSeriesNamingConvention.Sql ? "." : "/";
 			public static string DummyTableName(DB2iSeriesNamingConvention naming = DB2iSeriesNamingConvention.Sql)
-				=> naming == DB2iSeriesNamingConvention.System ?
-					"SYSIBM/SYSDUMMY1" : "SYSIBM.SYSDUMMY1";
+				=> naming == DB2iSeriesNamingConvention.Sql ?
+					"SYSIBM.SYSDUMMY1" : "SYSIBM/SYSDUMMY1";
 
 			public const string LastInsertedIdentityGetter = "IDENTITY_VAL_LOCAL()";
 		}

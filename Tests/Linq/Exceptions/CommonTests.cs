@@ -43,7 +43,7 @@ namespace Tests.Exceptions
 						if (value == 555)
 						{
 							var tableName = "Parent1";
-							var dic       = new Dictionary<IQueryElement,IQueryElement>();
+							var dic = new Dictionary<IQueryElement, IQueryElement>();
 
 							statement = ConvertVisitor.Convert(statement, (v, e) =>
 							{
@@ -55,8 +55,8 @@ namespace Tests.Exceptions
 									{
 										var newTable = new SqlTable(oldTable) { Name = tableName, PhysicalName = tableName };
 
-										foreach (var field in oldTable.Fields.Values)
-											dic.Add(field, newTable.Fields[field.Name]);
+										foreach (var field in oldTable.Fields)
+											dic.Add(field, newTable[field.Name] ?? throw new InvalidOperationException());
 
 										return newTable;
 									}
@@ -91,7 +91,7 @@ namespace Tests.Exceptions
 						db.Parent.Insert(() => new Parent
 						{
 							ParentID = n,
-							Value1   = n
+							Value1 = n
 						}),
 					"Invalid object name 'Parent1'.");
 				Assert.True(ex.GetType().Name == "SqlException");
@@ -102,7 +102,7 @@ namespace Tests.Exceptions
 						db.Parent.Insert(() => new Parent
 						{
 							ParentID = n,
-							Value1   = n
+							Value1 = n
 						}),
 					"Invalid object name 'Parent1'.");
 				Assert.True(ex.GetType().Name == "SqlException");

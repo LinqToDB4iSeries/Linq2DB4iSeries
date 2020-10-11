@@ -16,10 +16,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public static DB2iSeriesIdentifierQuoteMode IdentifierQuoteMode = DB2iSeriesIdentifierQuoteMode.None;
 		protected readonly bool mapGuidAsString;
 
-		protected readonly DB2iSeriesDataProvider Provider;
+		protected readonly IDB2iSeriesDataProvider Provider;
 
 		public DB2iSeriesSqlBuilder(
-			DB2iSeriesDataProvider provider,
+			IDB2iSeriesDataProvider provider,
 			MappingSchema mappingSchema,
 			ISqlOptimizer sqlOptimizer,
 			SqlProviderFlags sqlProviderFlags)
@@ -36,6 +36,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			: base(mappingSchema, sqlOptimizer, sqlProviderFlags)
 		{
 			mapGuidAsString = sqlProviderFlags.CustomFlags.Contains(Constants.ProviderFlags.MapGuidAsString);
+		}
+
+		protected override ISqlBuilder CreateSqlBuilder()
+		{
+			return new DB2iSeriesSqlBuilder(Provider, MappingSchema, SqlOptimizer, SqlProviderFlags);
 		}
 
 		#region Same as DB2 provider
@@ -71,6 +76,24 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return selectQuery.Select.SkipValue == null ? " FETCH FIRST {0} ROWS ONLY" : null;
 		}
 
+		protected override void BuildCommand(SqlStatement statement, int commandNumber)
+		{
+			if (statement is SqlTruncateTableStatement trun)
+			{
+				var field = trun.Table!.IdentityFields[commandNumber - 1];
+
+				StringBuilder.Append("ALTER TABLE ");
+				ConvertTableName(StringBuilder, trun.Table.Server, trun.Table.Database, trun.Table.Schema, trun.Table.PhysicalName!);
+				StringBuilder.Append(" ALTER ");
+				Convert(StringBuilder, field.PhysicalName, ConvertType.NameToQueryField);
+				StringBuilder.AppendLine(" RESTART WITH 1");
+			}
+			else
+			{
+				StringBuilder.AppendLine($"SELECT {Constants.SQL.LastInsertedIdentityGetter} FROM {Constants.SQL.DummyTableName()}");
+			}
+		}
+
 		#endregion
 
 		#region Similar to DB2 provider
@@ -81,12 +104,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			switch (convertType)
 			{
 				case ConvertType.NameToQueryParameter:
-					return sb.Append("@").Append(value);
+					return Provider.ProviderType == DB2iSeriesAdoProviderType.Odbc
+						|| Provider.ProviderType == DB2iSeriesAdoProviderType.OleDb
+						? sb.Append("?") : sb.Append("@").Append(value);
 
 				case ConvertType.NameToCommandParameter:
 				case ConvertType.NameToSprocParameter:
-					return sb.Append(":").Append(value);
-
+					return Provider.ProviderType == DB2iSeriesAdoProviderType.Odbc
+						|| Provider.ProviderType == DB2iSeriesAdoProviderType.OleDb
+						? sb.Append("?") : sb.Append(":").Append(value);
+					
 				case ConvertType.SprocParameterToName:
 					return value.Length > 0 && value[0] == ':'
 							? sb.Append(value.Substring(1))
@@ -114,15 +141,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return base.Convert(sb, value, convertType);
 		}
 
-		//DB2 adds identity field handling
+		//DB2 has a version check and sets internal identity field state
 		public override int CommandCount(SqlStatement statement)
 		{
+			if (statement is SqlTruncateTableStatement trun)
+				return trun.ResetIdentity ? 1 + trun.Table!.IdentityFields.Count : 1;
+
 			return statement is SqlInsertStatement insertStatement && insertStatement.Insert.WithIdentity ? 2 : 1;
 		}
 
-		//DB2 adds truncate table handling
-		protected override void BuildCommand(SqlStatement selectQuery, int commandNumber) =>
-			StringBuilder.AppendLine($"SELECT {Constants.SQL.LastInsertedIdentityGetter} FROM {Constants.SQL.DummyTableName()}");
+
 
 		//Same as DB2 - except it handles null value handling
 		protected override void BuildColumnExpression(SelectQuery selectQuery, ISqlExpression expr, string alias, ref bool addAlias)
@@ -152,14 +180,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		//Same as DB2 - db2 also has special check for decimal
 		protected override string GetProviderTypeName(IDbDataParameter parameter)
 		{
-			if (Provider != null)
+			return Provider switch 
 			{
-				var param = Provider.TryGetProviderParameter(parameter, MappingSchema);
-				if (param != null)
-					return Provider.Adapter.GetDbType(param).ToString();
-			}
-
-			return base.GetProviderTypeName(parameter);
+				IDB2iSeriesDataProvider provider => provider.TryGetProviderParameterName(parameter, MappingSchema, out var name) ? name : null,
+				_ => null
+			} ?? base.GetProviderTypeName(parameter);
 		}
 
 		//Same as DB2 - adds alias handling
@@ -232,12 +257,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		}
 
 		//OK
-		protected override ISqlBuilder CreateSqlBuilder()
-		{
-			return new DB2iSeriesSqlBuilder(Provider, MappingSchema, SqlOptimizer, SqlProviderFlags);
-		}
-
-		//OK
 		protected override StringBuilder BuildExpression(ISqlExpression expr, bool buildTableName, bool checkParentheses, string alias, ref bool addAlias, bool throwExceptionIfTableNotFound = true)
 		{
 			//Parameter markers need to be explicitly casted in iDB2
@@ -271,7 +290,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			//Explicitly add a Cast around the expression
 			//If the expression is a parameter marker or value try to get the type to cast, 
-			//otherwise return empty string
+			//otherwise return variant datatype, to differentiate from undefined
 			var typeToCast = value switch
 			{
 				SqlParameter sqlParameter when sqlParameter.Name != null => MappingSchema.GetDbTypeForCast(dataType),
@@ -312,7 +331,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		//TODO: Test this scenario with AlternativeGetSelectedColumns
 		protected override IEnumerable<SqlColumn> GetSelectedColumns(SelectQuery selectQuery)
 		{
-			
 			if (NeedSkip(selectQuery) && !selectQuery.OrderBy.IsEmpty)
 				return AlternativeGetSelectedColumns(selectQuery, () => base.GetSelectedColumns(selectQuery));
 
@@ -365,15 +383,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			if (insertClause.WithIdentity)
 				BuildGetIdentity(insertClause);
-		}
-
-		#endregion
-
-		#region Helpers
-
-		protected void DefaultBuildSqlMethod()
-		{
-			base.BuildSql();
 		}
 
 		#endregion

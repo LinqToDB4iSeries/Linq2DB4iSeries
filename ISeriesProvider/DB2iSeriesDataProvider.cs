@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Data;
 using LinqToDB.Common;
@@ -6,14 +7,37 @@ using LinqToDB.Common;
 namespace LinqToDB.DataProvider.DB2iSeries
 {
 	using Data;
-	using Mapping;
+	using LinqToDB.Mapping;
 	using SchemaProvider;
 	using SqlProvider;
 	using System.Threading;
 	using System.Threading.Tasks;
 
-	public class DB2iSeriesDataProvider : DynamicDataProviderBase<DB2iSeriesProviderAdapter>
+	public enum DB2iSeriesAdoProviderType
 	{
+		AccessClient,
+		Odbc,
+		OleDb,
+		DB2
+	}
+
+	public interface IDB2iSeriesDataProvider : IDataProvider
+	{
+		DB2iSeriesAdoProviderType ProviderType { get; }
+		bool TryGetProviderParameterName(IDbDataParameter parameter, MappingSchema mappingSchema, out string name);
+		bool TryGetProviderConnection(IDbConnection connection, MappingSchema mappingSchema, out IDbConnection dataConnection);
+		IDbConnection TryGetProviderConnection(IDbConnection connection, MappingSchema mappingSchema);
+		IDynamicProviderAdapter Adapter { get; }
+	}
+
+	public class DB2iSeriesDataProvider : DynamicDataProviderBase<DB2iSeriesProviderAdapter>, IDB2iSeriesDataProvider
+	{
+		IDynamicProviderAdapter IDB2iSeriesDataProvider.Adapter => Adapter;
+		DB2iSeriesAdoProviderType IDB2iSeriesDataProvider.ProviderType => DB2iSeriesAdoProviderType.AccessClient;
+
+		readonly DB2iSeriesSqlOptimizer sqlOptimizer;
+		readonly DB2iSeriesSchemaProvider schemaProvider;
+
 		private readonly DB2iSeriesLevels minLevel;
 		private readonly bool mapGuidAsString;
 
@@ -30,7 +54,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			this.minLevel = minLevel;
 			this.mapGuidAsString = mapGuidAsString;
 
-			LoadExpressions(name, mapGuidAsString);
+			DB2iSeriesLoadExpressions.SetupExpressions(name, mapGuidAsString);
 
 			SqlProviderFlags.AcceptsTakeAsParameter = false;
 			SqlProviderFlags.AcceptsTakeAsParameterIfSkip = true;
@@ -38,14 +62,17 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SqlProviderFlags.CanCombineParameters = false;
 			SqlProviderFlags.IsParameterOrderDependent = true;
 			SqlProviderFlags.IsCommonTableExpressionsSupported = true;
-			
-			if(mapGuidAsString)
+
+			if (mapGuidAsString)
 				SqlProviderFlags.CustomFlags.Add(Constants.ProviderFlags.MapGuidAsString);
 
 			SetCharField(Constants.DbTypes.Char, (r, i) => r.GetString(i).TrimEnd(' '));
 			SetCharField(Constants.DbTypes.NChar, (r, i) => r.GetString(i).TrimEnd(' '));
-			
-			_sqlOptimizer = new DB2iSeriesSqlOptimizer(SqlProviderFlags);
+			SetCharField(Constants.DbTypes.Graphic, (r, i) => r.GetString(i).TrimEnd(' '));
+
+			sqlOptimizer = new DB2iSeriesSqlOptimizer(SqlProviderFlags);
+			schemaProvider = new DB2iSeriesSchemaProvider(this);
+			bulkCopy = new DB2iSeriesBulkCopy(this);
 			
 			SetProviderField(Adapter.iDB2BigIntType, typeof(long), Adapter.GetiDB2BigIntReaderMethod, dataReaderType: Adapter.DataReaderType);
 			SetProviderField(Adapter.iDB2BinaryType, typeof(byte[]), Adapter.GetiDB2BinaryReaderMethod, dataReaderType: Adapter.DataReaderType);
@@ -75,9 +102,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetProviderField(Adapter.iDB2XmlType, typeof(string), Adapter.GetiDB2XmlReaderMethod, dataReaderType: Adapter.DataReaderType);
 		}
 
-		
-		readonly DB2iSeriesSqlOptimizer _sqlOptimizer;
-		
 		public override ISqlBuilder CreateSqlBuilder(MappingSchema mappingSchema)
 		{
 			return minLevel == DB2iSeriesLevels.V7_1_38 ?
@@ -87,12 +111,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public override ISchemaProvider GetSchemaProvider()
 		{
-			return new DB2iSeriesSchemaProvider(this);
+			return schemaProvider;
 		}
 
 		public override ISqlOptimizer GetSqlOptimizer()
 		{
-			return _sqlOptimizer;
+			return sqlOptimizer;
 		}
 
 		public override void InitCommand(DataConnection dataConnection, CommandType commandType, string commandText, DataParameter[] parameters, bool withParameters)
@@ -111,89 +135,73 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public override void SetParameter(DataConnection dataConnection, IDbDataParameter parameter, string name, DbDataType dataType, object value)
 		{
-			if (value is sbyte @sbyte)
-			{
-				value = (short)@sbyte;
-				dataType = dataType.WithDataType(DataType.Int16);
-			}
-			else if (value is byte @byte)
-			{
-				value = (short)@byte;
-				dataType = dataType.WithDataType(DataType.Int16);
-			}
-
 			switch (dataType.DataType)
 			{
+				case DataType.Byte:
+				case DataType.SByte:
+				case DataType.Boolean:
+				case DataType.Int16:
+					dataType = dataType.WithDataType(DataType.Int16);
+					value = DataTypeConverter.TryConvertOrOriginal(value, dataType.DataType);
+					break;
+				case DataType.Int32:
 				case DataType.UInt16:
 					dataType = dataType.WithDataType(DataType.Int32);
-					if (value != null)
-						value = Convert.ToInt32(value);
+					value = DataTypeConverter.TryConvertOrOriginal(value, dataType.DataType);
 					break;
+				case DataType.Int64:
 				case DataType.UInt32:
 					dataType = dataType.WithDataType(DataType.Int64);
-					if (value != null)
-						value = Convert.ToInt64(value);
+					value = DataTypeConverter.TryConvertOrOriginal(value, dataType.DataType);
 					break;
+				case DataType.VarNumeric:
+				case DataType.Decimal:
 				case DataType.UInt64:
 					dataType = dataType.WithDataType(DataType.Decimal);
-					if (value != null)
-						value = Convert.ToDecimal(value);
+					value = DataTypeConverter.TryConvertOrOriginal(value, dataType.DataType);
 					break;
-				case DataType.VarNumeric: dataType = dataType.WithDataType(DataType.Decimal); break;
-				case DataType.DateTime2: dataType = dataType.WithDataType(DataType.DateTime); break;
+				case DataType.Single:
+				case DataType.Double:
+					value = DataTypeConverter.TryConvertOrOriginal(value, dataType.DataType);
+					break;
+				
 				case DataType.Char:
 				case DataType.VarChar:
 				case DataType.NChar:
 				case DataType.NVarChar:
 				case DataType.Text:
 				case DataType.NText:
-					if (value is Guid textGuid) value = textGuid.ToString("D");
-					else if (value is bool textBool)
-						value = ConvertTo<char>.From(textBool);
+					if (value is Guid textGuid) value = textGuid.ToString();
+					else if (value is bool textBool) value = ConvertTo<char>.From(textBool);
 					break;
-				case DataType.Boolean:
-				case DataType.Int16:
-					if (value is bool boolean)
-					{
-						value = boolean ? 1 : 0;
-						dataType = dataType.WithDataType(DataType.Int16);
-					}
-					break;
+
 				case DataType.Guid:
 					dataType = dataType.WithDataType(
 						mapGuidAsString ? DataType.NVarChar : DataType.VarBinary);
 
 					if (value is Guid guid)
-						value = mapGuidAsString ? 
-							(object)guid.ToString("D") : guid.ToByteArray();
-						
+						value = mapGuidAsString ?
+							(object)guid.ToString() : guid.ToByteArray();
+
 					break;
 				case DataType.Binary:
 				case DataType.VarBinary:
 					if (value is Guid varBinaryGuid) value = varBinaryGuid.ToByteArray();
-					else if (parameter.Size == 0 && value != null && 
-						(value.GetType() == Adapter.iDB2BinaryType 
-						|| value.GetType() == Adapter.iDB2BinaryType))
-					{
-						dynamic v = value;
-						if (v.IsNull)
-							value = DBNull.Value;
-					}
 					break;
+
+				case DataType.DateTime2:
+					dataType = dataType.WithDataType(DataType.DateTime);
+					break;
+
 				case DataType.Time:
 					//Time parameters will only accept iDb2Time or string representation of time
-					if (value is TimeSpan timeSpan)
+					value = value switch
 					{
-						value = DB2iSeriesSqlBuilder.ConvertTimeToSql(timeSpan, false);
-					}
-					else if (value is DateTime dateTime)
-					{
-						value = DB2iSeriesSqlBuilder.ConvertDateTimeToSql(DataType.Time, dateTime, false);
-					}
-					else if (value is DateTimeOffset dateTimeOffset)
-					{
-						value = DB2iSeriesSqlBuilder.ConvertDateTimeToSql(DataType.Time, dateTimeOffset.DateTime, false);
-					}
+						TimeSpan timeSpan => DB2iSeriesSqlBuilder.ConvertTimeToSql(timeSpan, false),
+						DateTime dateTime => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(DataType.Time, dateTime, false),
+						DateTimeOffset dateTimeOffset => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(DataType.Time, dateTimeOffset.DateTime, false),
+						_ => value
+					};
 					break;
 			}
 
@@ -221,104 +229,45 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			base.SetParameterType(dataConnection, parameter, dataType);
 		}
 
+		public bool TryGetProviderParameterName(IDbDataParameter parameter, MappingSchema mappingSchema, out string name)
+		{
+			var param = TryGetProviderParameter(parameter, MappingSchema);
+			if (param != null)
+			{
+				name = Adapter.GetDbType(param).ToString();
+				return true;
+			}
+
+			name = null;
+			return false;
+		}
+
+		public bool TryGetProviderConnection(IDbConnection connection, MappingSchema mappingSchema, out IDbConnection providerConnection)
+		{
+			providerConnection = TryGetProviderConnection(connection, mappingSchema);
+			return providerConnection != null;
+		}
+
 		#region BulkCopy
 
-		DB2iSeriesBulkCopy _bulkCopy;
+		DB2iSeriesBulkCopy bulkCopy;
 
 		public override BulkCopyRowsCopied BulkCopy<T>(ITable<T> table, BulkCopyOptions options, IEnumerable<T> source)
 		{
-			if (_bulkCopy == null)
-				_bulkCopy = new DB2iSeriesBulkCopy();
-
-			return _bulkCopy.BulkCopy(
-			  options.BulkCopyType == BulkCopyType.Default ? DB2iSeriesTools.DefaultBulkCopyType : options.BulkCopyType,
-			  table,
-			  options,
-			  source);
+			return bulkCopy.BulkCopy(options.BulkCopyType.GetEffectiveType(), table, options, source);
 		}
 
 		public override Task<BulkCopyRowsCopied> BulkCopyAsync<T>(ITable<T> table, BulkCopyOptions options, IEnumerable<T> source, CancellationToken cancellationToken)
 		{
-			if (_bulkCopy == null)
-				_bulkCopy = new DB2iSeriesBulkCopy();
-
-			return _bulkCopy.BulkCopyAsync(
-			  options.BulkCopyType == BulkCopyType.Default ? DB2iSeriesTools.DefaultBulkCopyType : options.BulkCopyType,
-			  table,
-			  options,
-			  source,
-			  cancellationToken);
+			return bulkCopy.BulkCopyAsync(options.BulkCopyType.GetEffectiveType(), table, options, source, cancellationToken);
 		}
 
 #if !NETFRAMEWORK
 		public override BulkCopyRowsCopied BulkCopyAsync<T>(ITable<T> table, BulkCopyOptions options, IAsyncEnumerable<T> source, CancellationToken cancellationToken)
 		{
-			if (_bulkCopy == null)
-				_bulkCopy = new DB2iSeriesBulkCopy();
-
-			return _bulkCopy.BulkCopyAsync(
-			  options.BulkCopyType == BulkCopyType.Default ? DB2iSeriesTools.DefaultBulkCopyType : options.BulkCopyType,
-			  table,
-			  options,
-			  source,
-			  cancellationToken);
+			return _bulkCopy.BulkCopyAsync(options.BulkCopyType.GetEffectiveType(), table, options, source, cancellationToken);
 		}
 #endif
-		#endregion
-
-		#region Expressions
-
-		private static void LoadExpressions(string providerName, bool mapGuidAsString)
-		{
-			Linq.Expressions.MapMember(
-				providerName,
-				Linq.Expressions.M(() => Sql.Space(0)),
-				Linq.Expressions.N(() => Linq.Expressions.L<Int32?, String>(p0 => Sql.Convert(Sql.VarChar(1000), Linq.Expressions.Replicate(" ", p0)))));
-			Linq.Expressions.MapMember(
-				providerName,
-				Linq.Expressions.M(() => Sql.Stuff("", 0, 0, "")),
-				Linq.Expressions.N(() => Linq.Expressions.L<String, Int32?, Int32?, String, String>((p0, p1, p2, p3) => Linq.Expressions.AltStuff(p0, p1, p2, p3))));
-			Linq.Expressions.MapMember(
-				providerName,
-				Linq.Expressions.M(() => Sql.PadRight("", 0, ' ')),
-				Linq.Expressions.N(() => Linq.Expressions.L<String, Int32?, Char?, String>((p0, p1, p2) => p0.Length > p1 ? p0 : p0 + Linq.Expressions.VarChar(Linq.Expressions.Replicate(p2, p1 - p0.Length), 1000))));
-			Linq.Expressions.MapMember(
-				providerName,
-				Linq.Expressions.M(() => Sql.PadLeft("", 0, ' ')),
-				Linq.Expressions.N(() => Linq.Expressions.L<String, Int32?, Char?, String>((p0, p1, p2) => p0.Length > p1 ? p0 : Linq.Expressions.VarChar(Linq.Expressions.Replicate(p2, p1 - p0.Length), 1000) + p0)));
-			Linq.Expressions.MapMember(
-				providerName,
-				Linq.Expressions.M(() => Sql.ConvertTo<String>.From((Decimal)0)),
-				Linq.Expressions.N(() => Linq.Expressions.L<Decimal, String>((Decimal p) => Sql.TrimLeft(Sql.Convert<string, Decimal>(p), '0'))));
-
-			if (!mapGuidAsString)
-			{
-				Linq.Expressions.MapMember(
-					providerName,
-					Linq.Expressions.M(() => Sql.ConvertTo<String>.From(Guid.Empty)),
-					Linq.Expressions.N(() => Linq.Expressions.L<Guid, String>(
-						(Guid p) => Sql.Lower(Sql.Substring(Linq.Expressions.Hex(p), 7, 2)
-											  + Sql.Substring(Linq.Expressions.Hex(p), 5, 2)
-											  + Sql.Substring(Linq.Expressions.Hex(p), 3, 2)
-											  + Sql.Substring(Linq.Expressions.Hex(p), 1, 2)
-											  + "-" + Sql.Substring(Linq.Expressions.Hex(p), 11, 2)
-											  + Sql.Substring(Linq.Expressions.Hex(p), 9, 2)
-											  + "-" + Sql.Substring(Linq.Expressions.Hex(p), 15, 2)
-											  + Sql.Substring(Linq.Expressions.Hex(p), 13, 2)
-											  + "-" + Sql.Substring(Linq.Expressions.Hex(p), 17, 4)
-											  + "-" + Sql.Substring(Linq.Expressions.Hex(p), 21, 12)))));
-			}
-
-			Linq.Expressions.MapMember(
-				providerName,
-				Linq.Expressions.M(() => Sql.Log(0m, 0)),
-				Linq.Expressions.N(() => Linq.Expressions.L<Decimal?, Decimal?, Decimal?>((m, n) => Sql.Log(n) / Sql.Log(m))));
-			Linq.Expressions.MapMember(
-				providerName,
-				Linq.Expressions.M(() => Sql.Log(0.0, 0)),
-				Linq.Expressions.N(() => Linq.Expressions.L<Double?, Double?, Double?>((m, n) => Sql.Log(n) / Sql.Log(m))));
-		}
-
 		#endregion
 	}
 }

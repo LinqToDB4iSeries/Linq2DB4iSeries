@@ -457,18 +457,12 @@ namespace Tests.Linq
 			[Column, Identity, PrimaryKey]
 			public int ID { get; set; }
 
-			[Column("NotIdentifier", Configuration = TestProvName.DB2i)]
-			[Column("NotIdentifier", Configuration = TestProvName.DB2iGAS)]
-			[Column("NotIdentifier", Configuration = TestProvName.DB2i73)]
-			[Column("NotIdentifier", Configuration = TestProvName.DB2i73GAS)]
-			[Column("Not Identifier")]
+			//[Column("Not Identifier")] //deafult
+			[Column("NotIdentifier")] //db2i
 			public int NotIdentifier { get; set; }
 
-			[Column("SomeValue", Configuration = TestProvName.DB2i)]
-			[Column("SomeValue", Configuration = TestProvName.DB2iGAS)]
-			[Column("SomeValue", Configuration = TestProvName.DB2i73)]
-			[Column("SomeValue", Configuration = TestProvName.DB2i73GAS)]
-			[Column("Some Value")]
+			//[Column("Some Value")] //default
+			[Column("SomeValue")] //db2i
 			public int Value { get; set; }
 		}
 

@@ -55,10 +55,6 @@ namespace Tests.xUpdate
 
 			[Column(IsColumn = false, Configuration = ProviderName.Sybase)]
 			[Column(IsColumn = false, Configuration = ProviderName.DB2)]
-			[Column(IsColumn = false, Configuration = TestProvName.DB2i)]
-			[Column(IsColumn = false, Configuration = TestProvName.DB2iGAS)]
-			[Column(IsColumn = false, Configuration = TestProvName.DB2i73)]
-			[Column(IsColumn = false, Configuration = TestProvName.DB2i73GAS)]
 			[Column(IsColumn = false, Configuration = ProviderName.SqlServer2000)]
 			[Column(IsColumn = false, Configuration = ProviderName.SqlServer2005)]
 			[Column(IsColumn = false, Configuration = ProviderName.SqlCe)]
@@ -70,7 +66,8 @@ namespace Tests.xUpdate
 			[Column(IsColumn = false, Configuration = ProviderName.SQLite)]
 			[Column(IsColumn = false, Configuration = ProviderName.SapHana)]
 			[Column(Configuration = ProviderName.Oracle, Precision = 7)]
-			[Column("FieldDateTime2")]
+			//[Column("FieldDateTime2")] //default
+			[Column(IsColumn = false)] //db2i
 			public DateTimeOffset? FieldDateTime2;
 
 			[Column(IsColumn = false, Configuration = ProviderName.Firebird)]
@@ -93,11 +90,8 @@ namespace Tests.xUpdate
 			[Column(IsColumn = false, Configuration = ProviderName.SqlCe)]
 			[Column("FieldDate"     , Configuration = ProviderName.Informix, DataType = DataType.Date)]
 			[Column("FieldDate"     , Configuration = ProviderName.Sybase  , DataType = DataType.Date)]
-			[Column("FieldDate" 	, Configuration = TestProvName.DB2i, DataType = DataType.Date)]
-			[Column("FieldDate", Configuration = TestProvName.DB2iGAS, DataType = DataType.Date)]
-			[Column("FieldDate", Configuration = TestProvName.DB2i73, DataType = DataType.Date)]
-			[Column("FieldDate", Configuration = TestProvName.DB2i73GAS, DataType = DataType.Date)]
-			[Column("FieldDate")]
+			//[Column("FieldDate")] //default
+			[Column("FieldDate", DataType = DataType.Date)] //db2i
 			public DateTime? FieldDate;
 
 			[Column(IsColumn = false, Configuration = ProviderName.Firebird)]
@@ -128,11 +122,8 @@ namespace Tests.xUpdate
 			[MapValue("\b", Configuration = ProviderName.Sybase)]
 			[MapValue("\b", Configuration = ProviderName.SapHana)]
 			[MapValue("\b", Configuration = ProviderName.DB2)]
-			[MapValue("\b", Configuration = TestProvName.DB2i)]
-			[MapValue("\b", Configuration = TestProvName.DB2iGAS)]
-			[MapValue("\b", Configuration = TestProvName.DB2i73)]
-			[MapValue("\b", Configuration = TestProvName.DB2i73GAS)]
-			[MapValue("\0")]
+			//[MapValue("\0")] //default
+			[MapValue("\b")] //db2i
 			Value2,
 			[MapValue("_", Configuration = ProviderName.Oracle)]
 			[MapValue("_", Configuration = ProviderName.Sybase)]
@@ -447,6 +438,9 @@ namespace Tests.xUpdate
 		{
 			if (expected != null)
 			{
+				if (TestProvName.IsiSeriesOleDb(provider))
+					expected = expected.TrimEnd(' ');
+
 				if (   provider == ProviderName.Sybase
 					|| provider == ProviderName.SybaseManaged
 					|| provider == ProviderName.SqlCe)
@@ -591,6 +585,9 @@ namespace Tests.xUpdate
 		{
 			if (expected != null)
 			{
+				if (TestProvName.IsiSeriesOleDb(provider))
+					expected = expected.TrimEnd(' ');
+
 				switch (provider)
 				{
 					case ProviderName.Sybase:

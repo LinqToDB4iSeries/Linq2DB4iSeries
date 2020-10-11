@@ -21,10 +21,6 @@ namespace Tests.Linq
 			[Column("char20DataType")]
 			[Column(Configuration = ProviderName.SqlCe,			 IsColumn = false)]
 			[Column(Configuration = ProviderName.DB2,			 IsColumn = false)]
-			[Column(Configuration = TestProvName.DB2i,			 IsColumn = false)]
-			[Column(Configuration = TestProvName.DB2iGAS, IsColumn = false)]
-			[Column(Configuration = TestProvName.DB2i73, IsColumn = false)]
-			[Column(Configuration = TestProvName.DB2i73GAS, IsColumn = false)]
 			[Column(Configuration = ProviderName.PostgreSQL,	 IsColumn = false)]
 			[Column(Configuration = ProviderName.MySql,			 IsColumn = false)]
 			[Column(Configuration = ProviderName.MySqlConnector, IsColumn = false)]
@@ -32,19 +28,16 @@ namespace Tests.Linq
 			[Column(Configuration = TestProvName.MariaDB,        IsColumn = false)]
 			public string? String;
 
-			[Column("ncharDataType")]
+			//[Column("ncharDataType")] //default
 			[Column("nchar20DataType", Configuration = ProviderName.SapHana)]
 			[Column("CHAR20DATATYPE" , Configuration = ProviderName.DB2)]
-			[Column("CHAR20DATATYPE", Configuration = TestProvName.DB2i)]
-			[Column("CHAR20DATATYPE", Configuration = TestProvName.DB2iGAS)]
-			[Column("CHAR20DATATYPE", Configuration = TestProvName.DB2i73)]
-			[Column("CHAR20DATATYPE", Configuration = TestProvName.DB2i73GAS)]
 			[Column("char20DataType" , Configuration = ProviderName.PostgreSQL)]
 			[Column("char20DataType" , Configuration = ProviderName.MySql)]
 			[Column("char20DataType" , Configuration = ProviderName.MySqlConnector)]
 			[Column("char20DataType" , Configuration = TestProvName.MySql55)]
 			[Column("char20DataType" , Configuration = TestProvName.MariaDB)]
 			[Column(                   Configuration = ProviderName.Firebird, IsColumn = false)]
+			[Column("GRAPHICDATATYPE")] //db2i
 			public string? NString;
 		}
 
@@ -58,10 +51,6 @@ namespace Tests.Linq
 			[Column("char20DataType")]
 			[Column(Configuration = ProviderName.SqlCe,			 IsColumn = false)]
 			[Column(Configuration = ProviderName.DB2,			 IsColumn = false)]
-			[Column(Configuration = TestProvName.DB2i, IsColumn = false)]
-			[Column(Configuration = TestProvName.DB2iGAS, IsColumn = false)]
-			[Column(Configuration = TestProvName.DB2i73, IsColumn = false)]
-			[Column(Configuration = TestProvName.DB2i73GAS, IsColumn = false)]
 			[Column(Configuration = ProviderName.PostgreSQL,	 IsColumn = false)]
 			[Column(Configuration = ProviderName.MySql,			 IsColumn = false)]
 			[Column(Configuration = ProviderName.MySqlConnector, IsColumn = false)]
@@ -69,19 +58,16 @@ namespace Tests.Linq
 			[Column(Configuration = TestProvName.MariaDB,		 IsColumn = false)]
 			public char? Char;
 
-			[Column("ncharDataType"  , DataType = DataType.NChar)]
+			//[Column("ncharDataType"  , DataType = DataType.NChar)] //default
 			[Column("nchar20DataType", DataType = DataType.NChar, Configuration = ProviderName.SapHana)]
 			[Column("CHAR20DATATYPE" , DataType = DataType.NChar, Configuration = ProviderName.DB2)]
-			[Column("CHAR20DATATYPE", DataType = DataType.NChar, Configuration = TestProvName.DB2i)]
-			[Column("CHAR20DATATYPE", DataType = DataType.NChar, Configuration = TestProvName.DB2iGAS)]
-			[Column("CHAR20DATATYPE", DataType = DataType.NChar, Configuration = TestProvName.DB2i73)]
-			[Column("CHAR20DATATYPE", DataType = DataType.NChar, Configuration = TestProvName.DB2i73GAS)]
 			[Column("char20DataType" , DataType = DataType.NChar, Configuration = ProviderName.PostgreSQL)]
 			[Column("char20DataType" , DataType = DataType.NChar, Configuration = ProviderName.MySql)]
 			[Column("char20DataType" , DataType = DataType.NChar, Configuration = ProviderName.MySqlConnector)]
 			[Column("char20DataType" , DataType = DataType.NChar, Configuration = TestProvName.MySql55)]
 			[Column("char20DataType" , DataType = DataType.NChar, Configuration = TestProvName.MariaDB)]
 			[Column(                   Configuration = ProviderName.Firebird, IsColumn = false)]
+			[Column("GRAPHICDATATYPE")]
 			public char? NChar;
 		}
 
@@ -163,6 +149,8 @@ namespace Tests.Linq
 						{
 							if (context.Contains("Sybase"))
 								Assert.AreEqual(testData[i].NString?.TrimEnd(' ')?.TrimEnd('\0'), records[i].NString);
+							else if (TestProvName.IsiSeriesOleDb(context) && i == 19)
+								Assert.AreEqual(testData[i].NString?.TrimEnd(), records[i].NString);
 							else
 								Assert.AreEqual(testData[i].NString?.TrimEnd(' '), records[i].NString);
 						}
@@ -308,7 +296,9 @@ namespace Tests.Linq
 								Assert.AreEqual(testData[i].Char, records[i].Char);
 						}
 
-						if (context == ProviderName.MySql
+						if (TestProvName.IsiSeriesOleDb(context) && i == 18)
+							Assert.AreEqual('\0', records[i].NChar);
+						else if (context == ProviderName.MySql
 							  || context == ProviderName.MySql + ".LinqService"
 							  || context == ProviderName.MySqlConnector
 							  || context == ProviderName.MySqlConnector + ".LinqService"
@@ -316,12 +306,13 @@ namespace Tests.Linq
 							  || context == TestProvName.MySql55 + ".LinqService"
 							  || context == TestProvName.MariaDB
 							  || context == TestProvName.MariaDB + ".LinqService"
-							  || TestProvName.IsiSeries(context))
+							  || TestProvName.IsiSeries(context)
+							  )
 							// for some reason mysql doesn't insert space
 							Assert.AreEqual(testData[i].NChar == ' ' ? '\0' : testData[i].NChar, records[i].NChar);
 						else if (!context.Contains(ProviderName.Firebird))
 						{
-							if (context.Contains("Sybase"))
+							if (context.Contains("Sybase") || TestProvName.IsiSeriesAccessClient(context))
 								Assert.AreEqual(testData[i].NChar == '\0' ? ' ' : testData[i].NChar, records[i].NChar);
 							else
 								Assert.AreEqual(testData[i].NChar, records[i].NChar);

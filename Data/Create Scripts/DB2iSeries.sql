@@ -101,7 +101,7 @@ DROP TABLE LinqDataTypes
 GO
 CREATE TABLE LinqDataTypes(
 	ID             int,
-	MoneyValue     decimal(10,4),
+	MoneyValue     decimal(10, 4),
 	DateTimeValue  timestamp,
 	DateTimeValue2 timestamp  Default NULL,
 	BoolValue      smallint,
@@ -298,6 +298,6 @@ GO
 
 CREATE TABLE KeepIdentityTest (
 	ID    INTEGER  GENERATED ALWAYS AS IDENTITY PRIMARY KEY not null,
-	Value INTEGER  
+	intDataType INTEGER  
 )
 GO

@@ -83,7 +83,7 @@ namespace Tests.Linq
 			using (var db  = (TestDataConnection)GetDataContext(context))
 			using (var db1 = new DataContext(db.DataProvider.Name, "BAD"))
 			{
-				if (!TestProvName.IsiSeries(context))
+				if (!TestProvName.IsiSeriesAccessClient(context))
 					Assert.Throws(typeof(ArgumentException), () => db1.GetTable<Child>().ToList());
 				else
 					Assert.Throws(typeof(IBM.Data.DB2.iSeries.iDB2InvalidConnectionStringException), () => db1.GetTable<Child>().ToList());

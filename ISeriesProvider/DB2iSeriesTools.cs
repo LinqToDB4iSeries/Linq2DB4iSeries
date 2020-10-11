@@ -38,6 +38,27 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return provider;
 		});
 
+		static readonly Lazy<DB2iSeriesODBCDataProvider> _db2iOdbcDataProvider = new Lazy<DB2iSeriesODBCDataProvider>(() =>
+		{
+			var provider = new DB2iSeriesODBCDataProvider(DB2iSeriesProviderName.DB2_ODBC, DB2iSeriesLevels.Any, false);
+			DataConnection.AddDataProvider(provider);
+			return provider;
+		});
+
+		static readonly Lazy<DB2iSeriesOleDbDataProvider> _db2iOleDbDataProvider = new Lazy<DB2iSeriesOleDbDataProvider>(() =>
+		{
+			var provider = new DB2iSeriesOleDbDataProvider(DB2iSeriesProviderName.DB2_ODBC, DB2iSeriesLevels.Any, false);
+			DataConnection.AddDataProvider(provider);
+			return provider;
+		});
+
+		static readonly Lazy<DB2iSeriesDB2DataProvider> _db2iDB2DataProvider = new Lazy<DB2iSeriesDB2DataProvider>(() =>
+		{
+			var provider = new DB2iSeriesDB2DataProvider(DB2iSeriesProviderName.DB2_DB2Connect, DB2iSeriesLevels.Any, false);
+			DataConnection.AddDataProvider(provider);
+			return provider;
+		});
+
 		#region AutoDetection
 
 		public static bool AutoDetectProvider { get; set; } = true;
@@ -62,6 +83,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					DB2iSeriesProviderName.DB2_73 => _db2iDataProvider_73.Value,
 					DB2iSeriesProviderName.DB2_GAS => _db2iDataProvider_gas.Value,
 					DB2iSeriesProviderName.DB2_73_GAS => _db2iDataProvider_73_gas.Value,
+					DB2iSeriesProviderName.DB2_ODBC => _db2iOdbcDataProvider.Value,
+					DB2iSeriesProviderName.DB2_OleDb => _db2iOleDbDataProvider.Value,
+					DB2iSeriesProviderName.DB2_DB2Connect => _db2iDB2DataProvider.Value,
 					_ => AutoDetectDataProvider(
 							AutoDetectProvider ?
 							string.IsNullOrWhiteSpace(connectionString) ? css.ConnectionString : connectionString :
@@ -143,6 +167,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				DB2iSeriesProviderName.DB2_73 => _db2iDataProvider_73.Value,
 				DB2iSeriesProviderName.DB2_GAS => _db2iDataProvider_gas.Value,
 				DB2iSeriesProviderName.DB2_73_GAS => _db2iDataProvider_73_gas.Value,
+				DB2iSeriesProviderName.DB2_ODBC => _db2iOdbcDataProvider.Value,
+				DB2iSeriesProviderName.DB2_OleDb => _db2iOleDbDataProvider.Value,
+				DB2iSeriesProviderName.DB2_DB2Connect => _db2iDB2DataProvider.Value,
 				_ => throw new ArgumentOutOfRangeException(nameof(providerName), $"'{providerName}' is not a valid DB2iSeries provider name.")
 			};
 		}

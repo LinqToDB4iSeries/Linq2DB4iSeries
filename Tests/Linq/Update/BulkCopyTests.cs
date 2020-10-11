@@ -21,9 +21,9 @@ namespace Tests.xUpdate
 		// TODO: update Sybase.sql to use proper type for identity. now it uses INT for most of tables, which
 		// is silently treated as non-identity field
 		[Table("KeepIdentityTest", Configuration = ProviderName.DB2)]
-		[Table("KeepIdentityTest", Configuration = TestProvName.DB2i)]
 		[Table("KeepIdentityTest", Configuration = ProviderName.Sybase)]
-		[Table("AllTypes")]
+		//[Table("AllTypes")] //default
+		[Table("KeepIdentityTest")] //db2i
 		public class TestTable1
 		{
 			[Identity]
@@ -31,15 +31,14 @@ namespace Tests.xUpdate
 
 			[Column("intDataType")]
 			[Column("Value", Configuration = ProviderName.DB2)]
-			[Column("Value", Configuration = TestProvName.DB2i)]
 			[Column("Value", Configuration = ProviderName.Sybase)]
 			public int Value { get; set; }
 		}
 
 		[Table("KeepIdentityTest", Configuration = ProviderName.DB2)]
-		[Table("KeepIdentityTest", Configuration = TestProvName.DB2i)]
 		[Table("KeepIdentityTest", Configuration = ProviderName.Sybase)]
-		[Table("AllTypes")]
+		//[Table("AllTypes")] //default
+		[Table("KeepIdentityTest")] //db2i
 		public class TestTable2
 		{
 			[Identity, Column(SkipOnInsert = true)]
@@ -47,7 +46,6 @@ namespace Tests.xUpdate
 
 			[Column("intDataType")]
 			[Column("Value", Configuration = ProviderName.DB2)]
-			[Column("Value", Configuration = TestProvName.DB2i)]
 			[Column("Value", Configuration = ProviderName.Sybase)]
 			public int Value { get; set; }
 		}

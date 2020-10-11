@@ -123,6 +123,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static string GetDbType(string name, int? length, int? precision, int? scale)
 		{
+			if (name is null)
+				return null;
+
 			if (name.Contains("("))
 				return name;
 			
@@ -137,7 +140,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			{
 				stringBuilder.Append('(').Append(precision);
 				if (scale >= 0)
-					stringBuilder.Append(',').Append(scale);
+					stringBuilder.Append(", ").Append(scale);
 				stringBuilder.Append(')');
 			}
 

@@ -12,10 +12,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			: base(table, options)
 		{
 		}
-		
+
 		public override void BuildColumns(object item, Func<ColumnDescriptor, bool> skipConvert = null)
 		{
-			skipConvert = skipConvert ?? (_ => false);
+			skipConvert ??= (_ => false);
 
 			for (var i = 0; i < Columns.Length; i++)
 			{
@@ -31,7 +31,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						columnType = new SqlDataType(DataType.Date);
 				}
 
-				if (skipConvert(column) || value == null || !ValueConverter.TryConvert(StringBuilder, columnType, value))
+				// wrap the parameter with a cast
+				var dbType = value == null ? columnType : DataConnection.MappingSchema.GetDataType(value.GetType());
+				var casttype = DataConnection.MappingSchema.GetDbTypeForCast(dbType).ToSqlString();
+
+				if (value == null)
+				{
+					StringBuilder.Append($"CAST(NULL AS {casttype})");
+				}
+				else if (!skipConvert(column) && !ValueConverter.TryConvert(StringBuilder, columnType, value))
 				{
 					var name = ParameterName == "?" ? ParameterName : ParameterName + ++ParameterIndex;
 
@@ -44,21 +52,20 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 					Parameters.Add(dataParameter);
 
-					// wrap the parameter with a cast
-					var dbType = value == null ? columnType : DataConnection.MappingSchema.GetDataType(value.GetType());
-					var casttype = DataConnection.MappingSchema.GetDbTypeForCast(dbType).ToSqlString();
-					
-					var nameWithCast = casttype is null ? 
-						$"@{dataParameter.Name}" : 
-						$"CAST(@{dataParameter.Name} AS {casttype})";
+					var parameterMarker = dataParameter.Name == "?" || string.IsNullOrEmpty(dataParameter.Name) ?
+						"?" : $"@{dataParameter.Name}";
+
+					var nameWithCast = casttype is null ?
+						parameterMarker :
+						$"CAST({parameterMarker} AS {casttype})";
 
 					StringBuilder.Append(nameWithCast);
 				}
 
-				StringBuilder.Append(",");
+				if (i < Columns.Length - 1)
+					StringBuilder.Append(", ");
 			}
-
-			StringBuilder.Length--;
 		}
 	}
 }
+

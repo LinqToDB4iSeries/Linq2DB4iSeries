@@ -174,7 +174,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void TestParametersInListSourceProperty([IncludeDataSources(ProviderName.DB2)] string context)
+		public void TestParametersInListSourceProperty([IncludeDataSources(TestProvName.DB2i)] string context)
 		{
 			using (var db = new TestDataConnection(context))
 			{
@@ -184,7 +184,7 @@ namespace Tests.xUpdate
 				{
 					// must be type that cannot be converted to literal but will be accepted by server
 					// for now we don't generate literals for provider-specific types
-					val = new IBM.Data.DB2.iSeries.iDB2Time(0,12,0)
+					val = new IBM.Data.DB2.iSeries.iDB2Time(0, 12, 0)
 				};
 
 				var table = GetTarget(db);
@@ -232,6 +232,9 @@ namespace Tests.xUpdate
 
 		private static char GetParameterToken([MergeDataContextSource] string context)
 		{
+			if (TestProvName.IsiSeriesODBC(context) || TestProvName.IsiSeriesOleDb(context))
+				return '?';
+
 			switch (context)
 			{
 				case ProviderName.SapHanaOdbc    :
