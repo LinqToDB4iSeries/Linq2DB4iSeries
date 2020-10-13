@@ -87,7 +87,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 							return ProviderSpecificCopyImpl_DB2(
 								table,
 								options,
-								EnumerableHelper.AsyncToSyncEnumerable(enumerator),
+								AsyncToSyncEnumerable(enumerator),
 								dataConnection,
 								connection,
 								dB2DataProvider.Adapter.BulkCopy,
@@ -98,6 +98,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 
 			return await MultipleRowsCopyAsync(table, options, source, cancellationToken).ConfigureAwait(Common.Configuration.ContinueOnCapturedContext);
+		}
+
+		private static IEnumerable<T> AsyncToSyncEnumerable<T>(IAsyncEnumerator<T> enumerator)
+		{
+			while (enumerator.MoveNextAsync().GetAwaiter().GetResult())
+			{
+				yield return enumerator.Current;
+			}
 		}
 #endif
 

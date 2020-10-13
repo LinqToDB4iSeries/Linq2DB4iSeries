@@ -7,7 +7,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 {
 	using Data;
 	using LinqToDB.Mapping;
-	using Mapping;
 	using SchemaProvider;
 	using SqlProvider;
 	using System.Linq.Expressions;
@@ -47,6 +46,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SqlProviderFlags.CanCombineParameters = false;
 			SqlProviderFlags.IsParameterOrderDependent = true;
 			SqlProviderFlags.IsCommonTableExpressionsSupported = true;
+			SqlProviderFlags.IsUpdateFromSupported = false;
 
 			if (mapGuidAsString)
 				SqlProviderFlags.CustomFlags.Add(Constants.ProviderFlags.MapGuidAsString);
@@ -58,19 +58,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			sqlOptimizer = new DB2iSeriesSqlOptimizer(SqlProviderFlags);
 			schemaProvider = new DB2iSeriesSchemaProvider(this);
 			bulkCopy = new DB2iSeriesBulkCopy(this);
-		}
-
-		public override Expression GetReaderExpression(IDataReader reader, int idx, Expression readerExpression, Type toType)
-		{
-			reader = reader is System.Data.Odbc.OdbcDataReader odbcDataReader ?
-				new OdbcDataReaderWrapper(odbcDataReader) : reader;
-
-			return base.GetReaderExpression(reader, idx, readerExpression, toType);
-		}
-
-		public override bool? IsDBNullAllowed(IDataReader reader, int idx)
-		{
-			return true;
 		}
 
 		public override ISqlBuilder CreateSqlBuilder(MappingSchema mappingSchema)
@@ -258,9 +245,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		}
 
 #if !NETFRAMEWORK
-		public override BulkCopyRowsCopied BulkCopyAsync<T>(ITable<T> table, BulkCopyOptions options, IAsyncEnumerable<T> source, CancellationToken cancellationToken)
+		public override Task<BulkCopyRowsCopied> BulkCopyAsync<T>(ITable<T> table, BulkCopyOptions options, IAsyncEnumerable<T> source, CancellationToken cancellationToken)
 		{
-			return _bulkCopy.BulkCopyAsync(options.BulkCopyType.GetEffectiveType(), table, options, source, cancellationToken);
+			return bulkCopy.BulkCopyAsync(options.BulkCopyType.GetEffectiveType(), table, options, source, cancellationToken);
 		}
 #endif
 		#endregion

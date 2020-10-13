@@ -94,11 +94,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 		}
 
-		#endregion
-
-		#region Similar to DB2 provider
-
-		//Same as DB2  except it uses local quoteidentifier
 		public override StringBuilder Convert(StringBuilder sb, string value, ConvertType convertType)
 		{
 			switch (convertType)
@@ -141,7 +136,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return base.Convert(sb, value, convertType);
 		}
 
-		//DB2 has a version check and sets internal identity field state
+		#endregion
+
+		#region Similar to DB2 provider
+
+		//Same as DB2 provider - except no identityField internal state is held
+		//TODO: Check if idenityField is needed as in DB2 provider
 		public override int CommandCount(SqlStatement statement)
 		{
 			if (statement is SqlTruncateTableStatement trun)
@@ -150,9 +150,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return statement is SqlInsertStatement insertStatement && insertStatement.Insert.WithIdentity ? 2 : 1;
 		}
 
-
-
-		//Same as DB2 - except it handles null value handling
+		//Same as DB2 provider - except it adds null value handling
 		protected override void BuildColumnExpression(SelectQuery selectQuery, ISqlExpression expr, string alias, ref bool addAlias)
 		{
 			var wrap = false;
@@ -177,17 +175,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			if (wrap) StringBuilder.Append(" THEN 1 ELSE 0 END");
 		}
 
-		//Same as DB2 - db2 also has special check for decimal
-		protected override string GetProviderTypeName(IDbDataParameter parameter)
-		{
-			return Provider switch 
-			{
-				IDB2iSeriesDataProvider provider => provider.TryGetProviderParameterName(parameter, MappingSchema, out var name) ? name : null,
-				_ => null
-			} ?? base.GetProviderTypeName(parameter);
-		}
 
-		//Same as DB2 - adds alias handling
+		//Same as DB2 provider - adds alias handling
 		protected override void BuildSelectClause(SelectQuery selectQuery)
 		{
 			if (selectQuery.HasSetOperators)
@@ -229,7 +218,17 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		#region iDB2 specific
 
-		//OK
+		//Used for printing parameter information in traces
+		protected override string GetProviderTypeName(IDbDataParameter parameter)
+		{
+			return Provider switch
+			{
+				IDB2iSeriesDataProvider provider => provider.TryGetProviderParameterName(parameter, MappingSchema, out var name) ? name : null,
+				_ => null
+			} ?? base.GetProviderTypeName(parameter);
+		}
+
+		//Use mapping schema and internal db datatype mapping information to get the appropriate dbType
 		protected override void BuildDataTypeFromDataType(SqlDataType type, bool forCreateTable)
 		{
 			var dbType = MappingSchema.GetDbDataType(type.SystemType, type.Type.DataType, type.Type.Length, type.Type.Precision, type.Type.Scale, forCreateTable);
@@ -237,7 +236,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			StringBuilder.Append(dbType.ToSqlString());
 		}
 
-		//OK
 		protected override void BuildDeleteQuery(SqlDeleteStatement deleteStatement)
 		{
 			if (deleteStatement.With != null)
@@ -246,7 +244,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			base.BuildDeleteQuery(deleteStatement);
 		}
 
-		//OK
 		protected override void BuildUpdateQuery(SqlStatement statement, SelectQuery selectQuery, SqlUpdateClause updateClause)
 		{
 			if (statement.GetWithClause() != null)
@@ -256,10 +253,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			base.BuildUpdateQuery(statement, selectQuery, updateClause);
 		}
 
-		//OK
 		protected override StringBuilder BuildExpression(ISqlExpression expr, bool buildTableName, bool checkParentheses, string alias, ref bool addAlias, bool throwExceptionIfTableNotFound = true)
 		{
-			//Parameter markers need to be explicitly casted in iDB2
+			//Parameter markers need to be explicitly type casted in many cases in iDB2
 			if (expr is SqlParameter parameter && parameter.Name != null)
 			{
 				var typeToCast = MappingSchema.GetDbTypeForCast(new SqlDataType(parameter.Type));
@@ -285,7 +281,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				return base.BuildExpression(expr, buildTableName, checkParentheses, alias, ref addAlias, throwExceptionIfTableNotFound);
 		}
 
-		//OK
+		//Linq2db calls this method to build and explicit cast around an expression
 		protected override void BuildTypedExpression(SqlDataType dataType, ISqlExpression value)
 		{
 			//Explicitly add a Cast around the expression
@@ -316,7 +312,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		}
 
-		//OK - Same as Basic but handles NULL as blank
+		//Same as BasicBuilder but handles allow NULL as blank
 		protected override void BuildCreateTableNullAttribute(SqlField field, DefaultNullable defaulNullable)
 		{
 			if (defaulNullable == DefaultNullable.Null && field.CanBeNull)
@@ -328,23 +324,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			StringBuilder.Append(field.CanBeNull ? " " : "NOT NULL");
 		}
 
-		//TODO: Test this scenario with AlternativeGetSelectedColumns
 		protected override IEnumerable<SqlColumn> GetSelectedColumns(SelectQuery selectQuery)
 		{
+			//TODO: Test this scenario with AlternativeGetSelectedColumns
 			if (NeedSkip(selectQuery) && !selectQuery.OrderBy.IsEmpty)
 				return AlternativeGetSelectedColumns(selectQuery, () => base.GetSelectedColumns(selectQuery));
 
 			return base.GetSelectedColumns(selectQuery);
 		}
 
-		//Test - Why nop when statement is update?
-		protected override void BuildFromClause(SqlStatement statement, SelectQuery selectQuery)
-		{
-			if (!statement.IsUpdate())
-				base.BuildFromClause(statement, selectQuery);
-		}
-
-		//Test code coverage - Try to test scenario
+		//TODO: Test this scenario
 		protected override void BuildPredicate(ISqlPredicate predicate)
 		{
 			switch (predicate.ElementType)
@@ -364,7 +353,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			base.BuildPredicate(predicate);
 		}
 
-		//Same as Base - except reversed first two steps, needs testing
+		//Same as BaseSqlBuilder - except reversed first two steps to comply with DB2i cte syntax
+		//TODO: Add a test for this scenario with cte
 		protected override void BuildInsertQuery(SqlStatement statement, SqlInsertClause insertClause, bool addAlias)
 		{
 			BuildStep = Step.InsertClause; BuildInsertClause(statement, insertClause, addAlias);

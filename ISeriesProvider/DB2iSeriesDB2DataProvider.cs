@@ -45,6 +45,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SqlProviderFlags.CanCombineParameters = false;
 			SqlProviderFlags.IsParameterOrderDependent = true;
 			SqlProviderFlags.IsCommonTableExpressionsSupported = true;
+			SqlProviderFlags.IsUpdateFromSupported = false;
 
 			if (mapGuidAsString)
 				SqlProviderFlags.CustomFlags.Add(Constants.ProviderFlags.MapGuidAsString);
@@ -244,9 +245,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		}
 
 #if !NETFRAMEWORK
-		public override BulkCopyRowsCopied BulkCopyAsync<T>(ITable<T> table, BulkCopyOptions options, IAsyncEnumerable<T> source, CancellationToken cancellationToken)
+		public override Task<BulkCopyRowsCopied> BulkCopyAsync<T>(ITable<T> table, BulkCopyOptions options, IAsyncEnumerable<T> source, CancellationToken cancellationToken)
 		{
-			return _bulkCopy.BulkCopyAsync(options.BulkCopyType.GetEffectiveType(), table, options, source, cancellationToken);
+			return bulkCopy.BulkCopyAsync(options.BulkCopyType.GetEffectiveType(), table, options, source, cancellationToken);
 		}
 #endif
 		#endregion

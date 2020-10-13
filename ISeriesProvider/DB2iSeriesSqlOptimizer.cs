@@ -85,7 +85,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return base.Finalize(statement, inlineParameters);
 		}
 
-		//Adds alt exists + handling for null scale
 		public override ISqlExpression ConvertExpression(ISqlExpression expr, bool withParameters)
 		{
 			expr = base.ConvertExpression(expr, withParameters);
@@ -191,12 +190,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						return new SqlFunction(func.SystemType, "Decimal", func.Parameters[0], new SqlValue(19), new SqlValue(4));
 					case "SmallMoney":
 						return new SqlFunction(func.SystemType, "Decimal", func.Parameters[0], new SqlValue(10), new SqlValue(4));
-					//case "VarChar":
-					//	if (func.Parameters.Any() && func.Parameters[0].SystemType.ToUnderlying() != typeof(string))
-					//	{
-					//		return new SqlFunction(func.SystemType, "VarChar");
-					//	}
-					//	break;
 					case "NChar":
 					case "NVarChar":
 						return new SqlFunction(func.SystemType, "Graphic", func.Parameters);

@@ -5,10 +5,8 @@ using LinqToDB.SqlQuery;
 using System;
 using System.Linq;
 using System.Data;
-using System.Data.Odbc;
 using System.Collections.Generic;
 using System.Data.Common;
-using System.Data.OleDb;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {

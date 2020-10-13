@@ -52,6 +52,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			public static string Delimiter(DB2iSeriesNamingConvention naming = DB2iSeriesNamingConvention.Sql)
 				=> naming == DB2iSeriesNamingConvention.Sql ? "." : "/";
+
 			public static string DummyTableName(DB2iSeriesNamingConvention naming = DB2iSeriesNamingConvention.Sql)
 				=> naming == DB2iSeriesNamingConvention.Sql ?
 					"SYSIBM.SYSDUMMY1" : "SYSIBM/SYSDUMMY1";

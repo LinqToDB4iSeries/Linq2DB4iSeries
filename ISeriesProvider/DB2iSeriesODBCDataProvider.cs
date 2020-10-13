@@ -45,6 +45,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SqlProviderFlags.CanCombineParameters = false;
 			SqlProviderFlags.IsParameterOrderDependent = true;
 			SqlProviderFlags.IsCommonTableExpressionsSupported = true;
+			SqlProviderFlags.IsUpdateFromSupported = false;
 
 			if (mapGuidAsString)
 				SqlProviderFlags.CustomFlags.Add(Constants.ProviderFlags.MapGuidAsString);
@@ -71,7 +72,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public override Expression GetReaderExpression(IDataReader reader, int idx, Expression readerExpression, Type toType)
 		{
-			reader = reader is System.Data.Odbc.OdbcDataReader odbcDataReader ?
+			reader = reader is System.Data.Common.DbDataReader odbcDataReader 
+				&& reader.GetType().Name == "OdbcDataReader" ?
 				new OdbcDataReaderWrapper(odbcDataReader) : reader;
 
 			return base.GetReaderExpression(reader, idx, readerExpression, toType);
@@ -249,9 +251,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		}
 
 #if !NETFRAMEWORK
-		public override BulkCopyRowsCopied BulkCopyAsync<T>(ITable<T> table, BulkCopyOptions options, IAsyncEnumerable<T> source, CancellationToken cancellationToken)
+		public override Task<BulkCopyRowsCopied> BulkCopyAsync<T>(ITable<T> table, BulkCopyOptions options, IAsyncEnumerable<T> source, CancellationToken cancellationToken)
 		{
-			return _bulkCopy.BulkCopyAsync(options.BulkCopyType.GetEffectiveType(), table, options, source, cancellationToken);
+			return bulkCopy.BulkCopyAsync(options.BulkCopyType.GetEffectiveType(), table, options, source, cancellationToken);
 		}
 #endif
 		#endregion

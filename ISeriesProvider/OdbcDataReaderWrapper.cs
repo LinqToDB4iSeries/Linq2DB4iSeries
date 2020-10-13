@@ -2,21 +2,21 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Odbc;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Data.Common;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
 	/// <summary>
 	/// Wrapper class of OdbcDataReader to intercept issues with IBM driver
 	/// </summary>
-	class OdbcDataReaderWrapper : System.Data.Common.DbDataReader
+	class OdbcDataReaderWrapper : DbDataReader
 	{
-		private readonly OdbcDataReader odbcDataReader;
+		private readonly DbDataReader odbcDataReader;
 
-		public OdbcDataReaderWrapper(OdbcDataReader odbcDataReader)
+		public OdbcDataReaderWrapper(DbDataReader odbcDataReader)
 		{
 			this.odbcDataReader = odbcDataReader;
 		}

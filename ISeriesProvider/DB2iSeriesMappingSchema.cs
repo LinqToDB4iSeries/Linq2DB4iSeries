@@ -28,7 +28,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetConverter<string, DateTime>(DB2iSeriesSqlBuilder.ParseDateTime);
 
 			AddMetadataReader(new DB2iSeriesMetadataReader(configuration));
-#if !NETSTANDARD2_0
+#if NETFRAMEWORK
 			AddMetadataReader(new DB2iSeriesAttributeReader());
 #endif
 		}
