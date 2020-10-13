@@ -5,17 +5,17 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
-
 using LinqToDB;
 using LinqToDB.Common;
 using LinqToDB.Data;
 using LinqToDB.DataProvider;
 using LinqToDB.DataProvider.DB2iSeries;
 using LinqToDB.Mapping;
-
-using IBM.Data.DB2.iSeries;
-
 using NUnit.Framework;
+
+#if NETFRAMEWORK
+using IBM.Data.DB2.iSeries;
+#endif
 
 namespace Tests.DataProvider
 {
@@ -72,7 +72,7 @@ namespace Tests.DataProvider
 			sb.Append(value);
 			if (!string.IsNullOrEmpty(castTo))
 				sb.Append(" AS ").Append(castTo).Append(")");
-			sb.Append("FROM SYSIBM.SYSDUMMY1");
+			sb.Append(" FROM SYSIBM.SYSDUMMY1");
 			return sb.ToString();
 		}
 
@@ -313,6 +313,7 @@ namespace Tests.DataProvider
 			}
 		}
 
+#if NETFRAMEWORK
 		[Test, IncludeDataContextSource(TestProvName.DB2i)]
 		//DecFloatTests break on AccessClient with cultures that have a different decimal point than period.
 		[SetCulture("en-US")]
@@ -341,7 +342,7 @@ namespace Tests.DataProvider
 				Assert.That(TestType<iDB2DecFloat34?>(conn, "decfloat34DataType", DataType.Decimal).ToString(), Is.EqualTo(new iDB2DecFloat34(777.987m).ToString()));
 			}
 		}
-
+#endif
 		static void TestNumeric<T>(DataConnection conn, T expectedValue, DataType dataType, string skip = "")
 		{
 			var skipTypes = skip.Split(' ');

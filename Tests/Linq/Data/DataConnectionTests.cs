@@ -1169,7 +1169,7 @@ namespace Tests.Data
 				context == ProviderName.SapHanaOdbc         ||
 				context == ProviderName.SqlCe               ||
 				context == ProviderName.Sybase              ||
-#if !NET46
+#if !NET472
 				(context.Contains("Oracle") && context.Contains("Managed")) ||
 				context == ProviderName.SapHanaNative       ||
 #endif

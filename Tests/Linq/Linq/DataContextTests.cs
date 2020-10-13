@@ -85,8 +85,10 @@ namespace Tests.Linq
 			{
 				if (!TestProvName.IsiSeriesAccessClient(context))
 					Assert.Throws(typeof(ArgumentException), () => db1.GetTable<Child>().ToList());
+#if NETFRAMEWORK
 				else
 					Assert.Throws(typeof(IBM.Data.DB2.iSeries.iDB2InvalidConnectionStringException), () => db1.GetTable<Child>().ToList());
+#endif
 			}
 		}
 

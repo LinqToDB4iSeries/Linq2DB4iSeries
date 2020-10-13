@@ -1,24 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-	<PropertyGroup>
+	<Import Project="..\..\Build\linq2db.Source.props" />
 
+	<PropertyGroup>
 		<AssemblyName>linq2db.AspNet</AssemblyName>
 		<RootNamespace>LinqToDB.AspNet</RootNamespace>
-		<TargetFramework>net46</TargetFramework>
-		<LangVersion>8.0</LangVersion>
-		<Nullable>enable</Nullable>
+		<TargetFrameworks>net45;netstandard2.0</TargetFrameworks>
+		<SignAssembly>false</SignAssembly>
 	</PropertyGroup>
 
-	<ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">
-	  <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="1.1.1" />
+	<ItemGroup>
+		<ProjectReference Include="..\..\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj" />
+	</ItemGroup>
+	
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="1.1.1" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="1.1.2" />
 	</ItemGroup>
 
 	<ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
-	  <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.8" />
-	  <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.8" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <ProjectReference Include="..\..\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.8" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.8" />
 	</ItemGroup>
 </Project>

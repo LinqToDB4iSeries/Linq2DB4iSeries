@@ -23,12 +23,12 @@ This provider provides the great compatibility but is only available for .net fr
 This provider is advertised by IBM as the most efficient and does seem to be faster than the .net native provider. However it does not support the XML data type properly. Specifically, any schema calls on datareaders that access an XML column throw an exception. There are a few workarounds applied that will make most scenarios work but there are others that break. 
 
 - Access Client OleDb provider
-This provider is similar to the ODBC provider but does not support transactions and has a few other quircks. For example it returns fixed length graphic datatypes trimmed.
+This provider is similar to the ODBC provider but fails on x86 and does not support transactions and has a few other quircks. For example it returns fixed length graphic datatypes trimmed. 
 
 - DB2 provider (via DB2Connect)
 This provider uses the same interface as the standard DB2 provider and supports .net framework and .net core. It is feature rich, maintained by IBM and is available through nuget. Hoewever it requires a commercial license.
 
-The recommended provider is DB2Connect if a license can be obtained. Otherwise the Native .net provider is great if you're still on .net framework. The ODBC provider is a good choice if you want .net core/standard compatibility but cannot get DB2Connect license. Use the OleDb driver is a last resort if you don't care about transactions and you need to access columns with the XML data type.
+The recommended provider is DB2Connect if a license can be obtained. Otherwise the Native .net provider is great if you're still on .net framework. The ODBC provider is a good choice if you want .net core/standard compatibility but cannot get DB2Connect license. Use the OleDb driver as a last resort if you don't care about transactions and x86 and you need to access columns with the XML data type.
 
 For more info on IBM's comments on the ODBC and OleDb providers see: https://www.ibm.com/support/pages/oledb-ole-db-and-odbc-positioning
 

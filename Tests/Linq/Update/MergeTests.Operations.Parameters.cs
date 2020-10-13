@@ -173,6 +173,7 @@ namespace Tests.xUpdate
 			}
 		}
 
+#if NETFRAMEWORK
 		[Test]
 		public void TestParametersInListSourceProperty([IncludeDataSources(TestProvName.DB2i)] string context)
 		{
@@ -205,6 +206,7 @@ namespace Tests.xUpdate
 				Assert.AreEqual(4, db.LastQuery.Count(_ => _ == GetParameterToken(context)));
 			}
 		}
+#endif
 
 		[Test]
 		public void TestParametersInMatchCondition([MergeDataContextSource(false)] string context)

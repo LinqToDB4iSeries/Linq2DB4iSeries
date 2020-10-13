@@ -1,60 +1,33 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="..\Build\linq2db.Source.props" />
+	
 	<PropertyGroup>
-		<TargetFrameworks>net45</TargetFrameworks>
-		<Configurations>Debug;Release</Configurations>
-		<SignAssembly>true</SignAssembly>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-		<AssemblyOriginatorKeyFile>LinqToDB.DB2iSeries.snk</AssemblyOriginatorKeyFile>
-		<GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
-		<GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
-		<GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
-		<GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
-		<GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
-		<GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>
-		<GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
-		<GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
-	</PropertyGroup>
-	<PropertyGroup>
-		<Version>2.9.1.0</Version>
 		<PackageVersion>2.9.0.0</PackageVersion>
-    <PublisherName>Retail-Assist Ltd</PublisherName>
-    <Description>LINQ to DB is a data access technology that provides a run-time infrastructure for managing relational data as objects.  This package is a provider for DB2 on the IBM iSeries.</Description>
-		<Authors>Roy Chase, Nikos Sarris</Authors>
-		<Company>Retail-Assist Ltd</Company>
-		<AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-		<PackageReleaseNotes></PackageReleaseNotes>
 		<PackageLicenseUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries/blob/master/MIT-LICENSE.txt</PackageLicenseUrl>
 		<PackageProjectUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries</PackageProjectUrl>
 		<PackageIconUrl>https://raw.githubusercontent.com/LinqToDB4iSeries/Linq2DB4iSeries/master/NuGet/linq2db2i.png</PackageIconUrl>
 		<PackageTags>linq;linq2db;LinqToDB;ORM;database;DB;SQL;DB2;IBM;iSeries</PackageTags>
-		<NeutralLanguage>en-GB</NeutralLanguage>
+		<!--<NeutralLanguage>en-GB</NeutralLanguage>-->
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<PackageId>linq2db4iSeries</PackageId>
 	</PropertyGroup>
+	
 	<PropertyGroup>
-	  <LangVersion>8.0</LangVersion>
-	  <RepositoryUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries</RepositoryUrl>
-	  <RepositoryType>git</RepositoryType>
+		<Nullable>disable</Nullable>
 	  <AssemblyVersion>2.9.1.0</AssemblyVersion>
 	  <FileVersion>2.9.1.0</FileVersion>
 	</PropertyGroup>
 	
-  
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
-		<Reference Include="Microsoft.CSharp" />
-		<Reference Include="System.Configuration" />
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' OR '$(TargetFramework)' == 'net46' ">
 		<Reference Include="System.Data.Linq" />
-		<Reference Include="System.Data.Services" />
 		<Reference Include="System.Data.DataSetExtensions" />
 	</ItemGroup>
-   
-	<ItemGroup>
-		<None Include="LinqToDB.DB2iSeries.snk" />
-	</ItemGroup>
-	<ItemGroup>
-		<Folder Include="Properties\" />
-	</ItemGroup>
+  
 	<ItemGroup>
 	  <ProjectReference Include="..\..\linq2db\Source\LinqToDB\LinqToDB.csproj" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net45' AND '$(TargetFramework)' != 'net46' ">
+		<Compile Remove="DB2iSeriesAttributeReader.cs" />
 	</ItemGroup>
 </Project>

@@ -1,46 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="..\..\Build\linq2db.Tests.props" />
 
-	<!--<Import Project="..\..\Build\linq2db.Default.props" />-->
-
-	<PropertyGroup>
-		<TargetFramework>net46</TargetFramework>
-		<LangVersion>8.0</LangVersion>
-		<Nullable>enable</Nullable>
-		<AssemblyName>linq2db.Model</AssemblyName>
-		<Configurations>Debug;Release</Configurations>
-	</PropertyGroup>
-
-
-	<!-- .NET Framework -->
-
-	<ItemGroup Condition="'$(TargetFramework)' == 'net46'">
-		<Reference Include="Microsoft.CSharp" />
-		<Reference Include="System" />
-		<Reference Include="System.Configuration" />
-		<Reference Include="System.Core" />
-		<Reference Include="System.Data.DataSetExtensions" />
-		<Reference Include="System.Data.Linq" />
-		<Reference Include="System.Data.Services" />
-		<Reference Include="System.ServiceModel" />
-
-		<PackageReference Include="System.Collections.Immutable" Version="1.4.0" />
-	</ItemGroup>
-
-	<ItemGroup Condition="'$(TargetFramework)' == 'net46' ">
-		<Reference Include="System.Data.Linq" />
-		<Reference Include="System.ServiceModel" />
-	</ItemGroup>
-
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net452|AnyCPU'">
-	  <LangVersion>8.0</LangVersion>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net452|AnyCPU'">
-	  <LangVersion>8.0</LangVersion>
-	</PropertyGroup>
-
-	<ItemGroup>
-	  <ProjectReference Include="..\..\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj" />
+	<ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' OR '$(TargetFramework)' == 'netcoreapp3.1' ">
+		<Compile Remove="TestServiceModelDataContext.cs" />
 	</ItemGroup>
 </Project>
