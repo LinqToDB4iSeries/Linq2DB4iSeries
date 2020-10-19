@@ -2,24 +2,37 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Data;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
-	using System.Data;
-	using LinqToDB.Common;
-	using LinqToDB.Mapping;
-	using LinqToDB.SqlProvider;
-	using LinqToDB.SqlQuery;
+	using Common;
+	using Mapping;
+	using SqlProvider;
+	using SqlQuery;
 
 	public partial class DB2iSeriesSqlBuilder : BasicSqlBuilder
 	{
 		public static DB2iSeriesIdentifierQuoteMode IdentifierQuoteMode = DB2iSeriesIdentifierQuoteMode.None;
-		protected readonly bool mapGuidAsString;
+		
+		protected readonly DB2iSeriesDataProvider Provider;
+		private DB2iSeriesSqlProviderFlags db2iSeriesSqlProviderFlags;
 
-		protected readonly IDB2iSeriesDataProvider Provider;
+		//Set as internal set property because LinqService seeks for constructor with specific arguments
+		//If not set (e.g. built by LinqService via reflection, fallback to getting flags from CustomFlag collection
+		public DB2iSeriesSqlProviderFlags DB2iSeriesSqlProviderFlags
+		{
+			get
+			{
+				if (db2iSeriesSqlProviderFlags is null)
+					db2iSeriesSqlProviderFlags = new DB2iSeriesSqlProviderFlags(SqlProviderFlags);
+				return db2iSeriesSqlProviderFlags;
+			}
+			internal set => db2iSeriesSqlProviderFlags = value;
+		}
 
 		public DB2iSeriesSqlBuilder(
-			IDB2iSeriesDataProvider provider,
+			DB2iSeriesDataProvider provider,
 			MappingSchema mappingSchema,
 			ISqlOptimizer sqlOptimizer,
 			SqlProviderFlags sqlProviderFlags)
@@ -35,12 +48,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SqlProviderFlags sqlProviderFlags)
 			: base(mappingSchema, sqlOptimizer, sqlProviderFlags)
 		{
-			mapGuidAsString = sqlProviderFlags.CustomFlags.Contains(Constants.ProviderFlags.MapGuidAsString);
+			
 		}
 
 		protected override ISqlBuilder CreateSqlBuilder()
 		{
-			return new DB2iSeriesSqlBuilder(Provider, MappingSchema, SqlOptimizer, SqlProviderFlags);
+			return new DB2iSeriesSqlBuilder(Provider, MappingSchema, SqlOptimizer, SqlProviderFlags)
+			{
+				DB2iSeriesSqlProviderFlags = this.DB2iSeriesSqlProviderFlags
+			};
 		}
 
 		#region Same as DB2 provider
@@ -71,43 +87,18 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			BuildInsertOrUpdateQueryAsMerge(insertOrUpdate, $"FROM {Constants.SQL.DummyTableName()} FETCH FIRST 1 ROW ONLY");
 		}
 
-		protected override string LimitFormat(SelectQuery selectQuery)
-		{
-			return selectQuery.Select.SkipValue == null ? " FETCH FIRST {0} ROWS ONLY" : null;
-		}
-
-		protected override void BuildCommand(SqlStatement statement, int commandNumber)
-		{
-			if (statement is SqlTruncateTableStatement trun)
-			{
-				var field = trun.Table!.IdentityFields[commandNumber - 1];
-
-				StringBuilder.Append("ALTER TABLE ");
-				ConvertTableName(StringBuilder, trun.Table.Server, trun.Table.Database, trun.Table.Schema, trun.Table.PhysicalName!);
-				StringBuilder.Append(" ALTER ");
-				Convert(StringBuilder, field.PhysicalName, ConvertType.NameToQueryField);
-				StringBuilder.AppendLine(" RESTART WITH 1");
-			}
-			else
-			{
-				StringBuilder.AppendLine($"SELECT {Constants.SQL.LastInsertedIdentityGetter} FROM {Constants.SQL.DummyTableName()}");
-			}
-		}
-
 		public override StringBuilder Convert(StringBuilder sb, string value, ConvertType convertType)
 		{
 			switch (convertType)
 			{
 				case ConvertType.NameToQueryParameter:
-					return Provider.ProviderType == DB2iSeriesAdoProviderType.Odbc
-						|| Provider.ProviderType == DB2iSeriesAdoProviderType.OleDb
-						? sb.Append("?") : sb.Append("@").Append(value);
+					return DB2iSeriesSqlProviderFlags.SupportsNamedParameters
+						? sb.Append("@").Append(value) : sb.Append("?");
 
 				case ConvertType.NameToCommandParameter:
 				case ConvertType.NameToSprocParameter:
-					return Provider.ProviderType == DB2iSeriesAdoProviderType.Odbc
-						|| Provider.ProviderType == DB2iSeriesAdoProviderType.OleDb
-						? sb.Append("?") : sb.Append(":").Append(value);
+					return DB2iSeriesSqlProviderFlags.SupportsNamedParameters
+						? sb.Append(":").Append(value) : sb.Append("?");
 					
 				case ConvertType.SprocParameterToName:
 					return value.Length > 0 && value[0] == ':'
@@ -140,14 +131,45 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		#region Similar to DB2 provider
 
+		//Same as DB2 provider except it handles Offset Support
+		protected override string LimitFormat(SelectQuery selectQuery)
+		{
+			return
+				DB2iSeriesSqlProviderFlags.SupportsOffsetClause || selectQuery.Select.SkipValue == null
+				? "FETCH FIRST {0} ROWS ONLY" : null;
+		}
+
 		//Same as DB2 provider - except no identityField internal state is held
 		//TODO: Check if idenityField is needed as in DB2 provider
 		public override int CommandCount(SqlStatement statement)
 		{
 			if (statement is SqlTruncateTableStatement trun)
-				return trun.ResetIdentity ? 1 + trun.Table!.IdentityFields.Count : 1;
+				return DB2iSeriesSqlProviderFlags.SupportsTruncateTable && trun.ResetIdentity ? 
+					1 + trun.Table!.IdentityFields.Count : 1;
 
 			return statement is SqlInsertStatement insertStatement && insertStatement.Insert.WithIdentity ? 2 : 1;
+		}
+
+		//Same as DB2 provider except it handles Truncate Support
+		protected override void BuildCommand(SqlStatement statement, int commandNumber)
+		{
+			if (statement is SqlTruncateTableStatement trun)
+			{
+				if (DB2iSeriesSqlProviderFlags.SupportsTruncateTable)
+				{
+					var field = trun.Table!.IdentityFields[commandNumber - 1];
+
+					StringBuilder.Append("ALTER TABLE ");
+					ConvertTableName(StringBuilder, trun.Table.Server, trun.Table.Database, trun.Table.Schema, trun.Table.PhysicalName!);
+					StringBuilder.Append(" ALTER ");
+					Convert(StringBuilder, field.PhysicalName, ConvertType.NameToQueryField);
+					StringBuilder.AppendLine(" RESTART WITH 1");
+				}
+			}
+			else
+			{
+				StringBuilder.AppendLine($"SELECT {Constants.SQL.LastInsertedIdentityGetter} FROM {Constants.SQL.DummyTableName()}");
+			}
 		}
 
 		//Same as DB2 provider - except it adds null value handling
@@ -210,20 +232,51 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 			else
 			{
-				base.BuildSelectClause(selectQuery);
+				if (Provider.ProviderType == DB2iSeriesAdoProviderType.OleDb)
+				{
+					AppendIndent();
+					StringBuilder.Append("SELECT");
+
+					if (selectQuery.Select.IsDistinct)
+						StringBuilder.Append(" DISTINCT");
+
+					BuildSkipFirst(selectQuery);
+
+					//Need to append an extra space
+					StringBuilder.Append(' ').AppendLine();
+					BuildColumns(selectQuery);
+				}
+				else
+					base.BuildSelectClause(selectQuery);
 			}
 		}
 
 		#endregion
 
 		#region iDB2 specific
+		
+		//OleDb provider needs spaces in specific places
+		protected override string Comma => Provider.ProviderType == DB2iSeriesAdoProviderType.OleDb ? ", " : base.Comma;
+		
+		//OleDb provider needs spaces in specific places
+		protected override string InlineComma => Provider.ProviderType == DB2iSeriesAdoProviderType.OleDb ? ", " : base.InlineComma;
+		
+		//OleDb provider needs spaces in specific places
+		protected override string OpenParens => Provider.ProviderType == DB2iSeriesAdoProviderType.OleDb ? "( " : base.OpenParens;
+
+		//Offset clause support
+		protected override string OffsetFormat(SelectQuery selectQuery) =>
+			DB2iSeriesSqlProviderFlags.SupportsOffsetClause ? "OFFSET {0} ROWS" : null;
+
+		//Offset clause support
+		protected override bool OffsetFirst => DB2iSeriesSqlProviderFlags.SupportsOffsetClause;
 
 		//Used for printing parameter information in traces
 		protected override string GetProviderTypeName(IDbDataParameter parameter)
 		{
 			return Provider switch
 			{
-				IDB2iSeriesDataProvider provider => provider.TryGetProviderParameterName(parameter, MappingSchema, out var name) ? name : null,
+				DB2iSeriesDataProvider provider => provider.TryGetProviderParameterName(parameter, MappingSchema, out var name) ? name : null,
 				_ => null
 			} ?? base.GetProviderTypeName(parameter);
 		}

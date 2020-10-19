@@ -5,6 +5,7 @@ using System.Data;
 using LinqToDB.Common;
 using LinqToDB.Configuration;
 using LinqToDB.Data;
+using System.Collections.Concurrent;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
@@ -12,54 +13,43 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	{
 		#region DataProvider instances
 
-		static readonly Lazy<DB2iSeriesDataProvider> _db2iDataProvider = new Lazy<DB2iSeriesDataProvider>(() =>
-		{
-			var provider = new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2, DB2iSeriesLevels.Any, false);
-			DataConnection.AddDataProvider(provider);
-			return provider;
-		});
+		private static readonly ConcurrentDictionary<string, DB2iSeriesDataProvider> dataProviders = new ConcurrentDictionary<string, DB2iSeriesDataProvider>();
 
-		static readonly Lazy<DB2iSeriesDataProvider> _db2iDataProvider_gas = new Lazy<DB2iSeriesDataProvider>(() =>
+		public static DB2iSeriesDataProvider GetDataProvider(string providerName)
 		{
-			var provider = new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2_GAS, DB2iSeriesLevels.Any, true);
-			DataConnection.AddDataProvider(provider);
-			return provider;
-		});
+			if (!dataProviders.TryGetValue(providerName, out var dataProvider))
+			{
+				dataProvider = BuildDataProvider(providerName);
+				dataProviders.TryAdd(providerName, dataProvider);
+			}
 
-		static readonly Lazy<DB2iSeriesDataProvider> _db2iDataProvider_73 = new Lazy<DB2iSeriesDataProvider>(() =>
-		{
-			var provider = new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2_73, DB2iSeriesLevels.V7_1_38, false);
-			DataConnection.AddDataProvider(provider);
-			return provider;
-		});
+			return dataProvider;
+		}
 
-		static readonly Lazy<DB2iSeriesDataProvider> _db2iDataProvider_73_gas = new Lazy<DB2iSeriesDataProvider>(() =>
+		public static bool TryGetDataProvider(string providerName, out DB2iSeriesDataProvider dataProvider)
 		{
-			var provider = new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2_73_GAS, DB2iSeriesLevels.V7_1_38, true);
-			DataConnection.AddDataProvider(provider);
-			return provider;
-		});
+			if (!DB2iSeriesProviderName.AllNames.Contains(providerName))
+			{
+				dataProvider = null;
+				return false;
+			}
 
-		static readonly Lazy<DB2iSeriesODBCDataProvider> _db2iOdbcDataProvider = new Lazy<DB2iSeriesODBCDataProvider>(() =>
-		{
-			var provider = new DB2iSeriesODBCDataProvider(DB2iSeriesProviderName.DB2_ODBC, DB2iSeriesLevels.Any, false);
-			DataConnection.AddDataProvider(provider);
-			return provider;
-		});
+			dataProvider = GetDataProvider(providerName);
+			return true;
+		}
 
-		static readonly Lazy<DB2iSeriesOleDbDataProvider> _db2iOleDbDataProvider = new Lazy<DB2iSeriesOleDbDataProvider>(() =>
+		private static DB2iSeriesDataProvider BuildDataProvider(string providerName)
 		{
-			var provider = new DB2iSeriesOleDbDataProvider(DB2iSeriesProviderName.DB2_ODBC, DB2iSeriesLevels.Any, false);
-			DataConnection.AddDataProvider(provider);
-			return provider;
-		});
+			return new DB2iSeriesDataProvider(DB2iSeriesProviderName.GetProviderOptions(providerName));
+		}
 
-		static readonly Lazy<DB2iSeriesDB2DataProvider> _db2iDB2DataProvider = new Lazy<DB2iSeriesDB2DataProvider>(() =>
+		public static DB2iSeriesDataProvider GetDataProvider(
+			DB2iSeriesVersion version,
+			DB2iSeriesAdoProviderType providerType,
+			DB2iSeriesMappingOptions mappingOptions)
 		{
-			var provider = new DB2iSeriesDB2DataProvider(DB2iSeriesProviderName.DB2_DB2Connect, DB2iSeriesLevels.Any, false);
-			DataConnection.AddDataProvider(provider);
-			return provider;
-		});
+			return GetDataProvider(DB2iSeriesProviderName.GetProviderName(version, providerType, mappingOptions));
+		}
 
 		#endregion
 
@@ -76,10 +66,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		private static IDataProvider ProviderDetector(IConnectionStringSettings css, string connectionString)
 		{
-			if (!css.IsGlobal 
-				&& (DB2iSeriesProviderName.AllNames.Contains(css.Name) 
-					|| css.ProviderName == DB2iSeriesProviderName.DB2 
-					|| css.ProviderName == DB2iSeriesProviderAdapter.AssemblyName))
+			if (!css.IsGlobal
+				&& (DB2iSeriesProviderName.AllNames.Contains(css.Name)
+					|| css.ProviderName.StartsWith(DB2iSeriesProviderName.DB2)
+					|| css.ProviderName == DB2iSeriesAccessClientProviderAdapter.AssemblyName))
 			{
 				if (TryGetDataProvider(css.Name, out var dataProvider))
 					return dataProvider;
@@ -97,56 +87,31 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		#region CreateDataConnection
 
-		public static bool TryGetDataProvider(string providerName, out IDB2iSeriesDataProvider dataProvider)
+		public static DataConnection CreateDataConnection(
+			string connectionString, 
+			DB2iSeriesVersion version,
+			DB2iSeriesAdoProviderType providerType,
+			bool mapGuidAsString)
 		{
-			dataProvider = providerName switch
-			{
-				DB2iSeriesProviderName.DB2 => _db2iDataProvider.Value,
-				DB2iSeriesProviderName.DB2_73 => _db2iDataProvider_73.Value,
-				DB2iSeriesProviderName.DB2_GAS => _db2iDataProvider_gas.Value,
-				DB2iSeriesProviderName.DB2_73_GAS => _db2iDataProvider_73_gas.Value,
-				DB2iSeriesProviderName.DB2_ODBC => _db2iOdbcDataProvider.Value,
-				DB2iSeriesProviderName.DB2_OleDb => _db2iOleDbDataProvider.Value,
-				DB2iSeriesProviderName.DB2_DB2Connect => _db2iDB2DataProvider.Value,
-				_ => null
-			};
-
-			return dataProvider != null;
+			return new DataConnection(GetDataProvider(version, providerType, new DB2iSeriesMappingOptions(mapGuidAsString)), connectionString);
 		}
 
-		public static IDB2iSeriesDataProvider GetDataProvider(string providerName)
+		public static DataConnection CreateDataConnection(
+			IDbConnection connection, 
+			DB2iSeriesVersion version,
+			DB2iSeriesAdoProviderType providerType,
+			bool mapGuidAsString)
 		{
-			if (TryGetDataProvider(providerName, out var dataProvider))
-				return dataProvider;
-
-			throw new ArgumentOutOfRangeException(nameof(providerName), $"'{providerName}' is not a valid DB2iSeries provider name.");
+			return new DataConnection(GetDataProvider(version, providerType, new DB2iSeriesMappingOptions(mapGuidAsString)), connection);
 		}
 
-		public static IDataProvider GetDataProvider(DB2iSeriesAdoProviderType providerType)
+		public static DataConnection CreateDataConnection(
+			IDbTransaction transaction,
+			DB2iSeriesVersion version,
+			DB2iSeriesAdoProviderType providerType,
+			bool mapGuidAsString)
 		{
-			return providerType switch
-			{
-				DB2iSeriesAdoProviderType.AccessClient => _db2iDataProvider.Value,
-				DB2iSeriesAdoProviderType.Odbc => _db2iOdbcDataProvider.Value,
-				DB2iSeriesAdoProviderType.OleDb => _db2iOleDbDataProvider.Value,
-				DB2iSeriesAdoProviderType.DB2 => _db2iDB2DataProvider.Value,
-				_ => throw new ArgumentOutOfRangeException(nameof(providerType), $"'{providerType}' is not a valid DB2iSeries ado provider type.")
-			};
-		}
-
-		public static DataConnection CreateDataConnection(string connectionString, string providerName)
-		{
-			return new DataConnection(GetDataProvider(providerName), connectionString);
-		}
-
-		public static DataConnection CreateDataConnection(IDbConnection connection, string providerName)
-		{
-			return new DataConnection(GetDataProvider(providerName), connection);
-		}
-
-		public static DataConnection CreateDataConnection(IDbTransaction transaction, string providerName)
-		{
-			return new DataConnection(GetDataProvider(providerName), transaction);
+			return new DataConnection(GetDataProvider(version, providerType, new DB2iSeriesMappingOptions(mapGuidAsString)), transaction);
 		}
 
 		#endregion

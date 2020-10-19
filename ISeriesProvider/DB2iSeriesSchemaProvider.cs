@@ -11,11 +11,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 {
 	public class DB2iSeriesSchemaProvider : SchemaProviderBase
 	{
-		private readonly IDB2iSeriesDataProvider _provider;
+		private readonly DB2iSeriesDataProvider provider;
 
-		public DB2iSeriesSchemaProvider(IDB2iSeriesDataProvider provider)
+		public DB2iSeriesSchemaProvider(DB2iSeriesDataProvider provider)
 		{
-			_provider = provider;
+			this.provider = provider;
 		}
 
 		protected override DataType GetDataType(string dataType, string columnType, long? length, int? prec, int? scale)
@@ -232,19 +232,19 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected override string GetProviderSpecificTypeNamespace()
 		{
-			return _provider.ProviderType switch
+			return provider.ProviderType switch
 			{
-				DB2iSeriesAdoProviderType.AccessClient => DB2iSeriesProviderAdapter.AssemblyName,
+				DB2iSeriesAdoProviderType.AccessClient => DB2iSeriesAccessClientProviderAdapter.AssemblyName,
 				DB2iSeriesAdoProviderType.Odbc => OdbcProviderAdapter.AssemblyName,
 				DB2iSeriesAdoProviderType.OleDb => OleDbProviderAdapter.AssemblyName,
-				DB2iSeriesAdoProviderType.DB2 => throw new NotImplementedException(),
-				_ => throw new LinqToDBException($"Unsupported DataProvider {_provider.Name} for iSeries SchemaProvider")
+				DB2iSeriesAdoProviderType.DB2 => DB2.DB2ProviderAdapter.AssemblyName,
+				_ => throw ExceptionHelper.InvalidAdoProvider(provider.ProviderType)
 			};
 		}
 
 		protected override List<DataTypeInfo> GetDataTypes(DataConnection dataConnection)
 		{
-			if (_provider.ProviderType == DB2iSeriesAdoProviderType.Odbc)
+			if (provider.ProviderType == DB2iSeriesAdoProviderType.Odbc)
 			{
 				DataTypesSchema = ((DbConnection)dataConnection.Connection).GetSchema("DataTypes");
 
@@ -256,6 +256,24 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						CreateFormat = t.Field<string>("CreateFormat"),
 						CreateParameters = t.Field<string>("CreateParameters"),
 						ProviderDbType = t.Field<string>("TypeName") == "XML" ? (int)OdbcProviderAdapter.OdbcType.NText : t.Field<int>("ProviderDbType"),
+					})
+					.ToList();
+			}
+			else if (provider.ProviderType == DB2iSeriesAdoProviderType.DB2)
+			{
+				DataTypesSchema = ((DbConnection)dataConnection.Connection).GetSchema("DataTypes");
+
+				return DataTypesSchema.AsEnumerable()
+					.Select(t => new DataTypeInfo
+					{
+						TypeName = t.Field<string>("SQL_TYPE_NAME"),
+						DataType = t.Field<string>("FRAMEWORK_TYPE"),
+						CreateParameters = t.Field<string>("CREATE_PARAMS"),
+					})
+					.Union(
+					new[]
+					{
+					new DataTypeInfo { TypeName = "CHARACTER", CreateParameters = "LENGTH", DataType = "System.String" }
 					})
 					.ToList();
 			}

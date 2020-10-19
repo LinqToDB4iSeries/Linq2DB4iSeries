@@ -11,13 +11,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	using LinqToDB;
 	using LinqToDB.Common;
 	using DB2BulkCopyOptions = DB2.DB2ProviderAdapter.DB2BulkCopyOptions;
-	
+	using LinqToDB.Tools;
+
 	class DB2iSeriesBulkCopy : BasicBulkCopy
 	{
 		const int MAX_ALLOWABLE_BATCH_SIZE = 100;
-		private readonly IDB2iSeriesDataProvider dataProvider;
 
-		public DB2iSeriesBulkCopy(IDB2iSeriesDataProvider dataProvider)
+		private readonly DB2iSeriesDataProvider dataProvider;
+
+		public DB2iSeriesBulkCopy(DB2iSeriesDataProvider dataProvider)
 		{
 			this.dataProvider = dataProvider;
 		}
@@ -29,7 +31,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			if (table.DataContext is DataConnection dataConnection)
 			{
-				if (dataProvider is DB2iSeriesDB2DataProvider dB2DataProvider)
+				if (dataProvider.ProviderType == DB2iSeriesAdoProviderType.DB2
+					&& dataProvider.Adapter.WrappedAdapter is DB2.DB2ProviderAdapter adapter)
 				{
 					var connection = dataProvider.TryGetProviderConnection(dataConnection.Connection, dataConnection.MappingSchema);
 					if (connection != null)
@@ -39,7 +42,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 							source,
 							dataConnection,
 							connection,
-							dB2DataProvider.Adapter.BulkCopy,
+							adapter.BulkCopy,
 							TraceAction);
 				}
 			}
@@ -51,7 +54,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			if (table.DataContext is DataConnection dataConnection)
 			{
-				if (dataProvider is DB2iSeriesDB2DataProvider dB2DataProvider)
+				if (dataProvider.ProviderType == DB2iSeriesAdoProviderType.DB2
+					&& dataProvider.Adapter.WrappedAdapter is DB2.DB2ProviderAdapter adapter)
 				{
 					var connection = dataProvider.TryGetProviderConnection(dataConnection.Connection, dataConnection.MappingSchema);
 					if (connection != null)
@@ -62,7 +66,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 							source,
 							dataConnection,
 							connection,
-							dB2DataProvider.Adapter.BulkCopy,
+							adapter.BulkCopy,
 							TraceAction));
 				}
 			}
@@ -75,7 +79,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			if (table.DataContext is DataConnection dataConnection)
 			{
-				if (dataProvider is DB2iSeriesDB2DataProvider dB2DataProvider)
+				if (dataProvider.ProviderType == DB2iSeriesAdoProviderType.DB2
+					&& dataProvider.Adapter.WrappedAdapter is DB2.DB2ProviderAdapter adapter)
 				{
 					var connection = dataProvider.TryGetProviderConnection(dataConnection.Connection, dataConnection.MappingSchema);
 					if (connection != null)
@@ -90,7 +95,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 								AsyncToSyncEnumerable(enumerator),
 								dataConnection,
 								connection,
-								dB2DataProvider.Adapter.BulkCopy,
+								adapter.BulkCopy,
 								TraceAction);
 						}
 					}

@@ -4,53 +4,31 @@ using LinqToDB.Configuration;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
-
 	public class DB2iSeriesFactory : IDataProviderFactory
 	{
 		public IDataProvider GetDataProvider(IEnumerable<NamedValue> attributes)
 		{
-			if (attributes == null)
+			var versionText = attributes.FirstOrDefault(_ => _.Name == "version");
+
+			var version = versionText.Value switch
 			{
-				return new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2, DB2iSeriesLevels.Any, false);
-			}
-
-			var attribs = attributes.ToList();
-
-			var mapGuidAsString = false;
-
-			var attrib = attribs.FirstOrDefault(_ => _.Name == Constants.ProviderFlags.MapGuidAsString);
-
-			if (attrib != null)
-			{
-				bool.TryParse(attrib.Value, out mapGuidAsString);
-			}
-
-			var version = attribs.FirstOrDefault(_ => _.Name == Constants.ProviderFlags.MinimumVersion);
-
-			var level = version?.Value switch
-			{
-				"7.1.38" => DB2iSeriesLevels.V7_1_38,
-				"7.2.9" => DB2iSeriesLevels.V7_1_38,
-				_ => DB2iSeriesLevels.Any
+				var x when x.StartsWith("7.3.") || x == "7.3" || x == "7_3" => DB2iSeriesVersion.V7_3,
+				var x when x.StartsWith("7.2.") || x == "7.2" || x == "7_2" => DB2iSeriesVersion.V7_2,
+				_ => DB2iSeriesVersion.V7_1
 			};
 			
+			var providerType = attributes.FirstOrDefault(_ => _.Name == "assemblyName")?.Value switch
+			{
+				DB2iSeriesAccessClientProviderAdapter.AssemblyName => DB2iSeriesAdoProviderType.AccessClient,
+				DB2.DB2ProviderAdapter.AssemblyName => DB2iSeriesAdoProviderType.DB2,
+				OleDbProviderAdapter.AssemblyName => DB2iSeriesAdoProviderType.OleDb,
+				OdbcProviderAdapter.AssemblyName => DB2iSeriesAdoProviderType.Odbc,
+				_ => DB2iSeriesAdoProviderType.Odbc
+			};
 
-			if (mapGuidAsString)
-			{
-				return level switch
-				{
-					DB2iSeriesLevels.V7_1_38 => new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2_73_GAS, level, true),
-					_ => new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2_GAS, level, true),
-				};
-			}
-			else
-			{
-				return level switch
-				{
-					DB2iSeriesLevels.V7_1_38 => new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2_73, level, true),
-					_ => new DB2iSeriesDataProvider(DB2iSeriesProviderName.DB2, level, true),
-				};
-			}
+			var mapGuidAsString = attributes.Any(x => x.Name == Constants.ProviderFlags.MapGuidAsString);
+
+			return DB2iSeriesTools.GetDataProvider(version, providerType, new DB2iSeriesMappingOptions(mapGuidAsString));
 		}
 	}
 }

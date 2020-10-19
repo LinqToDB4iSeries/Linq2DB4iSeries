@@ -22,13 +22,13 @@ namespace Tests
 		public const string Oracle11Native = "Oracle.11.Native";
 		public const string Oracle11Managed = "Oracle.11.Managed";
 
-		public const string DB2i = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2;
-		public const string DB2iGAS = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_GAS;
-		public const string DB2i73 = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_73;
-		public const string DB2i73GAS = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_73_GAS;
-		public const string DB2iODBC = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_ODBC;
-		public const string DB2iOleDb = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_OleDb;
-		public const string DB2iDB2Connect = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_DB2Connect;
+		public const string DB2i = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_AccessClient_71;
+		public const string DB2iGAS = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_AccessClient_71_GAS;
+		public const string DB2i73 = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_AccessClient_73;
+		public const string DB2i73GAS = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_AccessClient_73_GAS;
+		public const string DB2iODBC = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_ODBC_71;
+		public const string DB2iOleDb = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_OleDb_71;
+		public const string DB2iDB2Connect = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_DB2Connect_71;
 
 		public static readonly string[] AlliSeriesArray = new[] { DB2i, DB2i73, DB2i73GAS, DB2iGAS, DB2iODBC, DB2iOleDb, DB2iDB2Connect };
 		public static readonly string AlliSeries = string.Join(",", AlliSeriesArray);

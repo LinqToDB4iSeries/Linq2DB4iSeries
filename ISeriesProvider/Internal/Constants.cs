@@ -1,14 +1,13 @@
-﻿using System.Text;
-using System.Threading.Tasks;
-
-namespace LinqToDB.DataProvider.DB2iSeries
+﻿namespace LinqToDB.DataProvider.DB2iSeries
 {
 	internal static class Constants
 	{
 		public static class ProviderFlags
 		{
 			public const string MapGuidAsString = "MapGuidAsString";
-			public const string MinimumVersion = "MinVer";
+			public const string SupportsOffsetClause = "SupportsOffsetClause";
+			public const string SupportsTruncateTable = "SupportsTruncateTable";
+			public const string SupportsNamedParameters = "SupportsNamedParameters";
 		}
 
 		public static class DbTypes
@@ -47,9 +46,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static class SQL
 		{
-			public static string Delimiter(DB2iSeriesProviderAdapter.iDB2NamingConvention naming = DB2iSeriesProviderAdapter.iDB2NamingConvention.SQL)
-				=> naming == DB2iSeriesProviderAdapter.iDB2NamingConvention.SQL ? "." : "/";
-
 			public static string Delimiter(DB2iSeriesNamingConvention naming = DB2iSeriesNamingConvention.Sql)
 				=> naming == DB2iSeriesNamingConvention.Sql ? "." : "/";
 

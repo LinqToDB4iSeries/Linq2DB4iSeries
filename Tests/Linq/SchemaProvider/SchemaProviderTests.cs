@@ -235,7 +235,7 @@ namespace Tests.SchemaProvider
 
 				if (TestProvName.IsiSeries(context))
 				{
-					var binaryType = context == TestProvName.DB2i ? "BINARY(20)" : "BINARY";
+					var binaryType = TestProvName.IsiSeriesAccessClient(context) ? "BINARY(20)" : "BINARY";
 
 					Assert.That(table.Columns.Single(c => c.ColumnName == "BINARYDATATYPE").ColumnType, Is.EqualTo(binaryType));
 					Assert.That(table.Columns.Single(c => c.ColumnName == "VARBINARYDATATYPE").ColumnType, Is.EqualTo("VARBIN"));

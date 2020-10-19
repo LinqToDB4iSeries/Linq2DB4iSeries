@@ -7,10 +7,11 @@ using System.Linq;
 using System.Data;
 using System.Collections.Generic;
 using System.Data.Common;
+using LinqToDB.SqlProvider;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
-	internal static class DB2iSeriesExtensions
+	internal static class Extensions
 	{
 		public static string ToSqlString(this DbDataType dbDataType)
 		{
@@ -44,14 +45,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static IDbConnection GetProviderConnection(this DataConnection dataConnection)
 		{
-			var connection = dataConnection.DataProvider switch
-			{
-				IDB2iSeriesDataProvider iSeriesDataProvider => iSeriesDataProvider.TryGetProviderConnection(dataConnection.Connection, dataConnection.MappingSchema, out var c) ? c : null,
-				_ => null
-			};
-			
+			if (!(dataConnection.DataProvider is DB2iSeriesDataProvider iSeriesDataProvider))
+				throw ExceptionHelper.InvalidProvider(dataConnection.DataProvider);
+
+			var connection = iSeriesDataProvider.TryGetProviderConnection(dataConnection.Connection, dataConnection.MappingSchema);
+
 			if (connection == null)
-				throw new LinqToDBException("Dataconnection is not iDB2Connection.");
+				throw ExceptionHelper.InvalidDbConnectionType(dataConnection.Connection);
 
 			return connection;
 		}
@@ -64,10 +64,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			IEnumerable<string> libraries = new string[] { };
 			var connection = GetProviderConnection(dataConnection);
 
-			if (dataConnection.DataProvider is IDB2iSeriesDataProvider iSeriesDataProvider)
+			if (dataConnection.DataProvider is DB2iSeriesDataProvider iSeriesDataProvider)
 			{
 				if (iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.AccessClient
-					&& iSeriesDataProvider.Adapter is DB2iSeriesProviderAdapter accessClientAdapter)
+					&& iSeriesDataProvider.Adapter.WrappedAdapter is DB2iSeriesAccessClientProviderAdapter accessClientAdapter)
 				{
 					libraries = accessClientAdapter.GetLibraryList(connection).Split(',');
 				}
@@ -90,7 +90,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				else if (iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.DB2)
 				{
 					var csb = new DbConnectionStringBuilder() { ConnectionString = dataConnection.ConnectionString };
-					if (csb.TryGetValue("Library List", out var librariesString))
+					if (csb.TryGetValue("LibraryList", out var librariesString))
 					{
 						libraries = librariesString.ToString().Split(' ').Select(x => x.Trim());
 					}
@@ -105,12 +105,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			var connection = GetProviderConnection(dataConnection);
 			var namingConvention = DB2iSeriesNamingConvention.Sql;
 
-			if (dataConnection.DataProvider is IDB2iSeriesDataProvider iSeriesDataProvider)
+			if (dataConnection.DataProvider is DB2iSeriesDataProvider iSeriesDataProvider)
 			{
 				if (iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.AccessClient 
-					&& iSeriesDataProvider.Adapter is DB2iSeriesProviderAdapter accessClientAdapter)
+					&& iSeriesDataProvider.Adapter.WrappedAdapter is DB2iSeriesAccessClientProviderAdapter accessClientAdapter)
 				{
-					namingConvention = accessClientAdapter.GetNamingConvention(connection) == DB2iSeriesProviderAdapter.iDB2NamingConvention.SQL ? 
+					namingConvention = accessClientAdapter.GetNamingConvention(connection) == DB2iSeriesAccessClientProviderAdapter.iDB2NamingConvention.SQL ? 
 						DB2iSeriesNamingConvention.Sql : DB2iSeriesNamingConvention.System;
 				}
 				else if (iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.Odbc
@@ -128,6 +128,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 
 			return Constants.SQL.Delimiter(namingConvention);
+		}
+
+		public static void SetFlag(this SqlProviderFlags sqlProviderFlags, string flag, bool isSet)
+		{
+			if (isSet && !sqlProviderFlags.CustomFlags.Contains(flag))
+				sqlProviderFlags.CustomFlags.Add(flag);
+			
+			if (!isSet && sqlProviderFlags.CustomFlags.Contains(flag))
+				sqlProviderFlags.CustomFlags.Remove(flag);
 		}
 	}
 }

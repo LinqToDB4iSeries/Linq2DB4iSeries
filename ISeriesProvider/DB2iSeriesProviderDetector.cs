@@ -11,58 +11,25 @@ namespace LinqToDB.DataProvider.DB2iSeries
 {
 	public class DB2iSeriesProviderDetector
 	{
-		public struct DB2iSeriesServerVersion
-		{
-			public DB2iSeriesServerVersion(int major, int minor, int patchLevel)
-			{
-				Major = major;
-				Minor = minor;
-				PatchLevel = patchLevel;
-			}
+		private readonly bool mapGuidAsString;
 
-			public int Major { get; }
-			public int Minor { get; }
-			public int PatchLevel { get; }
+		public DB2iSeriesProviderDetector(bool mapGuidAsString = false)
+		{
+			this.mapGuidAsString = mapGuidAsString;
 		}
 
-		public IDB2iSeriesDataProvider AutoDetectDataProvider(string connectionString)
+		public DB2iSeriesDataProvider AutoDetectDataProvider(string connectionString)
 		{
 			try
 			{
 				var providerType = GetProviderType(connectionString);
 				var minLevel = GetServerMinLevel(connectionString, providerType);
 
-
-				var providerName = providerType switch
-				{
-					DB2iSeriesAdoProviderType.AccessClient => minLevel switch
-					{
-						DB2iSeriesLevels.V7_1_38 => DB2iSeriesProviderName.DB2_73,
-						_ => DB2iSeriesProviderName.DB2,
-					},
-					DB2iSeriesAdoProviderType.OleDb => minLevel switch
-					{
-						DB2iSeriesLevels.V7_1_38 => DB2iSeriesProviderName.DB2_OleDb,
-						_ => DB2iSeriesProviderName.DB2_OleDb,
-					},
-					DB2iSeriesAdoProviderType.DB2 => minLevel switch
-					{
-						DB2iSeriesLevels.V7_1_38 => DB2iSeriesProviderName.DB2_DB2Connect,
-						_ => DB2iSeriesProviderName.DB2_DB2Connect,
-					},
-					DB2iSeriesAdoProviderType.Odbc => minLevel switch
-					{
-						DB2iSeriesLevels.V7_1_38 => DB2iSeriesProviderName.DB2_ODBC,
-						_ => DB2iSeriesProviderName.DB2_ODBC,
-					},
-					_ => throw new LinqToDBException($"Invalid i series provider type {providerType}")
-				};
-
-				return DB2iSeriesTools.GetDataProvider(providerName);
+				return DB2iSeriesTools.GetDataProvider(minLevel, providerType, new DB2iSeriesMappingOptions(mapGuidAsString));
 			}
 			catch (Exception e)
 			{
-				throw new LinqToDBException($"Failed to detect DB2iSeries provider from given string: {connectionString}. Error: {e.Message}");
+				throw ExceptionHelper.ConnectionStringParsingFailure(e);
 			}
 		}
 
@@ -82,12 +49,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			else if (csb.ContainsKey("DATA SOURCE"))
 				return DB2iSeriesAdoProviderType.AccessClient;
 			else
-				throw new LinqToDBException("Connection string doesn't seem to be a valid DB2iSeries connection string.");
+				throw ExceptionHelper.InvalidConnectionString();
 		}
 
-		private DB2iSeriesServerVersion GetServerVersion(string connectionString, DB2iSeriesAdoProviderType providerType)
+		private ServerVersion GetServerVersion(string connectionString, DB2iSeriesAdoProviderType providerType)
 		{
-			using (var conn = (DbConnection)DB2iSeriesTools.GetDataProvider(providerType).CreateConnection(connectionString))
+			using (var conn = (DbConnection)DB2iSeriesTools.GetDataProvider(DB2iSeriesVersion.V7_1, providerType, DB2iSeriesMappingOptions.Default).CreateConnection(connectionString))
 			{
 				conn.Open();
 
@@ -97,26 +64,20 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 				var patchLevel = GetMaxPatchLevel(conn, major, minor);
 
-				return new DB2iSeriesServerVersion(major, minor, patchLevel);
+				return new ServerVersion(major, minor, patchLevel);
 			}
 		}
 
-		private DB2iSeriesLevels GetServerMinLevel(string connectionString, DB2iSeriesAdoProviderType providerType)
+		private DB2iSeriesVersion GetServerMinLevel(string connectionString, DB2iSeriesAdoProviderType providerType)
 		{
 			var version = GetServerVersion(connectionString, providerType);
-
-			if (version.Major > 7 || version.Minor > 2)
-				return DB2iSeriesLevels.V7_1_38;
-
-			if (version.Major == 7
-				&& (version.Minor == 1 || version.Minor == 2))
+			
+			return version switch
 			{
-				if ((version.Minor == 1 && version.PatchLevel > 38)
-					|| (version.Minor == 2 && version.PatchLevel > 9))
-					return DB2iSeriesLevels.V7_1_38;
-			}
-
-			return DB2iSeriesLevels.Any;
+				var x when x >= new ServerVersion(7, 2, 9) => DB2iSeriesVersion.V7_3,
+				var x when x >= new ServerVersion(7, 2, 0) => DB2iSeriesVersion.V7_2,
+				_ => DB2iSeriesVersion.V7_1
+			};
 		}
 
 		private int GetMaxPatchLevel(DbConnection connection, int major, int minor)
@@ -125,12 +86,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			{
 				cmd.CommandText =
 					$"SELECT MAX(PTF_GROUP_LEVEL) FROM QSYS2.GROUP_PTF_INFO WHERE PTF_GROUP_NAME = 'SF99{major:D1}{minor:D2}' AND PTF_GROUP_STATUS = 'INSTALLED'";
-				//var param = cmd.CreateParameter();
-				//param.ParameterName = "p1";
-				//param.Value = $"SF99{major:D1}{minor:D2}";
-
-				//cmd.Parameters.Add(param);
-
+				
 				return Converter.ChangeTypeTo<int>(cmd.ExecuteScalar());
 			}
 		}

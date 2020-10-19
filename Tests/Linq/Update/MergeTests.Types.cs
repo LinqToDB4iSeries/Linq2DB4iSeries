@@ -514,7 +514,7 @@ namespace Tests.xUpdate
 						|| provider == ProviderName.MySqlConnector
 						|| provider == TestProvName.MariaDB
 						|| provider == TestProvName.MySql55
-						|| TestProvName.IsiSeries(provider)
+						|| TestProvName.IsiSeries(provider) && !TestProvName.IsiSeriesDB2Connect(provider)
 						// after migration to 2.4.126 provider + SPS4, hana or provider started to trim spaces on insert for some reason
 						|| provider.StartsWith(ProviderName.SapHana)))
 					expected = '\0';
@@ -533,7 +533,7 @@ namespace Tests.xUpdate
 						|| provider == ProviderName.MySqlConnector
 						|| provider == TestProvName.MariaDB
 						|| provider == TestProvName.MySql55
-						|| TestProvName.IsiSeries(provider)
+						|| TestProvName.IsiSeries(provider) && !TestProvName.IsiSeriesDB2Connect(provider)
 						// after migration to 2.4.126 provider + SPS4, hana or provider started to trim spaces on insert for some reason
 						|| provider.StartsWith(ProviderName.SapHana)))
 					expected = '\0';

@@ -36,8 +36,9 @@ namespace Tests.DataProvider
 
 		public static T ExecuteScalarParameter<T>(this DataConnection connection, DataParameter dataParameter, string parameterType, DataType? dataType = null)
 		{
-			if (connection.DataProvider is DB2iSeriesODBCDataProvider
-				|| connection.DataProvider is DB2iSeriesOleDbDataProvider)
+			if (connection.DataProvider is DB2iSeriesDataProvider iSeriesDataProvider
+				&& (iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.Odbc
+					|| iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.OleDb))
 			{
 				dataParameter.Name = "?";
 			}
@@ -50,8 +51,9 @@ namespace Tests.DataProvider
 
 		public static T ExecuteScalarParameterObject<T>(this DataConnection connection, string parameterName, string parameterType, object parameterValuesObject)
 		{
-			if (connection.DataProvider is DB2iSeriesODBCDataProvider
-				|| connection.DataProvider is DB2iSeriesOleDbDataProvider)
+			if (connection.DataProvider is DB2iSeriesDataProvider iSeriesDataProvider
+				&& (iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.Odbc
+					|| iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.OleDb))
 			{
 				parameterName = "?";
 			}
@@ -91,8 +93,10 @@ namespace Tests.DataProvider
 
 		public static string GetParameterMarker(this DataConnection dataConnection, string parameterName, string? castTo = null)
 		{
-			return GetValueSql(dataConnection.DataProvider is DB2iSeriesODBCDataProvider
-				|| dataConnection.DataProvider is DB2iSeriesOleDbDataProvider
+			return GetValueSql(
+				dataConnection.DataProvider is DB2iSeriesDataProvider iSeriesDataProvider
+				&& (iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.Odbc
+					|| iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.OleDb)
 				? "?" : parameterName, castTo);
 		}
 
@@ -711,7 +715,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(DB2iSeriesProviderName.DB2_73, DB2iSeriesProviderName.DB2, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2i73, TestProvName.DB2i, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
 		public void TestGuidBlob(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -734,7 +738,7 @@ namespace Tests.DataProvider
 		}
 
 
-		[Test, IncludeDataContextSource(DB2iSeriesProviderName.DB2_73_GAS, DB2iSeriesProviderName.DB2_GAS)]
+		[Test, IncludeDataContextSource(TestProvName.DB2i73GAS, TestProvName.DB2iGAS)]
 		public void TestGuidAsString(string context)
 		{
 			using (var conn = new DataConnection(context))

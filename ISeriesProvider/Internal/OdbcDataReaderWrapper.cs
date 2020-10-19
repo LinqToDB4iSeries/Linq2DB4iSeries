@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Data.Common;
 
 namespace LinqToDB.DataProvider.DB2iSeries
@@ -12,7 +8,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	/// <summary>
 	/// Wrapper class of OdbcDataReader to intercept issues with IBM driver
 	/// </summary>
-	class OdbcDataReaderWrapper : DbDataReader
+	internal class OdbcDataReaderWrapper : DbDataReader
 	{
 		private readonly DbDataReader odbcDataReader;
 
