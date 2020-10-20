@@ -70,7 +70,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				, Table_Schema
 				, Column_Name
 				From QSYS2{delimiter}SYSCOLUMNS
-				where System_Table_Schema in('{dataConnection.GetLibList()}')
+				where System_Table_Schema in({dataConnection.GetQuotedLibList()})
 				 ";
 
 			ColumnInfo drf(IDataReader dr)
@@ -109,7 +109,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			  Join QSYS2{delimiter}SYSKEYCST fk on(fk.Constraint_Schema, fk.Constraint_Name) = (ref.Constraint_Schema, ref.Constraint_Name)
 			  Join QSYS2{delimiter}SYSKEYCST uk on(uk.Constraint_Schema, uk.Constraint_Name) = (ref.Unique_Constraint_Schema, ref.Unique_Constraint_Name)
 			  Where uk.Ordinal_Position = fk.Ordinal_Position
-			  And fk.System_Table_Schema in('{dataConnection.GetLibList()}')
+			  And fk.System_Table_Schema in({dataConnection.GetQuotedLibList()})
 			  Order By ThisSchema, ThisTable, Constraint_Name, Ordinal_Position
 			  ";
 
@@ -138,7 +138,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				   , col.Column_Name   
 			  From QSYS2{delimiter}SYSKEYCST col
 			  Join QSYS2{delimiter}SYSCST    cst On(cst.constraint_SCHEMA, cst.constraint_NAME, cst.constraint_type) = (col.constraint_SCHEMA, col.constraint_NAME, 'PRIMARY KEY')
-			  And cst.System_Table_Schema in('{dataConnection.GetLibList()}')
+			  And cst.System_Table_Schema in({dataConnection.GetQuotedLibList()})
 			  Order By cst.table_SCHEMA, cst.table_NAME, col.Ordinal_position
 			  ";
 
@@ -166,7 +166,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			  , Specific_Name
 			  , Specific_Schema
 			  From QSYS2{dataConnection.GetDelimiter()}SYSROUTINES 
-			  Where Specific_Schema in('{dataConnection.GetLibList()}')
+			  Where Specific_Schema in({dataConnection.GetQuotedLibList()})
 			  Order By Specific_Schema, Specific_Name
 			  ";
 
@@ -206,7 +206,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			  , Specific_Name
 			  , Specific_Schema
 			  From QSYS2{dataConnection.GetDelimiter()}SYSPARMS 
-			  where Specific_Schema in('{dataConnection.GetLibList()}')
+			  where Specific_Schema in({dataConnection.GetQuotedLibList()})
 			  Order By Specific_Schema, Specific_Name, Parameter_Name
 			  ";
 
@@ -234,17 +234,19 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			return provider.ProviderType switch
 			{
-				DB2iSeriesAdoProviderType.AccessClient => DB2iSeriesAccessClientProviderAdapter.AssemblyName,
-				DB2iSeriesAdoProviderType.Odbc => OdbcProviderAdapter.AssemblyName,
-				DB2iSeriesAdoProviderType.OleDb => OleDbProviderAdapter.AssemblyName,
-				DB2iSeriesAdoProviderType.DB2 => DB2.DB2ProviderAdapter.AssemblyName,
+#if NETFRAMEWORK
+				DB2iSeriesProviderType.AccessClient => DB2iSeriesAccessClientProviderAdapter.AssemblyName,
+#endif
+				DB2iSeriesProviderType.Odbc => OdbcProviderAdapter.AssemblyName,
+				DB2iSeriesProviderType.OleDb => OleDbProviderAdapter.AssemblyName,
+				DB2iSeriesProviderType.DB2 => DB2.DB2ProviderAdapter.AssemblyName,
 				_ => throw ExceptionHelper.InvalidAdoProvider(provider.ProviderType)
 			};
 		}
 
 		protected override List<DataTypeInfo> GetDataTypes(DataConnection dataConnection)
 		{
-			if (provider.ProviderType == DB2iSeriesAdoProviderType.Odbc)
+			if (provider.ProviderType == DB2iSeriesProviderType.Odbc)
 			{
 				DataTypesSchema = ((DbConnection)dataConnection.Connection).GetSchema("DataTypes");
 
@@ -259,7 +261,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					})
 					.ToList();
 			}
-			else if (provider.ProviderType == DB2iSeriesAdoProviderType.DB2)
+			else if (provider.ProviderType == DB2iSeriesProviderType.DB2)
 			{
 				DataTypesSchema = ((DbConnection)dataConnection.Connection).GetSchema("DataTypes");
 
@@ -293,7 +295,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				  , System_Table_Schema
 				  From QSYS2{dataConnection.GetDelimiter()}SYSTABLES 
 				  Where Table_Type In('L', 'P', 'T', 'V')
-				  And System_Table_Schema in ('{dataConnection.GetLibList()}')	
+				  And System_Table_Schema in ({dataConnection.GetQuotedLibList()})	
 				  Order By System_Table_Schema, System_Table_Name
 				 ";
 

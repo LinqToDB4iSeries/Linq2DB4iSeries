@@ -45,7 +45,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static DB2iSeriesDataProvider GetDataProvider(
 			DB2iSeriesVersion version,
-			DB2iSeriesAdoProviderType providerType,
+			DB2iSeriesProviderType providerType,
 			DB2iSeriesMappingOptions mappingOptions)
 		{
 			return GetDataProvider(DB2iSeriesProviderName.GetProviderName(version, providerType, mappingOptions));
@@ -69,7 +69,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			if (!css.IsGlobal
 				&& (DB2iSeriesProviderName.AllNames.Contains(css.Name)
 					|| css.ProviderName.StartsWith(DB2iSeriesProviderName.DB2)
-					|| css.ProviderName == DB2iSeriesAccessClientProviderAdapter.AssemblyName))
+#if NETFRAMEWORK
+					|| css.ProviderName == DB2iSeriesAccessClientProviderAdapter.AssemblyName
+#endif
+					))
 			{
 				if (TryGetDataProvider(css.Name, out var dataProvider))
 					return dataProvider;
@@ -90,7 +93,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public static DataConnection CreateDataConnection(
 			string connectionString, 
 			DB2iSeriesVersion version,
-			DB2iSeriesAdoProviderType providerType,
+			DB2iSeriesProviderType providerType,
 			bool mapGuidAsString)
 		{
 			return new DataConnection(GetDataProvider(version, providerType, new DB2iSeriesMappingOptions(mapGuidAsString)), connectionString);
@@ -99,7 +102,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public static DataConnection CreateDataConnection(
 			IDbConnection connection, 
 			DB2iSeriesVersion version,
-			DB2iSeriesAdoProviderType providerType,
+			DB2iSeriesProviderType providerType,
 			bool mapGuidAsString)
 		{
 			return new DataConnection(GetDataProvider(version, providerType, new DB2iSeriesMappingOptions(mapGuidAsString)), connection);
@@ -108,7 +111,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public static DataConnection CreateDataConnection(
 			IDbTransaction transaction,
 			DB2iSeriesVersion version,
-			DB2iSeriesAdoProviderType providerType,
+			DB2iSeriesProviderType providerType,
 			bool mapGuidAsString)
 		{
 			return new DataConnection(GetDataProvider(version, providerType, new DB2iSeriesMappingOptions(mapGuidAsString)), transaction);

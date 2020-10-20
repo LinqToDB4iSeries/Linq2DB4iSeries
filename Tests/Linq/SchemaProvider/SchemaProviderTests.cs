@@ -68,7 +68,7 @@ namespace Tests.SchemaProvider
 					}
 				}
 
-				var table = dbSchema.Tables.SingleOrDefault(t => t.TableName!.ToLower() == "parent");
+				var table = dbSchema.Tables.SingleOrDefault(t => t.IsDefaultSchema && t.TableName!.ToLower() == "parent");
 
 				Assert.That(table,                                           Is.Not.Null);
 				Assert.That(table.Columns.Count(c => c.ColumnName != "_ID"), Is.EqualTo(2));
@@ -77,9 +77,9 @@ namespace Tests.SchemaProvider
 				AssertType<Model.Parent>       (conn.MappingSchema, dbSchema);
 
 				if (context != ProviderName.AccessOdbc)
-					Assert.That(dbSchema.Tables.Single(t => t.TableName!.ToLower() == "doctor").ForeignKeys.Count, Is.EqualTo(1));
+					Assert.That(dbSchema.Tables.Single(t => t.IsDefaultSchema && t.TableName!.ToLower() == "doctor").ForeignKeys.Count, Is.EqualTo(1));
 				else // no FK information for ACCESS ODBC
-					Assert.That(dbSchema.Tables.Single(t => t.TableName!.ToLower() == "doctor").ForeignKeys.Count, Is.EqualTo(0));
+					Assert.That(dbSchema.Tables.Single(t => t.IsDefaultSchema && t.TableName!.ToLower() == "doctor").ForeignKeys.Count, Is.EqualTo(0));
 
 				switch (context)
 				{
@@ -91,7 +91,7 @@ namespace Tests.SchemaProvider
 					case ProviderName.SqlServer2017 :
 					case TestProvName.SqlAzure      :
 						{
-							var indexTable = dbSchema.Tables.Single(t => t.TableName == "IndexTable");
+							var indexTable = dbSchema.Tables.Single(t => t.IsDefaultSchema && t.TableName == "IndexTable");
 							Assert.That(indexTable.ForeignKeys.Count,                Is.EqualTo(1));
 							Assert.That(indexTable.ForeignKeys[0].ThisColumns.Count, Is.EqualTo(2));
 						}
@@ -100,7 +100,7 @@ namespace Tests.SchemaProvider
 					case ProviderName.Informix      :
 					case ProviderName.InformixDB2   :
 						{
-							var indexTable = dbSchema.Tables.First(t => t.TableName == "testunique");
+							var indexTable = dbSchema.Tables.First(t => t.IsDefaultSchema && t.TableName == "testunique");
 							Assert.That(indexTable.Columns.Count(c => c.IsPrimaryKey), Is.EqualTo(2));
 							Assert.That(indexTable.ForeignKeys.Count(), Is.EqualTo(2));
 						}
@@ -115,7 +115,7 @@ namespace Tests.SchemaProvider
 					case ProviderName.SqlServer2017 :
 					case TestProvName.SqlAzure      :
 						{
-							var tbl = dbSchema.Tables.Single(at => at.TableName == "AllTypes");
+							var tbl = dbSchema.Tables.Single(at => at.IsDefaultSchema && at.TableName == "AllTypes");
 							var col = tbl.Columns.First(c => c.ColumnName == "datetimeoffset3DataType");
 							Assert.That(col.DataType,  Is.EqualTo(DataType.DateTimeOffset));
 							Assert.That(col.Length,    Is.Null);
@@ -231,7 +231,8 @@ namespace Tests.SchemaProvider
 			{
 				var sp       = conn.DataProvider.GetSchemaProvider();
 				var dbSchema = sp.GetSchema(conn);
-				var table    = dbSchema.Tables.Single(t => t.TableName == "ALLTYPES");
+				
+				var table    = dbSchema.Tables.Single(t => t.IsDefaultSchema && t.TableName == "ALLTYPES");
 
 				if (TestProvName.IsiSeries(context))
 				{

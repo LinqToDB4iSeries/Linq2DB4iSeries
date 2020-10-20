@@ -175,7 +175,7 @@ namespace Tests.xUpdate
 
 #if NETFRAMEWORK
 		[Test]
-		public void TestParametersInListSourceProperty([IncludeDataSources(TestProvName.DB2i)] string context)
+		public void TestParametersInListSourceProperty([IncludeDataSources(TestProvName.DB2iNet)] string context)
 		{
 			using (var db = new TestDataConnection(context))
 			{

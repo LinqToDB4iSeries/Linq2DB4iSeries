@@ -27,12 +27,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public const string DB2_OleDb_72_GAS = "DB2.iSeries.OleDb.72.GAS";
 		public const string DB2_OleDb_73_GAS = "DB2.iSeries.OleDb.73.GAS";
 
-		public const string DB2_AccessClient_71 = "DB2.iSeries.AccessClient.71";
-		public const string DB2_AccessClient_72 = "DB2.iSeries.AccessClient.72";
-		public const string DB2_AccessClient_73 = "DB2.iSeries.AccessClient.73";
-		public const string DB2_AccessClient_71_GAS = "DB2.iSeries.AccessClient.71.GAS";
-		public const string DB2_AccessClient_72_GAS = "DB2.iSeries.AccessClient.72.GAS";
-		public const string DB2_AccessClient_73_GAS = "DB2.iSeries.AccessClient.73.GAS";
+		public const string DB2_AccessClient_71 = "DB2.iSeries.Net.71";
+		public const string DB2_AccessClient_72 = "DB2.iSeries.Net.72";
+		public const string DB2_AccessClient_73 = "DB2.iSeries.Net.73";
+		public const string DB2_AccessClient_71_GAS = "DB2.iSeries.Net.71.GAS";
+		public const string DB2_AccessClient_72_GAS = "DB2.iSeries.Net.72.GAS";
+		public const string DB2_AccessClient_73_GAS = "DB2.iSeries.Net.73.GAS";
 
 		public const string DB2_DB2Connect_71 = "DB2.iSeries.DB2Connect.71";
 		public const string DB2_DB2Connect_72 = "DB2.iSeries.DB2Connect.72";
@@ -49,16 +49,18 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			.Distinct()
 			.ToArray();
 
-		public static DB2iSeriesAdoProviderType GetProviderType(string providerName)
+		public static DB2iSeriesProviderType GetProviderType(string providerName)
 		{
-			if (providerName.Contains("AccessClient"))
-				return DB2iSeriesAdoProviderType.AccessClient;
-			else if (providerName.Contains("DB2Connect"))
-				return DB2iSeriesAdoProviderType.DB2;
-			else if (providerName.Contains("OleDb"))
-				return DB2iSeriesAdoProviderType.OleDb;
-			else if (providerName.Contains("ODBC"))
-				return DB2iSeriesAdoProviderType.Odbc;
+			if (providerName.Contains(".OleDb"))
+				return DB2iSeriesProviderType.OleDb;
+			else if (providerName.Contains(".ODBC"))
+				return DB2iSeriesProviderType.Odbc;
+#if NETFRAMEWORK
+			else if (providerName.Contains(".Net"))
+				return DB2iSeriesProviderType.AccessClient;
+#endif
+			else if (providerName.Contains(".DB2Connect"))
+				return DB2iSeriesProviderType.DB2;
 			else
 				throw ExceptionHelper.InvalidProviderName(providerName);
 		}
@@ -84,32 +86,34 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static string GetProviderName(
 			DB2iSeriesVersion version,
-			DB2iSeriesAdoProviderType providerType,
+			DB2iSeriesProviderType providerType,
 			DB2iSeriesMappingOptions mappingOptions)
 		{
 			var mapGuidAsString = mappingOptions.MapGuidAsString;
 
 			return providerType switch
 			{
-				DB2iSeriesAdoProviderType.AccessClient => version switch
+#if NETFRAMEWORK
+				DB2iSeriesProviderType.AccessClient => version switch
 				{
 					DB2iSeriesVersion.V7_1 => mapGuidAsString ? DB2_AccessClient_71_GAS : DB2_AccessClient_71,
 					DB2iSeriesVersion.V7_2 => mapGuidAsString ? DB2_AccessClient_72_GAS : DB2_AccessClient_72,
 					_ => mapGuidAsString ? DB2_AccessClient_73_GAS : DB2_AccessClient_73,
 				},
-				DB2iSeriesAdoProviderType.Odbc => version switch
+#endif
+				DB2iSeriesProviderType.Odbc => version switch
 				{
 					DB2iSeriesVersion.V7_1 => mapGuidAsString ? DB2_ODBC_71_GAS : DB2_ODBC_71,
 					DB2iSeriesVersion.V7_2 => mapGuidAsString ? DB2_ODBC_72_GAS : DB2_ODBC_72,
 					_ => mapGuidAsString ? DB2_ODBC_73_GAS : DB2_ODBC_73,
 				},
-				DB2iSeriesAdoProviderType.OleDb => version switch
+				DB2iSeriesProviderType.OleDb => version switch
 				{
 					DB2iSeriesVersion.V7_1 => mapGuidAsString ? DB2_OleDb_71_GAS : DB2_OleDb_71,
 					DB2iSeriesVersion.V7_2 => mapGuidAsString ? DB2_OleDb_72_GAS : DB2_OleDb_72,
 					_ => mapGuidAsString ? DB2_OleDb_73_GAS : DB2_OleDb_73,
 				},
-				DB2iSeriesAdoProviderType.DB2 => version switch
+				DB2iSeriesProviderType.DB2 => version switch
 				{
 					DB2iSeriesVersion.V7_1 => mapGuidAsString ? DB2_DB2Connect_71_GAS : DB2_DB2Connect_71,
 					DB2iSeriesVersion.V7_2 => mapGuidAsString ? DB2_DB2Connect_72_GAS : DB2_DB2Connect_72,

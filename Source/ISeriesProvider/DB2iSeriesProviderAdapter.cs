@@ -9,16 +9,18 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		private readonly IDynamicProviderAdapter adapter;
 
-		public DB2iSeriesAdoProviderType ProviderType { get; }
+		public DB2iSeriesProviderType ProviderType { get; }
 
-		public DB2iSeriesProviderAdapter(DB2iSeriesAdoProviderType providerType)
+		public DB2iSeriesProviderAdapter(DB2iSeriesProviderType providerType)
 		{
 			adapter = providerType switch
 			{
-				DB2iSeriesAdoProviderType.AccessClient => DB2iSeriesAccessClientProviderAdapter.GetInstance(),
-				DB2iSeriesAdoProviderType.Odbc => OdbcProviderAdapter.GetInstance(),
-				DB2iSeriesAdoProviderType.OleDb => OleDbProviderAdapter.GetInstance(),
-				DB2iSeriesAdoProviderType.DB2 => DB2.DB2ProviderAdapter.GetInstance(),
+#if NETFRAMEWORK
+				DB2iSeriesProviderType.AccessClient => DB2iSeriesAccessClientProviderAdapter.GetInstance(),
+#endif
+				DB2iSeriesProviderType.Odbc => OdbcProviderAdapter.GetInstance(),
+				DB2iSeriesProviderType.OleDb => OleDbProviderAdapter.GetInstance(),
+				DB2iSeriesProviderType.DB2 => DB2.DB2ProviderAdapter.GetInstance(),
 				_ => throw ExceptionHelper.InvalidAdoProvider(providerType)
 			};
 			this.ProviderType = providerType;
@@ -36,17 +38,21 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public string AssemblyName => ProviderType switch
 		{
-			DB2iSeriesAdoProviderType.AccessClient => DB2iSeriesAccessClientProviderAdapter.AssemblyName,
-			DB2iSeriesAdoProviderType.Odbc => OdbcProviderAdapter.AssemblyName,
-			DB2iSeriesAdoProviderType.OleDb => OleDbProviderAdapter.AssemblyName,
-			DB2iSeriesAdoProviderType.DB2 => DB2.DB2ProviderAdapter.AssemblyName,
+#if NETFRAMEWORK
+			DB2iSeriesProviderType.AccessClient => DB2iSeriesAccessClientProviderAdapter.AssemblyName,
+#endif
+			DB2iSeriesProviderType.Odbc => OdbcProviderAdapter.AssemblyName,
+			DB2iSeriesProviderType.OleDb => OleDbProviderAdapter.AssemblyName,
+			DB2iSeriesProviderType.DB2 => DB2.DB2ProviderAdapter.AssemblyName,
 			_ => throw ExceptionHelper.InvalidAdoProvider(ProviderType)
 		};
 
 
 		public string GetDbTypeName(IDbDataParameter dbDataParameter) => adapter switch
 		{
+#if NETFRAMEWORK
 			DB2iSeriesAccessClientProviderAdapter accessClientAdapter => accessClientAdapter.GetDbType(dbDataParameter).ToString(),
+#endif
 			OdbcProviderAdapter odbcAdapter => odbcAdapter.GetDbType(dbDataParameter).ToString(),
 			OleDbProviderAdapter oleDbAdapter => oleDbAdapter.GetDbType(dbDataParameter).ToString(),
 			DB2.DB2ProviderAdapter db2Adapter => db2Adapter.GetDbType(dbDataParameter).ToString(),
@@ -55,18 +61,20 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public void SetDbType(IDbDataParameter dbDataParameter, object value)
 		{
-			if (adapter is DB2iSeriesAccessClientProviderAdapter accessClientAdapter
-					&& value is DB2iSeriesAccessClientProviderAdapter.iDB2DbType idb2Type)
-				accessClientAdapter.SetDbType(dbDataParameter, idb2Type);
-			else if (adapter is DB2.DB2ProviderAdapter db2Adapter
-					&& value is DB2.DB2ProviderAdapter.DB2Type db2Type)
-				db2Adapter.SetDbType(dbDataParameter, db2Type);
-			else if (adapter is OdbcProviderAdapter odbcAdapter
+			if (adapter is OdbcProviderAdapter odbcAdapter
 					&& value is OdbcProviderAdapter.OdbcType odbcType)
 				odbcAdapter.SetDbType(dbDataParameter, odbcType);
 			else if (adapter is OleDbProviderAdapter oleDbAdapter
 					&& value is OleDbProviderAdapter.OleDbType oleDbType)
 				oleDbAdapter.SetDbType(dbDataParameter, oleDbType);
+#if NETFRAMEWORK
+			else if (adapter is DB2iSeriesAccessClientProviderAdapter accessClientAdapter
+					&& value is DB2iSeriesAccessClientProviderAdapter.iDB2DbType idb2Type)
+				accessClientAdapter.SetDbType(dbDataParameter, idb2Type);
+#endif
+			else if (adapter is DB2.DB2ProviderAdapter db2Adapter
+					&& value is DB2.DB2ProviderAdapter.DB2Type db2Type)
+				db2Adapter.SetDbType(dbDataParameter, db2Type);
 			else
 				throw ExceptionHelper.InvalidProviderAdapter(adapter);
 		}
@@ -74,9 +82,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public IDynamicProviderAdapter GetInstance()
 			=> adapter;
 
-		public static DB2iSeriesProviderAdapter GetInstance(DB2iSeriesAdoProviderType providerType)
+		public static DB2iSeriesProviderAdapter GetInstance(DB2iSeriesProviderType providerType)
 			=> new DB2iSeriesProviderAdapter(providerType);
-
-
 	}
 }

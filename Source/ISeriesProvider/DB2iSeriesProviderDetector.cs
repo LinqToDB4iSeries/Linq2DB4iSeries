@@ -33,7 +33,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 		}
 
-		private DB2iSeriesAdoProviderType GetProviderType(string connectionString)
+		private DB2iSeriesProviderType GetProviderType(string connectionString)
 		{
 			var csb = new DbConnectionStringBuilder()
 			{
@@ -41,18 +41,20 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			};
 
 			if (csb.ContainsKey("DRIVER"))
-				return DB2iSeriesAdoProviderType.Odbc;
+				return DB2iSeriesProviderType.Odbc;
 			else if (csb.ContainsKey("PROVIDER"))
-				return DB2iSeriesAdoProviderType.OleDb;
+				return DB2iSeriesProviderType.OleDb;
 			else if (csb.ContainsKey("SERVER"))
-				return DB2iSeriesAdoProviderType.DB2;
+				return DB2iSeriesProviderType.DB2;
+#if NETFRAMEWORK
 			else if (csb.ContainsKey("DATA SOURCE"))
-				return DB2iSeriesAdoProviderType.AccessClient;
+				return DB2iSeriesProviderType.AccessClient;
+#endif
 			else
 				throw ExceptionHelper.InvalidConnectionString();
 		}
 
-		private ServerVersion GetServerVersion(string connectionString, DB2iSeriesAdoProviderType providerType)
+		private ServerVersion GetServerVersion(string connectionString, DB2iSeriesProviderType providerType)
 		{
 			using (var conn = (DbConnection)DB2iSeriesTools.GetDataProvider(DB2iSeriesVersion.V7_1, providerType, DB2iSeriesMappingOptions.Default).CreateConnection(connectionString))
 			{
@@ -68,7 +70,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 		}
 
-		private DB2iSeriesVersion GetServerMinLevel(string connectionString, DB2iSeriesAdoProviderType providerType)
+		private DB2iSeriesVersion GetServerMinLevel(string connectionString, DB2iSeriesProviderType providerType)
 		{
 			var version = GetServerVersion(connectionString, providerType);
 			

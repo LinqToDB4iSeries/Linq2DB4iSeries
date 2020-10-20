@@ -8,7 +8,6 @@ using System.Xml.Linq;
 using LinqToDB;
 using LinqToDB.Common;
 using LinqToDB.Data;
-using LinqToDB.DataProvider;
 using LinqToDB.DataProvider.DB2iSeries;
 using LinqToDB.Mapping;
 using NUnit.Framework;
@@ -37,8 +36,8 @@ namespace Tests.DataProvider
 		public static T ExecuteScalarParameter<T>(this DataConnection connection, DataParameter dataParameter, string parameterType, DataType? dataType = null)
 		{
 			if (connection.DataProvider is DB2iSeriesDataProvider iSeriesDataProvider
-				&& (iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.Odbc
-					|| iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.OleDb))
+				&& (iSeriesDataProvider.ProviderType == DB2iSeriesProviderType.Odbc
+					|| iSeriesDataProvider.ProviderType == DB2iSeriesProviderType.OleDb))
 			{
 				dataParameter.Name = "?";
 			}
@@ -52,8 +51,8 @@ namespace Tests.DataProvider
 		public static T ExecuteScalarParameterObject<T>(this DataConnection connection, string parameterName, string parameterType, object parameterValuesObject)
 		{
 			if (connection.DataProvider is DB2iSeriesDataProvider iSeriesDataProvider
-				&& (iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.Odbc
-					|| iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.OleDb))
+				&& (iSeriesDataProvider.ProviderType == DB2iSeriesProviderType.Odbc
+					|| iSeriesDataProvider.ProviderType == DB2iSeriesProviderType.OleDb))
 			{
 				parameterName = "?";
 			}
@@ -95,8 +94,8 @@ namespace Tests.DataProvider
 		{
 			return GetValueSql(
 				dataConnection.DataProvider is DB2iSeriesDataProvider iSeriesDataProvider
-				&& (iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.Odbc
-					|| iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.OleDb)
+				&& (iSeriesDataProvider.ProviderType == DB2iSeriesProviderType.Odbc
+					|| iSeriesDataProvider.ProviderType == DB2iSeriesProviderType.OleDb)
 				? "?" : parameterName, castTo);
 		}
 
@@ -117,7 +116,7 @@ namespace Tests.DataProvider
 	[TestFixture]
 	public class DB2iSeriesTests : TestBase
 	{
-		[Test, IncludeDataContextSource(TestProvName.DB2i, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
 		public void TestParameters(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -258,7 +257,7 @@ namespace Tests.DataProvider
 		}
 
 
-		[Test, IncludeDataContextSource(TestProvName.DB2i, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
 		//DecFloatTests break on AccessClient with cultures that have a different decimal point than period.
 		[SetCulture("en-US")]
 		public void TestDataTypes(string context)
@@ -318,7 +317,7 @@ namespace Tests.DataProvider
 		}
 
 #if NETFRAMEWORK
-		[Test, IncludeDataContextSource(TestProvName.DB2i)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet)]
 		//DecFloatTests break on AccessClient with cultures that have a different decimal point than period.
 		[SetCulture("en-US")]
 		public void TestDataTypes_AccessClient(string context)
@@ -435,7 +434,7 @@ namespace Tests.DataProvider
 			TestNumeric<T?>(conn, (T?)null, dataType);
 		}
 
-		[Test, IncludeDataContextSource(TestProvName.DB2i, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
 		//Test uses string format to build sql values, invariant culture is needed
 		[SetCulture("en-US")]
 		public void TestNumerics(string context)
@@ -486,7 +485,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(TestProvName.DB2i, TestProvName.DB2iODBC, TestProvName.DB2iOleDb)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iODBC, TestProvName.DB2iOleDb)]
 		public void TestDate(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -503,7 +502,7 @@ namespace Tests.DataProvider
 					conn.ExecuteScalarParameter<DateTime>("p", "date", dateTime, DataType.Date), Is.EqualTo(dateTime));
 
 				//iSeries native provider cannot assign datetime parameter to date
-				if (context != TestProvName.DB2i)
+				if (context != TestProvName.DB2iNet)
 				{
 					Assert.That(
 					conn.ExecuteScalarParameter<DateTime>("p", "date", dateTime), Is.EqualTo(dateTime));
@@ -511,7 +510,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(TestProvName.DB2i, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
 		public void TestDateTime(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -534,7 +533,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(TestProvName.DB2i, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
 		public void TestTimeSpan(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -565,7 +564,7 @@ namespace Tests.DataProvider
 
 
 
-		[Test, IncludeDataContextSource(TestProvName.DB2i, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
 		public void TestChar(string context)
 		{
 			var asciiChar = '1'; var quotedAsciiChar = asciiChar.ToString().AsQuoted();
@@ -617,7 +616,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(TestProvName.DB2i, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
 		public void TestString(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -690,7 +689,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(TestProvName.DB2i, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
 		public void TestBinary(string context)
 		{
 			// results are going to be bytes from EDCIDC character set
@@ -715,7 +714,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(TestProvName.DB2i73, TestProvName.DB2i, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet73, TestProvName.DB2iNet, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
 		public void TestGuidBlob(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -738,7 +737,7 @@ namespace Tests.DataProvider
 		}
 
 
-		[Test, IncludeDataContextSource(TestProvName.DB2i73GAS, TestProvName.DB2iGAS)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet73GAS, TestProvName.DB2iNetGAS)]
 		public void TestGuidAsString(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -754,7 +753,7 @@ namespace Tests.DataProvider
 		}
 
 
-		[Test, IncludeDataContextSource(TestProvName.DB2i, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
 		public void TestXml(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -787,7 +786,7 @@ namespace Tests.DataProvider
 			[MapValue("B")] BB,
 		}
 
-		[Test, IncludeDataContextSource(TestProvName.DB2i, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
 		public void TestEnum1(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -799,7 +798,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(TestProvName.DB2i, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
 		public void TestEnum2(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -940,7 +939,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(TestProvName.DB2i, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
 		public void BulkCopyMultipleRows(string context)
 		{
 			BulkCopyTest(context, BulkCopyType.MultipleRows, 5000, 100);
@@ -952,7 +951,7 @@ namespace Tests.DataProvider
 			BulkCopyTest(context, BulkCopyType.ProviderSpecific, 50000, 100001);
 		}
 
-		[Test, IncludeDataContextSource(TestProvName.DB2i, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
 		public void BulkCopyLinqTypesMultipleRows(string context)
 		{
 			using (var db = new DataConnection(context))
@@ -975,7 +974,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(TestProvName.DB2i, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
 		public void TestBinarySize(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -1007,7 +1006,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(TestProvName.DB2i, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
 		public void TestClobSize(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -1041,7 +1040,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(TestProvName.DB2i, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
 		public void TestAny(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -1054,7 +1053,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(TestProvName.DB2i, TestProvName.DB2i73, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iNet73, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
 		public void TestOrderBySkipTake(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -1069,7 +1068,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(TestProvName.DB2i, TestProvName.DB2i73, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iNet73, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
 		public void TestOrderByDescendingSkipTake(string context)
 		{
 			using (var conn = new DataConnection(context))
@@ -1084,7 +1083,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(TestProvName.DB2i, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
 		public void CompareDate1(string context)
 		{
 			using (var db = GetDataContext(context))
@@ -1097,7 +1096,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		[Test, IncludeDataContextSource(TestProvName.DB2i, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
 		public void CompareDate2(string context)
 		{
 			var dt = Types2[3].DateTimeValue;
@@ -1121,7 +1120,7 @@ namespace Tests.DataProvider
 			[Column("FieldULongAsDecimal", DataType = DataType.Decimal, Length = 20, Precision = 0)] public ulong FieldULong { get; set; }
 		}
 
-		[Test, IncludeDataContextSource(TestProvName.DB2i, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
 		public void InsertOrUpdateWithIntegers(string context)
 		{
 			using (var db = new TestDataConnection(context))

@@ -1,5 +1,6 @@
 ﻿namespace LinqToDB.DataProvider.DB2iSeries
 {
+	using LinqToDB.Tools;
 	using SqlProvider;
 
 	public class DB2iSeriesSqlProviderFlags
@@ -27,21 +28,18 @@
 			: this(
 				 options.SupportsOffsetClause,
 				 options.SupportsTruncateTable,
-				 supportsNamedParameters: options.ProviderType == DB2iSeriesAdoProviderType.AccessClient
-										|| options.ProviderType == DB2iSeriesAdoProviderType.DB2)
+				 supportsNamedParameters: options.ProviderType.IsIBM())
 		{
 
 		}
 
 		public DB2iSeriesSqlProviderFlags(
 			DB2iSeriesVersion version,
-			DB2iSeriesAdoProviderType providerType)
+			DB2iSeriesProviderType providerType)
 			: this(
 				 supportsOffsetClause: version >= DB2iSeriesVersion.V7_3,
 				 supportsTruncateTable: version >= DB2iSeriesVersion.V7_2,
-				 supportsNamedParameters:
-						providerType == DB2iSeriesAdoProviderType.AccessClient
-					|| providerType == DB2iSeriesAdoProviderType.DB2
+				 supportsNamedParameters: providerType.IsIBM()
 				 )
 		{
 

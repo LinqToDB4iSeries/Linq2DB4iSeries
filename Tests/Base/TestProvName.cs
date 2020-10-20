@@ -22,21 +22,23 @@ namespace Tests
 		public const string Oracle11Native = "Oracle.11.Native";
 		public const string Oracle11Managed = "Oracle.11.Managed";
 
-		public const string DB2i = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_AccessClient_71;
-		public const string DB2iGAS = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_AccessClient_71_GAS;
-		public const string DB2i73 = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_AccessClient_73;
-		public const string DB2i73GAS = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_AccessClient_73_GAS;
+		public const string DB2iBase = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2;
+
+		public const string DB2iNet = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_AccessClient_71;
+		public const string DB2iNetGAS = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_AccessClient_71_GAS;
+		public const string DB2iNet73 = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_AccessClient_73;
+		public const string DB2iNet73GAS = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_AccessClient_73_GAS;
 		public const string DB2iODBC = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_ODBC_71;
 		public const string DB2iOleDb = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_OleDb_71;
 		public const string DB2iDB2Connect = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_DB2Connect_71;
 
-		public static readonly string[] AlliSeriesArray = new[] { DB2i, DB2i73, DB2i73GAS, DB2iGAS, DB2iODBC, DB2iOleDb, DB2iDB2Connect };
+		public static readonly string[] AlliSeriesArray = new[] { DB2iNet, DB2iNet73, DB2iNet73GAS, DB2iNetGAS, DB2iODBC, DB2iOleDb, DB2iDB2Connect };
 		public static readonly string AlliSeries = string.Join(",", AlliSeriesArray);
 
-		public static bool IsiSeries(string provider) => provider.StartsWith(DB2i);
-		public static bool IsiSeriesODBC(string provider) => provider.StartsWith(DB2i) && provider.ToUpper().Contains("ODBC");
-		public static bool IsiSeriesOleDb(string provider) => provider.StartsWith(DB2i) && provider.ToUpper().Contains("OLEDB");
-		public static bool IsiSeriesDB2Connect(string provider) => provider.StartsWith(DB2i) && provider.ToUpper().Contains("CONNECT");
+		public static bool IsiSeries(string provider) => provider.StartsWith(DB2iBase);
+		public static bool IsiSeriesODBC(string provider) => provider.StartsWith(DB2iBase) && provider.ToUpper().Contains("ODBC");
+		public static bool IsiSeriesOleDb(string provider) => provider.StartsWith(DB2iBase) && provider.ToUpper().Contains("OLEDB");
+		public static bool IsiSeriesDB2Connect(string provider) => provider.StartsWith(DB2iBase) && provider.ToUpper().Contains("CONNECT");
 		public static bool IsiSeriesAccessClient(string provider) => IsiSeries(provider) && !IsiSeriesODBC(provider) && !IsiSeriesOleDb(provider) && !IsiSeriesDB2Connect(provider);
 		public static string GetFamily(string provider)
 		{

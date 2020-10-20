@@ -17,10 +17,7 @@
 
 		<AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-		<SignAssembly>True</SignAssembly>
-		<AssemblyOriginatorKeyFile>..\Build\LinqToDB.DB2iSeries.snk</AssemblyOriginatorKeyFile>
-		<DelaySign>False</DelaySign>
-
+		
 		<GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
 		<GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
 		<GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>

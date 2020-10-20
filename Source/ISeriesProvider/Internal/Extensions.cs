@@ -59,84 +59,110 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public static BulkCopyType GetEffectiveType(this BulkCopyType bulkCopyType)
 			=> bulkCopyType == BulkCopyType.Default ? DB2iSeriesTools.DefaultBulkCopyType : bulkCopyType;
 
-		public static string GetLibList(this DataConnection dataConnection)
+		public static string GetQuotedLibList(this DataConnection dataConnection)
+			=> "'" + string.Join("','", dataConnection.GetLibList()) + "'";
+
+		public static IEnumerable<string> GetLibList(this DataConnection dataConnection)
 		{
 			IEnumerable<string> libraries = new string[] { };
 			var connection = GetProviderConnection(dataConnection);
 
 			if (dataConnection.DataProvider is DB2iSeriesDataProvider iSeriesDataProvider)
 			{
-				if (iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.AccessClient
-					&& iSeriesDataProvider.Adapter.WrappedAdapter is DB2iSeriesAccessClientProviderAdapter accessClientAdapter)
+				var libraryListKey = iSeriesDataProvider.ProviderType switch
 				{
-					libraries = accessClientAdapter.GetLibraryList(connection).Split(',');
-				}
-				else if (iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.Odbc)
+#if NETFRAMEWORK
+					DB2iSeriesProviderType.AccessClient => "Library List",
+#endif
+					DB2iSeriesProviderType.Odbc => "DBQ",
+					DB2iSeriesProviderType.OleDb => "Library List",
+					DB2iSeriesProviderType.DB2 => "LibraryList",
+					_ => throw ExceptionHelper.InvalidAdoProvider(iSeriesDataProvider.ProviderType)
+				};
+
+				var csb = new DbConnectionStringBuilder() { ConnectionString = dataConnection.ConnectionString };
+
+				if (csb.TryGetValue(libraryListKey, out var libraryList))
 				{
-					var csb = new DbConnectionStringBuilder() { ConnectionString = dataConnection.ConnectionString };
-					if (csb.TryGetValue("DBQ", out var librariesString))
-					{
-						libraries = librariesString.ToString().Split(' ').Select(x => x.Trim());
-					}
-				}
-				else if (iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.OleDb)
-				{
-					var csb = new DbConnectionStringBuilder() { ConnectionString = dataConnection.ConnectionString };
-					if (csb.TryGetValue("Default Collection", out var librariesString))
-					{
-						libraries = librariesString.ToString().Split(',').Select(x => x.Trim());
-					}
-				}
-				else if (iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.DB2)
-				{
-					var csb = new DbConnectionStringBuilder() { ConnectionString = dataConnection.ConnectionString };
-					if (csb.TryGetValue("LibraryList", out var librariesString))
-					{
-						libraries = librariesString.ToString().Split(' ').Select(x => x.Trim());
-					}
+					return libraryList
+						.ToString()
+						.Split(',', ' ')
+						.Select(x => x.Trim())
+						.Where(x => x != string.Empty)
+						.ToList();
 				}
 			}
 
-			return string.Join("','", libraries);
+			return Enumerable.Empty<string>();
 		}
 
 		public static string GetDelimiter(this DataConnection dataConnection)
+			=> Constants.SQL.Delimiter(dataConnection.GetNamingConvetion());
+
+		public static DB2iSeriesNamingConvention GetNamingConvetion(this DataConnection dataConnection)
 		{
-			var connection = GetProviderConnection(dataConnection);
-			var namingConvention = DB2iSeriesNamingConvention.Sql;
-
-			if (dataConnection.DataProvider is DB2iSeriesDataProvider iSeriesDataProvider)
+			if (dataConnection.DataProvider is DB2iSeriesDataProvider iSeriesDataProvider
+				&& iSeriesDataProvider.ProviderType != DB2iSeriesProviderType.DB2)
 			{
-				if (iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.AccessClient 
-					&& iSeriesDataProvider.Adapter.WrappedAdapter is DB2iSeriesAccessClientProviderAdapter accessClientAdapter)
+				var namingConventionKey = iSeriesDataProvider.ProviderType switch
 				{
-					namingConvention = accessClientAdapter.GetNamingConvention(connection) == DB2iSeriesAccessClientProviderAdapter.iDB2NamingConvention.SQL ? 
-						DB2iSeriesNamingConvention.Sql : DB2iSeriesNamingConvention.System;
-				}
-				else if (iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.Odbc
-					|| iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.OleDb)
-				{
-					var csb = new DbConnectionStringBuilder() { ConnectionString = dataConnection.ConnectionString };
-					
-					var propertyName = iSeriesDataProvider.ProviderType == DB2iSeriesAdoProviderType.Odbc ? "NAM" : "Naming Convention";
+#if NETFRAMEWORK
+					DB2iSeriesProviderType.AccessClient => "Naming",
+#endif
+					DB2iSeriesProviderType.Odbc => "NAM",
+					DB2iSeriesProviderType.OleDb => "Naming Convention",
+					_ => throw ExceptionHelper.InvalidAdoProvider(iSeriesDataProvider.ProviderType)
+				};
 
-					if (csb.TryGetValue(propertyName, out var naming))
-					{
-						namingConvention = naming.ToString() == "1" ? DB2iSeriesNamingConvention.System : DB2iSeriesNamingConvention.Sql;
-					}
+				var csb = new DbConnectionStringBuilder() { ConnectionString = dataConnection.ConnectionString };
+
+				if (csb.TryGetValue(namingConventionKey, out var namingConvention))
+				{
+					if (!(namingConvention is string namingConventionString))
+						namingConventionString = ((int)namingConvention).ToString();
+
+					return namingConventionString == "1" ? DB2iSeriesNamingConvention.System : DB2iSeriesNamingConvention.Sql;
 				}
 			}
 
-			return Constants.SQL.Delimiter(namingConvention);
+			return DB2iSeriesNamingConvention.Sql;
 		}
 
 		public static void SetFlag(this SqlProviderFlags sqlProviderFlags, string flag, bool isSet)
 		{
 			if (isSet && !sqlProviderFlags.CustomFlags.Contains(flag))
 				sqlProviderFlags.CustomFlags.Add(flag);
-			
+
 			if (!isSet && sqlProviderFlags.CustomFlags.Contains(flag))
 				sqlProviderFlags.CustomFlags.Remove(flag);
 		}
+
+		public static bool IsIBM(this DB2iSeriesProviderType providerType)
+			=> providerType == DB2iSeriesProviderType.DB2
+#if NETFRAMEWORK
+			|| providerType == DB2iSeriesProviderType.AccessClient
+#endif
+			;
+
+		public static bool IsDB2(this DB2iSeriesProviderType providerType)
+			 => providerType == DB2iSeriesProviderType.DB2;
+
+		public static bool IsAccessClient(this DB2iSeriesProviderType providerType)
+			 =>
+#if NETFRAMEWORK
+			providerType == DB2iSeriesProviderType.AccessClient;
+#else
+			false;
+#endif
+
+		public static bool IsOdbc(this DB2iSeriesProviderType providerType)
+			 => providerType == DB2iSeriesProviderType.Odbc;
+
+		public static bool IsOleDb(this DB2iSeriesProviderType providerType)
+			 => providerType == DB2iSeriesProviderType.OleDb;
+
+		public static bool IsOdbcOrOleDb(this DB2iSeriesProviderType providerType)
+			 => providerType == DB2iSeriesProviderType.Odbc
+			||	providerType == DB2iSeriesProviderType.OleDb;
 	}
 }

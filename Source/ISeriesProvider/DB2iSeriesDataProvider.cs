@@ -16,11 +16,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	using static DataProvider.OleDbProviderAdapter;
 	using static DataProvider.OdbcProviderAdapter;
 	using static DataProvider.DB2.DB2ProviderAdapter;
+#if NETFRAMEWORK
 	using static DB2iSeriesAccessClientProviderAdapter;
+#endif
 
 	public class DB2iSeriesDataProvider : DynamicDataProviderBase<DB2iSeriesProviderAdapter>
 	{
-		public DB2iSeriesAdoProviderType ProviderType { get; }
+		public DB2iSeriesProviderType ProviderType { get; }
 
 		private readonly DB2iSeriesSqlOptimizer sqlOptimizer;
 		private readonly DB2iSeriesSchemaProvider schemaProvider;
@@ -54,7 +56,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		/// <param name="version">iSeries version</param>
 		/// <param name="mappingOptions">Mapping specific options</param>
 		public DB2iSeriesDataProvider(
-			DB2iSeriesAdoProviderType providerType = DB2iSeriesProviderOptions.Defaults.ProviderType,
+			DB2iSeriesProviderType providerType = DB2iSeriesProviderOptions.Defaults.ProviderType,
 			DB2iSeriesVersion version = DB2iSeriesProviderOptions.Defaults.Version,
 			DB2iSeriesMappingOptions mappingOptions = null)
 			: this(DB2iSeriesProviderName.GetProviderName(version, providerType, mappingOptions ?? DB2iSeriesMappingOptions.Default))
@@ -71,7 +73,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		/// <param name="mappingOptions">Mapping specific options</param>
 		public DB2iSeriesDataProvider(
 			string name,
-			DB2iSeriesAdoProviderType providerType = DB2iSeriesProviderOptions.Defaults.ProviderType,
+			DB2iSeriesProviderType providerType = DB2iSeriesProviderOptions.Defaults.ProviderType,
 			DB2iSeriesVersion version = DB2iSeriesProviderOptions.Defaults.Version,
 			DB2iSeriesMappingOptions mappingOptions = null)
 			: this(new DB2iSeriesProviderOptions(name, providerType, version)
@@ -119,16 +121,20 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			schemaProvider = new DB2iSeriesSchemaProvider(this);
 			bulkCopy = new DB2iSeriesBulkCopy(this);
 
-			if (ProviderType == DB2iSeriesAdoProviderType.AccessClient)
-				SetupAccessClient();
-			else if (ProviderType == DB2iSeriesAdoProviderType.DB2)
-				SetupDB2Connect();
-			else if (ProviderType == DB2iSeriesAdoProviderType.Odbc)
+			if (ProviderType == DB2iSeriesProviderType.Odbc)
 				SetupOdbc();
-			else if (ProviderType == DB2iSeriesAdoProviderType.OleDb)
+			else if (ProviderType == DB2iSeriesProviderType.OleDb)
 				SetupOleDb();
+#if NETFRAMEWORK
+			else if (ProviderType == DB2iSeriesProviderType.AccessClient)
+				SetupAccessClient();
+#endif
+			else if (ProviderType == DB2iSeriesProviderType.DB2)
+				SetupDB2Connect();
+			
 		}
 
+#if NETFRAMEWORK
 		private void SetupAccessClient()
 		{
 			SqlProviderFlags.IsParameterOrderDependent = true;
@@ -162,6 +168,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetProviderField(adapter.iDB2VarGraphicType, typeof(string), adapter.GetiDB2VarGraphicReaderMethod, dataReaderType: adapter.DataReaderType);
 			SetProviderField(adapter.iDB2XmlType, typeof(string), adapter.GetiDB2XmlReaderMethod, dataReaderType: adapter.DataReaderType);
 		}
+#endif
 
 		private void SetupDB2Connect()
 		{
@@ -225,12 +232,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			base.InitCommand(dataConnection, commandType, commandText, parameters, withParameters);
 		}
 
-		private static MappingSchema GetMappingSchema(string configuration, DB2iSeriesAdoProviderType providerType, bool mapGuidAsString)
+		private static MappingSchema GetMappingSchema(string configuration, DB2iSeriesProviderType providerType, bool mapGuidAsString)
 		{
 			var providerSchema = providerType switch
 			{
-				DB2iSeriesAdoProviderType.AccessClient => DB2iSeriesAccessClientProviderAdapter.GetInstance().MappingSchema,
-				DB2iSeriesAdoProviderType.DB2 => DB2.DB2ProviderAdapter.GetInstance().MappingSchema,
+#if NETFRAMEWORK
+				DB2iSeriesProviderType.AccessClient => DB2iSeriesAccessClientProviderAdapter.GetInstance().MappingSchema,
+#endif
+				DB2iSeriesProviderType.DB2 => DB2.DB2ProviderAdapter.GetInstance().MappingSchema,
 				_ => new MappingSchema()
 			};
 
@@ -300,8 +309,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					break;
 
 				case DataType.Time:
-					if (ProviderType == DB2iSeriesAdoProviderType.AccessClient
-						|| ProviderType == DB2iSeriesAdoProviderType.DB2)
+					if (ProviderType.IsIBM())
 					{
 						//Time parameters will only accept iDb2Time/DB2Time or string representation of time
 						value = value switch
@@ -333,22 +341,24 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			return ProviderType switch
 			{
-				DB2iSeriesAdoProviderType.AccessClient => dataType switch
+#if NETFRAMEWORK
+				DB2iSeriesProviderType.AccessClient => dataType switch
 				{
 					DataType.Blob => iDB2DbType.iDB2Blob,
 					_ => null
 				},
-				DB2iSeriesAdoProviderType.DB2 => dataType switch
+#endif
+				DB2iSeriesProviderType.DB2 => dataType switch
 				{
 					DataType.Blob => DB2Type.Blob,
 					_ => null
 				},
-				DB2iSeriesAdoProviderType.Odbc => dataType switch
+				DB2iSeriesProviderType.Odbc => dataType switch
 				{
 					DataType.Blob => OdbcType.VarBinary,
 					_ => null
 				},
-				DB2iSeriesAdoProviderType.OleDb => dataType switch
+				DB2iSeriesProviderType.OleDb => dataType switch
 				{
 					DataType.Blob => OleDbType.LongVarBinary,
 					DataType.Time => OleDbType.DBTime,
@@ -376,7 +386,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		private void SetParameterDbType(DataType dataType, IDbDataParameter parameter)
 		{
-			if (ProviderType == DB2iSeriesAdoProviderType.Odbc)
+			if (ProviderType == DB2iSeriesProviderType.Odbc)
 			{
 				switch (dataType)
 				{
@@ -387,7 +397,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					case DataType.UInt64: parameter.DbType = DbType.Decimal; return;
 				}
 			}
-			else if (ProviderType == DB2iSeriesAdoProviderType.OleDb)
+			else if (ProviderType == DB2iSeriesProviderType.OleDb)
 			{
 				switch (dataType)
 				{
@@ -444,7 +454,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		protected override string NormalizeTypeName(string typeName)
 		{
 			//Graphic types not supported in ODBC
-			if (ProviderType == DB2iSeriesAdoProviderType.Odbc)
+			if (ProviderType == DB2iSeriesProviderType.Odbc)
 			{
 				if (typeName.StartsWith(Constants.DbTypes.Graphic))
 					return Constants.DbTypes.NChar;
@@ -469,7 +479,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public override bool? IsDBNullAllowed(IDataReader reader, int idx)
 		{
 			//Always return true on ODBC to avoid exceptions on XML columns
-			if (ProviderType == DB2iSeriesAdoProviderType.Odbc)
+			if (ProviderType == DB2iSeriesProviderType.Odbc)
 				return true;
 
 			return base.IsDBNullAllowed(reader, idx);

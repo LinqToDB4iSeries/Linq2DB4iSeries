@@ -15,8 +15,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public static LinqToDBException InvalidProviderName(string providerName)
 			=> new LinqToDBException($"Invalid provider name {providerName}. Valid names are the constants defined in the DB2iSeriesProviderName class.");
 
-		public static LinqToDBException InvalidAdoProvider(DB2iSeriesAdoProviderType providerType)
+		public static LinqToDBException InvalidAdoProvider(DB2iSeriesProviderType providerType)
 			=> new LinqToDBException($"Invalid ADO.net provider type {providerType} for iSeries DataProvider.");
+
+		public static LinqToDBException InvalidAssemblyName(string assemblyName)
+			=> new LinqToDBException($"Invalid DB2 iSeries ADO.net provider assembly name {assemblyName}.");
 
 		public static LinqToDBException InvalidProviderAdapter(IDynamicProviderAdapter adapter)
 			=> new LinqToDBException($"Unexpcted provider adapter of type {adapter.GetType()}.");

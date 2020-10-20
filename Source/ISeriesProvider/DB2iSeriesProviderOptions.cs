@@ -6,18 +6,18 @@
 		{
 			public const DB2iSeriesVersion Version = DB2iSeriesVersion.V7_1;
 			public const bool MapGuidAsString = false;
-			public const DB2iSeriesAdoProviderType ProviderType = DB2iSeriesAdoProviderType.Odbc;
+			public const DB2iSeriesProviderType ProviderType = DB2iSeriesProviderType.Odbc;
 
 			public static DB2iSeriesProviderOptions Instance = new DB2iSeriesProviderOptions();
 		}
 
-		public DB2iSeriesProviderOptions(string providerName, DB2iSeriesAdoProviderType providerType)
+		public DB2iSeriesProviderOptions(string providerName, DB2iSeriesProviderType providerType)
 		{
 			ProviderType = providerType;
 			ProviderName = providerName;
 		}
 
-		public DB2iSeriesProviderOptions(string providerName, DB2iSeriesAdoProviderType providerType, DB2iSeriesVersion version)
+		public DB2iSeriesProviderOptions(string providerName, DB2iSeriesProviderType providerType, DB2iSeriesVersion version)
 			: this(providerName, providerType)
 		{
 			SupportsOffsetClause = version > DB2iSeriesVersion.V7_2;
@@ -35,7 +35,7 @@
 		}
 
 		public string ProviderName { get; set; }
-		public DB2iSeriesAdoProviderType ProviderType { get; }
+		public DB2iSeriesProviderType ProviderType { get; }
 		public bool SupportsOffsetClause { get; set; }
 		public bool SupportsTruncateTable { get; set; }
 		public bool MapGuidAsString { get; set; }

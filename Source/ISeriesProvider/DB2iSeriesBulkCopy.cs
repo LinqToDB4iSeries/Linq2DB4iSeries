@@ -31,7 +31,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			if (table.DataContext is DataConnection dataConnection)
 			{
-				if (dataProvider.ProviderType == DB2iSeriesAdoProviderType.DB2
+				if (dataProvider.ProviderType == DB2iSeriesProviderType.DB2
 					&& dataProvider.Adapter.WrappedAdapter is DB2.DB2ProviderAdapter adapter)
 				{
 					var connection = dataProvider.TryGetProviderConnection(dataConnection.Connection, dataConnection.MappingSchema);
@@ -54,7 +54,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			if (table.DataContext is DataConnection dataConnection)
 			{
-				if (dataProvider.ProviderType == DB2iSeriesAdoProviderType.DB2
+				if (dataProvider.ProviderType == DB2iSeriesProviderType.DB2
 					&& dataProvider.Adapter.WrappedAdapter is DB2.DB2ProviderAdapter adapter)
 				{
 					var connection = dataProvider.TryGetProviderConnection(dataConnection.Connection, dataConnection.MappingSchema);
@@ -79,7 +79,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			if (table.DataContext is DataConnection dataConnection)
 			{
-				if (dataProvider.ProviderType == DB2iSeriesAdoProviderType.DB2
+				if (dataProvider.ProviderType == DB2iSeriesProviderType.DB2
 					&& dataProvider.Adapter.WrappedAdapter is DB2.DB2ProviderAdapter adapter)
 				{
 					var connection = dataProvider.TryGetProviderConnection(dataConnection.Connection, dataConnection.MappingSchema);

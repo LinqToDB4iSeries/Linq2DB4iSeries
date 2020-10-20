@@ -16,14 +16,17 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				var x when x.StartsWith("7.2.") || x == "7.2" || x == "7_2" => DB2iSeriesVersion.V7_2,
 				_ => DB2iSeriesVersion.V7_1
 			};
-			
+
 			var providerType = attributes.FirstOrDefault(_ => _.Name == "assemblyName")?.Value switch
 			{
-				DB2iSeriesAccessClientProviderAdapter.AssemblyName => DB2iSeriesAdoProviderType.AccessClient,
-				DB2.DB2ProviderAdapter.AssemblyName => DB2iSeriesAdoProviderType.DB2,
-				OleDbProviderAdapter.AssemblyName => DB2iSeriesAdoProviderType.OleDb,
-				OdbcProviderAdapter.AssemblyName => DB2iSeriesAdoProviderType.Odbc,
-				_ => DB2iSeriesAdoProviderType.Odbc
+#if NETFRAMEWORK
+				DB2iSeriesAccessClientProviderAdapter.AssemblyName => DB2iSeriesProviderType.AccessClient,
+#endif
+				DB2.DB2ProviderAdapter.AssemblyName => DB2iSeriesProviderType.DB2,
+				OleDbProviderAdapter.AssemblyName => DB2iSeriesProviderType.OleDb,
+				OdbcProviderAdapter.AssemblyName => DB2iSeriesProviderType.Odbc,
+				null => DB2iSeriesProviderOptions.Defaults.ProviderType,
+				var x => throw ExceptionHelper.InvalidAssemblyName(x)
 			};
 
 			var mapGuidAsString = attributes.Any(x => x.Name == Constants.ProviderFlags.MapGuidAsString);
