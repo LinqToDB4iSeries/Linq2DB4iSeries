@@ -246,7 +246,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected override List<DataTypeInfo> GetDataTypes(DataConnection dataConnection)
 		{
-			if (provider.ProviderType == DB2iSeriesProviderType.Odbc)
+			if (provider.ProviderType.IsOdbc())
 			{
 				DataTypesSchema = ((DbConnection)dataConnection.Connection).GetSchema("DataTypes");
 
@@ -261,7 +261,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					})
 					.ToList();
 			}
-			else if (provider.ProviderType == DB2iSeriesProviderType.DB2)
+			else if (provider.ProviderType.IsDB2())
 			{
 				DataTypesSchema = ((DbConnection)dataConnection.Connection).GetSchema("DataTypes");
 

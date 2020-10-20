@@ -121,15 +121,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			schemaProvider = new DB2iSeriesSchemaProvider(this);
 			bulkCopy = new DB2iSeriesBulkCopy(this);
 
-			if (ProviderType == DB2iSeriesProviderType.Odbc)
+			if (ProviderType.IsOdbc())
 				SetupOdbc();
-			else if (ProviderType == DB2iSeriesProviderType.OleDb)
+			else if (ProviderType.IsOleDb())
 				SetupOleDb();
 #if NETFRAMEWORK
-			else if (ProviderType == DB2iSeriesProviderType.AccessClient)
+			else if (ProviderType.IsAccessClient())
 				SetupAccessClient();
 #endif
-			else if (ProviderType == DB2iSeriesProviderType.DB2)
+			else if (ProviderType.IsDB2())
 				SetupDB2Connect();
 			
 		}
@@ -386,7 +386,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		private void SetParameterDbType(DataType dataType, IDbDataParameter parameter)
 		{
-			if (ProviderType == DB2iSeriesProviderType.Odbc)
+			if (ProviderType.IsOdbc())
 			{
 				switch (dataType)
 				{
@@ -397,7 +397,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					case DataType.UInt64: parameter.DbType = DbType.Decimal; return;
 				}
 			}
-			else if (ProviderType == DB2iSeriesProviderType.OleDb)
+			else if (ProviderType.IsOleDb())
 			{
 				switch (dataType)
 				{
@@ -454,7 +454,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		protected override string NormalizeTypeName(string typeName)
 		{
 			//Graphic types not supported in ODBC
-			if (ProviderType == DB2iSeriesProviderType.Odbc)
+			if (ProviderType.IsOdbc())
 			{
 				if (typeName.StartsWith(Constants.DbTypes.Graphic))
 					return Constants.DbTypes.NChar;
@@ -469,9 +469,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public override Expression GetReaderExpression(IDataReader reader, int idx, Expression readerExpression, Type toType)
 		{
 			//Wrap OdbcDataReader to avoid exceptions on XML columns
-			reader = reader is System.Data.Common.DbDataReader odbcDataReader
-				&& reader.GetType().Name == "OdbcDataReader" ?
-			new OdbcDataReaderWrapper(odbcDataReader) : reader;
+			if (ProviderType.IsOdbc())
+			{
+				reader = reader is System.Data.Common.DbDataReader odbcDataReader
+					&& reader.GetType().Name == "OdbcDataReader" ?
+				new OdbcDataReaderWrapper(odbcDataReader) : reader;
+			}
 
 			return base.GetReaderExpression(reader, idx, readerExpression, toType);
 		}
@@ -479,7 +482,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public override bool? IsDBNullAllowed(IDataReader reader, int idx)
 		{
 			//Always return true on ODBC to avoid exceptions on XML columns
-			if (ProviderType == DB2iSeriesProviderType.Odbc)
+			if (ProviderType.IsOdbc())
 				return true;
 
 			return base.IsDBNullAllowed(reader, idx);

@@ -232,7 +232,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 			else
 			{
-				if (Provider.ProviderType == DB2iSeriesProviderType.OleDb)
+				if (Provider.ProviderType.IsOleDb())
 				{
 					AppendIndent();
 					StringBuilder.Append("SELECT");
@@ -256,13 +256,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		#region iDB2 specific
 		
 		//OleDb provider needs spaces in specific places
-		protected override string Comma => Provider.ProviderType == DB2iSeriesProviderType.OleDb ? ", " : base.Comma;
+		protected override string Comma => Provider.ProviderType.IsOleDb() ? ", " : base.Comma;
 		
 		//OleDb provider needs spaces in specific places
-		protected override string InlineComma => Provider.ProviderType == DB2iSeriesProviderType.OleDb ? ", " : base.InlineComma;
+		protected override string InlineComma => Provider.ProviderType.IsOleDb() ? ", " : base.InlineComma;
 		
 		//OleDb provider needs spaces in specific places
-		protected override string OpenParens => Provider.ProviderType == DB2iSeriesProviderType.OleDb ? "( " : base.OpenParens;
+		protected override string OpenParens => Provider.ProviderType.IsOleDb() ? "( " : base.OpenParens;
 
 		//Offset clause support
 		protected override string OffsetFormat(SelectQuery selectQuery) =>
