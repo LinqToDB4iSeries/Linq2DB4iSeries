@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="..\..\Build\linq2db.Source.props" />
+	
+	<PropertyGroup>
+		<PackageVersion>3.1.5.0</PackageVersion>
+		<PackageLicenseUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries/blob/master/MIT-LICENSE.txt</PackageLicenseUrl>
+		<PackageProjectUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries</PackageProjectUrl>
+		<PackageIconUrl>https://raw.githubusercontent.com/LinqToDB4iSeries/Linq2DB4iSeries/master/NuGet/linq2db2i.png</PackageIconUrl>
+		<PackageTags>linq;linq2db;LinqToDB;ORM;database;DB;SQL;DB2;IBM;iSeries</PackageTags>
+		<!--<NeutralLanguage>en-GB</NeutralLanguage>-->
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageId>linq2db4iSeries</PackageId>
+	</PropertyGroup>
+	
+	<PropertyGroup>
+		<Nullable>disable</Nullable>
+	  <AssemblyVersion>3.1.5.0</AssemblyVersion>
+	  <FileVersion>3.1.5.0</FileVersion>
+	  <Version>3.1.5.0</Version>
+	  <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+	</PropertyGroup>
+	
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' OR '$(TargetFramework)' == 'net46' ">
+		<Reference Include="System.Data.Linq" />
+		<Reference Include="System.Data.DataSetExtensions" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net45' AND '$(TargetFramework)' != 'net46' ">
+		<Compile Remove="DB2iSeriesAttributeReader.cs" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.1' OR '$(TargetFramework)' == 'netcoreapp3.1' OR '$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'netcoreapp2.1' ">
+		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.1.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="linq2db" Version="3.1.5" />
+	</ItemGroup>
+</Project>

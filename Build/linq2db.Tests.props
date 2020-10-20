@@ -10,7 +10,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj" />
+		<ProjectReference Include="..\..\Source\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj" />
 		<ProjectReference Include="..\..\Tests\LinqToDB.Tools\LinqToDB.Tools.csproj" />
 	</ItemGroup>
 	
