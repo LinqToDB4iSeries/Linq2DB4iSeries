@@ -103,12 +103,12 @@ namespace Tests.DataProvider
 		{
 			var sb = new StringBuilder();
 			if (!string.IsNullOrEmpty(castTo))
-					sb.Append("CAST(");
+				sb.Append("CAST(");
 
 			sb.Append(expression == "?" ? "" : "@").Append(expression);
 
 			if (!string.IsNullOrEmpty(castTo))
-					sb.Append(" AS ").Append(castTo).Append(")");
+				sb.Append(" AS ").Append(castTo).Append(")");
 			return sb.ToString();
 		}
 	}
@@ -440,7 +440,7 @@ namespace Tests.DataProvider
 		public void TestNumerics(string context)
 		{
 			var skipDecFloat = TestProvName.IsiSeriesOleDb(context) ? " decfloat" : "";
-			
+
 			using (var conn = new DataConnection(context))
 			{
 				TestSimple<sbyte>(conn, 1, DataType.SByte);
@@ -894,48 +894,161 @@ namespace Tests.DataProvider
 			public string XMLDATATYPE { get; set; } // XML
 		}
 
+		[Table(Name = "ALLTYPES2")]
+		public class ALLTYPE2
+		{
+			[PrimaryKey, Identity]
+			public int ID { get; set; } // INTEGER
+
+			[Column(DbType = "bigint"), Nullable]
+			public long? BIGINTDATATYPE { get; set; } // BIGINT
+
+			[Column(DbType = "int"), Nullable]
+			public int? INTDATATYPE { get; set; } // INTEGER
+
+			[Column(DbType = "smallint"), Nullable]
+			public short? SMALLINTDATATYPE { get; set; } // SMALLINT
+
+			[Column(DbType = "decimal(30)"), Nullable]
+			public decimal? DECIMALDATATYPE { get; set; } // DECIMAL
+
+			[Column(DbType = "decfloat(16)"), Nullable]
+			public decimal? DECFLOAT16DATATYPE { get; set; } // DECFLOAT16
+
+			[Column(DbType = "decfloat(34)"), Nullable]
+			public decimal? DECFLOAT34DATATYPE { get; set; } // DECFLOAT34
+
+			[Column(DbType = "real"), Nullable]
+			public float? REALDATATYPE { get; set; } // REAL
+
+			[Column(DbType = "double"), Nullable]
+			public double? DOUBLEDATATYPE { get; set; } // DOUBLE
+
+			[Column(DbType = "char(1)"), Nullable]
+			public char CHARDATATYPE { get; set; } // CHARACTER
+
+			[Column(DbType = "varchar(20)"), Nullable]
+			public string VARCHARDATATYPE { get; set; } // VARCHAR(20)
+
+			[Column(DbType = "graphic(10)"), Nullable]
+			public string GRAPHICDATATYPE { get; set; } // GRAPHIC(10)
+
+			[Column(DbType = "vargraphic(10)"), Nullable]
+			public string VARGRAPHICDATATYPE { get; set; } // GRAPHIC(10)
+			
+			[Column(DbType = "binary(20)"), Nullable]
+			public object BINARYDATATYPE { get; set; } // BINARY(20)
+
+			[Column(DbType = "varbinary(20)"), Nullable]
+			public object VARBINARYDATATYPE { get; set; } // VARBINARY(20)
+
+			[Column(DbType = "date"), Nullable]
+			public DateTime? DATEDATATYPE { get; set; } // DATE
+
+			[Column(DbType = "time"), Nullable]
+			public TimeSpan? TIMEDATATYPE { get; set; } // TIME
+
+			[Column(DbType = "timestamp"), Nullable]
+			public DateTime? TIMESTAMPDATATYPE { get; set; } // TIMESTAMP
+		}
+
 		void BulkCopyTest(string context, BulkCopyType bulkCopyType, int maxSize, int batchSize)
 		{
 			using (var conn = new DataConnection(context))
 			{
-				//conn.BeginTransaction();
-				conn.BulkCopy(
-					new BulkCopyOptions
-					{
-						MaxBatchSize = maxSize,
-						BulkCopyType = bulkCopyType,
-						NotifyAfter = 10000,
-						RowsCopiedCallback = copied => Debug.WriteLine(copied.RowsCopied)
-					},
-					Enumerable.Range(0, batchSize).Select(n =>
-						new ALLTYPE
+				try
+				{
+					conn.BulkCopy(
+						new BulkCopyOptions
 						{
-							ID = 2000 + n,
-							BIGINTDATATYPE = 3000 + n,
-							INTDATATYPE = 4000 + n,
-							SMALLINTDATATYPE = (short)(5000 + n),
-							DECIMALDATATYPE = 6000 + n,
-							DECFLOAT16DATATYPE = 7000 + n,
-							DECFLOAT34DATATYPE = 7000 + n,
-							REALDATATYPE = 8000 + n,
-							DOUBLEDATATYPE = 9000 + n,
-							CHARDATATYPE = 'A',
-							VARCHARDATATYPE = "",
-							CLOBDATATYPE = null,
-							DBCLOBDATATYPE = null,
-							BINARYDATATYPE = null,
-							VARBINARYDATATYPE = null,
-							BLOBDATATYPE = new byte[] { 1, 2, 3 },
-							GRAPHICDATATYPE = "abc",
-							VARGRAPHICDATATYPE = "xyz",
-							DATEDATATYPE = DateTime.Now.Date,
-							TIMEDATATYPE = null,
-							TIMESTAMPDATATYPE = null,
-							XMLDATATYPE = "<root><element strattr=\"strvalue\" intattr=\"12345\"/></root>"
+							MaxBatchSize = maxSize,
+							BulkCopyType = bulkCopyType,
+							NotifyAfter = 10000,
+							RowsCopiedCallback = copied => Debug.WriteLine(copied.RowsCopied)
+						},
+						Enumerable.Range(0, batchSize).Select(n =>
+							new ALLTYPE
+							{
+								ID = 2000 + n,
+								BIGINTDATATYPE = 3000 + n,
+								INTDATATYPE = 4000 + n,
+								SMALLINTDATATYPE = (short)(5000 + n),
+								DECIMALDATATYPE = 6000 + n,
+								DECFLOAT16DATATYPE = 7000 + n,
+								DECFLOAT34DATATYPE = 7000 + n,
+								REALDATATYPE = 8000 + n,
+								DOUBLEDATATYPE = 9000 + n,
+								CHARDATATYPE = 'A',
+								VARCHARDATATYPE = "",
+								CLOBDATATYPE = "123",
+								DBCLOBDATATYPE = "αβγ",
+								BINARYDATATYPE = new byte[] { 1, 2, 3 },
+								VARBINARYDATATYPE = new byte[] { 1, 2, 3 },
+								BLOBDATATYPE = new byte[] { 1, 2, 3 },
+								GRAPHICDATATYPE = "αβγ",
+								VARGRAPHICDATATYPE = "βγδ",
+								DATEDATATYPE = DateTime.Now.Date,
+								TIMEDATATYPE = TimeSpan.FromSeconds(10),
+								TIMESTAMPDATATYPE = DateTime.Now,
+								XMLDATATYPE = "<root><element strattr=\"strvalue\" intattr=\"12345\"/></root>"
+							}));
+				}
+				catch (Exception e)
+				{
+					Assert.Fail(e.Message);
+				}
+				finally
+				{
+					conn.GetTable<ALLTYPE>().Delete(p => p.SMALLINTDATATYPE >= 5000);
+				}
+			}
+		}
 
-						}));
-
-				conn.GetTable<ALLTYPE>().Delete(p => p.SMALLINTDATATYPE >= 5000);
+		void BulkCopyTest2(string context, BulkCopyType bulkCopyType, int maxSize, int batchSize)
+		{
+			using (var conn = new DataConnection(context))
+			{
+				try
+				{
+					conn.BulkCopy(
+						new BulkCopyOptions
+						{
+							MaxBatchSize = maxSize,
+							BulkCopyType = bulkCopyType,
+							NotifyAfter = 10000,
+							RowsCopiedCallback = copied => Debug.WriteLine(copied.RowsCopied)
+						},
+						Enumerable.Range(0, batchSize).Select(n =>
+							new ALLTYPE2
+							{
+								ID = 2000 + n,
+								BIGINTDATATYPE = 3000 + n,
+								INTDATATYPE = 4000 + n,
+								SMALLINTDATATYPE = (short)(5000 + n),
+								DECIMALDATATYPE = 6000 + n,
+								DECFLOAT16DATATYPE = 7000 + n,
+								DECFLOAT34DATATYPE = 7000 + n,
+								REALDATATYPE = 8000 + n,
+								DOUBLEDATATYPE = 9000 + n,
+								CHARDATATYPE = 'A',
+								VARCHARDATATYPE = "123",
+								BINARYDATATYPE = new byte[] { 1, 2, 3 },
+								VARBINARYDATATYPE = new byte[] { 1, 2, 3 },
+								GRAPHICDATATYPE = "αβγ",
+								VARGRAPHICDATATYPE = "βγδ",
+								DATEDATATYPE = DateTime.Now.Date,
+								TIMEDATATYPE = TimeSpan.FromSeconds(10),
+								TIMESTAMPDATATYPE = DateTime.Now,
+							}));
+				}
+				catch (Exception e)
+				{
+					Assert.Fail(e.Message);
+				}
+				finally
+				{
+					conn.GetTable<ALLTYPE>().Delete(p => p.SMALLINTDATATYPE >= 5000);
+				}
 			}
 		}
 
@@ -945,10 +1058,13 @@ namespace Tests.DataProvider
 			BulkCopyTest(context, BulkCopyType.MultipleRows, 5000, 100);
 		}
 
-		[Test, IncludeDataContextSource(TestProvName.DB2iDB2Connect)]
+		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iDB2Connect)]
 		public void BulkCopyProviderSpecific(string context)
 		{
-			BulkCopyTest(context, BulkCopyType.ProviderSpecific, 50000, 100001);
+			if (TestProvName.IsiSeriesAccessClient(context))
+				BulkCopyTest2(context, BulkCopyType.ProviderSpecific, 50000, 100001);
+			if (TestProvName.IsiSeriesDB2Connect(context))
+				BulkCopyTest(context, BulkCopyType.ProviderSpecific, 50000, 100001);
 		}
 
 		[Test, IncludeDataContextSource(TestProvName.DB2iNet, TestProvName.DB2iODBC, TestProvName.DB2iOleDb, TestProvName.DB2iDB2Connect)]
@@ -956,21 +1072,30 @@ namespace Tests.DataProvider
 		{
 			using (var db = new DataConnection(context))
 			{
-				db.BulkCopy(
-					new BulkCopyOptions { BulkCopyType = BulkCopyType.MultipleRows },
-					Enumerable.Range(0, 10).Select(n =>
-						new LinqDataTypes
-						{
-							ID = 4000 + n,
-							MoneyValue = 1000m + n,
-							DateTimeValue = new DateTime(2001, 1, 11, 1, 11, 21, 100),
-							BoolValue = true,
-							GuidValue = Guid.NewGuid(),
-							SmallIntValue = (short)n
-						}
-					));
-
-				db.GetTable<LinqDataTypes>().Delete(p => p.ID >= 4000);
+				try
+				{
+					db.BulkCopy(
+						new BulkCopyOptions { BulkCopyType = BulkCopyType.MultipleRows },
+						Enumerable.Range(0, 10).Select(n =>
+							new LinqDataTypes
+							{
+								ID = 4000 + n,
+								MoneyValue = 1000m + n,
+								DateTimeValue = new DateTime(2001, 1, 11, 1, 11, 21, 100),
+								BoolValue = true,
+								GuidValue = Guid.NewGuid(),
+								SmallIntValue = (short)n
+							}
+						));
+				}
+				catch (Exception e)
+				{
+					Assert.Fail(e.ToString());
+				}
+				finally
+				{
+					db.GetTable<LinqDataTypes>().Delete(p => p.ID >= 4000);
+				}
 			}
 		}
 

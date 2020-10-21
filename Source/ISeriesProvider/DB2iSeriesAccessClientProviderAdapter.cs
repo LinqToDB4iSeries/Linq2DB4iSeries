@@ -57,9 +57,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			Action<IDbDataParameter, iDB2DbType> dbTypeSetter,
 			Func<IDbDataParameter, iDB2DbType> dbTypeGetter,
 
-		Func<string, iDB2Connection> connectionCreator,
-		Func<IDbConnection, string> libraryListGetter,
-		Func<IDbConnection, iDB2NamingConvention> namingGetter)
+			Func<string, iDB2Connection> connectionCreator,
+			Func<IDbConnection, string> libraryListGetter,
+			Func<IDbConnection, iDB2NamingConvention> namingGetter,
+
+
+			Action<IDbCommand> deriveParameters,
+			Action<IDbCommand> addBatch)
 		{
 			ConnectionType = connectionType;
 			DataReaderType = dataReaderType;
@@ -102,6 +106,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			CreateConnection = connectionCreator;
 			GetLibraryList = libraryListGetter;
 			GetNamingConvention = namingGetter;
+
+			DeriveParameters = deriveParameters;
+			AddBatch = addBatch;
 		}
 
 		public Type ConnectionType { get; }
@@ -173,6 +180,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public Func<IDbConnection, string> GetLibraryList { get; }
 		public Func<IDbConnection, iDB2NamingConvention> GetNamingConvention { get; }
+
+		public Action<IDbCommand> DeriveParameters;
+		public Action<IDbCommand> AddBatch;
 
 		public static DB2iSeriesAccessClientProviderAdapter GetInstance()
 		{
@@ -272,10 +282,22 @@ namespace LinqToDB.DataProvider.DB2iSeries
 							typeGetter,
 							typeMapper.BuildWrappedFactory((string connectionString) => new iDB2Connection(connectionString)),
 							typeMapper.BuildFunc<IDbConnection, string>(typeMapper.MapLambda((iDB2Connection conn) => conn.LibraryList)),
-							typeMapper.BuildFunc<IDbConnection, iDB2NamingConvention>(typeMapper.MapLambda((iDB2Connection conn) => conn.Naming))
+							typeMapper.BuildFunc<IDbConnection, iDB2NamingConvention>(typeMapper.MapLambda((iDB2Connection conn) => conn.Naming)),
+
+							buildActionInvoker(commandType, "DeriveParameters"),
+							buildActionInvoker(commandType, "AddBatch")
 						);
 
 						DataConnection.WriteTraceLine(assembly.FullName, nameof(DB2iSeriesAccessClientProviderAdapter), System.Diagnostics.TraceLevel.Info);
+
+						static Action<IDbCommand> buildActionInvoker(Type type, string methodName)
+						{
+							var method = type.GetMethod(methodName);
+							var cmdParameter = Expression.Parameter(typeof(IDbCommand), "cmd");
+							var expression = Expression.Call(Expression.Convert(cmdParameter, type), method);
+							var lambda = Expression.Lambda<Action<IDbCommand>>(expression, cmdParameter);
+							return lambda.Compile();
+						}
 
 						Type loadType(string typeName, DataType dataType)
 						{
@@ -289,6 +311,40 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					}
 
 			return _instance;
+		}
+
+		public DataType GetDataType(iDB2DbType dbType)
+		{
+			return dbType switch
+			{
+				iDB2DbType.iDB2BigInt => DataType.Int64,
+				iDB2DbType.iDB2Binary => DataType.Binary,
+				iDB2DbType.iDB2Blob => DataType.Blob,
+				iDB2DbType.iDB2Char => DataType.Char,
+				iDB2DbType.iDB2CharBitData => DataType.Binary,
+				iDB2DbType.iDB2Clob => DataType.Text,
+				iDB2DbType.iDB2DataLink => DataType.Binary,
+				iDB2DbType.iDB2Date => DataType.Date,
+				iDB2DbType.iDB2DbClob => DataType.NText,
+				iDB2DbType.iDB2DecFloat16 => DataType.Decimal,
+				iDB2DbType.iDB2DecFloat34 => DataType.Decimal,
+				iDB2DbType.iDB2Decimal => DataType.Decimal,
+				iDB2DbType.iDB2Double => DataType.Double,
+				iDB2DbType.iDB2Graphic => DataType.NVarChar,
+				iDB2DbType.iDB2Integer => DataType.Int32,
+				iDB2DbType.iDB2Numeric => DataType.Decimal,
+				iDB2DbType.iDB2Real => DataType.Single,
+				iDB2DbType.iDB2Rowid => DataType.Binary,
+				iDB2DbType.iDB2SmallInt => DataType.Int16,
+				iDB2DbType.iDB2Time => DataType.Time,
+				iDB2DbType.iDB2TimeStamp => DataType.Timestamp,
+				iDB2DbType.iDB2VarBinary => DataType.VarBinary,
+				iDB2DbType.iDB2VarChar => DataType.VarChar,
+				iDB2DbType.iDB2VarCharBitData => DataType.VarBinary,
+				iDB2DbType.iDB2VarGraphic => DataType.NVarChar,
+				iDB2DbType.iDB2Xml => DataType.Xml,
+				_ => DataType.Undefined,
+			};
 		}
 
 		#region Wrappers

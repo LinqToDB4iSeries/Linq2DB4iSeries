@@ -307,7 +307,21 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case DataType.DateTime2:
 					dataType = dataType.WithDataType(DataType.DateTime);
 					break;
+#if NETFRAMEWORK
+				case DataType.Date:
 
+					if (ProviderType.IsAccessClient())
+					{
+						//Date parameters will only accept iDb2Date or string representation of time
+						value = value switch
+						{
+							DateTime dateTime => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(DataType.Date, dateTime, false),
+							DateTimeOffset dateTimeOffset => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(DataType.Date, dateTimeOffset.DateTime, false),
+							_ => value
+						};
+					}
+					break;
+#endif
 				case DataType.Time:
 					if (ProviderType.IsIBM())
 					{

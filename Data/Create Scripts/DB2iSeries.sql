@@ -301,3 +301,35 @@ CREATE TABLE KeepIdentityTest (
 	intDataType INTEGER  
 )
 GO
+
+GO
+DROP TABLE AllTypes2
+GO
+CREATE TABLE AllTypes2(
+	  ID INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY NOT NULL
+
+	, bigintDataType           bigint                  Default NULL
+	, binaryDataType           binary(20)              Default NULL
+	, charDataType             char(1)                 Default NULL
+	, char20DataType           char(20)     CCSID 1208 Default NULL
+	, CharForBitDataType       char(5) for bit data    Default NULL
+	, dataLinkDataType         dataLink                Default NULL
+	, dateDataType             date                    Default NULL
+	, decfloat16DataType       decfloat(16)            Default NULL
+	, decfloat34DataType       decfloat(34)            Default NULL
+	, decimalDataType          decimal(30)             Default NULL
+	, doubleDataType           double                  Default NULL
+	, graphicDataType          graphic(10) CCSID 13488 Default NULL
+    , intDataType              int                     Default NULL
+	, numericDataType          numeric                 Default NULL
+	, realDataType             real                    Default NULL
+	, rowIdDataType            rowId                              
+	, smallintDataType         smallint                Default NULL
+	, timeDataType             time                    Default NULL
+	, timestampDataType        timestamp               Default NULL
+	, varbinaryDataType        varbinary(20)           Default NULL
+	, varcharDataType          varchar(20)             Default NULL
+	, varCharForBitDataType    varchar(5) for bit data Default NULL
+	, varGraphicDataType       vargraphic(10) CCSID 13488 Default NULL
+)
+GO
