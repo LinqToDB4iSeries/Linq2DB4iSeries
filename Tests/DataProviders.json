@@ -27,7 +27,7 @@
 			},
 			"DB2.iSeries.DB2Connect.71": {
 				"Provider": "DB2.iSeries.DB2Connect.71",
-				"ConnectionString": "Database={DATABASE};User ID={USER};Password={PASSWORD};Server={HOST}:446;LibraryList={LIBRARY_LIST};CurrentSchema=nsarris1"
+				"ConnectionString": "Database={DATABASE};User ID={USER};Password={PASSWORD};Server={HOST}:446;LibraryList={LIBRARY_LIST};CurrentSchema={DEFAULT_SCHEMA}"
 			},
 		}
 	},
