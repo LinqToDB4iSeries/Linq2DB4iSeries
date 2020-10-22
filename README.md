@@ -28,7 +28,7 @@ This provider is similar to the ODBC provider but fails on x86 and has a few oth
 - DB2 provider (via DB2Connect)
 This provider uses the same interface as the standard DB2 provider and supports .net framework and .net core (x64 only for core). It is feature rich, maintained by IBM and is available through nuget. However it requires a commercial license.
 
-The recommended provider is DB2Connect if a license can be obtained. Otherwise the Native .net provider is great if you're still on .net framework. The ODBC provider is a good choice if you want .net core/standard compatibility but cannot get a DB2Connect license. Use the OleDb driver as a last resort if you don't care about transactions and x86 and you need to access columns with the XML data type.
+The recommended provider is DB2Connect if a license can be obtained. Otherwise the native .net provider is great if you're still on .net Framework. The OleDb and ODBC providers are a good choice if you want .net core/standard compatibility but cannot get a DB2Connect license. The ODBC provider has issues with XML columns and the OleDb provider only works on x64. The OleDb provider also had some SQL quirks that we handlde in code (required spaces in specific places) so use with caution.
 
 For more info on IBM's comments on the ODBC and OleDb providers see: https://www.ibm.com/support/pages/oledb-ole-db-and-odbc-positioning
 
