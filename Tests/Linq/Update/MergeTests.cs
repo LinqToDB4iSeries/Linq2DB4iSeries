@@ -12,32 +12,19 @@ namespace Tests.xUpdate
 	using Model;
 
 	[TestFixture]
+//	[Order(10101)]
 	public partial class MergeTests : TestBase
 	{
-		public class MergeUpdateWithDeleteDataContextSourceAttribute : IncludeDataContextSourceAttribute
+		[AttributeUsage(AttributeTargets.Parameter)]
+		public class MergeDataContextSourceAttribute : DataSourcesAttribute
 		{
-			public MergeUpdateWithDeleteDataContextSourceAttribute()
-				: base(false, ProviderName.Oracle, ProviderName.OracleManaged, ProviderName.OracleNative)
+			static string[] Unsupported =
 			{
-			}
-		}
-
-		public class MergeBySourceDataContextSourceAttribute : IncludeDataContextSourceAttribute
-		{
-			public MergeBySourceDataContextSourceAttribute()
-				: base(false, TestProvName.SqlAzure, ProviderName.SqlServer2008, ProviderName.SqlServer2012, ProviderName.SqlServer2014)
-			{
-				//ParallelScope = ParallelScope.None;
-			}
-		}
-
-		public class MergeDataContextSourceAttribute : DataContextSourceAttribute
-		{
-			static string[] Unsupported = new[]
-			{
-				ProviderName.Access,
+				TestProvName.AllAccess,
 				ProviderName.SqlCe,
 				ProviderName.SQLiteClassic,
+				TestProvName.SQLiteClassicMiniProfilerMapped,
+				TestProvName.SQLiteClassicMiniProfilerUnmapped,
 				ProviderName.SQLiteMS,
 				ProviderName.SqlServer2000,
 				ProviderName.SqlServer2005,
@@ -45,31 +32,47 @@ namespace Tests.xUpdate
 				ProviderName.PostgreSQL92,
 				ProviderName.PostgreSQL93,
 				ProviderName.PostgreSQL95,
+				TestProvName.PostgreSQL10,
+				TestProvName.PostgreSQL11,
 				ProviderName.MySql,
+				ProviderName.MySqlConnector,
+				TestProvName.MySql55,
 				TestProvName.MariaDB
 			};
 
 			public MergeDataContextSourceAttribute(params string[] except)
-				: base(false, Unsupported.Concat(except).ToArray())
+				: base(true, Unsupported.Concat(except).ToArray())
 			{
-				//ParallelScope = ParallelScope.None;
+			}
+
+			public MergeDataContextSourceAttribute(bool includeLinqService, params string[] except)
+				: base(includeLinqService, Unsupported.Concat(except).ToArray())
+			{
 			}
 		}
 
-		public class IdentityInsertMergeDataContextSourceAttribute : IncludeDataContextSourceAttribute
+		[AttributeUsage(AttributeTargets.Parameter)]
+		public class IdentityInsertMergeDataContextSourceAttribute : IncludeDataSourcesAttribute
 		{
 			static string[] Supported = new[]
 			{
 				ProviderName.Sybase,
-					  ProviderName.SqlServer2008,
-					  ProviderName.SqlServer2012,
-					  ProviderName.SqlServer2014
+				ProviderName.SybaseManaged,
+				ProviderName.SqlServer2008,
+				ProviderName.SqlServer2012,
+				ProviderName.SqlServer2014,
+				ProviderName.SqlServer2017,
+				TestProvName.SqlAzure
 			};
 
 			public IdentityInsertMergeDataContextSourceAttribute(params string[] except)
-				: base(false, Supported.Except(except).ToArray())
+				: base(true, Supported.Except(except).ToArray())
 			{
-				//ParallelScope = ParallelScope.None;
+			}
+
+			public IdentityInsertMergeDataContextSourceAttribute(bool includeLinqService, params string[] except)
+				: base(includeLinqService, Supported.Except(except).ToArray())
+			{
 			}
 		}
 
@@ -200,7 +203,7 @@ namespace Tests.xUpdate
 			foreach (var record in InitialSourceData)
 			{
 				yield return new TestMapping2()
-				{
+						{
 					OtherId = record.Id,
 					OtherField1 = record.Field1,
 					OtherField2 = record.Field2,
@@ -212,15 +215,15 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, DataContextSource(false)]
-		public void TestDataGenerationTest(string context)
+		[Test]
+		public void TestDataGenerationTest([DataSources] string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
-				var result1 = GetTarget(db).OrderBy(x => x.Id).ToList();
-				var result2 = GetSource1(db).OrderBy(x => x.Id).ToList();
+				var result1 = GetTarget(db). OrderBy(_ => _.Id).ToList();
+				var result2 = GetSource1(db).OrderBy(_ => _.Id).ToList();
 
 				Assert.AreEqual(4, result1.Count);
 				Assert.AreEqual(4, result2.Count);
@@ -239,10 +242,11 @@ namespace Tests.xUpdate
 
 		private void AssertRowCount(int expected, int actual, string context)
 		{
+			var provider = GetProviderName(context, out var _);
 			// another sybase quirk, nothing surprising
-			if (context == ProviderName.Sybase)
+			if (provider == ProviderName.Sybase || provider == ProviderName.SybaseManaged)
 				Assert.LessOrEqual(expected, actual);
-			else if (context == ProviderName.OracleNative && actual == -1)
+			else if ((provider == ProviderName.OracleNative || provider == TestProvName.Oracle11Native) && actual == -1)
 			{ }
 			else
 				Assert.AreEqual(expected, actual);

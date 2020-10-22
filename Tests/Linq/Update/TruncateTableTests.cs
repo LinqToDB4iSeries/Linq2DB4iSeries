@@ -1,32 +1,31 @@
 ﻿using System;
 using System.Linq;
-
+using JetBrains.Annotations;
 using LinqToDB;
-using LinqToDB.DataProvider.DB2iSeries;
 using LinqToDB.Mapping;
 
 using NUnit.Framework;
 
 namespace Tests.xUpdate
 {
-	using Model;
-
 	[TestFixture]
+	[Order(10000)]
 	public class TruncateTableTests : TestBase
 	{
 		[Table]
+		[UsedImplicitly]
 		class TestTrun
 		{
-			[Column, PrimaryKey] public int ID;
-			[Column] public decimal Field1;
+			[Column, PrimaryKey] public int     ID;
+			[Column]             public decimal Field1;
 		}
 
-		[Test, DataContextSource(ProviderName.OracleNative)]
-		public void TruncateTableTest(string context)
+		[Test]
+		public void TruncateTableTest([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
-				db.DropTable<TestTrun>(throwExceptionIfNotExists: false);
+				db.DropTable<TestTrun>(throwExceptionIfNotExists:false);
 
 				var table = db.CreateTable<TestTrun>();
 				table.Truncate();
@@ -37,16 +36,17 @@ namespace Tests.xUpdate
 		[Table]
 		class TestIdTrun
 		{
-			[Column, Identity, PrimaryKey] public int ID;
-			[Column] public decimal Field1;
+			[Column, Identity, PrimaryKey] public int     ID;
+			[Column]                       public decimal Field1;
 		}
 
-		[Test, DataContextSource(ProviderName.OracleNative, ProviderName.Informix, DB2iSeriesProviderName.DB2, DB2iSeriesProviderName.DB2_GAS)]
-		public void TruncateIdentityTest(string context)
+		[Test]
+		public void TruncateIdentityTest([DataSources(TestProvName.AllInformix, TestProvName.AllSapHana)]
+			string context)
 		{
 			using (var db = GetDataContext(context))
 			{
-				db.DropTable<TestIdTrun>(throwExceptionIfNotExists: false);
+				db.DropTable<TestIdTrun>(throwExceptionIfNotExists:false);
 
 				var table = db.CreateTable<TestIdTrun>();
 
@@ -70,12 +70,12 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, DataContextSource(ProviderName.OracleNative)]
-		public void TruncateIdentityNoResetTest(string context)
+		[Test]
+		public void TruncateIdentityNoResetTest([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
-				db.DropTable<TestIdTrun>(throwExceptionIfNotExists: false);
+				db.DropTable<TestIdTrun>(throwExceptionIfNotExists:false);
 
 				var table = db.CreateTable<TestIdTrun>();
 

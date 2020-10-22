@@ -2,7 +2,6 @@
 using System.Linq;
 
 using LinqToDB;
-using LinqToDB.Data;
 
 using NUnit.Framework;
 
@@ -12,10 +11,10 @@ namespace Tests.xUpdate
 
 	public partial class MergeTests
 	{
-		[Test, MergeDataContextSource(ProviderName.SapHana)]
-		public void InsertUpdate(string context)
+		[Test]
+		public void InsertUpdate([MergeDataContextSource(TestProvName.AllSapHana)] string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -29,7 +28,7 @@ namespace Tests.xUpdate
 					.UpdateWhenMatched()
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				AssertRowCount(4, rows, context);
 
@@ -44,11 +43,13 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleManaged, ProviderName.OracleNative,
-			ProviderName.SapHana, ProviderName.Firebird)]
-		public void InsertDelete(string context)
+		[Test]
+		public void InsertDelete([MergeDataContextSource(
+			TestProvName.AllOracle,
+			TestProvName.AllSapHana, TestProvName.AllFirebird)]
+			string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -62,7 +63,7 @@ namespace Tests.xUpdate
 					.DeleteWhenMatched()
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				Assert.AreEqual(4, rows);
 
@@ -76,11 +77,14 @@ namespace Tests.xUpdate
 		}
 
 		// ASE: just fails
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleManaged, ProviderName.OracleNative,
-			ProviderName.Sybase, ProviderName.Informix, ProviderName.SapHana, ProviderName.Firebird)]
-		public void UpdateWithConditionDelete(string context)
+		[Test]
+		public void UpdateWithConditionDelete([MergeDataContextSource(
+			TestProvName.AllOracle,
+			ProviderName.Sybase, ProviderName.SybaseManaged, TestProvName.AllInformix,
+			TestProvName.AllSapHana, ProviderName.Firebird)]
+			string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -94,7 +98,7 @@ namespace Tests.xUpdate
 					.DeleteWhenMatched()
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				Assert.AreEqual(2, rows);
 
@@ -106,13 +110,14 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, MergeDataContextSource(
-			TestProvName.SqlAzure, ProviderName.SqlServer2008, ProviderName.SqlServer2012, ProviderName.SqlServer2014,
-			ProviderName.Oracle, ProviderName.OracleManaged, ProviderName.OracleNative, ProviderName.Informix,
-			ProviderName.SapHana, ProviderName.Firebird, ProviderName.Sybase)]
-		public void UpdateWithConditionDeleteWithConditionUpdate(string context)
+		[Test]
+		public void UpdateWithConditionDeleteWithConditionUpdate([MergeDataContextSource(
+			TestProvName.SqlAzure, ProviderName.SqlServer2008, ProviderName.SqlServer2012, ProviderName.SqlServer2014, ProviderName.SqlServer2017,
+			TestProvName.AllOracle, TestProvName.AllInformix,
+			TestProvName.AllSapHana, ProviderName.Firebird, ProviderName.Sybase)]
+			string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -130,7 +135,7 @@ namespace Tests.xUpdate
 					})
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				AssertRowCount(3, rows, context);
 
@@ -148,13 +153,98 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, MergeDataContextSource(
-			TestProvName.SqlAzure, ProviderName.SqlServer2008, ProviderName.SqlServer2012, ProviderName.SqlServer2014,
-			ProviderName.Oracle, ProviderName.OracleManaged, ProviderName.OracleNative,
-			ProviderName.Informix, ProviderName.SapHana, ProviderName.Firebird)]
-		public void InsertWithConditionInsertUpdateWithConditionDeleteWithConditionDelete(string context)
+		[Test]
+		public void InsertUpdateBySourceWithConditionDeleteBySource(
+			[IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
+			{
+				PrepareData(db);
+
+				var table = GetTarget(db);
+
+				var rows = table
+					.Merge()
+					.Using(GetSource1(db))
+					.OnTargetKey()
+					.InsertWhenNotMatched()
+					.UpdateWhenNotMatchedBySourceAnd(
+						t => t.Id == 2,
+						t => new TestMapping1() { Field1 = 44 })
+					.DeleteWhenNotMatchedBySource()
+					.Merge();
+
+				var result = table.OrderBy(_ => _.Id).ToList();
+
+				Assert.AreEqual(4, rows);
+
+				Assert.AreEqual(5, result.Count);
+
+				Assert.AreEqual(2, result[0].Id);
+				Assert.AreEqual(44, result[0].Field1);
+				Assert.IsNull(result[0].Field2);
+				Assert.IsNull(result[0].Field3);
+				Assert.IsNull(result[0].Field4);
+				Assert.IsNull(result[0].Field5);
+
+				AssertRow(InitialTargetData[2], result[1], null, 203);
+				AssertRow(InitialTargetData[3], result[2], null, null);
+				AssertRow(InitialSourceData[2], result[3], null, null);
+				AssertRow(InitialSourceData[3], result[4], null, 216);
+			}
+		}
+
+		[Test]
+		public void InsertDeleteUpdateBySource([IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				PrepareData(db);
+
+				var table = GetTarget(db);
+
+				var rows = table
+					.Merge()
+					.Using(GetSource1(db))
+					.OnTargetKey()
+					.InsertWhenNotMatched()
+					.DeleteWhenMatched()
+					.UpdateWhenNotMatchedBySource(t => new TestMapping1() { Field1 = 44 })
+					.Merge();
+
+				var result = table.OrderBy(_ => _.Id).ToList();
+
+				Assert.AreEqual(6, rows);
+
+				Assert.AreEqual(4, result.Count);
+
+				Assert.AreEqual(1, result[0].Id);
+				Assert.AreEqual(44, result[0].Field1);
+				Assert.IsNull(result[0].Field2);
+				Assert.IsNull(result[0].Field3);
+				Assert.IsNull(result[0].Field4);
+				Assert.IsNull(result[0].Field5);
+
+				Assert.AreEqual(2, result[1].Id);
+				Assert.AreEqual(44, result[1].Field1);
+				Assert.IsNull(result[1].Field2);
+				Assert.IsNull(result[1].Field3);
+				Assert.IsNull(result[1].Field4);
+				Assert.IsNull(result[1].Field5);
+
+				AssertRow(InitialSourceData[2], result[2], null, null);
+				AssertRow(InitialSourceData[3], result[3], null, 216);
+			}
+		}
+
+		[Test]
+		public void InsertWithConditionInsertUpdateWithConditionDeleteWithConditionDelete([MergeDataContextSource(
+			TestProvName.SqlAzure, ProviderName.SqlServer2008, ProviderName.SqlServer2012, ProviderName.SqlServer2014, ProviderName.SqlServer2017,
+			TestProvName.AllOracle,
+			TestProvName.AllInformix, TestProvName.AllSapHana, ProviderName.Firebird)]
+			string context)
+		{
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -171,7 +261,7 @@ namespace Tests.xUpdate
 					.DeleteWhenMatched()
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				AssertRowCount(5, rows, context);
 
@@ -187,10 +277,10 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, MergeDataContextSource]
-		public void UpdateInsert(string context)
+		[Test]
+		public void UpdateInsert([MergeDataContextSource] string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -204,7 +294,7 @@ namespace Tests.xUpdate
 					.InsertWhenNotMatched()
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				AssertRowCount(4, rows, context);
 
@@ -219,12 +309,14 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleNative, ProviderName.OracleManaged,
-			ProviderName.SqlServer2008, ProviderName.SqlServer2012, ProviderName.SqlServer2014,
-			TestProvName.SqlAzure, ProviderName.Informix, ProviderName.SapHana, ProviderName.Firebird)]
-		public void UpdateWithConditionUpdate(string context)
+		[Test]
+		public void UpdateWithConditionUpdate([MergeDataContextSource(
+			TestProvName.AllOracle,
+			ProviderName.SqlServer2008, ProviderName.SqlServer2012, ProviderName.SqlServer2014, ProviderName.SqlServer2017,
+			TestProvName.SqlAzure, TestProvName.AllInformix, TestProvName.AllSapHana, ProviderName.Firebird)]
+			string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -238,7 +330,7 @@ namespace Tests.xUpdate
 					.UpdateWhenMatched()
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				AssertRowCount(2, rows, context);
 
@@ -251,11 +343,13 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleManaged, ProviderName.OracleNative,
-			ProviderName.SapHana, ProviderName.Firebird)]
-		public void DeleteInsert(string context)
+		[Test]
+		public void DeleteInsert([MergeDataContextSource(
+			TestProvName.AllOracle,
+			TestProvName.AllSapHana, ProviderName.Firebird)]
+			string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -269,7 +363,7 @@ namespace Tests.xUpdate
 					.InsertWhenNotMatched()
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				Assert.AreEqual(4, rows);
 
@@ -283,11 +377,14 @@ namespace Tests.xUpdate
 		}
 
 		// ASE: just fails
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleManaged, ProviderName.OracleNative,
-			ProviderName.Sybase, ProviderName.Informix, ProviderName.SapHana, ProviderName.Firebird)]
-		public void DeleteWithConditionUpdate(string context)
+		[Test]
+		public void DeleteWithConditionUpdate([MergeDataContextSource(
+			TestProvName.AllOracle,
+			ProviderName.Sybase, ProviderName.SybaseManaged, TestProvName.AllInformix,
+			TestProvName.AllSapHana, ProviderName.Firebird)]
+			string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -301,7 +398,7 @@ namespace Tests.xUpdate
 					.UpdateWhenMatched()
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				Assert.AreEqual(2, rows);
 
@@ -313,12 +410,44 @@ namespace Tests.xUpdate
 			}
 		}
 
-		// ASE: just fails
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleNative, ProviderName.OracleManaged,
-			ProviderName.Sybase, ProviderName.Informix, ProviderName.SapHana, ProviderName.Firebird)]
-		public void InsertUpdateWithConditionDeleteWithCondition(string context)
+		[Test]
+		public void UpdateWithDeleteWithDeleteCondition(
+			[IncludeDataSources(true, TestProvName.AllOracle)] string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
+			{
+				PrepareData(db);
+
+				var table = GetTarget(db);
+
+				var rows = table
+					.Merge()
+					.Using(GetSource1(db))
+					.OnTargetKey()
+					.UpdateWhenMatchedThenDelete((t, s) => s.Id == 4)
+					.Merge();
+
+				var result = table.OrderBy(_ => _.Id).ToList();
+
+				AssertRowCount(2, rows, context);
+
+				Assert.AreEqual(3, result.Count);
+
+				AssertRow(InitialTargetData[0], result[0], null, null);
+				AssertRow(InitialTargetData[1], result[1], null, null);
+				AssertRow(InitialSourceData[0], result[2], null, 203);
+			}
+		}
+
+		// ASE: just fails
+		[Test]
+		public void InsertUpdateWithConditionDeleteWithCondition([MergeDataContextSource(
+			TestProvName.AllOracle,
+			ProviderName.Sybase, ProviderName.SybaseManaged, TestProvName.AllInformix,
+			TestProvName.AllSapHana, ProviderName.Firebird)]
+			string context)
+		{
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -333,7 +462,7 @@ namespace Tests.xUpdate
 					.DeleteWhenMatchedAnd((t, s) => s.Id == 4)
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				Assert.AreEqual(4, rows);
 
@@ -347,12 +476,46 @@ namespace Tests.xUpdate
 			}
 		}
 
-		// ASE: just fails
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleManaged, ProviderName.OracleNative,
-			ProviderName.Sybase, ProviderName.Informix, ProviderName.SapHana, ProviderName.Firebird)]
-		public void InsertDeleteWithConditionUpdate(string context)
+		[Test]
+		public void InsertUpdateWithDelete([IncludeDataSources(true, TestProvName.AllOracle)] string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
+			{
+				PrepareData(db);
+
+				var table = GetTarget(db);
+
+				var rows = table
+					.Merge()
+					.Using(GetSource1(db))
+					.OnTargetKey()
+					.InsertWhenNotMatched()
+					.UpdateWhenMatchedAndThenDelete((t, s) => t.Id == 3 || s.Id == 4, (t, s) => s.Id == 4)
+					.Merge();
+
+				var result = table.OrderBy(_ => _.Id).ToList();
+
+				AssertRowCount(4, rows, context);
+
+				Assert.AreEqual(5, result.Count);
+
+				AssertRow(InitialTargetData[0], result[0], null, null);
+				AssertRow(InitialTargetData[1], result[1], null, null);
+				AssertRow(InitialSourceData[0], result[2], null, 203);
+				AssertRow(InitialSourceData[2], result[3], null, null);
+				AssertRow(InitialSourceData[3], result[4], null, 216);
+			}
+		}
+
+		// ASE: just fails
+		[Test]
+		public void InsertDeleteWithConditionUpdate([MergeDataContextSource(
+			TestProvName.AllOracle,
+			ProviderName.Sybase, ProviderName.SybaseManaged, TestProvName.AllInformix,
+			TestProvName.AllSapHana, ProviderName.Firebird)]
+			string context)
+		{
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -367,7 +530,7 @@ namespace Tests.xUpdate
 					.UpdateWhenMatched()
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				Assert.AreEqual(4, rows);
 
@@ -382,11 +545,14 @@ namespace Tests.xUpdate
 		}
 
 		// ASE: just fails
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleManaged, ProviderName.OracleNative,
-			ProviderName.Sybase, ProviderName.Informix, ProviderName.SapHana, ProviderName.Firebird)]
-		public void UpdateWithConditionInsertDeleteWithCondition(string context)
+		[Test]
+		public void UpdateWithConditionInsertDeleteWithCondition([MergeDataContextSource(
+			TestProvName.AllOracle,
+			ProviderName.Sybase, ProviderName.SybaseManaged, TestProvName.AllInformix,
+			TestProvName.AllSapHana, ProviderName.Firebird)]
+			string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -401,7 +567,7 @@ namespace Tests.xUpdate
 					.DeleteWhenMatchedAnd((t, s) => s.Id == 4)
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				Assert.AreEqual(4, rows);
 
@@ -416,11 +582,14 @@ namespace Tests.xUpdate
 		}
 
 		// ASE: just fails
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleManaged, ProviderName.OracleNative,
-			ProviderName.Sybase, ProviderName.Informix, ProviderName.SapHana, ProviderName.Firebird)]
-		public void UpdateWithConditionDeleteWithConditionInsert(string context)
+		[Test]
+		public void UpdateWithConditionDeleteWithConditionInsert([MergeDataContextSource(
+			TestProvName.AllOracle,
+			ProviderName.Sybase, ProviderName.SybaseManaged, TestProvName.AllInformix,
+			TestProvName.AllSapHana, ProviderName.Firebird)]
+			string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -435,7 +604,7 @@ namespace Tests.xUpdate
 					.InsertWhenNotMatched()
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				Assert.AreEqual(4, rows);
 
@@ -450,11 +619,14 @@ namespace Tests.xUpdate
 		}
 
 		// ASE: just fails
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleManaged, ProviderName.OracleNative,
-			ProviderName.Sybase, ProviderName.Informix, ProviderName.SapHana, ProviderName.Firebird)]
-		public void DeleteWithConditionUpdateWithConditionInsert(string context)
+		[Test]
+		public void DeleteWithConditionUpdateWithConditionInsert([MergeDataContextSource(
+			TestProvName.AllOracle,
+			ProviderName.Sybase, ProviderName.SybaseManaged, TestProvName.AllInformix,
+			TestProvName.AllSapHana, ProviderName.Firebird)]
+			string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -469,7 +641,7 @@ namespace Tests.xUpdate
 					.InsertWhenNotMatched()
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				Assert.AreEqual(4, rows);
 
@@ -484,11 +656,14 @@ namespace Tests.xUpdate
 		}
 
 		// ASE: just fails
-		[Test, MergeDataContextSource(ProviderName.Oracle, ProviderName.OracleManaged, ProviderName.OracleNative,
-			ProviderName.Sybase, ProviderName.Informix, ProviderName.SapHana, ProviderName.Firebird)]
-		public void DeleteWithConditionInsertUpdateWithCondition(string context)
+		[Test]
+		public void DeleteWithConditionInsertUpdateWithCondition([MergeDataContextSource(
+			TestProvName.AllOracle,
+			ProviderName.Sybase, ProviderName.SybaseManaged, TestProvName.AllInformix,
+			TestProvName.AllSapHana, ProviderName.Firebird)]
+			string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -503,9 +678,40 @@ namespace Tests.xUpdate
 					.UpdateWhenMatchedAnd((t, s) => t.Id == 3)
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				Assert.AreEqual(4, rows);
+
+				Assert.AreEqual(5, result.Count);
+
+				AssertRow(InitialTargetData[0], result[0], null, null);
+				AssertRow(InitialTargetData[1], result[1], null, null);
+				AssertRow(InitialSourceData[0], result[2], null, 203);
+				AssertRow(InitialSourceData[2], result[3], null, null);
+				AssertRow(InitialSourceData[3], result[4], null, 216);
+			}
+		}
+
+		[Test]
+		public void UpdateWithDeleteInsert([IncludeDataSources(true, TestProvName.AllOracle)] string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				PrepareData(db);
+
+				var table = GetTarget(db);
+
+				var rows = table
+					.Merge()
+					.Using(GetSource1(db))
+					.OnTargetKey()
+					.UpdateWhenMatchedAndThenDelete((t, s) => t.Id == 3 || t.Id == 4, (t, s) => s.Id == 4)
+					.InsertWhenNotMatched()
+					.Merge();
+
+				var result = table.OrderBy(_ => _.Id).ToList();
+
+				AssertRowCount(4, rows, context);
 
 				Assert.AreEqual(5, result.Count);
 

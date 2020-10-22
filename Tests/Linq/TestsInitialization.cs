@@ -16,6 +16,7 @@ public class TestsInitialization
 	{
 		// register test provider
 		TestNoopProvider.Init();
+		LinqToDB.DataProvider.DB2iSeries.DB2iSeriesTools.RegisterProviderDetector();
 	}
 
 	[OneTimeTearDown]

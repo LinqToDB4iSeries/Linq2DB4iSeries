@@ -1,6 +1,4 @@
-using System;
-
-using LinqToDB.Mapping;
+﻿using LinqToDB.Mapping;
 
 namespace Tests.Model
 {
@@ -11,8 +9,8 @@ namespace Tests.Model
 			[Column(IsIdentity = true), SequenceName("SequenceTestSeq")]
 			public int    ID;
 
-			[Column("VALUE_")] // 'Value' reserved by firebird
-			public string Value;
+			[Column("Value_")] // 'Value' reserved by firebird
+			public string? Value;
 		}
 	}
 }

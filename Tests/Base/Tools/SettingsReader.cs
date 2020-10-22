@@ -12,22 +12,24 @@ namespace Tests.Tools
 {
 	public class TestConnection
 	{
-		public string ConnectionString;
-		public string Provider;
+		public string  ConnectionString = null!;
+		public string? Provider;
 	}
 
 	public class TestSettings
 	{
-		public string   BasedOn;
-		public string[] Providers;
-		public string   TraceLevel;
-		public string   DefaultConfiguration;
+		public string?   BasedOn;
+		public string[]? Providers;
+		public string[]? Skip;
+		public string?   TraceLevel;
+		public string?   DefaultConfiguration;
+		public string?   NoLinqService;
 		public Dictionary<string,TestConnection> Connections = new Dictionary<string,TestConnection>();
 	}
 
-	static class SettingsReader
+	public static class SettingsReader
 	{
-		public static TestSettings Deserialize(string configName, string defaultJson, string userJson)
+		public static TestSettings Deserialize(string configName, string defaultJson, string? userJson)
 		{
 			void Merge(TestSettings settings1, TestSettings settings2)
 			{
@@ -38,11 +40,17 @@ namespace Tests.Tools
 				if (settings1.Providers == null)
 					settings1.Providers = settings2.Providers;
 
+				if (settings1.Skip == null)
+					settings1.Skip = settings2.Skip;
+
 				if (settings1.TraceLevel == null)
 					settings1.TraceLevel = settings2.TraceLevel;
 
 				if (settings1.DefaultConfiguration == null)
 					settings1.DefaultConfiguration = settings2.DefaultConfiguration;
+
+				if (settings1.NoLinqService == null)
+					settings1.NoLinqService = settings2.NoLinqService;
 			}
 
 			var defaultSettings = JsonConvert.DeserializeObject<Dictionary<string,TestSettings>>(defaultJson);
@@ -125,7 +133,7 @@ namespace Tests.Tools
 						}
 					},
 					{
-						"CORE2",
+						"CORE21",
 						new TestSettings
 						{
 							Connections = new Dictionary<string,TestConnection>
@@ -153,7 +161,7 @@ namespace Tests.Tools
 
 	public class TestSettingsTests
 	{
-		static readonly string _defaultData = @"
+		static string _defaultData = @"
 {
 	Default:
 	{
@@ -178,7 +186,7 @@ namespace Tests.Tools
 		}
 	},
 
-	CORE2:
+	CORE21:
 	{
 		BasedOn     : 'Default',
 		Connections :
@@ -189,7 +197,7 @@ namespace Tests.Tools
 	}
 }";
 
-		static readonly string _userData = @"
+		static string _userData = @"
 {
 	Default:
 	{
@@ -200,7 +208,7 @@ namespace Tests.Tools
 		}
 	},
 
-	'CORE2':
+	'CORE21':
 	{
 		BasedOn     : 'Default',
 		Connections :
@@ -232,7 +240,7 @@ namespace Tests.Tools
 						new { Key = "Con 3", ConnectionString = "CCC", Provider = "SqlServer" },
 					});
 
-				yield return new TestCaseData("Core 2", "CORE2", _defaultData, null)
+				yield return new TestCaseData("Core 2.1", "CORE21", _defaultData, null)
 					.SetName("Tests.Tools.Core2")
 					.Returns(new[]
 					{
@@ -260,7 +268,7 @@ namespace Tests.Tools
 						new { Key = "Con 4", ConnectionString = "FFF", Provider = "SqlServer" },
 					});
 
-				yield return new TestCaseData("User Core 2", "CORE2", _defaultData, _userData)
+				yield return new TestCaseData("User Core 2.1", "CORE21", _defaultData, _userData)
 					.SetName("Tests.Tools.UserCore2")
 					.Returns(new[]
 					{

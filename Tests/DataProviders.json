@@ -1,57 +1,58 @@
-﻿//
-// This file defines data providers and connection strings used by default for all users.
-// Copy this file as UserDataProviders.json and specify providers and connection strings you need to work on.
-// UserDataProviders.json is in .gitignore and it is not committed to the repository.
-//
-// For example:
-//
-//		{
-//			"LocalConnectionStrings":
-//			{
-//				"Connections" :
-//				{
-//					"SqlAzure.2012" :
-//					{
-//						"Provider"         : "System.Data.SqlClient",
-//						"ConnectionString" : "Server=tcp:aiae6kk6yl.database.windows.net,1433;Database=TestData;User ID=TestUser@aiae6kk6yl;Password=xxx;Trusted_Connection=False;Encrypt=True;"
-//					},
-//				}
-//			}
-//		}
-//
-{
-	"NET45" :
-	{
-		"DefaultConfiguration" : "DB2.iSeries",
-		"Providers"            :
-		[
-			"DB2.iSeries",
-			"DB2.iSeries.GAS",
-			"DB2.iSeries.73",
-			"DB2.iSeries.73.GAS"
-		],
-		"Connections"          :
-		{
-			"DB2.iSeries" : 
-			{ 
-				"Provider"         : "DB2.iSeries",    
-				"ConnectionString" : "Data Source={ISERIES}; Persist Security Info=True;User ID={USERNAME};Password={PASSWORD};Library List=LINQ2DB;Default Collection=LINQ2DB;Naming=1" 
+﻿{
+	"LocalConnectionStrings": {
+		"Connections": {
+			"DB2.iSeries.Net.71": {
+				"Provider": "DB2.iSeries.Net.71",
+				"ConnectionString": "Data Source={HOST}; Persist Security Info=True;User ID={USER};Password={PASSWORD};Library List={LIBRARY_LIST};Default Collection=NSARRIS1;Naming=0"
 			},
-			"DB2.iSeries.GAS" : 
-			{ 
-				"Provider"         : "DB2.iSeries.GAS",    
-				"ConnectionString" : "Data Source={ISERIES}; Persist Security Info=True;User ID={USERNAME};Password={PASSWORD};Library List=LINQ2DBGAS;Default Collection=LINQ2DBGAS;Naming=1" 
+			"DB2.iSeries.Net.GAS": {
+				"Provider": "DB2.iSeries.Net.71.GAS",
+				"ConnectionString": "Data Source={HOST}; Persist Security Info=True;User ID={USER};Password={PASSWORD};Library List={DEFAULT_SCHEMA};Default Collection={DEFAULT_SCHEMA};Naming=0"
 			},
-			"DB2.iSeries.73" : 
-			{ 
-				"Provider"         : "DB2.iSeries.73",    
-				"ConnectionString" : "Data Source={ISERIES}; Persist Security Info=True;User ID={USERNAME};Password={PASSWORD};Library List=LINQ2DB73;Default Collection=LINQ2DB73;Naming=1" 
+			"DB2.iSeries.Net.73": {
+				"Provider": "DB2.iSeries.Net.73",
+				"ConnectionString": "Data Source={HOST}; Persist Security Info=True;User ID={USER};Password={PASSWORD};Library List={LIBRARY_LIST};Default Collection={DEFAULT_SCHEMA};Naming=0"
 			},
-			"DB2.iSeries.73.GAS" : 
-			{ 
-				"Provider"         : "DB2.iSeries.73.GAS",    
-				"ConnectionString" : "Data Source={ISERIES}; Persist Security Info=True;User ID={USERNAME};Password={PASSWORD};Library List=LINQ2DB73G;Default Collection=LINQ2DB73G;Naming=1" 
-			}
+			"DB2.iSeries.Net.73.GAS": {
+				"Provider": "DB2.iSeries.Net.73.GAS",
+				"ConnectionString": "Data Source={HOST}; Persist Security Info=True;User ID={USER};Password={PASSWORD};Library List={DEFAULT_SCHEMA};Default Collection={DEFAULT_SCHEMA};Naming=0"
+			},
+			"DB2.iSeries.ODBC.71": {
+				"Provider": "DB2.iSeries.ODBC.71",
+				"ConnectionString": "Driver={IBM i Access ODBC Driver};System={HOST};Uid={USER};Pwd={PASSWORD};NAM=0;UNICODESQL=1;MAXDECSCALE=63;MAXDECPREC=63;GRAPHIC=1;MAPDECIMALFLOATDESCRIBE=3;MAXFIELDLEN=2097152;ALLOWUNSCHAR=1;DBQ={LIBRARY_LIST}"
+			},
+			"DB2.iSeries.OleDb.71": {
+				"Provider": "DB2.iSeries.OleDb.71",
+				"ConnectionString": "Provider=IBMDASQL;Data Source={HOST};User Id={USER};Password={PASSWORD};Default Collection={DEFAULT_SCHEMA};Convert Date Time To Char=FALSE;Library List={LIBRARY_LIST};Maximum Decimal Precision=63;Maximum Decimal Scale=63;Naming Convention=0"
+			},
+			"DB2.iSeries.DB2Connect.71": {
+				"Provider": "DB2.iSeries.DB2Connect.71",
+				"ConnectionString": "Database={DATABASE};User ID={USER};Password={PASSWORD};Server={HOST}:446;LibraryList={LIBRARY_LIST};CurrentSchema={DEFAULT_SCHEMA}"
+			},
 		}
+	},
+	"NET472": {
+		"BasedOn": "LocalConnectionStrings",
+		"DefaultConfiguration": "DB2.iSeries.OleDb.71",
+		"Providers":
+		[
+			"DB2.iSeries.Net.71",
+			//"DB2.iSeries.Net.GAS",
+			//"DB2.iSeries.Net.73",
+			"DB2.iSeries.Net.73.GAS",
+			"DB2.iSeries.ODBC.71",
+			"DB2.iSeries.OleDb.71",
+			"DB2.iSeries.DB2Connect.71"
+		]
+	},
+	"CORE31": {
+		"BasedOn": "LocalConnectionStrings",
+		"DefaultConfiguration": "DB2.iSeries.OleDb.71",
+		"Providers":
+		[
+			"DB2.iSeries.ODBC.71",
+			"DB2.iSeries.OleDb.71",
+			"DB2.iSeries.DB2Connect"
+		]
 	}
 }

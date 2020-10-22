@@ -21,10 +21,10 @@ namespace Tests.xUpdate
 			public int Id { get; set; }
 		}
 
-		[Test, MergeDataContextSource]
-		public void OnTargetKeyWithoutKeyFields(string context)
+		[Test]
+		public void OnTargetKeyWithoutKeyFields([MergeDataContextSource] string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var table = db.GetTable<TableWithoutKey>();
 
@@ -40,10 +40,10 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, MergeDataContextSource]
-		public void MergeInto(string context)
+		[Test]
+		public void MergeInto([MergeDataContextSource] string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -55,7 +55,7 @@ namespace Tests.xUpdate
 					.InsertWhenNotMatched()
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				AssertRowCount(2, rows, context);
 
@@ -70,10 +70,10 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, MergeDataContextSource]
-		public void InsertPartialSourceProjection_KnownFieldsInDefaultSetter(string context)
+		[Test]
+		public void InsertPartialSourceProjection_KnownFieldsInDefaultSetter([MergeDataContextSource] string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -93,7 +93,7 @@ namespace Tests.xUpdate
 					.InsertWhenNotMatched()
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				AssertRowCount(2, rows, context);
 
@@ -108,10 +108,10 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, MergeDataContextSource]
-		public void UsingTarget(string context)
+		[Test]
+		public void UsingTarget([MergeDataContextSource] string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -127,7 +127,7 @@ namespace Tests.xUpdate
 					})
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				AssertRowCount(4, rows, context);
 
@@ -163,10 +163,10 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, MergeDataContextSource]
-		public void OnKeysSingleField(string context)
+		[Test]
+		public void OnKeysSingleField([MergeDataContextSource] string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -190,7 +190,7 @@ namespace Tests.xUpdate
 					})
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				AssertRowCount(1, rows, context);
 
@@ -209,10 +209,10 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, MergeDataContextSource]
-		public void OnKeysPartialSourceProjection_KnownFieldInKeySelector(string context)
+		[Test]
+		public void OnKeysPartialSourceProjection_KnownFieldInKeySelector([MergeDataContextSource] string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -232,7 +232,7 @@ namespace Tests.xUpdate
 					})
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				AssertRowCount(1, rows, context);
 
@@ -251,10 +251,10 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, MergeDataContextSource]
-		public void OnKeysMultipleFields(string context)
+		[Test]
+		public void OnKeysMultipleFields([MergeDataContextSource] string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -278,7 +278,7 @@ namespace Tests.xUpdate
 					})
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				AssertRowCount(1, rows, context);
 
@@ -297,10 +297,62 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, MergeDataContextSource]
-		public void OnKeysFieldAndConstant(string context)
+		class Key
 		{
-			using (var db = new TestDataConnection(context))
+			public int? fkey1;
+			public int? fkey2;
+		}
+
+		[Test]
+		public void OnKeysMemberInitFields([MergeDataContextSource] string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				PrepareData(db);
+
+				var table = GetTarget(db);
+
+				var rows = table
+					.Merge()
+					.Using(GetSource1(db).Where(s => s.Field1 != null && s.Field2 != null).Select(s => new TestMapping1()
+					{
+						Id = s.Id,
+						Field1 = s.Field1,
+						Field2 = s.Field2 - 1,
+						Field3 = s.Field3,
+						Field4 = s.Field4,
+						Field5 = s.Field5
+					}))
+					.On(t => new Key { fkey1 = t.Field1, fkey2 = t.Field2 }, s => new Key { fkey2 = s.Field2, fkey1 = s.Field1 })
+					.UpdateWhenMatched((t, s) => new TestMapping1()
+					{
+						Field3 = 123
+					})
+					.Merge();
+
+				var result = table.OrderBy(_ => _.Id).ToList();
+
+				AssertRowCount(1, rows, context);
+
+				Assert.AreEqual(4, result.Count);
+
+				AssertRow(InitialTargetData[0], result[0], null, null);
+				AssertRow(InitialTargetData[1], result[1], null, null);
+				AssertRow(InitialTargetData[2], result[2], null, 203);
+
+				Assert.AreEqual(InitialTargetData[3].Id, result[3].Id);
+				Assert.AreEqual(InitialTargetData[3].Field1, result[3].Field1);
+				Assert.AreEqual(InitialTargetData[3].Field2, result[3].Field2);
+				Assert.AreEqual(123, result[3].Field3);
+				Assert.AreEqual(InitialTargetData[3].Field4, result[3].Field4);
+				Assert.IsNull(result[3].Field5);
+			}
+		}
+
+		[Test]
+		public void OnKeysFieldAndConstant([MergeDataContextSource] string context)
+		{
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -316,7 +368,7 @@ namespace Tests.xUpdate
 					})
 					.Merge();
 
-				var result = table.OrderBy(x => x.Id).ToList();
+				var result = table.OrderBy(_ => _.Id).ToList();
 
 				AssertRowCount(1, rows, context);
 
@@ -335,10 +387,10 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test, MergeDataContextSource]
-		public void OnKeysFieldAndConstantPartialSourceProjection_UnknownFieldInKey(string context)
+		[Test]
+		public void OnKeysFieldAndConstantPartialSourceProjection_UnknownFieldInKey([MergeDataContextSource] string context)
 		{
-			using (var db = new TestDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
 
@@ -347,7 +399,7 @@ namespace Tests.xUpdate
 				var exception = Assert.Catch(
 					() => table
 						.Merge()
-						.Using(GetSource1(db).Select(x => new TestMapping1() { Id = x.Id, Field1 = x.Field1 }))
+						.Using(GetSource1(db).Select(_ => new TestMapping1() { Id = _.Id, Field1 = _.Field1 }))
 						.On(t => new { t.Field1, t.Field2 }, s => new { Field1 = s.Field1, s.Field2 })
 						.UpdateWhenMatched((t, s) => new TestMapping1()
 						{
@@ -356,7 +408,7 @@ namespace Tests.xUpdate
 						.Merge());
 
 				Assert.IsInstanceOf<LinqToDBException>(exception);
-				Assert.AreEqual("Column Field2 doesn't exist in source", exception.Message);
+				Assert.AreEqual("'s.Field2' cannot be converted to SQL.", exception.Message);
 			}
 		}
 	}

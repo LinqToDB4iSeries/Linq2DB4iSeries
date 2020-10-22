@@ -4,6 +4,29 @@ DROP TABLE Patient
 GO
 DROP TABLE Person
 GO
+DROP TABLE InheritanceParent
+GO
+
+CREATE TABLE InheritanceParent
+(
+	InheritanceParentId INTEGER       PRIMARY KEY NOT NULL,
+	TypeDiscriminator   INTEGER                       Default NULL,
+	Name                NVARCHAR(50)                   Default NULL
+)
+GO
+
+DROP TABLE InheritanceChild
+GO
+
+CREATE TABLE InheritanceChild
+(
+	InheritanceChildId  INTEGER      PRIMARY KEY NOT NULL,
+	InheritanceParentId INTEGER                  NOT NULL,
+	TypeDiscriminator   INTEGER                      Default NULL,
+	Name                NVARCHAR(50)                  Default NULL
+)
+GO
+
 CREATE TABLE Person( 
 	PersonID   INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY NOT NULL,
 	FirstName  NVARCHAR(50) NOT NULL,
@@ -12,21 +35,14 @@ CREATE TABLE Person(
 	Gender     NCHAR(1)     NOT NULL
 )
 GO
+
 INSERT INTO Person (FirstName, LastName, Gender) VALUES ('John',   'Pupkin',    'M')
 GO
 INSERT INTO Person (FirstName, LastName, Gender) VALUES ('Tester', 'Testerson', 'M')
 GO
-INSERT INTO Person (FirstName, LastName, Gender) VALUES ( 'Miss', 'Scarlet', 'F')
+INSERT INTO Person (FirstName, LastName, Gender) VALUES ('Jane',   'Doe',       'F')
 GO
-INSERT INTO Person (FirstName, LastName, Gender) VALUES ('Rev', 'Green', 'M')
-GO
-INSERT INTO Person (FirstName, LastName, Gender) VALUES ('Col', 'Mustard', 'M')
-GO
-INSERT INTO Person (FirstName, LastName, Gender) VALUES ('Mrs','Peacock', 'F')
-GO
-INSERT INTO Person (FirstName, LastName, Gender) VALUES ('Prof', 'Plum','M')
-GO
-INSERT INTO Person (FirstName, LastName, Gender) VALUES ('Mrs', 'White', 'F')
+INSERT INTO Person (FirstName, LastName, MiddleName, Gender) VALUES ('Jürgen', 'König', 'Ko', 'M')
 GO
 
 -- Doctor Table Extension
@@ -85,7 +101,7 @@ DROP TABLE LinqDataTypes
 GO
 CREATE TABLE LinqDataTypes(
 	ID             int,
-	MoneyValue     decimal(10,4),
+	MoneyValue     decimal(10, 4),
 	DateTimeValue  timestamp,
 	DateTimeValue2 timestamp  Default NULL,
 	BoolValue      smallint,
@@ -172,6 +188,7 @@ CREATE TABLE AllTypes(
 	, binaryDataType           binary(20)              Default NULL
 	, blobDataType             blob                    Default NULL
 	, charDataType             char(1)                 Default NULL
+	, char20DataType           char(20)     CCSID 1208 Default NULL
 	, CharForBitDataType       char(5) for bit data    Default NULL
 	, clobDataType             clob         CCSID 1208			Default NULL
 	, dataLinkDataType         dataLink                Default NULL
@@ -281,6 +298,38 @@ GO
 
 CREATE TABLE KeepIdentityTest (
 	ID    INTEGER  GENERATED ALWAYS AS IDENTITY PRIMARY KEY not null,
-	Value INTEGER  
+	intDataType INTEGER  
+)
+GO
+
+GO
+DROP TABLE AllTypes2
+GO
+CREATE TABLE AllTypes2(
+	  ID INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY NOT NULL
+
+	, bigintDataType           bigint                  Default NULL
+	, binaryDataType           binary(20)              Default NULL
+	, charDataType             char(1)                 Default NULL
+	, char20DataType           char(20)     CCSID 1208 Default NULL
+	, CharForBitDataType       char(5) for bit data    Default NULL
+	, dataLinkDataType         dataLink                Default NULL
+	, dateDataType             date                    Default NULL
+	, decfloat16DataType       decfloat(16)            Default NULL
+	, decfloat34DataType       decfloat(34)            Default NULL
+	, decimalDataType          decimal(30)             Default NULL
+	, doubleDataType           double                  Default NULL
+	, graphicDataType          graphic(10) CCSID 13488 Default NULL
+    , intDataType              int                     Default NULL
+	, numericDataType          numeric                 Default NULL
+	, realDataType             real                    Default NULL
+	, rowIdDataType            rowId                              
+	, smallintDataType         smallint                Default NULL
+	, timeDataType             time                    Default NULL
+	, timestampDataType        timestamp               Default NULL
+	, varbinaryDataType        varbinary(20)           Default NULL
+	, varcharDataType          varchar(20)             Default NULL
+	, varCharForBitDataType    varchar(5) for bit data Default NULL
+	, varGraphicDataType       vargraphic(10) CCSID 13488 Default NULL
 )
 GO

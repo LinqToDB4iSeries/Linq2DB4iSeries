@@ -12,78 +12,80 @@ namespace Tests.Linq
 	[TestFixture]
 	public class DistinctTests : TestBase
 	{
-		[Test, DataContextSource]
-		public void Distinct1(string context)
+		[Test]
+		public void Distinct1([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from ch in Child select ch.ParentID).Distinct(),
+					(from ch in    Child select ch.ParentID).Distinct(),
 					(from ch in db.Child select ch.ParentID).Distinct());
 		}
 
-		[Test, DataContextSource]
-		public void Distinct2(string context)
+		[Test]
+		public void Distinct2([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p in Parent select p.Value1 ?? p.ParentID % 2).Distinct(),
+					(from p in    Parent select p.Value1 ?? p.ParentID % 2).Distinct(),
 					(from p in db.Parent select p.Value1 ?? p.ParentID % 2).Distinct());
 		}
 
-		[Test, DataContextSource]
-		public void Distinct3(string context)
+		[Test]
+		public void Distinct3([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p in Parent select new { Value = p.Value1 ?? p.ParentID % 2, p.Value1 }).Distinct(),
+					(from p in    Parent select new { Value = p.Value1 ?? p.ParentID % 2, p.Value1 }).Distinct(),
 					(from p in db.Parent select new { Value = p.Value1 ?? p.ParentID % 2, p.Value1 }).Distinct());
 		}
 
-		[Test, DataContextSource]
-		public void Distinct4(string context)
+		[Test]
+		public void Distinct4([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p in Parent select new Parent { ParentID = p.Value1 ?? p.ParentID % 2, Value1 = p.Value1 }).Distinct(),
+					(from p in    Parent select new Parent { ParentID = p.Value1 ?? p.ParentID % 2, Value1 = p.Value1 }).Distinct(),
 					(from p in db.Parent select new Parent { ParentID = p.Value1 ?? p.ParentID % 2, Value1 = p.Value1 }).Distinct());
 		}
 
-		[Test, DataContextSource]
-		public void Distinct5(string context)
+		[ActiveIssue("CI: SQL0418N  The statement was not processed because the statement contains an invalid use of one of the following: an untyped parameter marker, the DEFAULT keyword, or a null", Configuration = ProviderName.DB2)]
+		[Test]
+		public void Distinct5([DataSources] string context)
 		{
 			var id = 2;
 
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p in Parent select new Parent { ParentID = p.Value1 ?? p.ParentID % 2, Value1 = id + 1 }).Distinct(),
+					(from p in    Parent select new Parent { ParentID = p.Value1 ?? p.ParentID % 2, Value1 = id + 1 }).Distinct(),
 					(from p in db.Parent select new Parent { ParentID = p.Value1 ?? p.ParentID % 2, Value1 = id + 1 }).Distinct());
 		}
 
-		[Test, DataContextSource(ProviderName.Informix)]
-		public void Distinct6(string context)
+		[ActiveIssue("CI: SQL0418N  The statement was not processed because the statement contains an invalid use of one of the following: an untyped parameter marker, the DEFAULT keyword, or a null", Configuration = ProviderName.DB2)]
+		[Test]
+		public void Distinct6([DataSources(TestProvName.AllInformix)] string context)
 		{
 			var id = 2;
 
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from p in Parent select new Parent { ParentID = p.Value1 ?? p.ParentID + id % 2, Value1 = id + 1 }).Distinct(),
+					(from p in    Parent select new Parent { ParentID = p.Value1 ?? p.ParentID + id % 2, Value1 = id + 1 }).Distinct(),
 					(from p in db.Parent select new Parent { ParentID = p.Value1 ?? p.ParentID + id % 2, Value1 = id + 1 }).Distinct());
 		}
 
-		[Test, DataContextSource]
-		public void DistinctCount(string context)
+		[Test]
+		public void DistinctCount([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
 				var expected =
 					from p in Parent
-					join c in Child on p.ParentID equals c.ParentID
+						join c in Child on p.ParentID equals c.ParentID
 					where c.ChildID > 20
 					select p;
 
 				var result =
 					from p in db.Parent
-					join c in db.Child on p.ParentID equals c.ParentID
+						join c in db.Child on p.ParentID equals c.ParentID
 					where c.ChildID > 20
 					select p;
 
@@ -91,20 +93,20 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource]
-		public void DistinctMax(string context)
+		[Test]
+		public void DistinctMax([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
 				var expected =
 					from p in Parent
-					join c in Child on p.ParentID equals c.ParentID
+						join c in Child on p.ParentID equals c.ParentID
 					where c.ChildID > 20
 					select p;
 
 				var result =
 					from p in db.Parent
-					join c in db.Child on p.ParentID equals c.ParentID
+						join c in db.Child on p.ParentID equals c.ParentID
 					where c.ChildID > 20
 					select p;
 
@@ -112,17 +114,17 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, DataContextSource(ProviderName.Sybase, ProviderName.SQLiteClassic, ProviderName.SQLiteMS)]
-		public void TakeDistinct(string context)
+		[Test]
+		public void TakeDistinct([DataSources(TestProvName.AllSybase, TestProvName.AllSQLite)] string context)
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					(from ch in Child orderby ch.ParentID select ch.ParentID).Take(4).Distinct(),
+					(from ch in    Child orderby ch.ParentID select ch.ParentID).Take(4).Distinct(),
 					(from ch in db.Child orderby ch.ParentID select ch.ParentID).Take(4).Distinct());
 		}
 
-		[Test, DataContextSource]
-		public void DistinctOrderBy(string context)
+		[Test]
+		public void DistinctOrderBy([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
@@ -130,20 +132,20 @@ namespace Tests.Linq
 					db.Child.Select(ch => ch.ParentID).Distinct().OrderBy(ch => ch));
 		}
 
-		[Test, DataContextSource]
-		public void DistinctJoin(string context)
+		[Test]
+		public void DistinctJoin([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
 				var q1 = GetTypes(context);
-				var q2 = db.Types.Select(x => new LinqDataTypes { ID = x.ID, SmallIntValue = x.SmallIntValue }).Distinct();
+				var q2 = db.Types.Select(_ => new LinqDataTypes {ID = _.ID, SmallIntValue = _.SmallIntValue }).Distinct();
 
 				AreEqual(
 					from e in q1
-					from p in q1.Where(x => x.ID == e.ID).DefaultIfEmpty()
+					from p in q1.Where(_ => _.ID == e.ID).DefaultIfEmpty()
 					select new { e.ID, p.SmallIntValue },
 					from e in q2
-					from p in q2.Where(x => x.ID == e.ID).DefaultIfEmpty()
+					from p in q2.Where(_ => _.ID == e.ID).DefaultIfEmpty()
 					select new { e.ID, p.SmallIntValue }
 					);
 			}

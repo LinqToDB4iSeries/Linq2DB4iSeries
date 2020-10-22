@@ -71,14 +71,10 @@ namespace Tests
 			var testAttributes = method.GetCustomAttributes<ExplicitAttribute>(true)
 				.Cast<IApplyToTest>()
 				.Union(method.TypeInfo.GetCustomAttributes<ExplicitAttribute>(true))
-#if !NETSTANDARD1_6
 				.Union(method.TypeInfo.Assembly.GetCustomAttributes(true).OfType<ExplicitAttribute>())
-#endif
 				.Union(method.GetCustomAttributes<IgnoreAttribute>(true))
 				.Union(method.TypeInfo.GetCustomAttributes<IgnoreAttribute>(true))
-#if !NETSTANDARD1_6
 				.Union(method.TypeInfo.Assembly.GetCustomAttributes(true).OfType<IgnoreAttribute>())
-#endif
 				.Union(method.GetCustomAttributes<ActiveIssueAttribute>(true))
 				.Union(method.TypeInfo.GetCustomAttributes<ActiveIssueAttribute>(true))
 				.ToList();
@@ -141,7 +137,6 @@ namespace Tests
 
 				}
 
-#if !NETSTANDARD1_6 && !NETSTANDARD2_0 && !MONO
 				if (!isIgnore && _includeLinqService)
 				{
 					var linqCaseNumber = 0;
@@ -168,7 +163,6 @@ namespace Tests
 						yield return test;
 					}
 				}
-#endif
 			}
 
 			if (!hasTest)
