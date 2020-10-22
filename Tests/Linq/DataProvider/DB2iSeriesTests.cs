@@ -999,7 +999,7 @@ namespace Tests.DataProvider
 				}
 				finally
 				{
-					conn.GetTable<ALLTYPE>().Delete(p => p.SMALLINTDATATYPE >= 5000);
+					conn.GetTable<ALLTYPE>().Delete(p => p.DECIMALDATATYPE >= 6000);
 				}
 			}
 		}
@@ -1047,7 +1047,7 @@ namespace Tests.DataProvider
 				}
 				finally
 				{
-					conn.GetTable<ALLTYPE>().Delete(p => p.SMALLINTDATATYPE >= 5000);
+					conn.GetTable<ALLTYPE>().Delete(p => p.DECIMALDATATYPE >= 6000);
 				}
 			}
 		}

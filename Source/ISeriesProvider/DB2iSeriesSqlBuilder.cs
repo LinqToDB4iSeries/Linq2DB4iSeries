@@ -144,7 +144,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public override int CommandCount(SqlStatement statement)
 		{
 			if (statement is SqlTruncateTableStatement trun)
-				return DB2iSeriesSqlProviderFlags.SupportsTruncateTable && trun.ResetIdentity ? 
+				return !DB2iSeriesSqlProviderFlags.SupportsTruncateTable && trun.ResetIdentity ? 
 					1 + trun.Table!.IdentityFields.Count : 1;
 
 			return statement is SqlInsertStatement insertStatement && insertStatement.Insert.WithIdentity ? 2 : 1;
@@ -155,7 +155,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			if (statement is SqlTruncateTableStatement trun)
 			{
-				if (DB2iSeriesSqlProviderFlags.SupportsTruncateTable)
+				if (!DB2iSeriesSqlProviderFlags.SupportsTruncateTable)
 				{
 					var field = trun.Table!.IdentityFields[commandNumber - 1];
 
@@ -170,6 +170,24 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			{
 				StringBuilder.AppendLine($"SELECT {Constants.SQL.LastInsertedIdentityGetter} FROM {Constants.SQL.DummyTableName()}");
 			}
+		}
+
+		//Same as DB2 provider except it handles Truncate Support
+		protected override void BuildTruncateTableStatement(SqlTruncateTableStatement truncateTable)
+		{
+			if (db2iSeriesSqlProviderFlags.SupportsTruncateTable)
+			{
+				var table = truncateTable.Table;
+
+				AppendIndent();
+				StringBuilder.Append("TRUNCATE TABLE ");
+				BuildPhysicalTable(table, null);
+
+				if (truncateTable.ResetIdentity)
+					StringBuilder.Append(" RESTART IDENTITY");
+			}
+			else
+				base.BuildTruncateTableStatement(truncateTable);
 		}
 
 		//Same as DB2 provider - except it adds null value handling

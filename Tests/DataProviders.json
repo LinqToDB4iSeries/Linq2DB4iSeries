@@ -39,7 +39,7 @@
 			"DB2.iSeries.Net.71",
 			//"DB2.iSeries.Net.GAS",
 			//"DB2.iSeries.Net.73",
-			"DB2.iSeries.Net.73.GAS"
+			"DB2.iSeries.Net.73.GAS",
 			"DB2.iSeries.ODBC.71",
 			"DB2.iSeries.OleDb.71",
 			"DB2.iSeries.DB2Connect.71"
