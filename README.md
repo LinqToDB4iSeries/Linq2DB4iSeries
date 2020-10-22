@@ -41,27 +41,47 @@ Valid ProviderNames for this provider are defined as constants in the DB2iSeries
 ### Connection Strings
 
 - Access Client native Ado.Net provider
+```
 Data Source={SERVER_NAME}; Persist Security Info=True;User ID={USER_ID};Password={PASSWORD};Library List={LIBRARY_LIST};Default Collection={DEFAULT_LIBRARY};Naming=0"
+```
 
 - Access Client ODBC provider
+```
 Driver={IBM i Access ODBC Driver};System=pub400.com;Uid={USER_ID};Pwd={PASSWORD};NAM=0;UNICODESQL=1;MAXDECSCALE=63;MAXDECPREC=63;GRAPHIC=1;MAPDECIMALFLOATDESCRIBE=3;MAXFIELDLEN=2097152;ALLOWUNSCHAR=1;DBQ={LIBRARY_LIST}
+```
 
 For more info see: https://www.ibm.com/support/knowledgecenter/ssw_ibm_i_74/rzaik/connectkeywords.htm#connectkeywords__note1
 
 - Access Client OleDb provider
+```
 Provider=IBMDA400;Data Source=pub400.com;User Id={USER_ID};Password={PASSWORD};Default Collection={DEFAULT_LIBRARY};Convert Date Time To Char=FALSE;LIBRARY LIST={LIBRARY_LIST};Maximum Decimal Precision=63;Maximum Decimal Scale=63;Naming Convention=0
+```
 
 For more info see: https://www.ibm.com/support/pages/access-client-solutions-ole-db-custom-connection-properties
 
 - DB2 provider (via DB2Connect)
-Database={SERVER_NAME};User ID={USER_ID};Password={PASSWORD};Server={SERVER_NAME}:{SERVER_PORT};LibraryList={LIBRARY_LIST};CurrentSchema={DEFAULT_LIBRARY}
+```
+Database={SERVER_NAME};User ID={USER_ID};Password={PASSWORD};Server={SERVER_NAME}:{SERVER_PORT};LibraryList={LIBRARY_LIST};CurrentSchema=
+{DEFAULT_LIBRARY}
+```
 
 ## Options
+
+### Provider Type
+Supported providers are:
+
+- Access Client native .net provider (.net 4.5 only)
+- Access Client ODBC provider
+- Access Client OleDb provider
+- DB2 provider (via DB2 Connect license)
 
 ### Minimum DB2 Version
 The provider can create SQL compatible with V7.1 and above.  
 
-V7.1 PTF Level 38, V7.2 PTF Level 9 and V7.3 introduced a proper syntax for SKIP (OFFSET n ROWS). To have the provider generate this new syntax add MinVer="7.1.38" to the Provider or, if instantiating the provider in code set the parameter appropriatly.
+- V7.2 introduced the Truncate Table syntax.
+- V7.1 PTF Level 38, V7.2 PTF Level 9 and V7.3 introduced a proper syntax for SKIP (OFFSET n ROWS). 
+
+To have the provider support these features this new syntax add MinVer="7.2" or "7.3" to the Provider or, if instantiating the provider in code set the parameter appropriatly.
 
 ### GUIDs
 DB2 doesn't have a GUID type.  By default GUIDs will be stored as CHAR(16) FOR BIT DATA.  This works and is probably the most efficient however it is unreadable when queried directly.
@@ -78,7 +98,7 @@ Setting MapGuidAsString="true" (or setting the parameter true in the constructor
 See https://github.com/LinqToDB4iSeries/Linq2DB4iSeries/wiki for further information.
 
 ## Breaking changes from v2.x to v3.x
-1. DataProvicer construction has been refactored. You now build a dataprovider either by:
+1. DataProvider construction has been refactored. You now build a dataprovider either by:
 - using one of the fixed names,
 - providing the ADO provider type, server version and mapping options,
 - providing the ADO provider type, sql provider flags and mapping options,
