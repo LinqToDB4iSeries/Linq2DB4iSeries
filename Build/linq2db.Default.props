@@ -6,7 +6,6 @@
 		<Authors>Roy Chase, Nikos Sarris</Authors>
 		<RepositoryUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
-
 		<AppDesignerFolder>Properties</AppDesignerFolder>
 		<LangVersion>8.0</LangVersion>
 		<Nullable>enable</Nullable>

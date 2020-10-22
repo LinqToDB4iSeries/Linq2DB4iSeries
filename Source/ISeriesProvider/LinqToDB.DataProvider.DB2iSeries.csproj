@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<Import Project="..\..\Build\linq2db.Source.props" />
-	
+
 	<PropertyGroup>
 		<PackageVersion>3.1.5.0</PackageVersion>
-		<PackageLicenseUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries/blob/master/MIT-LICENSE.txt</PackageLicenseUrl>
+		<PackageLicense>MIT-LICENSE.txt</PackageLicense>
 		<PackageProjectUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries</PackageProjectUrl>
-		<PackageIconUrl>https://raw.githubusercontent.com/LinqToDB4iSeries/Linq2DB4iSeries/master/NuGet/linq2db2i.png</PackageIconUrl>
+		<PackageIcon>linq2db2i.png</PackageIcon>
 		<PackageTags>linq;linq2db;LinqToDB;ORM;database;DB;SQL;DB2;IBM;iSeries</PackageTags>
 		<!--<NeutralLanguage>en-GB</NeutralLanguage>-->
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
