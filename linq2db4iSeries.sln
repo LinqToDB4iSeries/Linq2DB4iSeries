@@ -23,6 +23,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LinqToDB.Tools", "Tests\Lin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LinqToDB.AspNet", "Tests\LinqToDB.AspNet\LinqToDB.AspNet.csproj", "{7913919D-F2C2-49E8-A321-8373412784AB}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{84F173B5-E165-4BAC-8EDF-FC7DE0D863BA}"
+	ProjectSection(SolutionItems) = preProject
+		Build\linq2db.Default.props = Build\linq2db.Default.props
+		Build\linq2db.Source.props = Build\linq2db.Source.props
+		Build\linq2db.Tests.props = Build\linq2db.Tests.props
+		Build\linq2db.Tests.Providers.props = Build\linq2db.Tests.Providers.props
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
