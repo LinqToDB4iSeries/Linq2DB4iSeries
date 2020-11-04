@@ -3,11 +3,11 @@
 		"Connections": {
 			"DB2.iSeries.Net.71": {
 				"Provider": "DB2.iSeries.Net.71",
-				"ConnectionString": "Data Source={HOST}; Persist Security Info=True;User ID={USER};Password={PASSWORD};Library List={LIBRARY_LIST};Default Collection=NSARRIS1;Naming=0"
+				"ConnectionString": "Data Source={HOST}; Persist Security Info=True;User ID={USER};Password={PASSWORD};Library List={LIBRARY_LIST};Default Collection={DEFAULT_SCHEMA};Naming=0"
 			},
 			"DB2.iSeries.Net.GAS": {
 				"Provider": "DB2.iSeries.Net.71.GAS",
-				"ConnectionString": "Data Source={HOST}; Persist Security Info=True;User ID={USER};Password={PASSWORD};Library List={DEFAULT_SCHEMA};Default Collection={DEFAULT_SCHEMA};Naming=0"
+				"ConnectionString": "Data Source={HOST}; Persist Security Info=True;User ID={USER};Password={PASSWORD};Library List={LIBRARY_LIST};Default Collection={DEFAULT_SCHEMA};Naming=0"
 			},
 			"DB2.iSeries.Net.73": {
 				"Provider": "DB2.iSeries.Net.73",
@@ -15,7 +15,7 @@
 			},
 			"DB2.iSeries.Net.73.GAS": {
 				"Provider": "DB2.iSeries.Net.73.GAS",
-				"ConnectionString": "Data Source={HOST}; Persist Security Info=True;User ID={USER};Password={PASSWORD};Library List={DEFAULT_SCHEMA};Default Collection={DEFAULT_SCHEMA};Naming=0"
+				"ConnectionString": "Data Source={HOST}; Persist Security Info=True;User ID={USER};Password={PASSWORD};Library List={LIBRARY_LIST};Default Collection={DEFAULT_SCHEMA};Naming=0"
 			},
 			"DB2.iSeries.ODBC.71": {
 				"Provider": "DB2.iSeries.ODBC.71",
