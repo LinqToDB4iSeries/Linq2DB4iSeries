@@ -31,8 +31,9 @@ namespace Tests
 		public const string DB2iODBC = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_ODBC_71;
 		public const string DB2iOleDb = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_OleDb_71;
 		public const string DB2iDB2Connect = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_DB2Connect_71;
+		public const string DB2iOleDb54 = LinqToDB.DataProvider.DB2iSeries.DB2iSeriesProviderName.DB2_OleDb_54;
 
-		public static readonly string[] AlliSeriesArray = new[] { DB2iNet, DB2iNet73, DB2iNet73GAS, DB2iNetGAS, DB2iODBC, DB2iOleDb, DB2iDB2Connect };
+		public static readonly string[] AlliSeriesArray = new[] { DB2iNet, DB2iNet73, DB2iNet73GAS, DB2iNetGAS, DB2iODBC, DB2iOleDb, DB2iDB2Connect, DB2iOleDb54 };
 		public static readonly string AlliSeries = string.Join(",", AlliSeriesArray);
 
 		public static bool IsiSeries(string provider) => provider.StartsWith(DB2iBase);

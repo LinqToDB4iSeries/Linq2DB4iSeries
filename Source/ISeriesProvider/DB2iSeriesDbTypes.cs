@@ -152,7 +152,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			{ DataType.Guid, DbTypes[Constants.DbTypes.Char16ForBitData] },
 		};
 
-		public static DbDataType GetDbDataType(DbTypeInfo dbTypeInfo, Type systemType, int? length, int? precision, int? scale, bool forceDefaultAttributes = false)
+		public static DbDataType GetDbDataType(DbTypeInfo dbTypeInfo, Type systemType, int? length, int? precision, int? scale, bool forceDefaultAttributes, bool supportsNCharTypes)
 		{
 			static int? sanitize(int? parameter, int minValue, bool supported)
 			{
@@ -177,6 +177,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				scale = precision.HasValue ? scale ?? (dbTypeInfo.RequiresPrecision ? dbTypeInfo.DefaultScale : null) : null;
 			}
 
+
 			if (dbTypeInfo.ForBitData)
 			{
 				var name = dbTypeInfo.Name.Contains("(") ?
@@ -186,15 +187,32 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 			else
 			{
+				var name = dbTypeInfo.Name;
+
+				if (!supportsNCharTypes)
+				{
+					if (dbTypeInfo.Name.StartsWith(Constants.DbTypes.NChar))
+					{
+						name = Constants.DbTypes.GraphicUnicode;
+					}
+					else if (dbTypeInfo.Name.StartsWith(Constants.DbTypes.NVarChar))
+					{
+						name = Constants.DbTypes.VarGraphicUnicode;
+					}
+					else if (dbTypeInfo.Name.StartsWith(Constants.DbTypes.NClob))
+					{
+						name = Constants.DbTypes.DBClobUnicode;
+					}
+				}
 				return new DbDataType(
 					systemType,
 					dbTypeInfo.DataType,
-					dbTypeInfo.Name,
+					name,
 					length, precision, scale);
 			}
 		}
 
-		public static DbDataType GetDbDataType(Type systemType, DataType dataType, int? length, int? precision, int? scale, bool mapGuidAsString, bool forceDefaultAttributes = false)
+		public static DbDataType GetDbDataType(Type systemType, DataType dataType, int? length, int? precision, int? scale, bool mapGuidAsString, bool forceDefaultAttributes, bool supportsNCharTypes)
 		{
 			if (!DataTypeMap.TryGetValue(dataType, out var dbTypeInfo))
 			{
@@ -205,24 +223,24 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			{
 				//Decimal(29)
 				DataType.UInt64 =>
-					GetDbDataType(dbTypeInfo, systemType, null, 29, 0, forceDefaultAttributes),
+					GetDbDataType(dbTypeInfo, systemType, null, 29, 0, forceDefaultAttributes, supportsNCharTypes),
 
 				//When defaults request get a the default Decimal type, 
 				//else set defaults to Decimal(60,30) to fit any value
 				DataType.Decimal =>
 					forceDefaultAttributes ?
-						GetDbDataType(dbTypeInfo, systemType, null, null, null, true) :
-						GetDbDataType(dbTypeInfo, systemType, null, 60, 30, false),
+						GetDbDataType(dbTypeInfo, systemType, null, null, null, true, supportsNCharTypes) :
+						GetDbDataType(dbTypeInfo, systemType, null, 60, 30, false, supportsNCharTypes),
 
 				//Depending on mapping
 				DataType.Guid =>
 					mapGuidAsString ?
 						new DbDataType(systemType, dataType, Constants.DbTypes.VarChar, 38) :
-						GetDbDataType(dbTypeInfo, systemType, null, null, null, true),
+						GetDbDataType(dbTypeInfo, systemType, null, null, null, true, supportsNCharTypes),
 
 				//Any other type, fall back to DbTypeInfo configuration
 				_ =>
-					GetDbDataType(dbTypeInfo, systemType, length, precision, scale, forceDefaultAttributes),
+					GetDbDataType(dbTypeInfo, systemType, length, precision, scale, forceDefaultAttributes, supportsNCharTypes),
 			};
 		}
 
@@ -231,7 +249,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			if (!string.IsNullOrEmpty(type.Type.DbType))
 			{
 				var parenthesisIndex = type.Type.DbType.IndexOf('(');
-				var dbType = (parenthesisIndex >= 0  ? type.Type.DbType.Substring(0, parenthesisIndex) : type.Type.DbType)
+				var dbType = (parenthesisIndex >= 0 ? type.Type.DbType.Substring(0, parenthesisIndex) : type.Type.DbType)
 						.ToUpper();
 
 				var forBitData = type.Type.DbType.Substring(0, type.Type.DbType.IndexOf(')') + 1).Length > 0;
@@ -251,7 +269,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					case Constants.DbTypes.VarGraphic:
 					case Constants.DbTypes.Varg:
 					case Constants.DbTypes.DbClob:
-						type = new SqlDataType(new DbDataType(type.Type.SystemType, DataType.NText, Constants.DbTypes.NClob));
+						type = new SqlDataType(new DbDataType(type.Type.SystemType, DataType.NText, Constants.DbTypes.DBClobUnicode));
 						break;
 					case Constants.DbTypes.Binary:
 					case Constants.DbTypes.VarBinary:
@@ -268,7 +286,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					type = mappingSchema.GetTypeOrUnderlyingTypeDataType(type.Type.SystemType);
 
 				type = new SqlDataType(
-					GetDbDataType(type.SystemType, type.Type.DataType, type.Type.Length, type.Type.Precision, type.Type.Scale, mappingSchema.IsGuidMappedAsString()));
+					GetDbDataType(type.SystemType, type.Type.DataType, type.Type.Length, type.Type.Precision, type.Type.Scale, mappingSchema.IsGuidMappedAsString(), false, true));
 
 				//Upcast types that require length/precision to fit value
 				switch (type.Type.DataType)
@@ -283,7 +301,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					case DataType.NChar:
 					case DataType.NVarChar:
 					case DataType.NText:
-						type = new SqlDataType(new DbDataType(type.Type.SystemType, DataType.NText, Constants.DbTypes.NClob));
+						type = new SqlDataType(new DbDataType(type.Type.SystemType, DataType.NText, Constants.DbTypes.DBClobUnicode));
 						break;
 					case DataType.Binary:
 					case DataType.VarBinary:

@@ -84,7 +84,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected override void BuildInsertOrUpdateQuery(SqlInsertOrUpdateStatement insertOrUpdate)
 		{
-			BuildInsertOrUpdateQueryAsMerge(insertOrUpdate, $"FROM {Constants.SQL.DummyTableName()} FETCH FIRST 1 ROW ONLY");
+			if (DB2iSeriesSqlProviderFlags.SupportsMergeStatement)
+				BuildInsertOrUpdateQueryAsMerge(insertOrUpdate, $"FROM {Constants.SQL.DummyTableName()} FETCH FIRST 1 ROW ONLY");
+			else
+				base.BuildInsertOrUpdateQuery(insertOrUpdate);
 		}
 
 		public override StringBuilder Convert(StringBuilder sb, string value, ConvertType convertType)
@@ -302,7 +305,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		//Use mapping schema and internal db datatype mapping information to get the appropriate dbType
 		protected override void BuildDataTypeFromDataType(SqlDataType type, bool forCreateTable)
 		{
-			var dbType = MappingSchema.GetDbDataType(type.SystemType, type.Type.DataType, type.Type.Length, type.Type.Precision, type.Type.Scale, forCreateTable);
+			var dbType = MappingSchema.GetDbDataType(type.SystemType, type.Type.DataType, type.Type.Length, type.Type.Precision, type.Type.Scale, forCreateTable, db2iSeriesSqlProviderFlags.SupportsNCharTypes);
 
 			StringBuilder.Append(dbType.ToSqlString());
 		}
