@@ -11,6 +11,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			if (!DB2iSeriesSqlProviderFlags.SupportsMergeStatement)
 				throw new LinqToDBException($"{Provider.Name} provider doesn't support SQL MERGE statement");
+
+			base.BuildMergeStatement(merge);
 		}
 
 		private bool MergeSourceValueTypeRequired(ISqlExpression expression)
