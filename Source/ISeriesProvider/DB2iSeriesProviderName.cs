@@ -75,7 +75,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			var version = DB2iSeriesVersion.V7_1;
 
 			if (providerName.Contains("54"))
-				version = DB2iSeriesVersion.V7_2;
+				version = DB2iSeriesVersion.V5_4;
 			else if (providerName.Contains("72"))
 				version = DB2iSeriesVersion.V7_2;
 			else if (providerName.Contains("73"))
