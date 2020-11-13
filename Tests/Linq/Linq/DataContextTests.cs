@@ -83,7 +83,7 @@ namespace Tests.Linq
 			using (var db  = (TestDataConnection)GetDataContext(context))
 			using (var db1 = new DataContext(db.DataProvider.Name, "BAD"))
 			{
-				if (!TestProvName.IsiSeriesAccessClient(context))
+				if (!TestProvNameDb2i.IsiSeriesAccessClient(context))
 					Assert.Throws(typeof(ArgumentException), () => db1.GetTable<Child>().ToList());
 #if NETFRAMEWORK
 				else

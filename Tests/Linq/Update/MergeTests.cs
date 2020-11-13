@@ -20,6 +20,7 @@ namespace Tests.xUpdate
 		{
 			static string[] Unsupported =
 			{
+				TestProvNameDb2i.All_54,
 				TestProvName.AllAccess,
 				ProviderName.SqlCe,
 				ProviderName.SQLiteClassic,

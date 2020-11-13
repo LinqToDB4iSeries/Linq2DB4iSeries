@@ -16,7 +16,9 @@ namespace Tests
 		protected BaseDataContextSourceAttribute(bool includeLinqService, string[] providers)
 		{
 			_includeLinqService = includeLinqService;
-			_providerNames      = providers;
+
+			//_providerNames      = providers;
+			_providerNames = providers.Concat(TestProvNameDb2i.GetProviders(providers)).ToArray();
 		}
 
 		public ParallelScope ParallelScope { get; set; } = ParallelScope.None;// ParallelScope.Children;

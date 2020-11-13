@@ -438,7 +438,7 @@ namespace Tests.xUpdate
 		{
 			if (expected != null)
 			{
-				if (TestProvName.IsiSeriesOleDb(provider))
+				if (TestProvNameDb2i.IsiSeriesOleDb(provider))
 					expected = expected.TrimEnd(' ');
 
 				if (   provider == ProviderName.Sybase
@@ -500,7 +500,7 @@ namespace Tests.xUpdate
 				&& provider != ProviderName.Sybase
 				&& provider != ProviderName.SybaseManaged
 				&& provider != ProviderName.DB2
-				&& !TestProvName.IsiSeries(provider)
+				&& !TestProvNameDb2i.IsiSeries(provider)
 				&& !provider.StartsWith(ProviderName.SapHana))
 				Assert.AreEqual(expected, actual);
 		}
@@ -514,7 +514,7 @@ namespace Tests.xUpdate
 						|| provider == ProviderName.MySqlConnector
 						|| provider == TestProvName.MariaDB
 						|| provider == TestProvName.MySql55
-						|| TestProvName.IsiSeries(provider) && !TestProvName.IsiSeriesDB2Connect(provider)
+						|| TestProvNameDb2i.IsiSeries(provider) && !TestProvNameDb2i.IsiSeriesDB2Connect(provider)
 						// after migration to 2.4.126 provider + SPS4, hana or provider started to trim spaces on insert for some reason
 						|| provider.StartsWith(ProviderName.SapHana)))
 					expected = '\0';
@@ -533,7 +533,7 @@ namespace Tests.xUpdate
 						|| provider == ProviderName.MySqlConnector
 						|| provider == TestProvName.MariaDB
 						|| provider == TestProvName.MySql55
-						|| TestProvName.IsiSeries(provider) && !TestProvName.IsiSeriesDB2Connect(provider)
+						|| TestProvNameDb2i.IsiSeries(provider) && !TestProvNameDb2i.IsiSeriesDB2Connect(provider)
 						// after migration to 2.4.126 provider + SPS4, hana or provider started to trim spaces on insert for some reason
 						|| provider.StartsWith(ProviderName.SapHana)))
 					expected = '\0';
@@ -585,7 +585,7 @@ namespace Tests.xUpdate
 		{
 			if (expected != null)
 			{
-				if (TestProvName.IsiSeriesOleDb(provider))
+				if (TestProvNameDb2i.IsiSeriesOleDb(provider))
 					expected = expected.TrimEnd(' ');
 
 				switch (provider)
@@ -621,7 +621,7 @@ namespace Tests.xUpdate
 
 			if (expected != null)
 			{
-				switch (TestProvName.GetFamily(provider))
+				switch (TestProvNameDb2i.GetFamily(provider))
 				{
 					case ProviderName.Sybase        :
 					case ProviderName.SybaseManaged :
@@ -664,6 +664,7 @@ namespace Tests.xUpdate
 						expected = TimeSpan.FromTicks((expected.Value.Ticks / 10) * 10);
 						break;
 					case ProviderName.DB2           :
+					case TestProvNameDb2i.DB2iBase	:
 					case ProviderName.Access        :
 					case ProviderName.AccessOdbc    :
 					case ProviderName.SapHanaNative :

@@ -272,7 +272,7 @@ namespace Tests
 		public static readonly string? DefaultProvider;
 		public static readonly HashSet<string> SkipCategories;
 
-		public static readonly List<string> Providers = new List<string>(TestProvName.AlliSeriesArray);
+		public static readonly List<string> Providers = new List<string>(TestProvNameDb2i.GetAll());
 		
 		protected ITestDataContext GetDataContext(string configuration, MappingSchema? ms = null)
 		{

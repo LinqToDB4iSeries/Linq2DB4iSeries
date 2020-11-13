@@ -236,7 +236,7 @@ public class a_CreateData : TestBase
 	[Test, Order(0)]
 	public void CreateDatabase([CreateDatabaseSources] string context)
 	{
-		if (TestProvName.IsiSeries(context))
+		if (TestProvNameDb2i.IsiSeries(context))
 		{
 			var script = context.Contains("GAS") ? "DB2iSeriesGAS" : "DB2iSeries";
 			RunScript(context, "\nGO\n", script);

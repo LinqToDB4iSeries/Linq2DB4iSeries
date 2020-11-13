@@ -87,7 +87,7 @@ namespace Tests
 		/// </summary>
 		public static string GetSchemaName(IDataContext db)
 		{
-			switch (TestProvName.GetFamily(GetContextName(db)))
+			switch (TestProvNameDb2i.GetFamily(GetContextName(db)))
 			{
 				case ProviderName.Informix:
 				case ProviderName.InformixDB2:
@@ -103,6 +103,7 @@ namespace Tests
 				case TestProvName.PostgreSQL10:
 				case TestProvName.PostgreSQL11:
 				case ProviderName.DB2:
+				case TestProvNameDb2i.DB2iBase:
 				case ProviderName.Sybase:
 				case ProviderName.SybaseManaged:
 				case ProviderName.SqlServer2005:
@@ -185,7 +186,7 @@ namespace Tests
 		/// </summary>
 		public static string GetDatabaseName(IDataContext db)
 		{
-			switch (TestProvName.GetFamily(GetContextName(db)))
+			switch (TestProvNameDb2i.GetFamily(GetContextName(db)))
 			{
 				case ProviderName.SQLiteClassic:
 				case TestProvName.SQLiteClassicMiniProfilerMapped:
@@ -206,6 +207,7 @@ namespace Tests
 				case TestProvName.PostgreSQL10:
 				case TestProvName.PostgreSQL11:
 				case ProviderName.DB2:
+				case TestProvNameDb2i.DB2iBase:
 				case ProviderName.Sybase:
 				case ProviderName.SybaseManaged:
 				case ProviderName.SqlServer2000:

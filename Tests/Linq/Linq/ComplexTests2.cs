@@ -424,7 +424,7 @@ namespace Tests.ComplexTests2
 		}
 
 		[Test]
-		public void TestInsertUsingDerivedObjectUsingFluentMapping([DataSources] string context)
+		public void TestInsertUsingDerivedObjectUsingFluentMapping([DataSources(TestProvNameDb2i.All_54)] string context)
 		{
 			var ms = SetMappings();
 
@@ -472,7 +472,7 @@ namespace Tests.ComplexTests2
 		}
 
 		[Test]
-		public void TestInheritanceByBaseType([DataSources] string context)
+		public void TestInheritanceByBaseType([DataSources(TestProvNameDb2i.All_54)] string context)
 		{
 			var ms = SetMappings();
 

@@ -175,7 +175,7 @@ namespace Tests.xUpdate
 
 #if NETFRAMEWORK
 		[Test]
-		public void TestParametersInListSourceProperty([IncludeDataSources(TestProvName.DB2iNet)] string context)
+		public void TestParametersInListSourceProperty([IncludeDataSources(TestProvNameDb2i.All_AccessClient)] string context)
 		{
 			using (var db = new TestDataConnection(context))
 			{
@@ -234,7 +234,7 @@ namespace Tests.xUpdate
 
 		private static char GetParameterToken([MergeDataContextSource] string context)
 		{
-			if (TestProvName.IsiSeriesODBC(context) || TestProvName.IsiSeriesOleDb(context))
+			if (TestProvNameDb2i.IsiSeriesODBC(context) || TestProvNameDb2i.IsiSeriesOleDb(context))
 				return '?';
 
 			switch (context)

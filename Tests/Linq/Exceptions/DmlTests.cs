@@ -13,7 +13,7 @@ namespace Tests.Exceptions
 	public class DmlTests : TestBase
 	{
 		[Test]
-		public void InsertOrUpdate1([DataSources] string context)
+		public void InsertOrUpdate1([DataSources(TestProvNameDb2i.All_54)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -37,7 +37,7 @@ namespace Tests.Exceptions
 		}
 
 		[Test]
-		public void InsertOrUpdate2([DataSources] string context)
+		public void InsertOrUpdate2([DataSources(TestProvNameDb2i.All_54)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{

@@ -65,10 +65,10 @@ namespace Tests.xUpdate
 			if ((context == ProviderName.OracleNative || context == TestProvName.Oracle11Native) && copyType == BulkCopyType.ProviderSpecific)
 				Assert.Inconclusive("Oracle BulkCopy doesn't support identity triggers");
 
-			if (TestProvName.IsiSeries(context) && copyType == BulkCopyType.ProviderSpecific)
+			if (TestProvNameDb2i.IsiSeries(context) && copyType == BulkCopyType.ProviderSpecific)
 				Assert.Inconclusive("DB2iSeries BulkCopy doesn't support provider specific implementation.");
 
-			if (TestProvName.IsiSeries(context) && keepIdentity == true && new[] { BulkCopyType.Default, BulkCopyType.MultipleRows }.Contains(copyType))
+			if (TestProvNameDb2i.IsiSeries(context) && keepIdentity == true && new[] { BulkCopyType.Default, BulkCopyType.MultipleRows }.Contains(copyType))
 				Assert.Inconclusive("DB2iSeries doesn't support inserting inserting in MultipleRows mode");
 
 			// don't use transactions as some providers will fallback to non-provider-specific implementation then
@@ -156,10 +156,10 @@ namespace Tests.xUpdate
 			[Values(0, 1, 2)]           int          asyncMode) // 0 == sync, 1 == async, 2 == async with IAsyncEnumerable
 #endif
 		{
-			if (TestProvName.IsiSeries(context) && copyType == BulkCopyType.ProviderSpecific)
+			if (TestProvNameDb2i.IsiSeries(context) && copyType == BulkCopyType.ProviderSpecific)
 				Assert.Inconclusive("DB2iSeries BulkCopy doesn't support provider specific implementation.");
 
-			if (TestProvName.IsiSeries(context) && keepIdentity == true && new[] { BulkCopyType.Default, BulkCopyType.MultipleRows }.Contains(copyType))
+			if (TestProvNameDb2i.IsiSeries(context) && keepIdentity == true && new[] { BulkCopyType.Default, BulkCopyType.MultipleRows }.Contains(copyType))
 				Assert.Inconclusive("DB2iSeries doesn't support inserting inserting in MultipleRows mode");
 			
 			// don't use transactions as some providers will fallback to non-provider-specific implementation then
@@ -272,7 +272,7 @@ namespace Tests.xUpdate
 
 			// RowByRow right now uses DataConnection.Insert which doesn't support identity insert
 			if ((copyType       == BulkCopyType.RowByRow
-					|| TestProvName.IsiSeries(context)
+					|| TestProvNameDb2i.IsiSeries(context)
 					|| context  == ProviderName.Access
 					|| context  == ProviderName.AccessOdbc
 					|| notSupported

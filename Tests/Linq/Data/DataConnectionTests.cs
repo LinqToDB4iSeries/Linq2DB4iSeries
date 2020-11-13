@@ -1109,7 +1109,7 @@ namespace Tests.Data
 			[DataSources(false)] string context, [Values] bool withScope)
 		{
 			if (withScope && (
-				TestProvName.AlliSeries.Contains(context)   ||
+				TestProvNameDb2i.IsiSeries(context)   ||
 				context == ProviderName.DB2            ||
 				context == ProviderName.InformixDB2    ||
 				context == ProviderName.MySqlConnector ||
@@ -1163,7 +1163,7 @@ namespace Tests.Data
 			[DataSources(false)] string context, [Values] bool withScope)
 		{
 			if (withScope && (
-				TestProvName.AlliSeries.Contains(context)   ||
+				TestProvNameDb2i.IsiSeries(context)   ||
 				context == ProviderName.DB2                 ||
 				context == ProviderName.InformixDB2         ||
 				context == ProviderName.SapHanaOdbc         ||

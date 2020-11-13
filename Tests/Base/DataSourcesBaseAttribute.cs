@@ -20,8 +20,8 @@ namespace Tests
 			//switch linq service off for db2i
 			IncludeLinqService = false;
 			
-			if (providers.Contains(LinqToDB.ProviderName.DB2))
-				providers = providers.Concat(new[] { TestProvName.AlliSeries }).ToArray();
+			//Handle db2i aliases
+			providers = providers.Concat(TestProvNameDb2i.GetProviders(providers)).ToArray();
 
 			Providers          = providers.SelectMany(p => p.Split(',').Select(_ => _.Trim())).ToArray();
 		}

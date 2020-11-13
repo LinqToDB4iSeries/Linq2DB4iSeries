@@ -1770,7 +1770,7 @@ namespace Tests.xUpdate
 				Assert.AreEqual(5, result.Count);
 
 				var i = 0;
-				if (TestProvName.IsiSeries(context))
+				if (TestProvNameDb2i.IsiSeries(context))
 				{
 					Assert.AreEqual(11, result[i].Id);
 					Assert.AreEqual(100, result[i].LeftId);

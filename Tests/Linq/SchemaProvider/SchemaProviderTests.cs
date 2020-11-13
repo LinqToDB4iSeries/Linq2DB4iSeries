@@ -234,9 +234,9 @@ namespace Tests.SchemaProvider
 				
 				var table    = dbSchema.Tables.Single(t => t.IsDefaultSchema && t.TableName == "ALLTYPES");
 
-				if (TestProvName.IsiSeries(context))
+				if (TestProvNameDb2i.IsiSeries(context))
 				{
-					var binaryType = TestProvName.IsiSeriesAccessClient(context) ? "BINARY(20)" : "BINARY";
+					var binaryType = TestProvNameDb2i.IsiSeriesAccessClient(context) ? "BINARY(20)" : "BINARY";
 
 					Assert.That(table.Columns.Single(c => c.ColumnName == "BINARYDATATYPE").ColumnType, Is.EqualTo(binaryType));
 					Assert.That(table.Columns.Single(c => c.ColumnName == "VARBINARYDATATYPE").ColumnType, Is.EqualTo("VARBIN"));

@@ -9,6 +9,8 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
+#nullable disable
+
 namespace Tests
 {
 	public static class Query<T>

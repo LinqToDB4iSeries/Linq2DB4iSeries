@@ -22,7 +22,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					&& value.Value is null));
 		}
 
-
 		protected override bool MergeSourceValueTypeRequired(SqlValuesTable source, IReadOnlyList<ISqlExpression[]> rows, int row, int column)
 		{
 			if (row == -1)

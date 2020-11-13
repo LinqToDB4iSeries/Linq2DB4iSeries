@@ -1041,7 +1041,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void InsertOrUpdate1([DataSources] string context)
+		public void InsertOrUpdate1([DataSources(TestProvNameDb2i.All_54)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -1081,7 +1081,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void InsertOrUpdate2([DataSources] string context)
+		public void InsertOrUpdate2([DataSources(TestProvNameDb2i.All_54)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -1155,7 +1155,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void InsertOrReplace1([DataSources] string context)
+		public void InsertOrReplace1([DataSources(TestProvNameDb2i.All_54)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -1190,7 +1190,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public async Task InsertOrReplace1Async([DataSources] string context)
+		public async Task InsertOrReplace1Async([DataSources(TestProvNameDb2i.All_54)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -1243,7 +1243,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void InsertOrUpdate3([DataSources] string context)
+		public void InsertOrUpdate3([DataSources(TestProvNameDb2i.All_54)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -1292,7 +1292,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public async Task InsertOrUpdate3Async([DataSources] string context)
+		public async Task InsertOrUpdate3Async([DataSources(TestProvNameDb2i.All_54)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -1341,7 +1341,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void InsertOrUpdate4([DataSources] string context)
+		public void InsertOrUpdate4([DataSources(TestProvNameDb2i.All_54)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -1811,7 +1811,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void InsertOrReplaceByTableName([DataSources] string context)
+		public void InsertOrReplaceByTableName([DataSources(TestProvNameDb2i.All_54)] string context)
 		{
 			const string? schemaName = null;
 			var tableName  = "xxPatient" + TestUtils.GetNext().ToString();
@@ -1857,7 +1857,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public async Task InsertOrReplaceByTableNameAsync([DataSources] string context)
+		public async Task InsertOrReplaceByTableNameAsync([DataSources(TestProvNameDb2i.All_54)] string context)
 		{
 			const string? schemaName = null;
 			var tableName  = "xxPatient" + TestUtils.GetNext().ToString();
@@ -1978,7 +1978,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void TestInsertOrReplaceWithColumnFilter([DataSources] string context, [Values] bool withMiddleName, [Values] bool skipOnInsert)
+		public void TestInsertOrReplaceWithColumnFilter([DataSources(TestProvNameDb2i.All_54)] string context, [Values] bool withMiddleName, [Values] bool skipOnInsert)
 		{
 			using (var db = GetDataContext(context))
 			using (var table = db.CreateLocalTable<TestInsertOrReplaceTable>())
@@ -2021,7 +2021,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void Issue2243([DataSources] string context, [Values(1, 2, 3)] int seed)
+		public void Issue2243([DataSources(TestProvNameDb2i.All_54)] string context, [Values(1, 2, 3)] int seed)
 		{
 			using (var db    = GetDataContext(context))
 			using (var table = db.CreateLocalTable<TestInsertOrReplaceInfo>())

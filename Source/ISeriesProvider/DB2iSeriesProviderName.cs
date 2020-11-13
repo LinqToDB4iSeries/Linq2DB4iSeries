@@ -26,15 +26,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public const string DB2_OleDb_72_GAS = "DB2.iSeries.OleDb.72.GAS";
 		public const string DB2_OleDb_73_GAS = "DB2.iSeries.OleDb.73.GAS";
 
-		public const string DB2_AccessClient_54 = "DB2.iSeries.Net.54";
-		public const string DB2_AccessClient_71 = "DB2.iSeries.Net.71";
-		public const string DB2_AccessClient_72 = "DB2.iSeries.Net.72";
-		public const string DB2_AccessClient_73 = "DB2.iSeries.Net.73";
-		public const string DB2_AccessClient_54_GAS = "DB2.iSeries.Net.54.GAS";
-		public const string DB2_AccessClient_71_GAS = "DB2.iSeries.Net.71.GAS";
-		public const string DB2_AccessClient_72_GAS = "DB2.iSeries.Net.72.GAS";
-		public const string DB2_AccessClient_73_GAS = "DB2.iSeries.Net.73.GAS";
-
 		public const string DB2_DB2Connect_54 = "DB2.iSeries.DB2Connect.54";
 		public const string DB2_DB2Connect_71 = "DB2.iSeries.DB2Connect.71";
 		public const string DB2_DB2Connect_72 = "DB2.iSeries.DB2Connect.72";
@@ -44,12 +35,24 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public const string DB2_DB2Connect_72_GAS = "DB2.iSeries.DB2Connect.72.GAS";
 		public const string DB2_DB2Connect_73_GAS = "DB2.iSeries.DB2Connect.73.GAS";
 
+#if NET45
+		public const string DB2_AccessClient_54 = "DB2.iSeries.Net.54";
+		public const string DB2_AccessClient_71 = "DB2.iSeries.Net.71";
+		public const string DB2_AccessClient_72 = "DB2.iSeries.Net.72";
+		public const string DB2_AccessClient_73 = "DB2.iSeries.Net.73";
+		public const string DB2_AccessClient_54_GAS = "DB2.iSeries.Net.54.GAS";
+		public const string DB2_AccessClient_71_GAS = "DB2.iSeries.Net.71.GAS";
+		public const string DB2_AccessClient_72_GAS = "DB2.iSeries.Net.72.GAS";
+		public const string DB2_AccessClient_73_GAS = "DB2.iSeries.Net.73.GAS";
+#endif
+
 		public static string[] AllNames =
 			typeof(DB2iSeriesProviderName)
 			.GetFields()
 			.Where(x => x.GetMemberType() == typeof(string))
 			.Select(x => x.GetValue(null) as string)
 			.Distinct()
+			.Except(new[] { DB2, DB2_GAS })
 			.ToArray();
 
 		public static DB2iSeriesProviderType GetProviderType(string providerName)
