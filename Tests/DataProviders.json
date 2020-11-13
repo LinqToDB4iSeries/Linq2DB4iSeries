@@ -247,16 +247,7 @@
 			"DB2.iSeries.DB2Connect.54.GAS",
 			"DB2.iSeries.DB2Connect.71.GAS",
 			"DB2.iSeries.DB2Connect.72.GAS",
-			"DB2.iSeries.DB2Connect.73.GAS",
-
-			"DB2.iSeries.Net.54",
-			"DB2.iSeries.Net.71",
-			"DB2.iSeries.Net.72",
-			"DB2.iSeries.Net.73",
-			"DB2.iSeries.Net.54.GAS",
-			"DB2.iSeries.Net.71.GAS",
-			"DB2.iSeries.Net.72.GAS",
-			"DB2.iSeries.Net.73.GAS"
+			"DB2.iSeries.DB2Connect.73.GAS"
 		]
 	}
 }
