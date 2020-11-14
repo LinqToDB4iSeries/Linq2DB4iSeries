@@ -13,16 +13,6 @@ using System.Reflection;
 
 #nullable disable
 
-namespace Tests.Linq.VisualBasic
-{
-	public class Stub { }
-}
-
-namespace Tests.FSharp.Models 
-{
-	public class Stub { }
-}
-
 #if NET472
 namespace System.Diagnostics.CodeAnalysis
 {
