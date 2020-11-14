@@ -155,5 +155,44 @@ namespace Tests.Linq
 
 			return ms;
 		}
+
+		[Test]
+		public void TestSqlQueryDepended([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		{
+			using (var db = GetDataContext(context))
+			using (db.CreateLocalTable<ManyFields>())
+			{
+				Query<ManyFields>.ClearCache();
+
+				var currentMiss = Query<ManyFields>.CacheMissCount;
+
+				int i;
+				for (i = 1; i <= 5; i++)
+				{
+					var test = db
+						.GetTable<ManyFields>()
+						.Where(x => Helper.GetField(x, i) == i);
+
+					var sqlStr = test.ToString();
+					TestContext.WriteLine(sqlStr);
+				}	
+				
+				Assert.That(Query<ManyFields>.CacheMissCount - currentMiss, Is.EqualTo(5));
+
+				currentMiss = Query<ManyFields>.CacheMissCount;
+
+				for (i = 1; i <= 5; i++)
+				{
+					var test = db
+						.GetTable<ManyFields>()
+						.Where(x => Helper.GetField(x, i) == i);
+
+					var sqlStr = test.ToString();
+				}	
+
+				Assert.That(Query<ManyFields>.CacheMissCount, Is.EqualTo(currentMiss));
+			}
+		}
+
 	}
 }

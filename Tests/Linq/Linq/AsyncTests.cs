@@ -76,7 +76,7 @@ namespace Tests.Linq
 
 				var sql = conn.Person.Where(p => p.ID == 1).Select(p => p.Name).Take(1).ToString()!;
 				sql = string.Join(Environment.NewLine, sql.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-					.Where(line => !line.StartsWith("--")));
+					.Where(line => !line.StartsWith("-- Access")));
 
 				var res = await conn.SetCommand(sql).ExecuteAsync<string>();
 
@@ -93,7 +93,7 @@ namespace Tests.Linq
 
 				var sql = conn.Person.Where(p => p.ID == 1).Select(p => p.Name).Take(1).ToString()!;
 				sql = string.Join(Environment.NewLine, sql.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-					.Where(line => !line.StartsWith("--")));
+					.Where(line => !line.StartsWith("-- Access")));
 
 				var res = conn.SetCommand(sql).ExecuteAsync<string>().Result;
 
@@ -115,7 +115,7 @@ namespace Tests.Linq
 
 				var sql = conn.Person.Where(p => p.ID == 1).Select(p => p.Name).Take(1).ToString()!;
 				sql = string.Join(Environment.NewLine, sql.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-					.Where(line => !line.StartsWith("--")));
+					.Where(line => !line.StartsWith("-- Access")));
 
 				using (var rd = await conn.SetCommand(sql).ExecuteReaderAsync())
 				{
@@ -153,13 +153,12 @@ namespace Tests.Linq
 		[Test]
 		public async Task TestFirstOrDefault([DataSources] string context)
 		{
-			var ids = new List<int?> { 1, 2, 3, (int?)null };
 			using (var db = GetDataContext(context))
 			{
 				var param = 4;
 				var resultQuery =
 						from o in db.Parent
-						where ids.Contains(o.ParentID) || o.ParentID == param
+						where Sql.Ext.In(o.ParentID, 1, 2, 3, (int?)null) || o.ParentID == param
 						select o;
 
 				var _ = await resultQuery.FirstOrDefaultAsync();

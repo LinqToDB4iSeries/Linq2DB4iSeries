@@ -5,9 +5,10 @@ using LinqToDB;
 using LinqToDB.Data;
 using LinqToDB.Linq;
 using LinqToDB.Mapping;
+using NpgsqlTypes;
 using NUnit.Framework;
 
-namespace Tests.Playground
+namespace Tests.Linq
 {
 	[TestFixture]
 	public class QueryFilterTests : TestBase
@@ -135,8 +136,7 @@ namespace Tests.Playground
 
 			Assert.That(resultFiltered1.Length, Is.LessThan(resultNotFiltered1.Length));
 
-			//TODO: Set with reflection
-			var currentMissCount = 0;// Query<T>.CacheMissCount;
+			var currentMissCount = Query<T>.CacheMissCount;
 
 			db.IsSoftDeleteFilterEnabled = true;
 			var resultFiltered2 = query.ToArray();
@@ -149,9 +149,7 @@ namespace Tests.Playground
 			AreEqualWithComparer(resultFiltered1,    resultFiltered2);
 			AreEqualWithComparer(resultNotFiltered1, resultNotFiltered2);
 
-			//TODO: Reflection
-			currentMissCount = 0;// Query<T>.CacheMissCount;
-			Assert.That(currentMissCount, Is.EqualTo(currentMissCount), () => "Caching is wrong.");
+			Assert.That(currentMissCount, Is.EqualTo(Query<T>.CacheMissCount), () => "Caching is wrong.");
 
 		}
 

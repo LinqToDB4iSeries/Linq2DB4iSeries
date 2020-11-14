@@ -17,12 +17,7 @@ namespace Tests
 
 		protected DataSourcesBaseAttribute(bool includeLinqService, string[] providers)
 		{
-			//switch linq service off for db2i
-			IncludeLinqService = false;
-
-			//Handle db2i aliases
-			providers = providers.Concat(TestProvNameDb2i.GetProviders(providers)).ToArray();
-
+			IncludeLinqService = includeLinqService;
 			Providers          = providers.SelectMany(p => p.Split(',').Select(_ => _.Trim())).ToArray();
 		}
 
@@ -40,11 +35,7 @@ namespace Tests
 			if (NoLinqService || !IncludeLinqService)
 				return providers;
 
-#if NETFRAMEWORK
 			return providers.Concat(providers.Select(p => p + ".LinqService"));
-#else
-			return providers;
-#endif
 		}
 
 		protected abstract IEnumerable<string> GetProviders();

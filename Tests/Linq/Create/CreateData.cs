@@ -236,10 +236,203 @@ public class a_CreateData : TestBase
 	[Test, Order(0)]
 	public void CreateDatabase([CreateDatabaseSources] string context)
 	{
-		if (TestProvNameDb2i.IsiSeries(context))
+		switch (context)
 		{
-			var script = context.Contains("GAS") ? "DB2iSeriesGAS" : "DB2iSeries";
-			RunScript(context, "\nGO\n", script);
+			case ProviderName.Firebird                         :
+			case TestProvName.Firebird3                        : RunScript(context,          "COMMIT;", "Firebird", FirebirdAction);       break;
+			case ProviderName.PostgreSQL                       :
+			case ProviderName.PostgreSQL92                     :
+			case ProviderName.PostgreSQL93                     :
+			case ProviderName.PostgreSQL95                     :
+			case TestProvName.PostgreSQL10                     :
+			case TestProvName.PostgreSQL11                     :
+			case TestProvName.PostgreSQL12                     :
+			case TestProvName.PostgreSQL13                     : RunScript(context,          "\nGO\n",  "PostgreSQL");                     break;
+			case ProviderName.MySql                            :
+			case ProviderName.MySqlConnector                   :
+			case TestProvName.MySql55                          :
+			case TestProvName.MariaDB                          : RunScript(context,          "\nGO\n",  "MySql");                          break;
+			case ProviderName.SqlServer2000                    : RunScript(context,          "\nGO\n",  "SqlServer2000");                  break;
+			case ProviderName.SqlServer2005                    :
+			case ProviderName.SqlServer2008                    :
+			case ProviderName.SqlServer2012                    :
+			case ProviderName.SqlServer2014                    :
+			case TestProvName.SqlServer2016                    :
+			case ProviderName.SqlServer2017                    :
+			case TestProvName.SqlServer2019                    :
+			case TestProvName.SqlAzure                         : RunScript(context,          "\nGO\n",  "SqlServer");                      break;
+			case ProviderName.SQLiteClassic                    :
+			case ProviderName.SQLiteMS                         : RunScript(context,          "\nGO\n",  "SQLite",   SQLiteAction);
+			                                                     RunScript(context+ ".Data", "\nGO\n",  "SQLite",   SQLiteAction);         break;
+			case TestProvName.SQLiteClassicMiniProfilerMapped  :
+			case TestProvName.SQLiteClassicMiniProfilerUnmapped: RunScript(context,          "\nGO\n",  "SQLite",   SQLiteAction);         break;
+			case ProviderName.OracleManaged                    :
+			case TestProvName.Oracle11Managed                  : RunScript(context,          "\n/\n",   "Oracle");                         break;
+			case ProviderName.SybaseManaged                    : RunScript(context,          "\nGO\n",  "Sybase",   null, "TestDataCore"); break;
+			case ProviderName.Informix                         : RunScript(context,          "\nGO\n",  "Informix", InformixAction);       break;
+			case ProviderName.InformixDB2                      : RunScript(context,          "\nGO\n",  "Informix", InformixDB2Action);    break;
+			case ProviderName.DB2                              : RunScript(context,          "\nGO\n",  "DB2");                            break;
+			case ProviderName.SapHanaNative                    :
+			case ProviderName.SapHanaOdbc                      : RunScript(context,          ";;\n"  ,  "SapHana");                        break;
+			case ProviderName.Access                           : RunScript(context,          "\nGO\n",  "Access",   AccessAction);
+			                                                     RunScript(context+ ".Data", "\nGO\n",  "Access",   AccessAction);         break;
+			case ProviderName.AccessOdbc                       : RunScript(context,          "\nGO\n",  "Access",   AccessODBCAction);
+			                                                     RunScript(context+ ".Data", "\nGO\n",  "Access",   AccessODBCAction);     break;
+			case ProviderName.SqlCe                            : RunScript(context,          "\nGO\n",  "SqlCe");
+			                                                     RunScript(context+ ".Data", "\nGO\n",  "SqlCe");                          break;
+#if NET472
+			case ProviderName.Sybase                           : RunScript(context,          "\nGO\n",  "Sybase",   null, "TestData");     break;
+			case ProviderName.OracleNative                     :
+			case TestProvName.Oracle11Native                   : RunScript(context,          "\n/\n",   "Oracle");                         break;
+#endif
+			default: throw new InvalidOperationException(context);
+		}
+	}
+
+	static void AccessODBCAction(IDbConnection connection)
+	{
+
+		using (var conn = AccessTools.CreateDataConnection(connection, ProviderName.AccessOdbc))
+		{
+			conn.Execute(@"
+				INSERT INTO AllTypes
+				(
+					bitDataType, decimalDataType, smallintDataType, intDataType,tinyintDataType, moneyDataType, floatDataType, realDataType,
+					datetimeDataType,
+					charDataType, varcharDataType, textDataType, ncharDataType, nvarcharDataType, ntextDataType,
+					binaryDataType, varbinaryDataType, imageDataType, oleobjectDataType,
+					uniqueidentifierDataType
+				)
+				VALUES
+				(
+					1, 2222222, 25555, 7777777, 100, 100000, 20.31, 16.2,
+					?,
+					'1', '234', '567', '23233', '3323', '111',
+					?, ?, ?, ?,
+					?
+				)",
+				new
+				{
+					datetimeDataType         = new DateTime(2012, 12, 12, 12, 12, 12),
+
+					binaryDataType           = new byte[] { 1, 2, 3, 4 },
+					varbinaryDataType        = new byte[] { 1, 2, 3, 5 },
+					imageDataType            = new byte[] { 3, 4, 5, 6 },
+					oleobjectDataType        = new byte[] { 5, 6, 7, 8 },
+
+					uniqueidentifierDataType = new Guid("{6F9619FF-8B86-D011-B42D-00C04FC964FF}"),
+				});
+		}
+	}
+
+	static void AccessAction(IDbConnection connection)
+	{
+		using (var conn = AccessTools.CreateDataConnection(connection, ProviderName.Access))
+		{
+			conn.Execute(@"
+				INSERT INTO AllTypes
+				(
+					bitDataType, decimalDataType, smallintDataType, intDataType,tinyintDataType, moneyDataType, floatDataType, realDataType,
+					datetimeDataType,
+					charDataType, varcharDataType, textDataType, ncharDataType, nvarcharDataType, ntextDataType,
+					binaryDataType, varbinaryDataType, imageDataType, oleobjectDataType,
+					uniqueidentifierDataType
+				)
+				VALUES
+				(
+					1, 2222222, 25555, 7777777, 100, 100000, 20.31, 16.2,
+					@datetimeDataType,
+					'1', '234', '567', '23233', '3323', '111',
+					@binaryDataType, @varbinaryDataType, @imageDataType, @oleobjectDataType,
+					@uniqueidentifierDataType
+				)",
+				new
+				{
+					datetimeDataType = new DateTime(2012, 12, 12, 12, 12, 12),
+
+					binaryDataType    = new byte[] { 1, 2, 3, 4 },
+					varbinaryDataType = new byte[] { 1, 2, 3, 5 },
+					imageDataType     = new byte[] { 3, 4, 5, 6 },
+					oleobjectDataType = new byte[] { 5, 6, 7, 8 },
+
+					uniqueidentifierDataType = new Guid("{6F9619FF-8B86-D011-B42D-00C04FC964FF}"),
+				});
+		}
+	}
+
+	void FirebirdAction(IDbConnection connection)
+	{
+		using (var conn = LinqToDB.DataProvider.Firebird.FirebirdTools.CreateDataConnection(connection))
+		{
+			conn.Execute(@"
+				UPDATE ""Person""
+				SET
+					""FirstName"" = @FIRSTNAME,
+					""LastName""  = @LASTNAME
+				WHERE ""PersonID"" = 4",
+				new
+				{
+					FIRSTNAME = "Jürgen",
+					LASTNAME  = "König",
+				});
+		}
+	}
+
+	static void SQLiteAction(IDbConnection connection)
+	{
+		using (var conn = LinqToDB.DataProvider.SQLite.SQLiteTools.CreateDataConnection(connection))
+		{
+			conn.Execute(@"
+				UPDATE AllTypes
+				SET
+					binaryDataType           = @binaryDataType,
+					varbinaryDataType        = @varbinaryDataType,
+					imageDataType            = @imageDataType,
+					uniqueidentifierDataType = @uniqueidentifierDataType
+				WHERE ID = 2",
+				new
+				{
+					binaryDataType           = new byte[] { 1 },
+					varbinaryDataType        = new byte[] { 2 },
+					imageDataType            = new byte[] { 0, 0, 0, 3 },
+					uniqueidentifierDataType = new Guid("{6F9619FF-8B86-D011-B42D-00C04FC964FF}"),
+				});
+		}
+	}
+
+	static void InformixAction(IDbConnection connection)
+	{
+		using (var conn = LinqToDB.DataProvider.Informix.InformixTools.CreateDataConnection(connection, ProviderName.Informix))
+		{
+			conn.Execute(@"
+				UPDATE AllTypes
+				SET
+					byteDataType = ?,
+					textDataType = ?
+				WHERE ID = 2",
+				new
+				{
+					blob = new byte[] { 1, 2 },
+					text = "BBBBB"
+				});
+		}
+	}
+
+	static void InformixDB2Action(IDbConnection connection)
+	{
+		using (var conn = LinqToDB.DataProvider.Informix.InformixTools.CreateDataConnection(connection, ProviderName.InformixDB2))
+		{
+			conn.Execute(@"
+				UPDATE AllTypes
+				SET
+					byteDataType = ?,
+					textDataType = ?
+				WHERE ID = 2",
+				new
+				{
+					blob = new byte[] { 1, 2 },
+					text = "BBBBB"
+				});
 		}
 	}
 }

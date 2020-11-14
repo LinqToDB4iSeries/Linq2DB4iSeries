@@ -49,7 +49,7 @@ namespace Tests.Linq
 					CheckTakeGlobalParams(db);
 				}
 
-				//var currentCacheMissCount = Query<Child>.CacheMissCount;
+				var currentCacheMissCount = Query<Child>.CacheMissCount;
 
 				for (var i = 2; i <= 3; i++)
 				{
@@ -57,8 +57,7 @@ namespace Tests.Linq
 					CheckTakeGlobalParams(db);
 				}
 
-				//TODO: Reflection
-				//Assert.That(Query<Child>.CacheMissCount, Is.EqualTo(currentCacheMissCount));
+				Assert.That(Query<Child>.CacheMissCount, Is.EqualTo(currentCacheMissCount));
 			}
 		}
 
@@ -167,12 +166,11 @@ namespace Tests.Linq
 			{
 				AreEqual(Child.Skip(3), db.Child.Skip(3));
 
-				//var currentCacheMissCount = Query<Child>.CacheMissCount;
+				var currentCacheMissCount = Query<Child>.CacheMissCount;
 
 				AreEqual(Child.Skip(4), db.Child.Skip(4));
 
-				//TODO: Reflection
-				//Assert.That(Query<Child>.CacheMissCount, Is.EqualTo(currentCacheMissCount));
+				Assert.That(Query<Child>.CacheMissCount, Is.EqualTo(currentCacheMissCount));
 			}
 		}
 
@@ -261,149 +259,203 @@ namespace Tests.Linq
 			}
 		}
 
-		[Repeat(2)] // needed for providers with positional parameters with skip parameter first
 		[Test]
 		public void SkipTake1([DataSources] string context, [Values] bool withParameters)
 		{
-			using (new ParameterizeTakeSkip(withParameters))
-			using (var db = GetDataContext(context))
+			// repeat needed for providers with positional parameters with skip parameter first
+			execute(context, withParameters);
+			execute(context, withParameters);
+
+			void execute(string context, bool withParameters)
 			{
-				var expected =    Child.OrderByDescending(c => c.ChildID).Skip(2).Take(5);
-				var result   = db.Child.OrderByDescending(c => c.ChildID).Skip(2).Take(5);
-				Assert.IsTrue(result.ToList().SequenceEqual(expected));
-				CheckTakeGlobalParams(db);
+				using (new ParameterizeTakeSkip(withParameters))
+				using (var db = GetDataContext(context))
+				{
+					var expected =    Child.OrderByDescending(c => c.ChildID).Skip(2).Take(5);
+					var result   = db.Child.OrderByDescending(c => c.ChildID).Skip(2).Take(5);
+					Assert.IsTrue(result.ToList().SequenceEqual(expected));
+					CheckTakeGlobalParams(db);
+				}
 			}
 		}
 
-		[Repeat(2)] // needed for providers with positional parameters with skip parameter first
 		[Test]
 		public void SkipTake2([DataSources] string context, [Values] bool withParameters)
 		{
-			using (new ParameterizeTakeSkip(withParameters))
-			using (var db = GetDataContext(context))
+			// repeat needed for providers with positional parameters with skip parameter first
+			execute(context, withParameters);
+			execute(context, withParameters);
+
+			void execute(string context, bool withParameters)
 			{
-				var expected =    Child.OrderByDescending(c => c.ChildID).Take(7).Skip(2);
-				var result   = db.Child.OrderByDescending(c => c.ChildID).Take(7).Skip(2);
-				Assert.IsTrue(result.ToList().SequenceEqual(expected));
-				CheckTakeGlobalParams(db);
+				using (new ParameterizeTakeSkip(withParameters))
+				using (var db = GetDataContext(context))
+				{
+					var expected =    Child.OrderByDescending(c => c.ChildID).Take(7).Skip(2);
+					var result   = db.Child.OrderByDescending(c => c.ChildID).Take(7).Skip(2);
+					Assert.IsTrue(result.ToList().SequenceEqual(expected));
+					CheckTakeGlobalParams(db);
+				}
 			}
 		}
 
-		[Repeat(2)] // needed for providers with positional parameters with skip parameter first
 		[Test]
 		public void SkipTake3([DataSources] string context, [Values] bool withParameters)
 		{
-			using (new ParameterizeTakeSkip(withParameters))
-			using (var db = GetDataContext(context))
+			// repeat needed for providers with positional parameters with skip parameter first
+			execute(context, withParameters);
+			execute(context, withParameters);
+
+			void execute(string context, bool withParameters)
 			{
-				var expected = Child.OrderBy(c => c.ChildID).Skip(1).Take(7).Skip(2);
-				var result   = db.Child.OrderBy(c => c.ChildID).Skip(1).Take(7).Skip(2);
-				Assert.IsTrue(result.ToList().SequenceEqual(expected));
-				CheckTakeGlobalParams(db);
+				using (new ParameterizeTakeSkip(withParameters))
+				using (var db = GetDataContext(context))
+				{
+					var expected = Child.OrderBy(c => c.ChildID).Skip(1).Take(7).Skip(2);
+					var result   = db.Child.OrderBy(c => c.ChildID).Skip(1).Take(7).Skip(2);
+					Assert.IsTrue(result.ToList().SequenceEqual(expected));
+					CheckTakeGlobalParams(db);
+				}
 			}
 		}
 
-		[Repeat(2)] // needed for providers with positional parameters with skip parameter first
 		[Test]
 		public void SkipTake21([DataSources] string context, [Values] bool withParameters)
 		{
-			using (new ParameterizeTakeSkip(withParameters))
-			using (var db = GetDataContext(context))
+			// repeat needed for providers with positional parameters with skip parameter first
+			execute(context, withParameters);
+			execute(context, withParameters);
+
+			void execute(string context, bool withParameters)
 			{
-				var skip = 2;
-				var take = 5;
-				var expected =    Child.OrderByDescending(c => c.ChildID).Skip(skip).Take(take);
-				var result   = db.Child.OrderByDescending(c => c.ChildID).Skip(skip).Take(take);
-				Assert.IsTrue(result.ToList().SequenceEqual(expected));
-				CheckTakeGlobalParams(db);
+				using (new ParameterizeTakeSkip(withParameters))
+				using (var db = GetDataContext(context))
+				{
+					var skip = 2;
+					var take = 5;
+					var expected =    Child.OrderByDescending(c => c.ChildID).Skip(skip).Take(take);
+					var result   = db.Child.OrderByDescending(c => c.ChildID).Skip(skip).Take(take);
+					Assert.IsTrue(result.ToList().SequenceEqual(expected));
+					CheckTakeGlobalParams(db);
+				}
 			}
 		}
 
-		[Repeat(2)] // needed for providers with positional parameters with skip parameter first
 		[Test]
 		public void SkipTake22([DataSources] string context, [Values] bool withParameters)
 		{
-			using (new ParameterizeTakeSkip(withParameters))
-			using (var db = GetDataContext(context))
+			// repeat needed for providers with positional parameters with skip parameter first
+			execute(context, withParameters);
+			execute(context, withParameters);
+
+			void execute(string context, bool withParameters)
 			{
-				var skip = 2;
-				var take = 7;
-				var expected =    Child.OrderByDescending(c => c.ChildID).Take(take).Skip(skip);
-				var result   = db.Child.OrderByDescending(c => c.ChildID).Take(take).Skip(skip);
-				Assert.IsTrue(result.ToList().SequenceEqual(expected));
-				CheckTakeGlobalParams(db);
+				using (new ParameterizeTakeSkip(withParameters))
+				using (var db = GetDataContext(context))
+				{
+					var skip = 2;
+					var take = 7;
+					var expected =    Child.OrderByDescending(c => c.ChildID).Take(take).Skip(skip);
+					var result   = db.Child.OrderByDescending(c => c.ChildID).Take(take).Skip(skip);
+					Assert.IsTrue(result.ToList().SequenceEqual(expected));
+					CheckTakeGlobalParams(db);
+				}
 			}
 		}
 
-		[Repeat(2)] // needed for providers with positional parameters with skip parameter first
 		[Test]
 		public void SkipTake23([DataSources] string context, [Values] bool withParameters)
 		{
-			using (new ParameterizeTakeSkip(withParameters))
-			using (var db = GetDataContext(context))
+			// repeat needed for providers with positional parameters with skip parameter first
+			execute(context, withParameters);
+			execute(context, withParameters);
+
+			void execute(string context, bool withParameters)
 			{
-				var skip1 = 1;
-				var skip2 = 2;
-				var take = 7;
-				var expected = Child.OrderBy(c => c.ChildID).Skip(skip1).Take(take).Skip(skip2);
-				var result   = db.Child.OrderBy(c => c.ChildID).Skip(skip1).Take(take).Skip(skip2);
-				Assert.IsTrue(result.ToList().SequenceEqual(expected));
-				CheckTakeGlobalParams(db);
+				using (new ParameterizeTakeSkip(withParameters))
+				using (var db = GetDataContext(context))
+				{
+					var skip1 = 1;
+					var skip2 = 2;
+					var take = 7;
+					var expected = Child.OrderBy(c => c.ChildID).Skip(skip1).Take(take).Skip(skip2);
+					var result   = db.Child.OrderBy(c => c.ChildID).Skip(skip1).Take(take).Skip(skip2);
+					Assert.IsTrue(result.ToList().SequenceEqual(expected));
+					CheckTakeGlobalParams(db);
+				}
 			}
 		}
 
-		[Repeat(2)] // needed for providers with positional parameters with skip parameter first
 		[Test]
 		public void SkipTake31([DataSources(false)] string context, [Values] bool inline)
 		{
-			using (var db = new TestDataConnection(context))
+			// repeat needed for providers with positional parameters with skip parameter first
+			execute(context, inline);
+			execute(context, inline);
+
+			void execute(string context, bool inline)
 			{
-				db.InlineParameters = inline;
-				var skip = 2;
-				var take = 5;
-				var expected =    Child.OrderByDescending(c => c.ChildID).Skip(skip).Take(take);
-				var result   = db.Child.OrderByDescending(c => c.ChildID).Skip(skip).Take(take);
+				using (var db = new TestDataConnection(context))
+				{
+					db.InlineParameters = inline;
+					var skip = 2;
+					var take = 5;
+					var expected =    Child.OrderByDescending(c => c.ChildID).Skip(skip).Take(take);
+					var result   = db.Child.OrderByDescending(c => c.ChildID).Skip(skip).Take(take);
 
-				Assert.IsTrue(result.ToList().SequenceEqual(expected));
+					Assert.IsTrue(result.ToList().SequenceEqual(expected));
 
-				CheckTakeSkipParams(db, inline);
+					CheckTakeSkipParams(db, inline);
+				}
 			}
 		}
 
-		[Repeat(2)] // needed for providers with positional parameters with skip parameter first
 		[Test]
 		public void SkipTake32([DataSources(false)] string context, [Values] bool inline)
 		{
-			using (var db = new TestDataConnection(context))
+			// repeat needed for providers with positional parameters with skip parameter first
+			execute(context, inline);
+			execute(context, inline);
+
+			void execute(string context, bool inline)
 			{
-				db.InlineParameters = inline;
-				var skip = 2;
-				var take = 7;
-				var expected =    Child.OrderByDescending(c => c.ChildID).Take(take).Skip(skip);
-				var result   = db.Child.OrderByDescending(c => c.ChildID).Take(take).Skip(skip);
+				using (var db = new TestDataConnection(context))
+				{
+					db.InlineParameters = inline;
+					var skip = 2;
+					var take = 7;
+					var expected =    Child.OrderByDescending(c => c.ChildID).Take(take).Skip(skip);
+					var result   = db.Child.OrderByDescending(c => c.ChildID).Take(take).Skip(skip);
 
-				Assert.IsTrue(result.ToList().SequenceEqual(expected));
+					Assert.IsTrue(result.ToList().SequenceEqual(expected));
 
-				CheckTakeSkipParams(db, inline);
+					CheckTakeSkipParams(db, inline);
+				}
 			}
 		}
 
-		[Repeat(2)] // needed for providers with positional parameters with skip parameter first
 		[Test]
 		public void SkipTake33([DataSources(false)] string context, [Values] bool inline)
 		{
-			using (var db = new TestDataConnection(context))
+			// repeat needed for providers with positional parameters with skip parameter first
+			execute(context, inline);
+			execute(context, inline);
+
+			void execute(string context, bool inline)
 			{
-				db.InlineParameters = inline;
-				var skip1 = 1;
-				var skip2 = 2;
-				var take = 7;
-				var expected = Child.OrderBy(c => c.ChildID).Skip(skip1).Take(take).Skip(skip2);
-				var result   = db.Child.OrderBy(c => c.ChildID).Skip(skip1).Take(take).Skip(skip2);
+				using (var db = new TestDataConnection(context))
+				{
+					db.InlineParameters = inline;
+					var skip1 = 1;
+					var skip2 = 2;
+					var take = 7;
+					var expected = Child.OrderBy(c => c.ChildID).Skip(skip1).Take(take).Skip(skip2);
+					var result   = db.Child.OrderBy(c => c.ChildID).Skip(skip1).Take(take).Skip(skip2);
 
-				Assert.IsTrue(result.ToList().SequenceEqual(expected));
+					Assert.IsTrue(result.ToList().SequenceEqual(expected));
 
-				CheckTakeSkipParams(db, inline);
+					CheckTakeSkipParams(db, inline);
+				}
 			}
 		}
 
@@ -632,15 +684,14 @@ namespace Tests.Linq
 			using (new ParameterizeTakeSkip(withParameters))
 			using (var db = GetDataContext(context))
 			{
-				//var missCount = Query<Person>.CacheMissCount;
+				var missCount = Query<Person>.CacheMissCount;
 				Assert.AreEqual(
 					Person.   OrderBy(p => p.LastName).ElementAtOrDefault(idx),
 					db.Person.OrderBy(p => p.LastName).ElementAtOrDefault(idx));
 				CheckTakeGlobalParams(db);
 
-				//TODO: Reflection
-				//if (idx == 3)
-					//Assert.That(missCount, Is.EqualTo(Query<Person>.CacheMissCount));
+				if (idx == 3)
+					Assert.That(missCount, Is.EqualTo(Query<Person>.CacheMissCount));
 			}
 		}
 
@@ -1165,7 +1216,7 @@ namespace Tests.Linq
 			{
 				for (int i = 1; i <= 2; i++)
 				{
-					//var missCount = Query<TakeSkipClass>.CacheMissCount;
+					var missCount = Query<TakeSkipClass>.CacheMissCount;
 
 					var actual = tempTable
 						.OrderBy(t => t.Value)
@@ -1187,10 +1238,9 @@ namespace Tests.Linq
 						Assert.False(cn.LastQuery!.ToLower().Contains("case"));
 					}
 
-					//TODO: Reflection
-					//if (i == 2)
-					//Assert.That(missCount, Is.EqualTo(Query<TakeSkipClass>.CacheMissCount));
-
+					if (i == 2)
+						Assert.That(missCount, Is.EqualTo(Query<TakeSkipClass>.CacheMissCount));
+					
 				}
 			}
 		}

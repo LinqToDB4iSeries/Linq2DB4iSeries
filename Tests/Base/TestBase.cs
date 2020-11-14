@@ -168,7 +168,7 @@ namespace Tests
 			}
 
 			UserProviders  = new HashSet<string>(testSettings.Providers ?? Array<string>.Empty, StringComparer.OrdinalIgnoreCase);
-			SkipCategories = new HashSet<string>(testSettings.Skip      ?? Array<string>.Empty, StringComparer.OrdinalIgnoreCase);
+			SkipCategories = new HashSet<string>(testSettings.Skip ?? Array<string>.Empty, StringComparer.OrdinalIgnoreCase);
 
 			var logLevel = testSettings.TraceLevel;
 			var traceLevel = TraceLevel.Info;
@@ -322,7 +322,52 @@ namespace Tests
 		public static readonly string? DefaultProvider;
 		public static readonly HashSet<string> SkipCategories;
 
-		public static readonly List<string> Providers = new List<string>(TestProvNameDb2i.GetAll());
+		public static readonly List<string> Providers = new List<string>
+		{
+#if NET472
+			ProviderName.Sybase,
+			ProviderName.OracleNative,
+			TestProvName.Oracle11Native,
+			ProviderName.Informix,
+#endif
+			ProviderName.SqlCe,
+			ProviderName.Access,
+			ProviderName.AccessOdbc,
+			ProviderName.DB2,
+			ProviderName.InformixDB2,
+			ProviderName.SQLiteClassic,
+			TestProvName.SQLiteClassicMiniProfilerMapped,
+			TestProvName.SQLiteClassicMiniProfilerUnmapped,
+			ProviderName.SybaseManaged,
+			ProviderName.OracleManaged,
+			TestProvName.Oracle11Managed,
+			ProviderName.Firebird,
+			TestProvName.Firebird3,
+			ProviderName.SqlServer2008,
+			ProviderName.SqlServer2012,
+			ProviderName.SqlServer2014,
+			TestProvName.SqlServer2016,
+			ProviderName.SqlServer2017,
+			TestProvName.SqlServer2019,
+			ProviderName.SqlServer2000,
+			ProviderName.SqlServer2005,
+			TestProvName.SqlAzure,
+			ProviderName.PostgreSQL,
+			ProviderName.PostgreSQL92,
+			ProviderName.PostgreSQL93,
+			ProviderName.PostgreSQL95,
+			TestProvName.PostgreSQL10,
+			TestProvName.PostgreSQL11,
+			TestProvName.PostgreSQL12,
+			TestProvName.PostgreSQL13,
+			ProviderName.MySql,
+			ProviderName.MySqlConnector,
+			TestProvName.MySql55,
+			TestProvName.MariaDB,
+			ProviderName.SQLiteMS,
+			ProviderName.SapHanaNative,
+			ProviderName.SapHanaOdbc
+		};
 
 		protected ITestDataContext GetDataContext(string configuration, MappingSchema? ms = null)
 		{
@@ -1272,6 +1317,21 @@ namespace Tests
 		public void Dispose()
 		{
 			Configuration.Linq.DoNotClearOrderBys = _oldValue;
+		}
+	}
+
+	public class UseBinaryAggregateExpression : IDisposable
+	{
+		private readonly bool _oldValue = Configuration.Linq.UseBinaryAggregateExpression;
+
+		public UseBinaryAggregateExpression(bool enable)
+		{
+			Configuration.Linq.UseBinaryAggregateExpression = enable;
+		}
+
+		public void Dispose()
+		{
+			Configuration.Linq.UseBinaryAggregateExpression = _oldValue;
 		}
 	}
 

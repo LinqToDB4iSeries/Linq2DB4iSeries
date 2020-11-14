@@ -22,7 +22,6 @@ namespace Tests.xUpdate
 		public void Merge(
 			[DataSources(
 				false,
-				TestProvNameDb2i.All_54,
 				TestProvName.AllAccess,
 				TestProvName.AllInformix,
 				TestProvName.AllMySql,
@@ -44,7 +43,6 @@ namespace Tests.xUpdate
 		public void MergeWithEmptySource(
 			[DataSources(
 				false,
-				TestProvNameDb2i.All_54,
 				TestProvName.AllAccess,
 				TestProvName.AllInformix,
 				TestProvName.AllSQLite,
@@ -255,7 +253,10 @@ namespace Tests.xUpdate
 				ProviderName.SqlServer2000, ProviderName.SqlServer2005)]
 			string context)
 		{
+			ResetAllTypesIdentity(context);
+
 			using (var db = new TestDataConnection(context))
+			using (db.BeginTransaction())
 			{
 				var id = ConvertTo<int>.From(db.GetTable<AllType>().InsertWithIdentity(() => new AllType
 				{
@@ -263,14 +264,7 @@ namespace Tests.xUpdate
 					ncharDataType = "\x0"
 				}));
 
-				try
-				{
-					db.Merge(db.GetTable<AllType>().Where(t => t.ID == id));
-				}
-				finally
-				{
-					db.GetTable<AllType>().Delete(t => t.ID == id);
-				}
+				db.Merge(db.GetTable<AllType>().Where(t => t.ID == id));
 			}
 		}
 
@@ -292,23 +286,17 @@ namespace Tests.xUpdate
 			string context)
 		{
 			using (var db = new TestDataConnection(context))
+			using (db.BeginTransaction())
 			{
-				try
+				db.Merge(new[]
 				{
-					db.Merge(new[]
+					new AllType
 					{
-						new AllType
-						{
-							ID            = 10,
-							charDataType  = '\x0',
-							ncharDataType = "\x0"
-						}
-					});
-				}
-				finally
-				{
-					db.GetTable<AllType>().Delete(t => t.ID == 10);
-				}
+						ID            = 10,
+						charDataType  = '\x0',
+						ncharDataType = "\x0"
+					}
+				});
 			}
 		}
 	}
