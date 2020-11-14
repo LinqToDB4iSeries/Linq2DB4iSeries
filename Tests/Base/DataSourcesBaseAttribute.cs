@@ -17,7 +17,12 @@ namespace Tests
 
 		protected DataSourcesBaseAttribute(bool includeLinqService, string[] providers)
 		{
-			IncludeLinqService = includeLinqService;
+			//switch linq service off for db2i
+			IncludeLinqService = false;
+
+			//Handle db2i aliases
+			providers = providers.Concat(TestProvNameDb2i.GetProviders(providers)).ToArray();
+
 			Providers          = providers.SelectMany(p => p.Split(',').Select(_ => _.Trim())).ToArray();
 		}
 

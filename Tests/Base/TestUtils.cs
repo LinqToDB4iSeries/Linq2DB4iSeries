@@ -51,7 +51,8 @@ namespace Tests
 		[Sql.Expression("current server", ServerSideOnly = true, Configuration = ProviderName.DB2)]
 		[Sql.Function("current_database", ServerSideOnly = true, Configuration = ProviderName.PostgreSQL)]
 		[Sql.Function("DATABASE"        , ServerSideOnly = true, Configuration = ProviderName.MySql)]
-		[Sql.Function("DB_NAME"         , ServerSideOnly = true)]
+		//[Sql.Function("DB_NAME"         , ServerSideOnly = true)] //default
+		[Sql.Expression("current server", ServerSideOnly = true)]
 		private static string DbName()
 		{
 			throw new InvalidOperationException();
@@ -64,7 +65,8 @@ namespace Tests
 		[Sql.Function("current_schema"  , ServerSideOnly = true, Configuration = ProviderName.PostgreSQL)]
 		[Sql.Function("USER_NAME"       , ServerSideOnly = true, Configuration = ProviderName.Sybase)]
 		[Sql.Expression("current_schema", ServerSideOnly = true, Configuration = ProviderName.SapHana)]
-		[Sql.Function("SCHEMA_NAME"     , ServerSideOnly = true)]
+		//[Sql.Function("SCHEMA_NAME"     , ServerSideOnly = true)] //default
+		[Sql.Expression("current schema", ServerSideOnly = true)]
 		private static string SchemaName()
 		{
 			throw new InvalidOperationException();
@@ -85,7 +87,7 @@ namespace Tests
 		/// </summary>
 		public static string GetSchemaName(IDataContext db)
 		{
-			switch (GetContextName(db))
+			switch (TestProvNameDb2i.GetFamily(GetContextName(db)))
 			{
 				case ProviderName.Informix:
 				case ProviderName.InformixDB2:
@@ -103,6 +105,7 @@ namespace Tests
 				case TestProvName.PostgreSQL12:
 				case TestProvName.PostgreSQL13:
 				case ProviderName.DB2:
+				case TestProvNameDb2i.DB2iBase:
 				case ProviderName.Sybase:
 				case ProviderName.SybaseManaged:
 				case ProviderName.SqlServer2005:
@@ -189,7 +192,7 @@ namespace Tests
 		/// </summary>
 		public static string GetDatabaseName(IDataContext db)
 		{
-			switch (GetContextName(db))
+			switch (TestProvNameDb2i.GetFamily(GetContextName(db)))
 			{
 				case ProviderName.SQLiteClassic:
 				case TestProvName.SQLiteClassicMiniProfilerMapped:
@@ -212,6 +215,7 @@ namespace Tests
 				case TestProvName.PostgreSQL12:
 				case TestProvName.PostgreSQL13:
 				case ProviderName.DB2:
+				case TestProvNameDb2i.DB2iBase:
 				case ProviderName.Sybase:
 				case ProviderName.SybaseManaged:
 				case ProviderName.SqlServer2000:
@@ -264,7 +268,7 @@ namespace Tests
 
 		class FirebirdTempTable<T> : TempTable<T>
 		{
-			public FirebirdTempTable(IDataContext db, string? tableName = null, string? databaseName = null, string? schemaName = null) 
+			public FirebirdTempTable(IDataContext db, string? tableName = null, string? databaseName = null, string? schemaName = null)
 				: base(db, tableName, databaseName, schemaName)
 			{
 			}
@@ -279,7 +283,7 @@ namespace Tests
 
 		static TempTable<T> CreateTable<T>(IDataContext db, string? tableName) =>
 			db.CreateSqlProvider() is FirebirdSqlBuilder ?
-				new FirebirdTempTable<T>(db, tableName) : 
+				new FirebirdTempTable<T>(db, tableName) :
 				new         TempTable<T>(db, tableName);
 
 		static void ClearDataContext(IDataContext db)
