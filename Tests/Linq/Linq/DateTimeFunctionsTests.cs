@@ -131,7 +131,6 @@ namespace Tests.Linq
 			[IncludeDataSources(true, TestProvName.AllAccess, ProviderName.Firebird, TestProvName.Firebird3, ProviderName.SqlCe)]
 			string context)
 		{
-			using (new DisableBaseline("Server-side date generation test"))
 			using (var db = GetDataContext(context))
 			{
 				var dbUtcNow = db.Select(() => Sql.CurrentTimestampUtc);
@@ -272,6 +271,7 @@ namespace Tests.Linq
 				var usWeeksZeroBased      = new[] { 51, 51, 52, 52, 0, 0, 0, 0, 0, 1, 1, 1 };
 				var muslimWeeks           = new[] { 52, 53, 53, 53, 1, 1, 1, 1, 2, 2, 2, 2 };
 				var primitive             = new[] { 52, 52, 52, 53, 1, 1, 1, 1, 1, 1, 1, 2 };
+				var usWeeksZeroBased_byDayOfYear = new[] { 51, 51, 52, 52, 0, 0, 0, 0, 0, 0, 1, 1 };
 
 				var results = dates
 					.Select(date => db.Select(() => Sql.AsSql(Sql.DatePart(Sql.DateParts.Week, Sql.ToSql(date)))))
@@ -306,6 +306,10 @@ namespace Tests.Linq
 				else if (usWeeksZeroBased.SequenceEqual(results))
 				{
 					Assert.Pass($"Context {db.DataProvider.Name} uses US 0-based week numbering schema");
+				}
+				else if (usWeeksZeroBased_byDayOfYear.SequenceEqual(results))
+				{
+					Assert.Pass($"Context {db.DataProvider.Name} uses US 0-based week numbering schema by day of year divided by 7");
 				}
 				else
 				{
@@ -1464,7 +1468,6 @@ namespace Tests.Linq
 		[Test]
 		public void GetDateTest1([DataSources] string context)
 		{
-			using (new DisableBaseline("Server-side date generation test"))
 			using (var db = GetDataContext(context))
 			{
 				var dates =

@@ -381,7 +381,7 @@ namespace Tests.Linq
 					from d in db.GetTable<DynamicTable>()
 					select new
 					{
-						NI = Sql.Property<int>(d, "Not Identifier")
+						NI = Sql.Property<int>(d, TestProvNameDb2i.IsiSeries(context) ? "NotIdentifier"  : "Not Identifier")
 					};
 
 				var result = query.ToArray();
@@ -403,13 +403,13 @@ namespace Tests.Linq
 			{
 				var query =
 					from d in db.GetTable<DynamicTable>()
-					group d by new { NI = Sql.Property<int>(d, "Not Identifier") }
+					group d by new { NI = Sql.Property<int>(d, TestProvNameDb2i.IsiSeries(context) ? "NotIdentifier" : "Not Identifier") }
 					into g
 					select new
 					{
 						g.Key.NI,
 						Count = g.Count(),
-						Sum = g.Sum(i => Sql.Property<int>(i, "Some Value"))
+						Sum = g.Sum(i => Sql.Property<int>(i, TestProvNameDb2i.IsiSeries(context) ? "SomeValue" : "Some Value"))
 					};
 
 				var result = query.ToArray();
@@ -457,10 +457,12 @@ namespace Tests.Linq
 			[Column, Identity, PrimaryKey]
 			public int ID { get; set; }
 
-			[Column("Not Identifier")]
+			//[Column("Not Identifier")] //deafult
+			[Column("NotIdentifier")] //db2i
 			public int NotIdentifier { get; set; }
 
-			[Column("Some Value")]
+			//[Column("Some Value")] //default
+			[Column("SomeValue")] //db2i
 			public int Value { get; set; }
 		}
 

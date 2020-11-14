@@ -173,8 +173,9 @@ namespace Tests.xUpdate
 			}
 		}
 
+#if NETFRAMEWORK
 		[Test]
-		public void TestParametersInListSourceProperty([IncludeDataSources(ProviderName.DB2)] string context)
+		public void TestParametersInListSourceProperty([IncludeDataSources(TestProvNameDb2i.All_AccessClient)] string context)
 		{
 			using (var db = new TestDataConnection(context))
 			{
@@ -184,7 +185,7 @@ namespace Tests.xUpdate
 				{
 					// must be type that cannot be converted to literal but will be accepted by server
 					// for now we don't generate literals for provider-specific types
-					val = new IBM.Data.DB2Types.DB2Time(TimeSpan.FromMinutes(12))
+					val = new IBM.Data.DB2.iSeries.iDB2Time(0, 12, 0)
 				};
 
 				var table = GetTarget(db);
@@ -205,6 +206,7 @@ namespace Tests.xUpdate
 				Assert.AreEqual(4, db.LastQuery.Count(_ => _ == GetParameterToken(context)));
 			}
 		}
+#endif
 
 		[Test]
 		public void TestParametersInMatchCondition([MergeDataContextSource(false)] string context)
@@ -232,6 +234,9 @@ namespace Tests.xUpdate
 
 		private static char GetParameterToken([MergeDataContextSource] string context)
 		{
+			if (TestProvNameDb2i.IsiSeriesODBC(context) || TestProvNameDb2i.IsiSeriesOleDb(context))
+				return '?';
+
 			switch (context)
 			{
 				case ProviderName.SapHanaOdbc    :
@@ -599,7 +604,7 @@ namespace Tests.xUpdate
 			{
 				PrepareData(db);
 
-				var param = TestData.DateTime;
+				var param = DateTime.Now;
 
 				var table = GetTarget(db);
 

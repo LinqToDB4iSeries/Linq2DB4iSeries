@@ -1041,10 +1041,8 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void InsertOrUpdate1([DataSources] string context)
+		public void InsertOrUpdate1([InsertOrUpdateDataSources] string context)
 		{
-			ResetPersonIdentity(context);
-
 			using (var db = GetDataContext(context))
 			{
 				var id = 0;
@@ -1083,10 +1081,8 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void InsertOrUpdate2([DataSources] string context)
+		public void InsertOrUpdate2([InsertOrUpdateDataSources] string context)
 		{
-			ResetPersonIdentity(context);
-
 			using (var db = GetDataContext(context))
 			{
 				int id;
@@ -1159,10 +1155,8 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void InsertOrReplace1([DataSources] string context)
+		public void InsertOrReplace1([InsertOrUpdateDataSources] string context)
 		{
-			ResetPersonIdentity(context);
-
 			using (var db = GetDataContext(context))
 			{
 				var id = 0;
@@ -1196,10 +1190,8 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public async Task InsertOrReplace1Async([DataSources] string context)
+		public async Task InsertOrReplace1Async([InsertOrUpdateDataSources] string context)
 		{
-			ResetPersonIdentity(context);
-
 			using (var db = GetDataContext(context))
 			{
 				var id = 0;
@@ -1251,10 +1243,8 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void InsertOrUpdate3([DataSources] string context)
+		public void InsertOrUpdate3([InsertOrUpdateDataSources] string context)
 		{
-			ResetPersonIdentity(context);
-
 			using (var db = GetDataContext(context))
 			{
 				var id = 0;
@@ -1302,10 +1292,8 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public async Task InsertOrUpdate3Async([DataSources] string context)
+		public async Task InsertOrUpdate3Async([InsertOrUpdateDataSources] string context)
 		{
-			ResetPersonIdentity(context);
-
 			using (var db = GetDataContext(context))
 			{
 				var id = 0;
@@ -1353,10 +1341,8 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void InsertOrUpdate4([DataSources] string context)
+		public void InsertOrUpdate4([InsertOrUpdateDataSources] string context)
 		{
-			ResetPersonIdentity(context);
-
 			using (var db = GetDataContext(context))
 			{
 				var id = 0;
@@ -1825,7 +1811,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void InsertOrReplaceByTableName([DataSources] string context)
+		public void InsertOrReplaceByTableName([InsertOrUpdateDataSources] string context)
 		{
 			const string? schemaName = null;
 			var tableName  = "xxPatient" + TestUtils.GetNext().ToString();
@@ -1871,7 +1857,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public async Task InsertOrReplaceByTableNameAsync([DataSources] string context)
+		public async Task InsertOrReplaceByTableNameAsync([InsertOrUpdateDataSources] string context)
 		{
 			const string? schemaName = null;
 			var tableName  = "xxPatient" + TestUtils.GetNext().ToString();
@@ -1947,8 +1933,6 @@ namespace Tests.xUpdate
 		[Test]
 		public void TestUpdateWithColumnFilter([DataSources] string context, [Values] bool withMiddleName)
 		{
-			ResetPersonIdentity(context);
-
 			using (var db = GetDataContext(context))
 			{
 				var newName = "InsertColumnFilter";
@@ -1994,7 +1978,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void TestInsertOrReplaceWithColumnFilter([DataSources] string context, [Values] bool withMiddleName, [Values] bool skipOnInsert)
+		public void TestInsertOrReplaceWithColumnFilter([InsertOrUpdateDataSources] string context, [Values] bool withMiddleName, [Values] bool skipOnInsert)
 		{
 			using (var db = GetDataContext(context))
 			using (var table = db.CreateLocalTable<TestInsertOrReplaceTable>())
@@ -2037,7 +2021,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void Issue2243([DataSources] string context, [Values(1, 2, 3)] int seed)
+		public void Issue2243([InsertOrUpdateDataSources] string context, [Values(1, 2, 3)] int seed)
 		{
 			using (var db    = GetDataContext(context))
 			using (var table = db.CreateLocalTable<TestInsertOrReplaceInfo>())

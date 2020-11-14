@@ -20,6 +20,7 @@ namespace Tests.xUpdate
 		{
 			static string[] Unsupported = new[]
 			{
+				TestProvNameDb2i.All_54,
 				TestProvName.AllAccess,
 				ProviderName.SqlCe,
 				TestProvName.AllSQLite,
@@ -49,9 +50,7 @@ namespace Tests.xUpdate
 				ProviderName.SqlServer2008,
 				ProviderName.SqlServer2012,
 				ProviderName.SqlServer2014,
-				TestProvName.SqlServer2016,
 				ProviderName.SqlServer2017,
-				TestProvName.SqlServer2019,
 				TestProvName.SqlAzure
 			};
 

@@ -46,6 +46,9 @@ namespace Tests.xUpdate
 				case ProviderName.OracleNative   : batchSize = 100; break;
 			}
 
+			if (TestProvNameDb2i.IsiSeries(GetProviderName(context, out var _)))
+				batchSize = 500;
+
 			RunTest(context, batchSize);
 		}
 

@@ -22,6 +22,7 @@ namespace Tests.xUpdate
 		public void Merge(
 			[DataSources(
 				false,
+				TestProvNameDb2i.All_54,
 				TestProvName.AllAccess,
 				TestProvName.AllInformix,
 				TestProvName.AllMySql,
@@ -43,6 +44,7 @@ namespace Tests.xUpdate
 		public void MergeWithEmptySource(
 			[DataSources(
 				false,
+				TestProvNameDb2i.All_54,
 				TestProvName.AllAccess,
 				TestProvName.AllInformix,
 				TestProvName.AllSQLite,
