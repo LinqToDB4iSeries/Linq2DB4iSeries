@@ -8,7 +8,7 @@ namespace Tests
 	public class CreateDatabaseSourcesAttribute : DataSourcesBaseAttribute
 	{
 		public CreateDatabaseSourcesAttribute()
-			: base(false, new string[] { })
+			: base(false, Array.Empty<string>())
 		{
 		}
 

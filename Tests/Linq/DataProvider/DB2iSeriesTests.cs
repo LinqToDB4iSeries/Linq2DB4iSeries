@@ -92,7 +92,7 @@ namespace Tests.DataProvider
 
 		public static string AsQuoted(this string s) => $"'{s}'";
 
-		public static string GetParameterMarker(this DataConnection dataConnection, string parameterName, string? castTo = null)
+		public static string GetParameterMarker(this DataConnection dataConnection, string parameterName, string castTo = null)
 		{
 			return GetValueSql(
 				dataConnection.DataProvider is DB2iSeriesDataProvider iSeriesDataProvider
@@ -157,7 +157,7 @@ namespace Tests.DataProvider
 		protected T TestType<T>(DataConnection conn, string fieldName,
 			DataType dataType = DataType.Undefined,
 			string tableName = "AllTypes",
-			string? castTo = null,
+			string castTo = null,
 			bool skipPass = false,
 			bool skipNull = false,
 			bool skipDefinedNull = false,
@@ -1268,6 +1268,31 @@ namespace Tests.DataProvider
 				);
 
 				Assert.AreEqual(1, table.Count());
+			}
+		}
+
+		[Test, IncludeDataContextSource(TestProvNameDb2i.All_73)]
+		public void SchemaProvider(string context)
+		{
+			using (var conn = new DataConnection(context))
+			{
+				var sp = conn.DataProvider.GetSchemaProvider();
+				var dbSchema = sp.GetSchema(conn);
+
+				var table = dbSchema.Tables.Single(t => t.IsDefaultSchema && t.TableName == "ALLTYPES");
+
+				if (TestProvNameDb2i.IsiSeries(context))
+				{
+					var binaryType = TestProvNameDb2i.IsiSeriesAccessClient(context) ? "BINARY(20)" : "BINARY";
+
+					Assert.That(table.Columns.Single(c => c.ColumnName == "BINARYDATATYPE").ColumnType, Is.EqualTo(binaryType));
+					Assert.That(table.Columns.Single(c => c.ColumnName == "VARBINARYDATATYPE").ColumnType, Is.EqualTo("VARBIN"));
+				}
+				else
+				{
+					Assert.That(table.Columns.Single(c => c.ColumnName == "BINARYDATATYPE").ColumnType, Is.EqualTo("CHAR (5) FOR BIT DATA"));
+					Assert.That(table.Columns.Single(c => c.ColumnName == "VARBINARYDATATYPE").ColumnType, Is.EqualTo("VARCHAR (5) FOR BIT DATA"));
+				}
 			}
 		}
 	}

@@ -88,7 +88,9 @@ namespace Tests.SchemaProvider
 					case ProviderName.SqlServer2008 :
 					case ProviderName.SqlServer2012 :
 					case ProviderName.SqlServer2014 :
+					case TestProvName.SqlServer2016 :
 					case ProviderName.SqlServer2017 :
+					case TestProvName.SqlServer2019 :
 					case TestProvName.SqlAzure      :
 						{
 							var indexTable = dbSchema.Tables.Single(t => t.IsDefaultSchema && t.TableName == "IndexTable");
@@ -112,7 +114,9 @@ namespace Tests.SchemaProvider
 					case ProviderName.SqlServer2008 :
 					case ProviderName.SqlServer2012 :
 					case ProviderName.SqlServer2014 :
+					case TestProvName.SqlServer2016 :
 					case ProviderName.SqlServer2017 :
+					case TestProvName.SqlServer2019 :
 					case TestProvName.SqlAzure      :
 						{
 							var tbl = dbSchema.Tables.Single(at => at.IsDefaultSchema && at.TableName == "AllTypes");
@@ -231,21 +235,10 @@ namespace Tests.SchemaProvider
 			{
 				var sp       = conn.DataProvider.GetSchemaProvider();
 				var dbSchema = sp.GetSchema(conn);
-				
-				var table    = dbSchema.Tables.Single(t => t.IsDefaultSchema && t.TableName == "ALLTYPES");
+				var table    = dbSchema.Tables.Single(t => t.TableName == "ALLTYPES");
 
-				if (TestProvNameDb2i.IsiSeries(context))
-				{
-					var binaryType = TestProvNameDb2i.IsiSeriesAccessClient(context) ? "BINARY(20)" : "BINARY";
-
-					Assert.That(table.Columns.Single(c => c.ColumnName == "BINARYDATATYPE").ColumnType, Is.EqualTo(binaryType));
-					Assert.That(table.Columns.Single(c => c.ColumnName == "VARBINARYDATATYPE").ColumnType, Is.EqualTo("VARBIN"));
-				}
-				else
-				{
-					Assert.That(table.Columns.Single(c => c.ColumnName == "BINARYDATATYPE").ColumnType, Is.EqualTo("CHAR (5) FOR BIT DATA"));
-					Assert.That(table.Columns.Single(c => c.ColumnName == "VARBINARYDATATYPE").ColumnType, Is.EqualTo("VARCHAR (5) FOR BIT DATA"));
-				}
+				Assert.That(table.Columns.Single(c => c.ColumnName == "BINARYDATATYPE").   ColumnType, Is.EqualTo("CHAR (5) FOR BIT DATA"));
+				Assert.That(table.Columns.Single(c => c.ColumnName == "VARBINARYDATATYPE").ColumnType, Is.EqualTo("VARCHAR (5) FOR BIT DATA"));
 			}
 		}
 
@@ -279,6 +272,7 @@ namespace Tests.SchemaProvider
 		public void IncludeExcludeSchemaTest([DataSources(false, ProviderName.SQLiteMS, ProviderName.MySqlConnector)]
 			string context)
 		{
+			using (new DisableBaseline("TODO: exclude schema list is not stable, db2 schema provider needs refactoring", GetProviderName(context, out var _) == ProviderName.DB2))
 			using (var conn = new DataConnection(context))
 			{
 				var exclude = conn.DataProvider.GetSchemaProvider()
@@ -455,10 +449,7 @@ namespace Tests.SchemaProvider
 				OtherColumns    = key.ThisColumns,
 			};
 
-
-			typeof(SchemaProviderBase).GetMethod("SetForeignKeyMemberName",System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)
-				.Invoke(null, new object[] { new GetSchemaOptions { }, key.ThisTable, key });
-			//SchemaProviderBase.SetForeignKeyMemberName(new GetSchemaOptions {}, key.ThisTable, key);
+			SchemaProviderBaseExtensions.SetForeignKeyMemberName(new GetSchemaOptions {}, key.ThisTable, key);
 
 			Assert.That(key.MemberName, Is.EqualTo("YyyZzz"));
 		}

@@ -102,6 +102,8 @@ namespace Tests
 				case ProviderName.PostgreSQL95:
 				case TestProvName.PostgreSQL10:
 				case TestProvName.PostgreSQL11:
+				case TestProvName.PostgreSQL12:
+				case TestProvName.PostgreSQL13:
 				case ProviderName.DB2:
 				case TestProvNameDb2i.DB2iBase:
 				case ProviderName.Sybase:
@@ -110,7 +112,9 @@ namespace Tests
 				case ProviderName.SqlServer2008:
 				case ProviderName.SqlServer2012:
 				case ProviderName.SqlServer2014:
+				case TestProvName.SqlServer2016:
 				case ProviderName.SqlServer2017:
+				case TestProvName.SqlServer2019:
 				case TestProvName.SqlAzure:
 				case ProviderName.SapHanaNative:
 				case ProviderName.SapHanaOdbc:
@@ -136,7 +140,9 @@ namespace Tests
 				case ProviderName.SqlServer2008:
 				case ProviderName.SqlServer2012:
 				case ProviderName.SqlServer2014:
+				case TestProvName.SqlServer2016:
 				case ProviderName.SqlServer2017:
+				case TestProvName.SqlServer2019:
 				case TestProvName.SqlAzure:
 				case ProviderName.OracleManaged:
 				case ProviderName.OracleNative:
@@ -206,6 +212,8 @@ namespace Tests
 				case ProviderName.PostgreSQL95:
 				case TestProvName.PostgreSQL10:
 				case TestProvName.PostgreSQL11:
+				case TestProvName.PostgreSQL12:
+				case TestProvName.PostgreSQL13:
 				case ProviderName.DB2:
 				case TestProvNameDb2i.DB2iBase:
 				case ProviderName.Sybase:
@@ -215,7 +223,9 @@ namespace Tests
 				case ProviderName.SqlServer2008:
 				case ProviderName.SqlServer2012:
 				case ProviderName.SqlServer2014:
+				case TestProvName.SqlServer2016:
 				case ProviderName.SqlServer2017:
+				case TestProvName.SqlServer2019:
 				case TestProvName.SqlAzure:
 					return db.GetTable<LinqDataTypes>().Select(_ => DbName()).First();
 				case ProviderName.Informix:
@@ -258,7 +268,7 @@ namespace Tests
 
 		class FirebirdTempTable<T> : TempTable<T>
 		{
-			public FirebirdTempTable(IDataContext db, string? tableName = null, string? databaseName = null, string? schemaName = null) 
+			public FirebirdTempTable(IDataContext db, string? tableName = null, string? databaseName = null, string? schemaName = null)
 				: base(db, tableName, databaseName, schemaName)
 			{
 			}
@@ -273,7 +283,7 @@ namespace Tests
 
 		static TempTable<T> CreateTable<T>(IDataContext db, string? tableName) =>
 			db.CreateSqlProvider() is FirebirdSqlBuilder ?
-				new FirebirdTempTable<T>(db, tableName) : 
+				new FirebirdTempTable<T>(db, tableName) :
 				new         TempTable<T>(db, tableName);
 
 		static void ClearDataContext(IDataContext db)

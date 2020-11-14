@@ -3,5 +3,5 @@
 
 	<ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' OR '$(TargetFramework)' == 'netcoreapp3.1' ">
 		<Compile Remove="TestServiceModelDataContext.cs" />
-	</ItemGroup>
+	</ItemGroup>	
 </Project>

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net472;netstandard2.1</TargetFrameworks>
+    <RootNamespace>Tests</RootNamespace>
+		<LangVersion>8</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Source\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj" />
+  </ItemGroup>
+
+</Project>

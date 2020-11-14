@@ -12,8 +12,9 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\Source\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj" />
 		<ProjectReference Include="..\..\Tests\LinqToDB.Tools\LinqToDB.Tools.csproj" />
+		<ProjectReference Include="..\Tests.DB2iTools\Tests.DB2iTools.csproj" />
 	</ItemGroup>
-	
+
 	<ItemGroup>
 		<PackageReference Include="NUnit" Version="3.12.0" />
 		<PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />

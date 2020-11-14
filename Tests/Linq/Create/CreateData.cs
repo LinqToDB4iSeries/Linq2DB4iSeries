@@ -22,13 +22,13 @@ public class a_CreateData : TestBase
 {
 	static void RunScript(string configString, string divider, string name, Action<IDbConnection>? action = null, string? database = null)
 	{
-		Console.WriteLine("=== " + name + " === \n");
+		TestContext.WriteLine("=== " + name + " === \n");
 
 		var scriptFolder = Path.Combine(Path.GetFullPath("."), "Database", "Create Scripts");
-		Console.WriteLine("Script folder exists: {1}; {0}", scriptFolder, Directory.Exists(scriptFolder));
+		TestContext.WriteLine("Script folder exists: {1}; {0}", scriptFolder, Directory.Exists(scriptFolder));
 
-		var sqlFileName = Path.GetFullPath(Path.Combine(scriptFolder, Path.ChangeExtension(name, "sql")));
-		Console.WriteLine("Sql file exists: {1}; {0}", sqlFileName, File.Exists(sqlFileName));
+		var sqlFileName  = Path.GetFullPath(Path.Combine(scriptFolder, Path.ChangeExtension(name, "sql")));
+		TestContext.WriteLine("Sql file exists: {1}; {0}", sqlFileName, File.Exists(sqlFileName));
 
 		var text = File.ReadAllText(sqlFileName);
 
@@ -44,15 +44,15 @@ public class a_CreateData : TestBase
 
 		var cmds = text
 			.Replace("{DBNAME}", database)
-			.Replace("\r", "")
+			.Replace("\r",    "")
 			.Replace(divider, "\x1")
-			.Split('\x1')
-			.Select(c => c.Trim())
-			.Where(c => !string.IsNullOrEmpty(c))
+			.Split  ('\x1')
+			.Select (c => c.Trim())
+			.Where  (c => !string.IsNullOrEmpty(c))
 			.ToArray();
 
 		if (DataConnection.TraceSwitch.TraceInfo)
-			Console.WriteLine("Commands count: {0}", cmds.Length);
+			TestContext.WriteLine("Commands count: {0}", cmds.Length);
 
 		Exception? exception = null;
 
@@ -65,7 +65,7 @@ public class a_CreateData : TestBase
 				try
 				{
 					if (DataConnection.TraceSwitch.TraceInfo)
-						Console.WriteLine(command);
+						TestContext.WriteLine(command);
 
 					if (configString == ProviderName.OracleNative || configString == TestProvName.Oracle11Native)
 					{
@@ -80,28 +80,28 @@ public class a_CreateData : TestBase
 						db.Execute(command);
 
 					if (DataConnection.TraceSwitch.TraceInfo)
-						Console.WriteLine("\nOK\n");
+						TestContext.WriteLine("\nOK\n");
 				}
 				catch (Exception ex)
 				{
 					if (DataConnection.TraceSwitch.TraceError)
 					{
 						if (!DataConnection.TraceSwitch.TraceInfo)
-							Console.WriteLine(command);
+							TestContext.WriteLine(command);
 
 						var isDrop =
 							command.TrimStart().StartsWith("DROP") ||
 							command.TrimStart().StartsWith("CALL DROP");
 
-						Console.WriteLine(ex.Message);
+						TestContext.WriteLine(ex.Message);
 
 						if (isDrop)
 						{
-							Console.WriteLine("\nnot too OK\n");
+							TestContext.WriteLine("\nnot too OK\n");
 						}
 						else
 						{
-							Console.WriteLine("\nFAILED\n");
+							TestContext.WriteLine("\nFAILED\n");
 
 							if (exception == null)
 								exception = ex;
@@ -115,13 +115,13 @@ public class a_CreateData : TestBase
 				throw exception;
 
 			if (DataConnection.TraceSwitch.TraceInfo)
-				Console.WriteLine("\nBulkCopy LinqDataTypes\n");
+				TestContext.WriteLine("\nBulkCopy LinqDataTypes\n");
 
 			var options = new BulkCopyOptions();
 
 			db.BulkCopy(
 				options,
-				new[]
+				new []
 				{
 					new LinqDataTypes2 { ID =  1, MoneyValue =  1.11m, DateTimeValue = new DateTime(2001,  1,  11,  1, 11, 21, 100), BoolValue = true,  GuidValue = new Guid("ef129165-6ffe-4df9-bb6b-bb16e413c883"), SmallIntValue =  1, StringValue = null, BigIntValue = 1 },
 					new LinqDataTypes2 { ID =  2, MoneyValue =  2.49m, DateTimeValue = new DateTime(2005,  5,  15,  5, 15, 25, 500), BoolValue = false, GuidValue = new Guid("bc663a61-7b40-4681-ac38-f9aaf55b706b"), SmallIntValue =  2, StringValue = "",   BigIntValue = 2 },
@@ -138,11 +138,11 @@ public class a_CreateData : TestBase
 				});
 
 			if (DataConnection.TraceSwitch.TraceInfo)
-				Console.WriteLine("\nBulkCopy Parent\n");
+				TestContext.WriteLine("\nBulkCopy Parent\n");
 
 			db.BulkCopy(
 				options,
-				new[]
+				new []
 				{
 					new Parent { ParentID = 1, Value1 = 1    },
 					new Parent { ParentID = 2, Value1 = null },
@@ -154,11 +154,11 @@ public class a_CreateData : TestBase
 				});
 
 			if (DataConnection.TraceSwitch.TraceInfo)
-				Console.WriteLine("\nBulkCopy Child\n");
+				TestContext.WriteLine("\nBulkCopy Child\n");
 
 			db.BulkCopy(
 				options,
-				new[]
+				new []
 				{
 					new Child { ParentID = 1, ChildID = 11 },
 					new Child { ParentID = 2, ChildID = 21 },
@@ -180,11 +180,11 @@ public class a_CreateData : TestBase
 				});
 
 			if (DataConnection.TraceSwitch.TraceInfo)
-				Console.WriteLine("\nBulkCopy GrandChild\n");
+				TestContext.WriteLine("\nBulkCopy GrandChild\n");
 
 			db.BulkCopy(
 				options,
-				new[]
+				new []
 				{
 					new GrandChild { ParentID = 1, ChildID = 11, GrandChildID = 111 },
 					new GrandChild { ParentID = 2, ChildID = 21, GrandChildID = 211 },

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -19,6 +19,7 @@ namespace Tests.Tools
 	public class TestSettings
 	{
 		public string?   BasedOn;
+		public string?   BaselinesPath;
 		public string[]? Providers;
 		public string[]? Skip;
 		public string?   TraceLevel;
@@ -51,6 +52,9 @@ namespace Tests.Tools
 
 				if (settings1.NoLinqService == null)
 					settings1.NoLinqService = settings2.NoLinqService;
+
+				if (settings1.BaselinesPath == null)
+					settings1.BaselinesPath = settings2.BaselinesPath;
 			}
 
 			var defaultSettings = JsonConvert.DeserializeObject<Dictionary<string,TestSettings>>(defaultJson);
@@ -101,7 +105,7 @@ namespace Tests.Tools
 				}
 
 				//Translate connection strings enclosed in brackets as references
-				foreach(var connection in settings.Connections)
+				foreach (var connection in settings.Connections)
 				{
 					var cs = connection.Value.ConnectionString;
 					if (cs.StartsWith("[") && cs.EndsWith("]"))
