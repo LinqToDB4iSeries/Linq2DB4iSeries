@@ -95,7 +95,7 @@ namespace Tests
 	{
 		public static void SetForeignKeyMemberName(GetSchemaOptions getSchemaOptions, TableSchema tableSchema, ForeignKeySchema foreignKeySchema)
 		{
-			typeof(LinqToDB.SchemaProvider.SchemaProviderBase).GetMethod("SetForeignKeyMemberName", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+			typeof(LinqToDB.SchemaProvider.SchemaProviderBase).GetMethod(nameof(SetForeignKeyMemberName), BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
 				.Invoke(null, new object[] { getSchemaOptions, tableSchema, foreignKeySchema });
 		}
 	}
@@ -104,7 +104,8 @@ namespace Tests
 	{
 		public static void PrepareQueryAndAliases(this SqlSelectStatement statement)
 		{
-			//TODO: reflection
+			typeof(SqlStatement).GetMethod(nameof(PrepareQueryAndAliases), BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+				.Invoke(statement, new object[] { });
 		}
 	}
 }

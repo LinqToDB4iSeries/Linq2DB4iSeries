@@ -3,6 +3,7 @@
 
 	<PropertyGroup>
 		<AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+		<AssemblyName>linq2db4iSeries.Tests</AssemblyName>
 	</PropertyGroup>
 
 	<ItemGroup>
