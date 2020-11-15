@@ -1,5 +1,5 @@
 ﻿using System;
-
+using System.Linq;
 using NUnit.Framework;
 
 using Tests;
@@ -17,6 +17,8 @@ public class TestsInitialization
 		// register test provider
 		TestNoopProvider.Init();
 		LinqToDB.DataProvider.DB2iSeries.DB2iSeriesTools.RegisterProviderDetector();
+		TestBase.Providers.Clear();
+		TestBase.Providers.AddRange(TestProvNameDb2i.GetAll());
 	}
 
 	[OneTimeTearDown]
