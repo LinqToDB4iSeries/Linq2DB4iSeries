@@ -16,7 +16,7 @@ namespace LinqToDB.Expressions
 	using Linq.Builder;
 	using Mapping;
 
-	public static class InternalExtensions
+	public static class InternalExtensionShims
 	{
 		public static bool IsSameGenericMethod(this MethodCallExpression method, MethodInfo genericMethodInfo)
 		{

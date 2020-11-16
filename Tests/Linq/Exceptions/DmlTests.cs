@@ -37,7 +37,7 @@ namespace Tests.Exceptions
 		}
 
 		[Test]
-		public void InsertOrUpdate2([DataSources(TestProvNameDb2i.All_54)] string context)
+		public void InsertOrUpdate2([InsertOrUpdateDataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			{

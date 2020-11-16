@@ -5,6 +5,7 @@
     <RootNamespace>Tests</RootNamespace>
 		<LangVersion>8</LangVersion>
 		<AssemblyName>linq2db4iSeries.Tests.Tools</AssemblyName>
+		<Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
