@@ -188,6 +188,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 				if (truncateTable.ResetIdentity)
 					StringBuilder.Append(" RESTART IDENTITY");
+
+				StringBuilder.Append(" IMMEDIATE");
 			}
 			else
 				base.BuildTruncateTableStatement(truncateTable);
