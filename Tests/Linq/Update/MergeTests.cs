@@ -12,7 +12,7 @@ namespace Tests.xUpdate
 	using Model;
 
 	[TestFixture]
-//	[Order(10101)]
+	//	[Order(10101)]
 	public partial class MergeTests : TestBase
 	{
 		[AttributeUsage(AttributeTargets.Parameter)]
@@ -20,7 +20,6 @@ namespace Tests.xUpdate
 		{
 			static string[] Unsupported = new[]
 			{
-				TestProvNameDb2i.All_54,
 				TestProvName.AllAccess,
 				ProviderName.SqlCe,
 				TestProvName.AllSQLite,
@@ -192,7 +191,7 @@ namespace Tests.xUpdate
 			foreach (var record in InitialSourceData)
 			{
 				yield return new TestMapping2()
-						{
+				{
 					OtherId = record.Id,
 					OtherField1 = record.Field1,
 					OtherField2 = record.Field2,

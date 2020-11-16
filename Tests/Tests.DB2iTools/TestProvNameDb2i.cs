@@ -54,8 +54,7 @@ namespace Tests
 		public static IEnumerable<string> GetNonGAS() => GetProviders(x => !x.Contains("GAS"));
 
 		public static IEnumerable<string> GetProviders(string context)
-		{
-			return context switch
+			=> context switch
 			{
 				LinqToDB.ProviderName.DB2 => GetAll(),
 				All => GetAll(),
@@ -73,7 +72,7 @@ namespace Tests
 				All_NonGAS => GetNonGAS(),
 				_ => Enumerable.Empty<string>()
 			};
-		}
+
 
 		public static IEnumerable<string> GetProviders(IEnumerable<string> contexts)
 			=> contexts.SelectMany(GetProviders).Distinct();

@@ -1,5 +1,6 @@
 ﻿{
 	"BaseConnectionStrings": {
+		"NoLinqService" : "true",
 		"Connections": {
 			"DB2.iSeries.Net.Base": {
 				"Provider": "DB2.iSeries.Net.73",
