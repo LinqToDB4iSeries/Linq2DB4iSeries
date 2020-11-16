@@ -34,6 +34,11 @@ namespace System.Diagnostics.CodeAnalysis
 }
 #endif
 
+namespace IBM.Data.Informix 
+{
+	public class IfxTimeSpan { }
+}
+
 namespace Tests
 {
 	public static class Query<T>
