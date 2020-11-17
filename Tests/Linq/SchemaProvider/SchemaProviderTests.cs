@@ -454,7 +454,7 @@ namespace Tests.SchemaProvider
 				OtherColumns    = key.ThisColumns,
 			};
 
-			SchemaProviderBaseExtensions.SetForeignKeyMemberName(new GetSchemaOptions {}, key.ThisTable, key);
+			SchemaProviderBase.SetForeignKeyMemberName(new GetSchemaOptions {}, key.ThisTable, key);
 
 			Assert.That(key.MemberName, Is.EqualTo("YyyZzz"));
 		}
