@@ -131,6 +131,7 @@ namespace Tests.Linq
 			[IncludeDataSources(true, TestProvName.AllAccess, ProviderName.Firebird, TestProvName.Firebird3, ProviderName.SqlCe)]
 			string context)
 		{
+			using (new DisableBaseline("Server-side date generation test"))
 			using (var db = GetDataContext(context))
 			{
 				var dbUtcNow = db.Select(() => Sql.CurrentTimestampUtc);
@@ -1468,6 +1469,7 @@ namespace Tests.Linq
 		[Test]
 		public void GetDateTest1([DataSources] string context)
 		{
+			using (new DisableBaseline("Server-side date generation test"))
 			using (var db = GetDataContext(context))
 			{
 				var dates =

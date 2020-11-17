@@ -18,7 +18,6 @@
 		<AnalysisLevel>preview</AnalysisLevel>
 
 		<SignAssembly>True</SignAssembly>
-		<AssemblyOriginatorKeyFile>..\..\Build\LinqToDB.DB2iSeries.snk</AssemblyOriginatorKeyFile>
 		<DelaySign>False</DelaySign>
 
 		<AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>

@@ -2,25 +2,17 @@
 	<Import Project="..\..\Build\linq2db.Tests.Providers.props" />
 
 	<PropertyGroup>
+		<AssemblyName>linq2db.Tests</AssemblyName>
+		<!--suppress complains about IBM.Data.DB2.Core.dll-->
+		<ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
+
 		<AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-		<AssemblyName>linq2db4iSeries.Tests</AssemblyName>
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="microsoft.csharp" Version="4.7.0" />
-	</ItemGroup>
-			
-	<ItemGroup>
-		<ProjectReference Include="..\LinqToDB.AspNet\LinqToDB.AspNet.csproj" />
 		<ProjectReference Include="..\VisualBasic\Tests.VisualBasic.vbproj" />
 		<ProjectReference Include="..\FSharp\Tests.FSharp.fsproj" />
 	</ItemGroup>
-
-	<!-- .NET Framework -->
-
-	<PropertyGroup Condition="'$(TargetFramework)' == 'NET472'">
-		<PlatformTarget>x64</PlatformTarget>
-	</PropertyGroup>
 
 	<ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' OR '$(TargetFramework)' == 'netcoreapp3.1' ">
 		<Compile Remove="Metadata\AttributeReaderTests.cs" />
@@ -29,7 +21,7 @@
 	</ItemGroup>
 
 	<ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.1' ">
-		<!-- TEMP: explicitly reference specific version to avoid MSB3277 -->
+		<!-- TEMP: explicitly reference specific version to avoid MSB3277 --> 
 		<PackageReference Include="System.Security.Cryptography.Cng" Version="4.7.0" />
 	</ItemGroup>
 

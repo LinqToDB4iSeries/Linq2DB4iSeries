@@ -1043,6 +1043,8 @@ namespace Tests.xUpdate
 		[Test]
 		public void InsertOrUpdate1([InsertOrUpdateDataSources] string context)
 		{
+			ResetPersonIdentity(context);
+
 			using (var db = GetDataContext(context))
 			{
 				var id = 0;
@@ -1083,6 +1085,8 @@ namespace Tests.xUpdate
 		[Test]
 		public void InsertOrUpdate2([InsertOrUpdateDataSources] string context)
 		{
+			ResetPersonIdentity(context);
+
 			using (var db = GetDataContext(context))
 			{
 				int id;
@@ -1157,6 +1161,8 @@ namespace Tests.xUpdate
 		[Test]
 		public void InsertOrReplace1([InsertOrUpdateDataSources] string context)
 		{
+			ResetPersonIdentity(context);
+
 			using (var db = GetDataContext(context))
 			{
 				var id = 0;
@@ -1192,6 +1198,8 @@ namespace Tests.xUpdate
 		[Test]
 		public async Task InsertOrReplace1Async([InsertOrUpdateDataSources] string context)
 		{
+			ResetPersonIdentity(context);
+
 			using (var db = GetDataContext(context))
 			{
 				var id = 0;
@@ -1245,6 +1253,8 @@ namespace Tests.xUpdate
 		[Test]
 		public void InsertOrUpdate3([InsertOrUpdateDataSources] string context)
 		{
+			ResetPersonIdentity(context);
+
 			using (var db = GetDataContext(context))
 			{
 				var id = 0;
@@ -1294,6 +1304,8 @@ namespace Tests.xUpdate
 		[Test]
 		public async Task InsertOrUpdate3Async([InsertOrUpdateDataSources] string context)
 		{
+			ResetPersonIdentity(context);
+
 			using (var db = GetDataContext(context))
 			{
 				var id = 0;
@@ -1343,6 +1355,8 @@ namespace Tests.xUpdate
 		[Test]
 		public void InsertOrUpdate4([InsertOrUpdateDataSources] string context)
 		{
+			ResetPersonIdentity(context);
+
 			using (var db = GetDataContext(context))
 			{
 				var id = 0;
@@ -1931,8 +1945,10 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void TestUpdateWithColumnFilter([DataSources] string context, [Values] bool withMiddleName)
+		public void TestUpdateWithColumnFilter([InsertOrUpdateDataSources] string context, [Values] bool withMiddleName)
 		{
+			ResetPersonIdentity(context);
+
 			using (var db = GetDataContext(context))
 			{
 				var newName = "InsertColumnFilter";

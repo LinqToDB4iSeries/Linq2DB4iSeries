@@ -66,8 +66,7 @@ namespace Tests.xUpdate
 			[Column(IsColumn = false, Configuration = ProviderName.SQLite)]
 			[Column(IsColumn = false, Configuration = ProviderName.SapHana)]
 			[Column(Configuration = ProviderName.Oracle, Precision = 7)]
-			//[Column("FieldDateTime2")] //default
-			[Column(IsColumn = false)] //db2i
+			[Column("FieldDateTime2")]
 			public DateTimeOffset? FieldDateTime2;
 
 			[Column(IsColumn = false, Configuration = ProviderName.Firebird)]
@@ -90,8 +89,7 @@ namespace Tests.xUpdate
 			[Column(IsColumn = false, Configuration = ProviderName.SqlCe)]
 			[Column("FieldDate"     , Configuration = ProviderName.Informix, DataType = DataType.Date)]
 			[Column("FieldDate"     , Configuration = ProviderName.Sybase  , DataType = DataType.Date)]
-			//[Column("FieldDate")] //default
-			[Column("FieldDate", DataType = DataType.Date)] //db2i
+			[Column("FieldDate")]
 			public DateTime? FieldDate;
 
 			[Column(IsColumn = false, Configuration = ProviderName.Firebird)]
@@ -122,8 +120,7 @@ namespace Tests.xUpdate
 			[MapValue("\b", Configuration = ProviderName.Sybase)]
 			[MapValue("\b", Configuration = ProviderName.SapHana)]
 			[MapValue("\b", Configuration = ProviderName.DB2)]
-			//[MapValue("\0")] //default
-			[MapValue("\b")] //db2i
+			[MapValue("\0")]
 			Value2,
 			[MapValue("_", Configuration = ProviderName.Oracle)]
 			[MapValue("_", Configuration = ProviderName.Sybase)]
@@ -440,8 +437,7 @@ namespace Tests.xUpdate
 			{
 				if (   provider == ProviderName.Sybase
 					|| provider == ProviderName.SybaseManaged
-					|| provider == ProviderName.SqlCe
-					|| TestProvNameDb2i.IsiSeriesOleDb(provider))
+					|| provider == ProviderName.SqlCe)
 					expected = expected.TrimEnd(' ');
 			}
 
@@ -498,8 +494,7 @@ namespace Tests.xUpdate
 				&& provider != ProviderName.Sybase
 				&& provider != ProviderName.SybaseManaged
 				&& provider != ProviderName.DB2
-				&& !provider.StartsWith(ProviderName.SapHana)
-				&& !TestProvNameDb2i.IsiSeries(provider))
+				&& !provider.StartsWith(ProviderName.SapHana))
 				Assert.AreEqual(expected, actual);
 		}
 
@@ -513,10 +508,8 @@ namespace Tests.xUpdate
 						|| provider == TestProvName.MariaDB
 						|| provider == TestProvName.MySql55
 						// after migration to 2.4.126 provider + SPS4, hana or provider started to trim spaces on insert for some reason
-						|| provider.StartsWith(ProviderName.SapHana))
-						|| TestProvNameDb2i.IsiSeries(provider) && !TestProvNameDb2i.IsiSeriesDB2Connect(provider))
+						|| provider.StartsWith(ProviderName.SapHana)))
 					expected = '\0';
-				
 			}
 
 			Assert.AreEqual(expected, actual);
@@ -532,8 +525,7 @@ namespace Tests.xUpdate
 						|| provider == TestProvName.MariaDB
 						|| provider == TestProvName.MySql55
 						// after migration to 2.4.126 provider + SPS4, hana or provider started to trim spaces on insert for some reason
-						|| provider.StartsWith(ProviderName.SapHana))
-						|| TestProvNameDb2i.IsiSeries(provider) && !TestProvNameDb2i.IsiSeriesDB2Connect(provider))
+						|| provider.StartsWith(ProviderName.SapHana)))
 					expected = '\0';
 			}
 
@@ -583,9 +575,6 @@ namespace Tests.xUpdate
 		{
 			if (expected != null)
 			{
-				if (TestProvNameDb2i.IsiSeriesOleDb(provider))
-					expected = expected.TrimEnd(' ');
-
 				switch (provider)
 				{
 					case ProviderName.Sybase:
@@ -619,7 +608,7 @@ namespace Tests.xUpdate
 
 			if (expected != null)
 			{
-				switch (TestProvNameDb2i.GetFamily(provider))
+				switch (provider)
 				{
 					case ProviderName.Sybase        :
 					case ProviderName.SybaseManaged :
@@ -659,10 +648,11 @@ namespace Tests.xUpdate
 					case ProviderName.PostgreSQL95  :
 					case TestProvName.PostgreSQL10  :
 					case TestProvName.PostgreSQL11  :
+					case TestProvName.PostgreSQL12  :
+					case TestProvName.PostgreSQL13  :
 						expected = TimeSpan.FromTicks((expected.Value.Ticks / 10) * 10);
 						break;
 					case ProviderName.DB2           :
-					case TestProvNameDb2i.DB2iBase	:
 					case ProviderName.Access        :
 					case ProviderName.AccessOdbc    :
 					case ProviderName.SapHanaNative :

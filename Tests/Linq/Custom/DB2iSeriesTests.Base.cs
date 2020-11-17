@@ -6,6 +6,7 @@ using System.Linq;
 
 namespace Tests.DataProvider
 {
+	[TestFixture]
 	public partial class DB2iSeriesTests : TestBase
 	{
 		

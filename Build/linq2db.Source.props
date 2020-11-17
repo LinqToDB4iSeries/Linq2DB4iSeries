@@ -18,6 +18,7 @@
 		<PackageProjectUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries</PackageProjectUrl>
 		<PackageIcon>linq2db2i.png</PackageIcon>
 		<PackageTags>linq;linq2db;LinqToDB;ORM;database;DB;SQL;DB2;IBM;iSeries</PackageTags>
+		<AssemblyOriginatorKeyFile>..\..\Build\LinqToDB.DB2iSeries.snk</AssemblyOriginatorKeyFile>
 	</PropertyGroup>
 
 	<PropertyGroup>

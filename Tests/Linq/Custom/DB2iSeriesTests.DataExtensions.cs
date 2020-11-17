@@ -1,4 +1,6 @@
-﻿using LinqToDB;
+﻿//Edited tests copied from linq2db 
+
+using LinqToDB;
 using LinqToDB.Data;
 using NUnit.Framework;
 using System;
