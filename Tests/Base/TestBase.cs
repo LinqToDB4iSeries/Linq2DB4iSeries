@@ -369,6 +369,25 @@ namespace Tests
 			ProviderName.SapHanaOdbc
 		}).ToList();
 
+		protected static char GetParameterToken(string context)
+		{
+			var token = '@';
+
+			switch (context)
+			{
+				case ProviderName.SapHanaOdbc:
+				case ProviderName.Informix:
+					token = '?'; break;
+				case ProviderName.SapHanaNative:
+				case TestProvName.Oracle11Managed:
+				case TestProvName.Oracle11Native:
+				case ProviderName.OracleManaged:
+				case ProviderName.OracleNative:
+					token = ':'; break;
+			}
+
+			return CustomizationSupport.Interceptor.GetParameterToken(token, context);
+		}
 
 		protected ITestDataContext GetDataContext(string configuration, MappingSchema? ms = null)
 		{

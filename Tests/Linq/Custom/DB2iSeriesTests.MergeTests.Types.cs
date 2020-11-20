@@ -6,9 +6,9 @@ using LinqToDB.Mapping;
 
 using NUnit.Framework;
 
-namespace Tests.xUpdate
+namespace Tests.DataProvider
 {
-	public partial class DB2iSeriesTests : TestBase
+	public partial class DB2iSeriesTests
 	{
 		[Table("unspecified")]
 		class MergeTypes
@@ -283,7 +283,7 @@ namespace Tests.xUpdate
 
 		
 		[Test]
-		public void TestMergeTypes([DataSources(true, ProviderName.SQLiteMS)] string context)
+		public void TestMergeTypes([IncludeDataSources(TestProvNameDb2i.All)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -315,7 +315,7 @@ namespace Tests.xUpdate
 			Assert.AreEqual(expected.FieldInt64, actual.FieldInt64);
 			Assert.AreEqual(expected.FieldBoolean, actual.FieldBoolean);
 			AssertString(expected.FieldString, actual.FieldString, provider);
-			Assert.AreEqual(expected.FieldNString, actual.FieldNString);
+			AssertString(expected.FieldNString, actual.FieldNString, provider);
 			AssertChar(expected.FieldChar, actual.FieldChar, provider);
 			AssertChar(expected.FieldChar, actual.FieldChar, provider);
 			Assert.AreEqual(expected.FieldFloat, actual.FieldFloat);
@@ -348,7 +348,7 @@ namespace Tests.xUpdate
 
 		private static void AssertString(string? expected, string? actual, string provider)
 		{
-			if (!TestProvNameDb2i.IsiSeriesOleDb(provider))
+			if (TestProvNameDb2i.IsiSeriesOleDb(provider))
 				expected = expected?.TrimEnd(' ');
 
 			Assert.AreEqual(expected, actual);
@@ -363,8 +363,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void TestTypesInsertByMerge([Tests.xUpdate.MergeTests.MergeDataContextSource(
-			TestProvName.AllInformix, ProviderName.Sybase, ProviderName.SybaseManaged)]
+		public void TestTypesInsertByMerge([Tests.xUpdate.MergeTests.MergeDataContextSource()]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -394,6 +393,21 @@ namespace Tests.xUpdate
 				{
 					AssertTypesRow(InitialTypes2Data[i], result2[i], provider);
 				}
+			}
+		}
+
+		[Test]
+		public void TestDB2NullsInSource([xUpdate.MergeTests.MergeDataContextSource()] string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				db.GetTable<MergeTypes>()
+					.TableName("TestMerge1")
+					.Merge()
+					.Using(new[] { new MergeTypes() { Id = 1 }, new MergeTypes() { Id = 2 } })
+					.OnTargetKey()
+					.InsertWhenNotMatched()
+					.Merge();
 			}
 		}
 	}

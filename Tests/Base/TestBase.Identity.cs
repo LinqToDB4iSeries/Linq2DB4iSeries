@@ -31,7 +31,7 @@ namespace Tests
 					};
 						break;
 				case string prov when prov.StartsWith("DB2"):
-					sql = new[] { $"ALTER TABLE \"Person\" ALTER COLUMN \"PersonID\" RESTART WITH {lastValue + 1}" };
+					sql = new[] { $"ALTER TABLE Person ALTER COLUMN PersonID RESTART WITH {lastValue + 1}" };
 					break;
 				case string prov when prov.StartsWith("Firebird"):
 					sql = new[] { $"SET GENERATOR \"PersonID\" TO {lastValue}" };
@@ -131,7 +131,7 @@ CREATE COLUMN TABLE ""Person"" (
 					sql = new[]
 					{
 						$"ALTER TABLE AllTypes ALTER COLUMN ID RESTART WITH {lastValue + 1}",
-						$"ALTER TABLE \"KeepIdentityTest\" ALTER COLUMN \"ID\" RESTART WITH {keepIdentityLastValue + 1}",
+						$"ALTER TABLE KeepIdentityTest ALTER COLUMN ID RESTART WITH {keepIdentityLastValue + 1}",
 					};
 					break;
 				case string prov when prov.StartsWith("Firebird"):

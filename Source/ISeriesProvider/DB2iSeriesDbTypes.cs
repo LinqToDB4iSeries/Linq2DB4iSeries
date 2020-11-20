@@ -257,11 +257,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				//Upcast types that require length/precision to fit value
 				switch (dbType)
 				{
+					//Upcast all char/string types to unicode for compatibility with .net string type
+					//type = new SqlDataType(new DbDataType(type.Type.SystemType, DataType.Text, Constants.DbTypes.Clob));
+					//break;
 					case Constants.DbTypes.Char when !forBitData:
 					case Constants.DbTypes.VarChar when !forBitData:
 					case Constants.DbTypes.Clob:
-						type = new SqlDataType(new DbDataType(type.Type.SystemType, DataType.Text, Constants.DbTypes.Clob));
-						break;
 					case Constants.DbTypes.NChar:
 					case Constants.DbTypes.NVarChar:
 					case Constants.DbTypes.NClob:

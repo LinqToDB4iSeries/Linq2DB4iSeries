@@ -18,14 +18,8 @@ namespace Tests
 
 		public override IEnumerable<string> InterceptTestDataSources(DataSourcesBaseAttribute dataSourcesAttribute, IMethodInfo testMethod, IEnumerable<string> contexts)
 		{
-			//Filter 5.4 providers from Merge and InsertOrUpdate annotated tests.
-			if (	dataSourcesAttribute.GetType().Name == "InsertOrUpdateDataSourcesAttribute"
-				||  dataSourcesAttribute.GetType().Name == "MergeDataContextSourceAttribute"
-				||  dataSourcesAttribute.GetType().Name == "IdentityInsertMergeDataContextSourceAttribute")
-			{
-				return contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_54));
-			}
-			
+			var test = ExtractMethod(testMethod);
+
 			//Filter out specific tests
 			switch (ExtractMethod(testMethod))
 			{
@@ -37,6 +31,8 @@ namespace Tests
 				//Tests have property have space - Copied to custom tests
 				case ("DynamicColumnsTests", "SqlPropertyNoStoreNonIdentifier"):
 				case ("DynamicColumnsTests", "SqlPropertyNoStoreNonIdentifierGrouping"):
+				//Test copied to custom to reduce default source row number
+				case ("MergeTests", "BigSource"):
 				//Tests passing provider specific parameter types - Generic linq2db test - Not applicable
 				case ("MergeTests", "TestParametersInListSourceProperty"):
 				//Tests active issue with DB2 family ordering NULL last by default - Not applicable
@@ -45,21 +41,43 @@ namespace Tests
 				case ("CharTypesTests", _):
 				//Too many changes and cases - Copied to custom tests
 				case ("MergeTests", "TestTypesInsertByMerge"):
+				case ("MergeTests", "TestMergeTypes"):
+				case ("MergeTests", "TestDB2NullsInSource"):
+				//Case valid for DB2 but not for DB2i
+				case ("Issue792Tests", "TestWithTransactionThrowsFromProvider"):
+				//Data not valid for DB2i
+				case ("Issue1287Tests", _):
+				//Query contains invalid keyword permission
+				case ("Issue825Tests", "Test"):
 					return Enumerable.Empty<string>();
-				//Merge related tests
-				case ("OldMergeTests", "Merge"):
-				case ("OldMergeTests", "MergeWithEmptySource"):
-					return contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_54));
+				
 				//Access client throws a different exception so it is excluded
 				case ("DataContextTests", "ProviderConnectionStringConstructorTest2"):
-				
 					return contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_AccessClient));
+
+				//ODBC throw overflow exception when reading TUNCATE success result
+				case ("TruncateTableTests", _):
+					return contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_ODBC));
 			}
-			
+
+			//Filter 5.4 providers from Merge and InsertOrUpdate annotated tests.
+			if (dataSourcesAttribute.GetType().Name == "InsertOrUpdateDataSourcesAttribute"
+				|| dataSourcesAttribute.GetType().Name == "MergeDataContextSourceAttribute"
+				|| dataSourcesAttribute.GetType().Name == "IdentityInsertMergeDataContextSourceAttribute"
+				|| test.className == "OldMergeTests")
+			{
+				contexts = contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_54));
+			}
+
 			return contexts;
 		}
 
-		private static (string className, string methodName) ExtractMethod(IMethodInfo testMethod)
-			=> (testMethod.TypeInfo.Name, testMethod.Name);
+		public override char GetParameterToken(char token, string context)
+		{
+			if (TestProvNameDb2i.IsiSeriesOleDb(context) || TestProvNameDb2i.IsiSeriesODBC(context))
+				return '?';
+			else
+				return '@';
+		}
 	}
 }

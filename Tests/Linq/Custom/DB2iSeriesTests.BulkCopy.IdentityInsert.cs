@@ -9,7 +9,7 @@ using LinqToDB.Mapping;
 
 using NUnit.Framework;
 
-namespace Tests.xUpdate
+namespace Tests.DataProvider
 {
 	using LinqToDB.DataProvider.Informix;
 	using Model;
@@ -57,13 +57,6 @@ namespace Tests.xUpdate
 		{
 			ResetAllTypesIdentity(context);
 
-			if ((TestProvNameDb2i.IsiSeriesODBC(context) || TestProvNameDb2i.IsiSeriesODBC(context))
-				&& copyType == BulkCopyType.ProviderSpecific)
-				Assert.Inconclusive($"{context} BulkCopy doesn't support provider specific implementation.");
-
-			if (keepIdentity == true && new[] { BulkCopyType.Default, BulkCopyType.MultipleRows }.Contains(copyType))
-				Assert.Inconclusive("DB2iSeries doesn't support inserting inserting in MultipleRows mode");
-
 			// don't use transactions as some providers will fallback to non-provider-specific implementation then
 			using (var db = new TestDataConnection(context))
 			{
@@ -84,9 +77,8 @@ namespace Tests.xUpdate
 					Assert.AreEqual(2, data.Length);
 
 					// oracle supports identity insert only starting from version 12c, which is not used yet for tests
-					var useGenerated = keepIdentity != true
-						|| context.Contains("Oracle");
-
+					var useGenerated = keepIdentity != true;
+						
 					Assert.AreEqual(lastId + (!useGenerated ? 10 : 1), data[0].ID);
 					Assert.AreEqual(200, data[0].Value);
 					Assert.AreEqual(lastId + (!useGenerated ? 20 : 2), data[1].ID);
@@ -150,13 +142,6 @@ namespace Tests.xUpdate
 		{
 			ResetAllTypesIdentity(context);
 
-			if ((TestProvNameDb2i.IsiSeriesODBC(context) || TestProvNameDb2i.IsiSeriesODBC(context))
-							&& copyType == BulkCopyType.ProviderSpecific)
-				Assert.Inconclusive($"{context} BulkCopy doesn't support provider specific implementation.");
-
-			if (keepIdentity == true && new[] { BulkCopyType.Default, BulkCopyType.MultipleRows }.Contains(copyType))
-				Assert.Inconclusive("DB2iSeries doesn't support inserting inserting in MultipleRows mode");
-
 			// don't use transactions as some providers will fallback to non-provider-specific implementation then
 			using (var db = new TestDataConnection(context))
 			{
@@ -176,10 +161,8 @@ namespace Tests.xUpdate
 
 					Assert.AreEqual(2, data.Length);
 
-					// oracle supports identity insert only starting from version 12c, which is not used yet for tests
-					var useGenerated = keepIdentity != true
-						|| context.Contains("Oracle");
-
+					var useGenerated = keepIdentity != true;
+						
 					Assert.AreEqual(lastId + (!useGenerated ? 10 : 1), data[0].ID);
 					Assert.AreEqual(200, data[0].Value);
 					Assert.AreEqual(lastId + (!useGenerated ? 20 : 2), data[1].ID);
@@ -245,34 +228,8 @@ namespace Tests.xUpdate
 
 		private async Task<bool> ExecuteAsync(DataConnection db, string context, Func<Task> perform, bool? keepIdentity, BulkCopyType copyType)
 		{
-			if ((context == ProviderName.Firebird || context == TestProvName.Firebird3)
-				&& keepIdentity == true
-				&& (copyType == BulkCopyType.Default
-					|| copyType == BulkCopyType.MultipleRows
-					|| copyType == BulkCopyType.ProviderSpecific))
-			{
-				var ex = Assert.CatchAsync(async () => await perform());
-				Assert.IsInstanceOf<LinqToDBException>(ex);
-				Assert.AreEqual("BulkCopyOptions.KeepIdentity = true is not supported by Firebird provider. If you use generators with triggers, you should disable triggers during BulkCopy execution manually.", ex.Message);
-				return false;
-			}
-
-			bool notSupported = false;
-			if (context.Contains(ProviderName.Informix))
-			{
-				notSupported = !((InformixDataProvider)db.DataProvider).Adapter.IsIDSProvider
-					|| copyType == BulkCopyType.MultipleRows;
-			}
-
 			// RowByRow right now uses DataConnection.Insert which doesn't support identity insert
-			if ((copyType == BulkCopyType.RowByRow
-					|| context == ProviderName.Access
-					|| context == ProviderName.AccessOdbc
-					|| notSupported
-					|| (context.StartsWith(ProviderName.SapHana)
-						&& (copyType == BulkCopyType.MultipleRows || copyType == BulkCopyType.Default))
-					|| (context == ProviderName.SapHanaOdbc && copyType == BulkCopyType.ProviderSpecific))
-				&& keepIdentity == true)
+			if (copyType == BulkCopyType.RowByRow && keepIdentity == true)
 			{
 				var ex = Assert.CatchAsync(async () => await perform());
 				Assert.IsInstanceOf<LinqToDBException>(ex);
@@ -280,23 +237,23 @@ namespace Tests.xUpdate
 				return false;
 			}
 
+			if ((TestProvNameDb2i.IsiSeriesODBC(context) 
+				|| TestProvNameDb2i.IsiSeriesOleDb(context)
+				|| TestProvNameDb2i.IsiSeriesAccessClient(context))
+							&& keepIdentity == true)
+			{
+				var ex = Assert.CatchAsync(async () => await perform());
+				//Assert.IsInstanceOf<LinqToDBException>(ex);
+				Assert.IsTrue(ex.Message.Contains("Value cannot be specified for GENERATED ALWAYS column"));
+				return false;
+			}
+
+
+			if (keepIdentity == true && new[] { BulkCopyType.Default, BulkCopyType.MultipleRows }.Contains(copyType))
+				Assert.Inconclusive("DB2iSeries doesn't support inserting in MultipleRows mode");
+
 			await perform();
 			return true;
-		}
-
-		// DB2: 
-		[Test]
-		public void ReuseOptionTest([DataSources(false, ProviderName.DB2)] string context)
-		{
-			using (var db = new TestDataConnection(context))
-			{
-				db.BeginTransaction();
-
-				var options = new BulkCopyOptions();
-
-				db.Parent.BulkCopy(options, new[] { new Parent { ParentID = 111001 } });
-				db.Child.BulkCopy(options, new[] { new Child { ParentID = 111001 } });
-			}
 		}
 	}
 }

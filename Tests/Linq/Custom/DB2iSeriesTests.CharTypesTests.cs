@@ -115,7 +115,6 @@ namespace Tests.DataProvider
 					{
 						var query = db.GetTable<StringTestTable>().Value(_ => _.NString, record.NString);
 
-						//Originally skipped (skipchar)
 						query = query.Value(_ => _.String, record.String);
 
 						query.Insert();
@@ -125,16 +124,14 @@ namespace Tests.DataProvider
 
 					Assert.AreEqual(testData.Count, records.Count);
 
-					records.Zip(testData, (expected, actual) => (expected, actual))
-						.Select((data,index) => (data,index))
+					testData.Zip(records, (expected, actual) => (expected, actual))
 						.ToList().ForEach(x =>
 					{
-						var (expected, actual) = x.data;
+						var (expected, actual) = x;
 						
-						//Originally skipped (skipchar)
 						Assert.AreEqual(expected.String?.TrimEnd(' '), actual.String);
 
-						if (x.index == 19)
+						if (TestProvNameDb2i.IsiSeriesOleDb(context) && expected.NString is { } && expected.NString.StartsWith("test20")) //OleDb strips \u3000
 							Assert.AreEqual(expected.NString?.TrimEnd(), actual.NString);
 						else
 							Assert.AreEqual(expected.NString?.TrimEnd(' '), actual.NString);
@@ -165,7 +162,6 @@ namespace Tests.DataProvider
 					{
 						var query = db.GetTable<CharTestTable>().Value(_ => _.NChar, record.NChar);
 
-						//Originally skipped (skipchar)
 						query = query.Value(_ => _.Char, record.Char);
 
 						query.Insert();
@@ -175,16 +171,14 @@ namespace Tests.DataProvider
 					
 					Assert.AreEqual(testData.Count, records.Count);
 
-					records.Zip(testData, (expected, actual) => (expected, actual))
-						.Select((data, index) => (data, index))
+					testData.Zip(records, (expected, actual) => (expected, actual))
 						.ToList().ForEach(x =>
 						{
-							var (expected, actual) = x.data;
+							var (expected, actual) = x;
 
-							//Originally skipped (skipchar)
-							Assert.AreEqual(actual.Char, expected.Char);
+							Assert.AreEqual(expected.Char == ' ' ? '\0' : expected.Char, actual.Char);
 
-							if (x.index == 18)
+							if (TestProvNameDb2i.IsiSeriesOleDb(context) && expected.NChar == '\u3000') // OleDb strips \u3000
 								Assert.AreEqual('\0', actual.NChar);
 							else
 								Assert.AreEqual(expected.NChar == ' ' ? '\0' : expected.NChar, actual.NChar);

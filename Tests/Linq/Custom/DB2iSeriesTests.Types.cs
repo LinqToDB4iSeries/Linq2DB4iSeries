@@ -8,6 +8,7 @@ using LinqToDB;
 using LinqToDB.Common;
 using LinqToDB.Data;
 using NUnit.Framework;
+using LinqToDB.Mapping;
 
 #if NETFRAMEWORK
 using IBM.Data.DB2.iSeries;
@@ -583,6 +584,25 @@ namespace Tests.DataProvider
 				{
 					conn.GetTable<ALLTYPE>().Delete(p => p.INTDATATYPE == 2000);
 				}
+			}
+		}
+
+		[Table("AllTypes")]
+		private class AllTypesNullable_Issue1287
+		{
+			[Column]
+			public char? charDataType { get; set; }
+		}
+
+		[Test]
+		public void TestNullableChar([IncludeDataSources(TestProvNameDb2i.All)] string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var list = db.GetTable<AllTypesNullable_Issue1287>().Where(_ => _.charDataType == 'Y').ToList();
+
+				Assert.AreEqual(1, list.Count);
+				Assert.AreEqual('Y', list[0].charDataType);
 			}
 		}
 	}
