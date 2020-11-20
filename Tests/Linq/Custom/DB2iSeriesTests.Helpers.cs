@@ -122,8 +122,11 @@ namespace Tests.DataProvider
 
 		static void TestNumeric<T>(DataConnection conn, T expectedValue, DataType dataType, string skip = "")
 		{
-			var skipTypes = skip.Split(' ');
+			var skipTypes = skip.Split(' ').ToList();
 
+			if (TestProvNameDb2i.All_54.Contains(conn.DataProvider.Name))
+				skipTypes.Add("decfloat");
+			
 			foreach (var sqlType in new[]
 			{
 				"bigint",

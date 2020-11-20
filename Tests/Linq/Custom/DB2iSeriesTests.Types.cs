@@ -58,8 +58,11 @@ namespace Tests.DataProvider
 		{
 			using (var conn = new DataConnection(context))
 			{
-				Assert.That(TestType<decimal?>(conn, "decfloat16DataType", DataType.Decimal, castTo: "DECIMAL(20, 10)"), Is.EqualTo(888.456m));
-				Assert.That(TestType<decimal?>(conn, "decfloat34DataType", DataType.Decimal, castTo: "DECIMAL(20, 10)"), Is.EqualTo(777.987m));
+				if (!TestProvNameDb2i.All_54.Contains(context))
+				{
+					Assert.That(TestType<decimal?>(conn, "decfloat16DataType", DataType.Decimal, castTo: "DECIMAL(20, 10)"), Is.EqualTo(888.456m));
+					Assert.That(TestType<decimal?>(conn, "decfloat34DataType", DataType.Decimal, castTo: "DECIMAL(20, 10)"), Is.EqualTo(777.987m));
+				}
 
 				Assert.That(TestType<long?>(conn, "bigintDataType", DataType.Int64), Is.EqualTo(1000000L));
 				Assert.That(TestType<int?>(conn, "intDataType", DataType.Int32), Is.EqualTo(444444));
@@ -118,6 +121,12 @@ namespace Tests.DataProvider
 		{
 			using (var conn = new DataConnection(context))
 			{
+				if (!TestProvNameDb2i.All_54.Contains(context))
+				{
+					Assert.That(TestType<iDB2DecFloat16?>(conn, "decfloat16DataType", DataType.Decimal), Is.EqualTo(new iDB2DecFloat16(888.456m)));
+					Assert.That(TestType<iDB2DecFloat34?>(conn, "decfloat34DataType", DataType.Decimal).ToString(), Is.EqualTo(new iDB2DecFloat34(777.987m).ToString()));
+				}
+
 				Assert.That(TestType<iDB2BigInt?>(conn, "bigintDataType", DataType.Int64), Is.EqualTo(new iDB2BigInt(1000000L)));
 				Assert.That(TestType<iDB2Integer?>(conn, "intDataType", DataType.Int32), Is.EqualTo(new iDB2Integer(444444)));
 				Assert.That(TestType<iDB2SmallInt?>(conn, "smallintDataType", DataType.Int16), Is.EqualTo(new iDB2SmallInt(100)));
@@ -135,8 +144,6 @@ namespace Tests.DataProvider
 
 				Assert.That(TestType<iDB2Decimal?>(conn, "decimalDataType", DataType.Decimal).ToString(), Is.EqualTo(new iDB2Decimal(666m).ToString()));
 				Assert.That(TestType<iDB2Binary>(conn, "varbinaryDataType", DataType.VarBinary).ToString(), Is.EqualTo(new iDB2Binary(new byte[] { 0xF4 }).ToString()));
-				Assert.That(TestType<iDB2DecFloat16?>(conn, "decfloat16DataType", DataType.Decimal), Is.EqualTo(new iDB2DecFloat16(888.456m)));
-				Assert.That(TestType<iDB2DecFloat34?>(conn, "decfloat34DataType", DataType.Decimal).ToString(), Is.EqualTo(new iDB2DecFloat34(777.987m).ToString()));
 			}
 		}
 #endif
@@ -147,7 +154,7 @@ namespace Tests.DataProvider
 		public void TestNumerics([IncludeDataSources(TestProvNameDb2i.All)] string context)
 		{
 			var skipDecFloat = TestProvNameDb2i.IsiSeriesOleDb(context) ? " decfloat" : "";
-
+			
 			using (var conn = new DataConnection(context))
 			{
 				TestSimple<sbyte>(conn, 1, DataType.SByte);
