@@ -44,24 +44,5 @@ namespace Tests.DataProvider
 			[Column, PrimaryKey] public int ID;
 			[Column] public decimal Field1;
 		}
-
-		/// <summary>
-		/// ODBC driver throws an overflow exception when trying to read the result from a TRUNCATE
-		/// </summary>
-		/// <param name="context"></param>
-		[Test]
-		public void ODBC_Truncate_OverFlow_Exception([IncludeDataSources(TestProvNameDb2i.All_ODBC)] string context)
-		{
-			using (var db = GetDataContext(context))
-			{
-				db.DropTable<TestTrun>(throwExceptionIfNotExists: false);
-
-				var table = db.CreateTable<TestTrun>();
-				
-				Assert.Throws<OverflowException>(() => table.Truncate());
-				
-				table.Drop();
-			}
-		}
 	}
 }

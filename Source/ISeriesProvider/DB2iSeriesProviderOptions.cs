@@ -21,7 +21,7 @@
 			: this(providerName, providerType)
 		{
 			SupportsOffsetClause = version > DB2iSeriesVersion.V7_2;
-			SupportsTruncateTable = version > DB2iSeriesVersion.V7_1;
+			SupportsTruncateTable = version > DB2iSeriesVersion.V7_1 && !providerType.IsOdbc();
 			SupportsMergeStatement = version > DB2iSeriesVersion.V5_4;
 			SupportsNCharTypes = version > DB2iSeriesVersion.V5_4;
 		}

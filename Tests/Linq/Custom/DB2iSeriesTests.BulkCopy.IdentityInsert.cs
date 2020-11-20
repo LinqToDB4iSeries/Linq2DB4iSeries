@@ -237,20 +237,13 @@ namespace Tests.DataProvider
 				return false;
 			}
 
-			if ((TestProvNameDb2i.IsiSeriesODBC(context) 
-				|| TestProvNameDb2i.IsiSeriesOleDb(context)
-				|| TestProvNameDb2i.IsiSeriesAccessClient(context))
-							&& keepIdentity == true)
+			if (keepIdentity == true)
 			{
 				var ex = Assert.CatchAsync(async () => await perform());
 				//Assert.IsInstanceOf<LinqToDBException>(ex);
-				Assert.IsTrue(ex.Message.Contains("Value cannot be specified for GENERATED ALWAYS column"));
+				Assert.IsTrue(ex.Message.Contains("GENERATED ALWAYS"));
 				return false;
 			}
-
-
-			if (keepIdentity == true && new[] { BulkCopyType.Default, BulkCopyType.MultipleRows }.Contains(copyType))
-				Assert.Inconclusive("DB2iSeries doesn't support inserting in MultipleRows mode");
 
 			await perform();
 			return true;

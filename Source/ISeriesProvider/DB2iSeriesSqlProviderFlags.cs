@@ -46,7 +46,7 @@
 			DB2iSeriesProviderType providerType)
 			: this(
 				 supportsOffsetClause: version >= DB2iSeriesVersion.V7_3,
-				 supportsTruncateTable: version >= DB2iSeriesVersion.V7_2,
+				 supportsTruncateTable: version >= DB2iSeriesVersion.V7_2 && !providerType.IsOdbc(),
 				 supportsNamedParameters: providerType.IsIBM(),
 				 supportsMergeStatement: version >= DB2iSeriesVersion.V7_1,
 				 supportsNCharTypes: version >= DB2iSeriesVersion.V7_1

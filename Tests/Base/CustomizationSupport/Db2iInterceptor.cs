@@ -54,10 +54,6 @@ namespace Tests
 				//Access client throws a different exception so it is excluded
 				case ("DataContextTests", "ProviderConnectionStringConstructorTest2"):
 					return contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_AccessClient));
-
-				//ODBC throw overflow exception when reading TUNCATE success result
-				case ("TruncateTableTests", _):
-					return contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_ODBC));
 			}
 
 			//Filter 5.4 providers from Merge and InsertOrUpdate annotated tests.
