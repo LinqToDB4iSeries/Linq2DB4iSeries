@@ -124,6 +124,9 @@ namespace Tests.DataProvider
 		{
 			var skipTypes = skip.Split(' ').ToList();
 
+			if (TestProvNameDb2i.Get54().Contains(conn.DataProvider.Name))
+				skipTypes.Add("decfloat");
+			
 			foreach (var sqlType in new[]
 			{
 				"bigint",

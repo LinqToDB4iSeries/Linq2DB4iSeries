@@ -56,6 +56,15 @@ namespace Tests
 					return contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_AccessClient));
 			}
 
+			//Filter 5.4 providers from Merge and InsertOrUpdate annotated tests.
+			if (dataSourcesAttribute.GetType().Name == "InsertOrUpdateDataSourcesAttribute"
+				|| dataSourcesAttribute.GetType().Name == "MergeDataContextSourceAttribute"
+				|| dataSourcesAttribute.GetType().Name == "IdentityInsertMergeDataContextSourceAttribute"
+				|| test.className == "OldMergeTests")
+			{
+				contexts = contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_54));
+			}
+
 			return contexts;
 		}
 
@@ -70,6 +79,8 @@ namespace Tests
 		public override CreateDataScript? InterceptCreateData(string context)
 		{
 			var script = context.Contains("GAS") ? "DB2iSeriesGAS" : "DB2iSeries";
+			if (TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_54).Contains(context))
+				script += "54";
 			return new CreateDataScript(context, "\nGO\n", script);
 		}
 

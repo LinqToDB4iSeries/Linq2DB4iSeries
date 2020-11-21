@@ -15,6 +15,7 @@ namespace Tests
 		public const string All_OleDb = "DB2.iSeries.OleDb";
 		public const string All_DB2Connect = "DB2.iSeries.DB2Connect";
 
+		public const string All_54 = "DB2.iSeries.54";
 		public const string All_71 = "DB2.iSeries.71";
 		public const string All_72 = "DB2.iSeries.72";
 		public const string All_73 = "DB2.iSeries.73";
@@ -44,6 +45,7 @@ namespace Tests
 		public static IEnumerable<string> GetOleDb() => GetProviders(x => x.ProviderType == DB2iSeriesProviderType.OleDb);
 		public static IEnumerable<string> GetDB2Connect() => GetProviders(x => x.ProviderType == DB2iSeriesProviderType.DB2);
 
+		public static IEnumerable<string> Get54() => GetProvidersContaing("54");
 		public static IEnumerable<string> Get71() => GetProvidersContaing("71");
 		public static IEnumerable<string> Get72() => GetProvidersContaing("72");
 		public static IEnumerable<string> Get73() => GetProvidersContaing("73");
@@ -61,6 +63,7 @@ namespace Tests
 				All_OleDb => GetOleDb(),
 				All_DB2Connect => GetDB2Connect(),
 
+				All_54 => Get54(),
 				All_71 => Get71(),
 				All_72 => Get72(),
 				All_73 => Get73(),
