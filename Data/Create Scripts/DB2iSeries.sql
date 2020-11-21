@@ -333,3 +333,13 @@ CREATE TABLE AllTypes2(
 	, varGraphicDataType       vargraphic(10) CCSID 13488 Default NULL
 )
 GO
+
+DROP Procedure AddIssue792Record
+GO
+CREATE Procedure AddIssue792Record()
+LANGUAGE SQL
+BEGIN
+	INSERT INTO AllTypes(char20DataType) VALUES('issue792');
+END
+GO
+

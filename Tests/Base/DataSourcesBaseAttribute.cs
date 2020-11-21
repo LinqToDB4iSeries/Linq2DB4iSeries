@@ -14,16 +14,11 @@ namespace Tests
 		public string[] Providers          { get; }
 
 		public static bool NoLinqService   { get; set; }
-
+		
 		protected DataSourcesBaseAttribute(bool includeLinqService, string[] providers)
 		{
-			//switch linq service off for db2i
-			IncludeLinqService = false;
-			
-			if (providers.Contains(LinqToDB.ProviderName.DB2))
-				providers = providers.Concat(new[] { TestProvName.AlliSeries }).ToArray();
-
-			Providers          = providers.SelectMany(p => p.Split(',').Select(_ => _.Trim())).ToArray();
+			IncludeLinqService = includeLinqService;
+			Providers = CustomizationSupport.Interceptor.InterceptDataSources(this, Split(providers)).ToArray();
 		}
 
 		public IEnumerable GetData(IParameterInfo parameter)
@@ -37,11 +32,15 @@ namespace Tests
 				GetProviders().ToList() :
 				GetProviders().Where(a => !skipAttrs.Contains(a)).ToList();
 
-			if (NoLinqService || !IncludeLinqService)
-				return providers;
-
-			return providers.Concat(providers.Select(p => p + ".LinqService"));
+#if NETFRAMEWORK
+			if (!NoLinqService && IncludeLinqService)
+				providers.AddRange(providers.Select(p => p + ".LinqService"));
+#endif
+			return CustomizationSupport.Interceptor.InterceptTestDataSources(this, parameter.Method, providers);
 		}
+
+		protected static IEnumerable<string> Split(IEnumerable<string> providers)
+			=> providers.SelectMany(x => x.Split(',')).Select(x => x.Trim());
 
 		protected abstract IEnumerable<string> GetProviders();
 	}

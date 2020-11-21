@@ -84,7 +84,7 @@ namespace Tests.Model
 			//provider.SqlQuery = sql;
 
 			var statement = (SqlSelectStatement)optimizer.Finalize(new SqlSelectStatement(query), false);
-			//statement.PrepareQueryAndAliases();
+			statement.PrepareQueryAndAliases();
 
 			var cc = provider.CommandCount(statement);
 			var sb = new StringBuilder();

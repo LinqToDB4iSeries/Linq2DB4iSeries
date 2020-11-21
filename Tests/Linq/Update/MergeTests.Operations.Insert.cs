@@ -1455,7 +1455,7 @@ namespace Tests.xUpdate
 
 				var rows = table
 					.Merge()
-					.Using(GetSource2(db).ToList().Select(_ => new
+					.Using(GetSource2(db).OrderBy(_ => _.OtherId).ToList().Select(_ => new
 					{
 						Key     = _.OtherId,
 						Field01 = _.OtherField1,
@@ -1769,36 +1769,25 @@ namespace Tests.xUpdate
 
 				Assert.AreEqual(5, result.Count);
 
-				var i = 0;
-				if (TestProvName.IsiSeries(context))
-				{
-					Assert.AreEqual(11, result[i].Id);
-					Assert.AreEqual(100, result[i].LeftId);
-					Assert.AreEqual(200, result[i++].RightId);
-				}
+				Assert.AreEqual(0, result[0].Id);
+				Assert.AreEqual(0, result[0].LeftId);
+				Assert.AreEqual(10, result[0].RightId);
 
-				Assert.AreEqual(0, result[i].Id);
-				Assert.AreEqual(0, result[i].LeftId);
-				Assert.AreEqual(10, result[i++].RightId);
+				Assert.AreEqual(0, result[1].Id);
+				Assert.AreEqual(0, result[1].LeftId);
+				Assert.AreEqual(10, result[1].RightId);
 
-				Assert.AreEqual(0, result[i].Id);
-				Assert.AreEqual(0, result[i].LeftId);
-				Assert.AreEqual(10, result[i++].RightId);
+				Assert.AreEqual(0, result[2].Id);
+				Assert.AreEqual(0, result[2].LeftId);
+				Assert.AreEqual(20, result[2].RightId);
 
-				Assert.AreEqual(0, result[i].Id);
-				Assert.AreEqual(0, result[i].LeftId);
-				Assert.AreEqual(20, result[i++].RightId);
+				Assert.AreEqual(0, result[3].Id);
+				Assert.AreEqual(0, result[3].LeftId);
+				Assert.AreEqual(20, result[3].RightId);
 
-				Assert.AreEqual(0, result[i].Id);
-				Assert.AreEqual(0, result[i].LeftId);
-				Assert.AreEqual(20, result[i++].RightId);
-
-				if (i < 5)
-				{
-					Assert.AreEqual(11, result[i].Id);
-					Assert.AreEqual(100, result[i].LeftId);
-					Assert.AreEqual(200, result[i++].RightId);
-				}
+				Assert.AreEqual(11, result[4].Id);
+				Assert.AreEqual(100, result[4].LeftId);
+				Assert.AreEqual(200, result[4].RightId);
 			}
 		}
 	}

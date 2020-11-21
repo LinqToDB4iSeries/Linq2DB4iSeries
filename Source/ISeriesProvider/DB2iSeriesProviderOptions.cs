@@ -21,7 +21,9 @@
 			: this(providerName, providerType)
 		{
 			SupportsOffsetClause = version > DB2iSeriesVersion.V7_2;
-			SupportsTruncateTable = version > DB2iSeriesVersion.V7_1;
+			SupportsTruncateTable = version > DB2iSeriesVersion.V7_1 && !providerType.IsOdbc();
+			SupportsMergeStatement = version >= DB2iSeriesVersion.V7_1;
+			SupportsNCharTypes = version >= DB2iSeriesVersion.V7_1;
 		}
 
 		public DB2iSeriesProviderOptions()
@@ -38,6 +40,8 @@
 		public DB2iSeriesProviderType ProviderType { get; }
 		public bool SupportsOffsetClause { get; set; }
 		public bool SupportsTruncateTable { get; set; }
+		public bool SupportsMergeStatement { get; set; }
+		public bool SupportsNCharTypes { get; set; }
 		public bool MapGuidAsString { get; set; }
 	}
 }

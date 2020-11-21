@@ -215,7 +215,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			{
 				return new ProcedureParameterInfo
 				{
-					DataType = Convert.ToString(dr["Parameter_Name"]),
+					DataType = Convert.ToString(dr["DATA_TYPE"]),
 					IsIn = dr["Parameter_Mode"].ToString().Contains("IN"),
 					IsOut = dr["Parameter_Mode"].ToString().Contains("OUT"),
 					Length = Converter.ChangeTypeTo<long?>(dr["CHARACTER_MAXIMUM_LENGTH"]),
@@ -313,6 +313,23 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			};
 			
 			return dataConnection.Query(drf, sql).ToList();
+		}
+
+		protected override bool GetProcedureSchemaExecutesProcedure => provider.ProviderType.IsAccessClient();
+
+		protected override DataTable GetProcedureSchema(DataConnection dataConnection, string commandText, CommandType commandType, DataParameter[] parameters, GetSchemaOptions options)
+		{
+			if (provider.ProviderType.IsOdbc())
+			{
+				return ((DbConnection)dataConnection.Connection).GetSchema("ProcedureColumns", new[] { null, null, commandText });
+			}
+
+			if (provider.ProviderType.IsAccessClient())
+			{
+				throw new LinqToDBException($"{provider.Name} cannot load procedure schema. DB2i provider type {provider.ProviderType} will execute the procedure if schema is requested.");
+			}
+
+			return base.GetProcedureSchema(dataConnection, commandText, commandType, parameters, options);
 		}
 
 		#region Helpers

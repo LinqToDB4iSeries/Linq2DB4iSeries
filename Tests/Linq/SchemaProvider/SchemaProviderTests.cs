@@ -68,7 +68,12 @@ namespace Tests.SchemaProvider
 					}
 				}
 
-				var table = dbSchema.Tables.SingleOrDefault(t => t.IsDefaultSchema && t.TableName!.ToLower() == "parent");
+				//Get table from default schema and fall back to schema indifferent
+				TableSchema getTable(string name) =>
+								dbSchema.Tables.SingleOrDefault(t => t.IsDefaultSchema && t.TableName!.ToLower() == name)
+							??  dbSchema.Tables.SingleOrDefault(t => t.TableName!.ToLower() == name);
+
+				var table = getTable("parent");
 
 				Assert.That(table,                                           Is.Not.Null);
 				Assert.That(table.Columns.Count(c => c.ColumnName != "_ID"), Is.EqualTo(2));
@@ -77,9 +82,9 @@ namespace Tests.SchemaProvider
 				AssertType<Model.Parent>       (conn.MappingSchema, dbSchema);
 
 				if (context != ProviderName.AccessOdbc)
-					Assert.That(dbSchema.Tables.Single(t => t.IsDefaultSchema && t.TableName!.ToLower() == "doctor").ForeignKeys.Count, Is.EqualTo(1));
+					Assert.That(getTable("doctor").ForeignKeys.Count, Is.EqualTo(1));
 				else // no FK information for ACCESS ODBC
-					Assert.That(dbSchema.Tables.Single(t => t.IsDefaultSchema && t.TableName!.ToLower() == "doctor").ForeignKeys.Count, Is.EqualTo(0));
+					Assert.That(dbSchema.Tables.Single(t => t.TableName!.ToLower() == "doctor").ForeignKeys.Count, Is.EqualTo(0));
 
 				switch (context)
 				{
@@ -88,10 +93,12 @@ namespace Tests.SchemaProvider
 					case ProviderName.SqlServer2008 :
 					case ProviderName.SqlServer2012 :
 					case ProviderName.SqlServer2014 :
+					case TestProvName.SqlServer2016 :
 					case ProviderName.SqlServer2017 :
+					case TestProvName.SqlServer2019 :
 					case TestProvName.SqlAzure      :
 						{
-							var indexTable = dbSchema.Tables.Single(t => t.IsDefaultSchema && t.TableName == "IndexTable");
+							var indexTable = dbSchema.Tables.Single(t => t.TableName == "IndexTable");
 							Assert.That(indexTable.ForeignKeys.Count,                Is.EqualTo(1));
 							Assert.That(indexTable.ForeignKeys[0].ThisColumns.Count, Is.EqualTo(2));
 						}
@@ -100,7 +107,7 @@ namespace Tests.SchemaProvider
 					case ProviderName.Informix      :
 					case ProviderName.InformixDB2   :
 						{
-							var indexTable = dbSchema.Tables.First(t => t.IsDefaultSchema && t.TableName == "testunique");
+							var indexTable = dbSchema.Tables.First(t => t.TableName == "testunique");
 							Assert.That(indexTable.Columns.Count(c => c.IsPrimaryKey), Is.EqualTo(2));
 							Assert.That(indexTable.ForeignKeys.Count(), Is.EqualTo(2));
 						}
@@ -112,10 +119,12 @@ namespace Tests.SchemaProvider
 					case ProviderName.SqlServer2008 :
 					case ProviderName.SqlServer2012 :
 					case ProviderName.SqlServer2014 :
+					case TestProvName.SqlServer2016 :
 					case ProviderName.SqlServer2017 :
+					case TestProvName.SqlServer2019 :
 					case TestProvName.SqlAzure      :
 						{
-							var tbl = dbSchema.Tables.Single(at => at.IsDefaultSchema && at.TableName == "AllTypes");
+							var tbl = dbSchema.Tables.Single(at => at.TableName == "AllTypes");
 							var col = tbl.Columns.First(c => c.ColumnName == "datetimeoffset3DataType");
 							Assert.That(col.DataType,  Is.EqualTo(DataType.DateTimeOffset));
 							Assert.That(col.Length,    Is.Null);
@@ -231,21 +240,10 @@ namespace Tests.SchemaProvider
 			{
 				var sp       = conn.DataProvider.GetSchemaProvider();
 				var dbSchema = sp.GetSchema(conn);
-				
-				var table    = dbSchema.Tables.Single(t => t.IsDefaultSchema && t.TableName == "ALLTYPES");
+				var table    = dbSchema.Tables.Single(t => t.TableName == "ALLTYPES");
 
-				if (TestProvName.IsiSeries(context))
-				{
-					var binaryType = TestProvName.IsiSeriesAccessClient(context) ? "BINARY(20)" : "BINARY";
-
-					Assert.That(table.Columns.Single(c => c.ColumnName == "BINARYDATATYPE").ColumnType, Is.EqualTo(binaryType));
-					Assert.That(table.Columns.Single(c => c.ColumnName == "VARBINARYDATATYPE").ColumnType, Is.EqualTo("VARBIN"));
-				}
-				else
-				{
-					Assert.That(table.Columns.Single(c => c.ColumnName == "BINARYDATATYPE").ColumnType, Is.EqualTo("CHAR (5) FOR BIT DATA"));
-					Assert.That(table.Columns.Single(c => c.ColumnName == "VARBINARYDATATYPE").ColumnType, Is.EqualTo("VARCHAR (5) FOR BIT DATA"));
-				}
+				Assert.That(table.Columns.Single(c => c.ColumnName == "BINARYDATATYPE").   ColumnType, Is.EqualTo("CHAR (5) FOR BIT DATA"));
+				Assert.That(table.Columns.Single(c => c.ColumnName == "VARBINARYDATATYPE").ColumnType, Is.EqualTo("VARCHAR (5) FOR BIT DATA"));
 			}
 		}
 
@@ -279,6 +277,7 @@ namespace Tests.SchemaProvider
 		public void IncludeExcludeSchemaTest([DataSources(false, ProviderName.SQLiteMS, ProviderName.MySqlConnector)]
 			string context)
 		{
+			using (new DisableBaseline("TODO: exclude schema list is not stable, db2 schema provider needs refactoring", GetProviderName(context, out var _) == ProviderName.DB2))
 			using (var conn = new DataConnection(context))
 			{
 				var exclude = conn.DataProvider.GetSchemaProvider()
@@ -455,10 +454,7 @@ namespace Tests.SchemaProvider
 				OtherColumns    = key.ThisColumns,
 			};
 
-
-			typeof(SchemaProviderBase).GetMethod("SetForeignKeyMemberName",System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)
-				.Invoke(null, new object[] { new GetSchemaOptions { }, key.ThisTable, key });
-			//SchemaProviderBase.SetForeignKeyMemberName(new GetSchemaOptions {}, key.ThisTable, key);
+			SchemaProviderBase.SetForeignKeyMemberName(new GetSchemaOptions {}, key.ThisTable, key);
 
 			Assert.That(key.MemberName, Is.EqualTo("YyyZzz"));
 		}

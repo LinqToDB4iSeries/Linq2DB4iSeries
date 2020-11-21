@@ -159,7 +159,7 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
-					from t in from p in Types select Math.Floor(Math.Log((double)p.MoneyValue, 2)) where t != 0.1 select t,
+					from t in from p in    Types select Math.Floor(Math.Log((double)p.MoneyValue, 2)) where t != 0.1 select t,
 					from t in from p in db.Types select Math.Floor(Math.Log((double)p.MoneyValue, 2)) where t != 0.1 select t);
 		}
 

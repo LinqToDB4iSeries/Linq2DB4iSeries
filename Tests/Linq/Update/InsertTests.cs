@@ -309,7 +309,7 @@ namespace Tests.xUpdate
 					.Value(c => c.ChildID, () => id);
 
 				var sql = insertable.ToString();
-				Console.WriteLine(sql);
+				TestContext.WriteLine(sql);
 
 				Assert.That(sql, Does.Contain("INSERT"));
 			}
@@ -410,8 +410,8 @@ namespace Tests.xUpdate
 			using (var db = GetDataContext(context))
 			using (var table = db.CreateLocalTable(new []
 			{
-				new InsertTable{Id = 1, CreatedOn = DateTime.Now, ModifiedOn = DateTime.Now}, 
-				new InsertTable{Id = 2, CreatedOn = DateTime.Now, ModifiedOn = DateTime.Now}, 
+				new InsertTable{Id = 1, CreatedOn = TestData.DateTime, ModifiedOn = TestData.DateTime},
+				new InsertTable{Id = 2, CreatedOn = TestData.DateTime, ModifiedOn = TestData.DateTime},
 			}))
 			{
 				var affected = table
@@ -1041,8 +1041,10 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void InsertOrUpdate1([DataSources] string context)
+		public void InsertOrUpdate1([InsertOrUpdateDataSources] string context)
 		{
+			ResetPersonIdentity(context);
+
 			using (var db = GetDataContext(context))
 			{
 				var id = 0;
@@ -1081,8 +1083,10 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void InsertOrUpdate2([DataSources] string context)
+		public void InsertOrUpdate2([InsertOrUpdateDataSources] string context)
 		{
+			ResetPersonIdentity(context);
+
 			using (var db = GetDataContext(context))
 			{
 				int id;
@@ -1155,8 +1159,10 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void InsertOrReplace1([DataSources] string context)
+		public void InsertOrReplace1([InsertOrUpdateDataSources] string context)
 		{
+			ResetPersonIdentity(context);
+
 			using (var db = GetDataContext(context))
 			{
 				var id = 0;
@@ -1190,8 +1196,10 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public async Task InsertOrReplace1Async([DataSources] string context)
+		public async Task InsertOrReplace1Async([InsertOrUpdateDataSources] string context)
 		{
+			ResetPersonIdentity(context);
+
 			using (var db = GetDataContext(context))
 			{
 				var id = 0;
@@ -1233,7 +1241,7 @@ namespace Tests.xUpdate
 				{
 					var p = new Person()
 					{
-						FirstName = Guid.NewGuid().ToString(),
+						FirstName = TestData.Guid1.ToString(),
 						ID = 1000,
 					};
 
@@ -1243,8 +1251,10 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void InsertOrUpdate3([DataSources] string context)
+		public void InsertOrUpdate3([InsertOrUpdateDataSources] string context)
 		{
+			ResetPersonIdentity(context);
+
 			using (var db = GetDataContext(context))
 			{
 				var id = 0;
@@ -1292,8 +1302,10 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public async Task InsertOrUpdate3Async([DataSources] string context)
+		public async Task InsertOrUpdate3Async([InsertOrUpdateDataSources] string context)
 		{
+			ResetPersonIdentity(context);
+
 			using (var db = GetDataContext(context))
 			{
 				var id = 0;
@@ -1341,8 +1353,10 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void InsertOrUpdate4([DataSources] string context)
+		public void InsertOrUpdate4([InsertOrUpdateDataSources] string context)
 		{
+			ResetPersonIdentity(context);
+
 			using (var db = GetDataContext(context))
 			{
 				var id = 0;
@@ -1415,8 +1429,8 @@ namespace Tests.xUpdate
 				{
 					((DataConnection)db).BulkCopy(100, new[]
 					{
-						new LinqDataTypes2 { ID = 1003, MoneyValue = 0m, DateTimeValue = null,         BoolValue = true,  GuidValue = new Guid("ef129165-6ffe-4df9-bb6b-bb16e413c883"), SmallIntValue =  null, IntValue = null    },
-						new LinqDataTypes2 { ID = 1004, MoneyValue = 0m, DateTimeValue = DateTime.Now, BoolValue = false, GuidValue = null,                                             SmallIntValue =  2,    IntValue = 1532334 }
+						new LinqDataTypes2 { ID = 1003, MoneyValue = 0m, DateTimeValue = null,              BoolValue = true,  GuidValue = new Guid("ef129165-6ffe-4df9-bb6b-bb16e413c883"), SmallIntValue =  null, IntValue = null    },
+						new LinqDataTypes2 { ID = 1004, MoneyValue = 0m, DateTimeValue = TestData.DateTime, BoolValue = false, GuidValue = null,                                             SmallIntValue =  2,    IntValue = 1532334 }
 					});
 				}
 				finally
@@ -1811,7 +1825,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void InsertOrReplaceByTableName([DataSources] string context)
+		public void InsertOrReplaceByTableName([InsertOrUpdateDataSources] string context)
 		{
 			const string? schemaName = null;
 			var tableName  = "xxPatient" + TestUtils.GetNext().ToString();
@@ -1857,7 +1871,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public async Task InsertOrReplaceByTableNameAsync([DataSources] string context)
+		public async Task InsertOrReplaceByTableNameAsync([InsertOrUpdateDataSources] string context)
 		{
 			const string? schemaName = null;
 			var tableName  = "xxPatient" + TestUtils.GetNext().ToString();
@@ -1931,8 +1945,10 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void TestUpdateWithColumnFilter([DataSources] string context, [Values] bool withMiddleName)
+		public void TestUpdateWithColumnFilter([InsertOrUpdateDataSources] string context, [Values] bool withMiddleName)
 		{
+			ResetPersonIdentity(context);
+
 			using (var db = GetDataContext(context))
 			{
 				var newName = "InsertColumnFilter";
@@ -1978,7 +1994,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void TestInsertOrReplaceWithColumnFilter([DataSources] string context, [Values] bool withMiddleName, [Values] bool skipOnInsert)
+		public void TestInsertOrReplaceWithColumnFilter([InsertOrUpdateDataSources] string context, [Values] bool withMiddleName, [Values] bool skipOnInsert)
 		{
 			using (var db = GetDataContext(context))
 			using (var table = db.CreateLocalTable<TestInsertOrReplaceTable>())
@@ -2021,7 +2037,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void Issue2243([DataSources] string context, [Values(1, 2, 3)] int seed)
+		public void Issue2243([InsertOrUpdateDataSources] string context, [Values(1, 2, 3)] int seed)
 		{
 			using (var db    = GetDataContext(context))
 			using (var table = db.CreateLocalTable<TestInsertOrReplaceInfo>())

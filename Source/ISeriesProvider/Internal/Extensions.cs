@@ -33,9 +33,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				&& iseriesMappingSchema.GuidMappedAsString;
 		}
 
-		public static DbDataType GetDbDataType(this MappingSchema mappingSchema, Type systemType, DataType dataType, int? length, int? precision, int? scale, bool mapGuidAsString, bool forceDefaultAttributes = false)
+		public static DbDataType GetDbDataType(this MappingSchema mappingSchema, Type systemType, DataType dataType, int? length, int? precision, int? scale, bool forceDefaultAttributes, bool supportsNCharTypes)
 		{
-			return DB2iSeriesDbTypes.GetDbDataType(systemType, dataType, length, precision, scale, mappingSchema.IsGuidMappedAsString(), forceDefaultAttributes);
+			return DB2iSeriesDbTypes.GetDbDataType(systemType, dataType, length, precision, scale, mappingSchema.IsGuidMappedAsString(), forceDefaultAttributes, supportsNCharTypes);
 		}
 
 		public static DbDataType GetDbTypeForCast(this MappingSchema mappingSchema, SqlDataType type)

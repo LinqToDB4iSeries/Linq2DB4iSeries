@@ -47,13 +47,13 @@ namespace Tests.Linq
 		{
 			using (var ctx = new DataContext(context))
 			{
-				Console.WriteLine(ctx.GetTable<Person>().ToString());
+				NUnit.Framework.TestContext.WriteLine(ctx.GetTable<Person>().ToString());
 
 				var q =
 					from s in ctx.GetTable<Person>()
 					select s.FirstName;
 
-				Console.WriteLine(q.ToString());
+				NUnit.Framework.TestContext.WriteLine(q.ToString());
 			}
 		}
 
@@ -83,12 +83,7 @@ namespace Tests.Linq
 			using (var db  = (TestDataConnection)GetDataContext(context))
 			using (var db1 = new DataContext(db.DataProvider.Name, "BAD"))
 			{
-				if (!TestProvName.IsiSeriesAccessClient(context))
-					Assert.Throws(typeof(ArgumentException), () => db1.GetTable<Child>().ToList());
-#if NETFRAMEWORK
-				else
-					Assert.Throws(typeof(IBM.Data.DB2.iSeries.iDB2InvalidConnectionStringException), () => db1.GetTable<Child>().ToList());
-#endif
+				Assert.Throws(typeof(ArgumentException), () => db1.GetTable<Child>().ToList());
 			}
 		}
 
@@ -156,7 +151,6 @@ namespace Tests.Linq
 			}
 		}
 
-		//TODO:Reflection
 		[Test]
 		public void CommandTimeoutTests([IncludeDataSources(false, TestProvName.AllSqlServer)] string context)
 		{
@@ -178,7 +172,6 @@ namespace Tests.Linq
 			}
 		}
 
-		//TODO:Reflection
 		[Test]
 		public void TestCreateConnection([DataSources(false)] string context)
 		{
