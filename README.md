@@ -30,6 +30,8 @@ This provider uses the same interface as the standard DB2 provider and supports 
 
 The recommended provider is DB2Connect if a license can be obtained. Otherwise the native .net provider is great if you're still on .net Framework. The OleDb and ODBC providers are a good choice if you want .net core/standard compatibility but cannot get a DB2Connect license. The ODBC provider has issues with XML columns and the OleDb provider only works on x64. The OleDb provider also had some SQL quirks that we handlde in code (required spaces in specific places) so use with caution.
 
+For more info on providers see the [provider known issue and quirks wiki artice](https://github.com/LinqToDB4iSeries/Linq2DB4iSeries/wiki/Underlying-ADO-providers-known-issues-and-quirks)
+
 For more info on IBM's comments on the ODBC and OleDb providers see: https://www.ibm.com/support/pages/oledb-ole-db-and-odbc-positioning
 
 ## Usage
