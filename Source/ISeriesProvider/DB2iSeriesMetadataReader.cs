@@ -166,7 +166,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case Sql.DateParts.Month: partStr = "MONTH({date})"; break;
 				case Sql.DateParts.DayOfYear: partStr = "DAYOFYEAR({date})"; break;
 				case Sql.DateParts.Day: partStr = "DAY({date})"; break;
-				case Sql.DateParts.Week: partStr = "DAYOFYEAR({date}) / 7"; break;
+				case Sql.DateParts.Week: partStr = "WEEK({date})"; break;
 				case Sql.DateParts.WeekDay: partStr = "DAYOFWEEK({date})"; break;
 				case Sql.DateParts.Hour: partStr = "HOUR({date})"; break;
 				case Sql.DateParts.Minute: partStr = "MINUTE({date})"; break;

@@ -75,5 +75,27 @@ namespace Tests
 			else
 				return '@';
 		}
+
+		public override CreateDataScript? InterceptCreateData(string context)
+		{
+			var script = context.Contains("GAS") ? "DB2iSeriesGAS" : "DB2iSeries";
+			if (TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_54).Contains(context))
+				script += "54";
+			return new CreateDataScript(context, "\nGO\n", script);
+		}
+
+		public override string[]? InterceptResetPersonIdentity(string context, int lastValue)
+		{
+			return new[] { $"ALTER TABLE Person ALTER COLUMN PersonID RESTART WITH {lastValue + 1}" };
+		}
+
+		public override string[]? InterceptResetAllTypesIdentity(string context, int lastValue, int keepIdentityLastValue)
+		{
+			return new[]
+			{
+				$"ALTER TABLE AllTypes ALTER COLUMN ID RESTART WITH {lastValue + 1}",
+				$"ALTER TABLE KeepIdentityTest ALTER COLUMN ID RESTART WITH {keepIdentityLastValue + 1}",
+			};
+		}
 	}
 }

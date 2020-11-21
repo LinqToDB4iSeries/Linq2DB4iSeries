@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Data;
 
 namespace Tests
 {
@@ -49,13 +50,53 @@ namespace Tests
 			=> token;
 
 		/// <summary>
+		/// Intercepts the create data method for database intialization.
+		/// </summary>
+		/// <param name="context">The context/datasource for which to run create scripts.</param>
+		/// <returns>A CreateDataScript instance that describes the data creation script. Otherwise null.</returns>
+		public virtual CreateDataScript? InterceptCreateData(string context)
+			=> null;
+
+		/// <summary>
+		/// Intercept the ResetPersonIdentity helper from TestBase.Identity.
+		/// </summary>
+		/// <param name="context">The context/datasource for which to reset Person identity.</param>
+		/// <returns>An array of SQL scripts to reset Person identiy for given provider or null for default behaviour.</returns>
+		public virtual string[]? InterceptResetPersonIdentity(string context, int lastValue)
+			=> null;
+
+		/// <summary>
+		/// Intercept the InterceptResetAllTypesIdentity helper from TestBase.Identity.
+		/// </summary>
+		/// <param name="context">The context/datasource for which to reset AllTypes identity.</param>
+		/// <returns>An array of SQL scripts to reset AllTypes identiy for given provider or null for default behaviour.</returns>
+		public virtual string[]? InterceptResetAllTypesIdentity(string context, int lastValue, int keepIdentityLastValue)
+			=> null;
+
+		/// <summary>
 		/// Helper method to extract the class name and method name of a test method.
 		/// </summary>
 		/// <param name="testMethod"></param>
 		/// <returns></returns>
 		protected static (string className, string methodName) ExtractMethod(IMethodInfo testMethod)
 			=> (testMethod.TypeInfo.Name, testMethod.Name);
+	}
 
-		
+	public class CreateDataScript
+	{
+		public string ConfigString { get; }
+		public string Divider { get; }
+		public string Name { get; }
+		public Action<IDbConnection>? Action { get; }
+		public string? Database { get; }
+
+		public CreateDataScript(string configString, string divider, string name, Action<IDbConnection>? action = null, string? database = null)
+		{
+			ConfigString = configString;
+			Divider = divider;
+			Name = name;
+			Action = action;
+			Database = database;
+		}
 	}
 }
