@@ -6,19 +6,18 @@
 		<TargetFrameworks>net472;netcoreapp3.1</TargetFrameworks>
 		<Configurations>Debug;Release;</Configurations>
 		<NoWarn>$(NoWarn);CS0649;CS0429</NoWarn>
-		<SignAssembly>false</SignAssembly>
+		<AssemblyOriginatorKeyFile>..\..\Build\linq2db.snk</AssemblyOriginatorKeyFile>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\Source\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj" />
-		<ProjectReference Include="..\..\Tests\LinqToDB.Tools\LinqToDB.Tools.csproj" />
 	</ItemGroup>
-	
+
 	<ItemGroup>
+		<PackageReference Include="linq2db.Tools" Version="3.1.6" />
 		<PackageReference Include="NUnit" Version="3.12.0" />
 		<PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.1" />
-		<PackageReference Include="JetBrains.Annotations" Version="2020.1.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
 	</ItemGroup>
 

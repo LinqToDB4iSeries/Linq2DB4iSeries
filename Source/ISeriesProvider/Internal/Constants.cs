@@ -8,6 +8,8 @@
 			public const string SupportsOffsetClause = "SupportsOffsetClause";
 			public const string SupportsTruncateTable = "SupportsTruncateTable";
 			public const string SupportsNamedParameters = "SupportsNamedParameters";
+			public const string SupportsMergeStatement = "SupportsMergeStatement";
+			public const string SupportsNCharTypes = "SupportsNCharTypes";
 		}
 
 		public static class DbTypes
@@ -42,6 +44,9 @@
 			public const string NChar = "NCHAR";
 			public const string NVarChar = "NVARCHAR";
 			public const string NClob = "NCLOB";
+			public const string GraphicUnicode = "GRAPHIC CCSID 1200";
+			public const string VarGraphicUnicode = "VARGRAPHIC CCSID 1200";
+			public const string DBClobUnicode = "DBCLOB CCSID 1200";
 		}
 
 		public static class SQL

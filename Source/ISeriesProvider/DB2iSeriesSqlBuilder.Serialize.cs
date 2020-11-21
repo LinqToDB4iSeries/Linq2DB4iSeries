@@ -128,7 +128,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			if (name.Contains("("))
 				return name;
-			
+
+			var ccsid = string.Empty;
+			var ccsidIndex = name.IndexOf(" CCSID ", StringComparison.OrdinalIgnoreCase);
+			if (ccsidIndex > 0)
+			{
+				ccsid = name.Substring(ccsidIndex);
+				name = name.Substring(0, ccsidIndex);
+			}	
+
 			var stringBuilder = new StringBuilder();
 
 			stringBuilder.Append(name);
@@ -143,6 +151,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					stringBuilder.Append(", ").Append(scale);
 				stringBuilder.Append(')');
 			}
+
+			stringBuilder.Append(ccsid);
 
 			return stringBuilder.ToString();
 		}

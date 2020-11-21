@@ -17,6 +17,9 @@
 		<NoWarn>1591</NoWarn>
 		<AnalysisLevel>preview</AnalysisLevel>
 
+		<SignAssembly>True</SignAssembly>
+		<DelaySign>False</DelaySign>
+
 		<AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		

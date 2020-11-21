@@ -7,13 +7,20 @@ namespace LinqToDB.DataProvider.DB2iSeries
 {
 	public partial class DB2iSeriesSqlBuilder
 	{
+		protected override void BuildMergeStatement(SqlMergeStatement merge)
+		{
+			if (!DB2iSeriesSqlProviderFlags.SupportsMergeStatement)
+				throw new LinqToDBException($"{Provider.Name} provider doesn't support SQL MERGE statement");
+
+			base.BuildMergeStatement(merge);
+		}
+
 		private bool MergeSourceValueTypeRequired(ISqlExpression expression)
 		{
 			return (expression is SqlParameter
 				|| (expression is SqlValue value
 					&& value.Value is null));
 		}
-
 
 		protected override bool MergeSourceValueTypeRequired(SqlValuesTable source, IReadOnlyList<ISqlExpression[]> rows, int row, int column)
 		{

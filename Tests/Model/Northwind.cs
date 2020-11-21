@@ -9,7 +9,7 @@ namespace Tests.Model
 	{
 		public abstract class EntityBase<T>
 		{
-			//[System.Diagnostics.CodeAnalysis.NotNull]
+			[System.Diagnostics.CodeAnalysis.NotNull]
 			protected abstract T Key { get; }
 
 			public override bool Equals(object? obj)

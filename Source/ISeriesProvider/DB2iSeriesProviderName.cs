@@ -8,11 +8,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public const string DB2 = "DB2.iSeries";
 		public const string DB2_GAS = "DB2.iSeries.GAS";
 
-
-		//public const string DB2_73 = "DB2.iSeries.73";
-
-		//public const string DB2_73_GAS = "DB2.iSeries.73.GAS";
-
 		public const string DB2_ODBC_71 = "DB2.iSeries.ODBC.71";
 		public const string DB2_ODBC_72 = "DB2.iSeries.ODBC.72";
 		public const string DB2_ODBC_73 = "DB2.iSeries.ODBC.73";
@@ -27,13 +22,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public const string DB2_OleDb_72_GAS = "DB2.iSeries.OleDb.72.GAS";
 		public const string DB2_OleDb_73_GAS = "DB2.iSeries.OleDb.73.GAS";
 
-		public const string DB2_AccessClient_71 = "DB2.iSeries.Net.71";
-		public const string DB2_AccessClient_72 = "DB2.iSeries.Net.72";
-		public const string DB2_AccessClient_73 = "DB2.iSeries.Net.73";
-		public const string DB2_AccessClient_71_GAS = "DB2.iSeries.Net.71.GAS";
-		public const string DB2_AccessClient_72_GAS = "DB2.iSeries.Net.72.GAS";
-		public const string DB2_AccessClient_73_GAS = "DB2.iSeries.Net.73.GAS";
-
 		public const string DB2_DB2Connect_71 = "DB2.iSeries.DB2Connect.71";
 		public const string DB2_DB2Connect_72 = "DB2.iSeries.DB2Connect.72";
 		public const string DB2_DB2Connect_73 = "DB2.iSeries.DB2Connect.73";
@@ -41,12 +29,22 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public const string DB2_DB2Connect_72_GAS = "DB2.iSeries.DB2Connect.72.GAS";
 		public const string DB2_DB2Connect_73_GAS = "DB2.iSeries.DB2Connect.73.GAS";
 
+#if NET45
+		public const string DB2_AccessClient_71 = "DB2.iSeries.Net.71";
+		public const string DB2_AccessClient_72 = "DB2.iSeries.Net.72";
+		public const string DB2_AccessClient_73 = "DB2.iSeries.Net.73";
+		public const string DB2_AccessClient_71_GAS = "DB2.iSeries.Net.71.GAS";
+		public const string DB2_AccessClient_72_GAS = "DB2.iSeries.Net.72.GAS";
+		public const string DB2_AccessClient_73_GAS = "DB2.iSeries.Net.73.GAS";
+#endif
+
 		public static string[] AllNames =
 			typeof(DB2iSeriesProviderName)
 			.GetFields()
 			.Where(x => x.GetMemberType() == typeof(string))
 			.Select(x => x.GetValue(null) as string)
 			.Distinct()
+			.Except(new[] { DB2, DB2_GAS })
 			.ToArray();
 
 		public static DB2iSeriesProviderType GetProviderType(string providerName)
@@ -70,7 +68,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			var providerType = GetProviderType(providerName);
 			
 			var version = DB2iSeriesVersion.V7_1;
-			
+
 			if (providerName.Contains("72"))
 				version = DB2iSeriesVersion.V7_2;
 			else if (providerName.Contains("73"))

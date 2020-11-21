@@ -153,13 +153,12 @@ namespace Tests.Linq
 		[Test]
 		public async Task TestFirstOrDefault([DataSources] string context)
 		{
-			var ids = new List<int?> { 1, 2, 3, (int?)null };
 			using (var db = GetDataContext(context))
 			{
 				var param = 4;
 				var resultQuery =
 						from o in db.Parent
-						where ids.Contains(o.ParentID) || o.ParentID == param
+						where Sql.Ext.In(o.ParentID, 1, 2, 3, (int?)null) || o.ParentID == param
 						select o;
 
 				var _ = await resultQuery.FirstOrDefaultAsync();

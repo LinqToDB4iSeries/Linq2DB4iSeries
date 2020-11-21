@@ -28,7 +28,7 @@ namespace Tests.Linq
 			[Column(Configuration = TestProvName.MariaDB,        IsColumn = false)]
 			public string? String;
 
-			//[Column("ncharDataType")] //default
+			[Column("ncharDataType")]
 			[Column("nchar20DataType", Configuration = ProviderName.SapHana)]
 			[Column("CHAR20DATATYPE" , Configuration = ProviderName.DB2)]
 			[Column("char20DataType" , Configuration = ProviderName.PostgreSQL)]
@@ -37,7 +37,6 @@ namespace Tests.Linq
 			[Column("char20DataType" , Configuration = TestProvName.MySql55)]
 			[Column("char20DataType" , Configuration = TestProvName.MariaDB)]
 			[Column(                   Configuration = ProviderName.Firebird, IsColumn = false)]
-			[Column("GRAPHICDATATYPE")] //db2i
 			public string? NString;
 		}
 
@@ -58,7 +57,7 @@ namespace Tests.Linq
 			[Column(Configuration = TestProvName.MariaDB,		 IsColumn = false)]
 			public char? Char;
 
-			//[Column("ncharDataType"  , DataType = DataType.NChar)] //default
+			[Column("ncharDataType"  , DataType = DataType.NChar)]
 			[Column("nchar20DataType", DataType = DataType.NChar, Configuration = ProviderName.SapHana)]
 			[Column("CHAR20DATATYPE" , DataType = DataType.NChar, Configuration = ProviderName.DB2)]
 			[Column("char20DataType" , DataType = DataType.NChar, Configuration = ProviderName.PostgreSQL)]
@@ -67,7 +66,6 @@ namespace Tests.Linq
 			[Column("char20DataType" , DataType = DataType.NChar, Configuration = TestProvName.MySql55)]
 			[Column("char20DataType" , DataType = DataType.NChar, Configuration = TestProvName.MariaDB)]
 			[Column(                   Configuration = ProviderName.Firebird, IsColumn = false)]
-			[Column("GRAPHICDATATYPE")]
 			public char? NChar;
 		}
 
@@ -149,8 +147,6 @@ namespace Tests.Linq
 						{
 							if (context.Contains("Sybase"))
 								Assert.AreEqual(testData[i].NString?.TrimEnd(' ')?.TrimEnd('\0'), records[i].NString);
-							else if (TestProvName.IsiSeriesOleDb(context) && i == 19)
-								Assert.AreEqual(testData[i].NString?.TrimEnd(), records[i].NString);
 							else
 								Assert.AreEqual(testData[i].NString?.TrimEnd(' '), records[i].NString);
 						}
@@ -194,8 +190,6 @@ namespace Tests.Linq
 			if (context.Contains(ProviderName.PostgreSQL)
 				|| provider == ProviderName.DB2
 				|| context  == ProviderName.DB2           + ".LinqService"
-				|| TestProvName.IsiSeries(provider)
-				|| TestProvName.IsiSeries(context)
 				|| context.Contains("SQLite")
 				|| provider == ProviderName.SqlCe
 				|| context.Contains(ProviderName.SapHana))
@@ -296,23 +290,19 @@ namespace Tests.Linq
 								Assert.AreEqual(testData[i].Char, records[i].Char);
 						}
 
-						if (TestProvName.IsiSeriesOleDb(context) && i == 18)
-							Assert.AreEqual('\0', records[i].NChar);
-						else if (context == ProviderName.MySql
+						if (context == ProviderName.MySql
 							  || context == ProviderName.MySql + ".LinqService"
 							  || context == ProviderName.MySqlConnector
 							  || context == ProviderName.MySqlConnector + ".LinqService"
 							  || context == TestProvName.MySql55
 							  || context == TestProvName.MySql55 + ".LinqService"
 							  || context == TestProvName.MariaDB
-							  || context == TestProvName.MariaDB + ".LinqService"
-							  || TestProvName.IsiSeries(context)
-							  )
+							  || context == TestProvName.MariaDB + ".LinqService")
 							// for some reason mysql doesn't insert space
 							Assert.AreEqual(testData[i].NChar == ' ' ? '\0' : testData[i].NChar, records[i].NChar);
 						else if (!context.Contains(ProviderName.Firebird))
 						{
-							if (context.Contains("Sybase") || TestProvName.IsiSeriesAccessClient(context))
+							if (context.Contains("Sybase"))
 								Assert.AreEqual(testData[i].NChar == '\0' ? ' ' : testData[i].NChar, records[i].NChar);
 							else
 								Assert.AreEqual(testData[i].NChar, records[i].NChar);
@@ -332,7 +322,6 @@ namespace Tests.Linq
 				|| context == ProviderName.SqlCe      + ".LinqService"
 				|| context == ProviderName.DB2
 				|| context == ProviderName.DB2        + ".LinqService"
-				|| TestProvName.IsiSeries(context)
 				|| context.Contains(ProviderName.PostgreSQL)
 				|| context == ProviderName.MySql
 				|| context == ProviderName.MySql + ".LinqService"

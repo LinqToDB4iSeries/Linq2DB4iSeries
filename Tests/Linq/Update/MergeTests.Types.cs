@@ -66,8 +66,7 @@ namespace Tests.xUpdate
 			[Column(IsColumn = false, Configuration = ProviderName.SQLite)]
 			[Column(IsColumn = false, Configuration = ProviderName.SapHana)]
 			[Column(Configuration = ProviderName.Oracle, Precision = 7)]
-			//[Column("FieldDateTime2")] //default
-			[Column(IsColumn = false)] //db2i
+			[Column("FieldDateTime2")]
 			public DateTimeOffset? FieldDateTime2;
 
 			[Column(IsColumn = false, Configuration = ProviderName.Firebird)]
@@ -90,8 +89,7 @@ namespace Tests.xUpdate
 			[Column(IsColumn = false, Configuration = ProviderName.SqlCe)]
 			[Column("FieldDate"     , Configuration = ProviderName.Informix, DataType = DataType.Date)]
 			[Column("FieldDate"     , Configuration = ProviderName.Sybase  , DataType = DataType.Date)]
-			//[Column("FieldDate")] //default
-			[Column("FieldDate", DataType = DataType.Date)] //db2i
+			[Column("FieldDate")]
 			public DateTime? FieldDate;
 
 			[Column(IsColumn = false, Configuration = ProviderName.Firebird)]
@@ -122,8 +120,7 @@ namespace Tests.xUpdate
 			[MapValue("\b", Configuration = ProviderName.Sybase)]
 			[MapValue("\b", Configuration = ProviderName.SapHana)]
 			[MapValue("\b", Configuration = ProviderName.DB2)]
-			//[MapValue("\0")] //default
-			[MapValue("\b")] //db2i
+			[MapValue("\0")]
 			Value2,
 			[MapValue("_", Configuration = ProviderName.Oracle)]
 			[MapValue("_", Configuration = ProviderName.Sybase)]
@@ -248,7 +245,7 @@ namespace Tests.xUpdate
 			}
 		};
 
-		private static readonly MergeTypes[] InitialTypes2Data = new MergeTypes[]
+		private static readonly MergeTypes[] InitialTypes2Data = new[]
 		{
 			new MergeTypes()
 			{
@@ -438,9 +435,6 @@ namespace Tests.xUpdate
 		{
 			if (expected != null)
 			{
-				if (TestProvName.IsiSeriesOleDb(provider))
-					expected = expected.TrimEnd(' ');
-
 				if (   provider == ProviderName.Sybase
 					|| provider == ProviderName.SybaseManaged
 					|| provider == ProviderName.SqlCe)
@@ -500,7 +494,6 @@ namespace Tests.xUpdate
 				&& provider != ProviderName.Sybase
 				&& provider != ProviderName.SybaseManaged
 				&& provider != ProviderName.DB2
-				&& !TestProvName.IsiSeries(provider)
 				&& !provider.StartsWith(ProviderName.SapHana))
 				Assert.AreEqual(expected, actual);
 		}
@@ -514,11 +507,9 @@ namespace Tests.xUpdate
 						|| provider == ProviderName.MySqlConnector
 						|| provider == TestProvName.MariaDB
 						|| provider == TestProvName.MySql55
-						|| TestProvName.IsiSeries(provider) && !TestProvName.IsiSeriesDB2Connect(provider)
 						// after migration to 2.4.126 provider + SPS4, hana or provider started to trim spaces on insert for some reason
 						|| provider.StartsWith(ProviderName.SapHana)))
 					expected = '\0';
-				
 			}
 
 			Assert.AreEqual(expected, actual);
@@ -533,7 +524,6 @@ namespace Tests.xUpdate
 						|| provider == ProviderName.MySqlConnector
 						|| provider == TestProvName.MariaDB
 						|| provider == TestProvName.MySql55
-						|| TestProvName.IsiSeries(provider) && !TestProvName.IsiSeriesDB2Connect(provider)
 						// after migration to 2.4.126 provider + SPS4, hana or provider started to trim spaces on insert for some reason
 						|| provider.StartsWith(ProviderName.SapHana)))
 					expected = '\0';
@@ -585,9 +575,6 @@ namespace Tests.xUpdate
 		{
 			if (expected != null)
 			{
-				if (TestProvName.IsiSeriesOleDb(provider))
-					expected = expected.TrimEnd(' ');
-
 				switch (provider)
 				{
 					case ProviderName.Sybase:
@@ -621,7 +608,7 @@ namespace Tests.xUpdate
 
 			if (expected != null)
 			{
-				switch (TestProvName.GetFamily(provider))
+				switch (provider)
 				{
 					case ProviderName.Sybase        :
 					case ProviderName.SybaseManaged :
@@ -661,6 +648,8 @@ namespace Tests.xUpdate
 					case ProviderName.PostgreSQL95  :
 					case TestProvName.PostgreSQL10  :
 					case TestProvName.PostgreSQL11  :
+					case TestProvName.PostgreSQL12  :
+					case TestProvName.PostgreSQL13  :
 						expected = TimeSpan.FromTicks((expected.Value.Ticks / 10) * 10);
 						break;
 					case ProviderName.DB2           :

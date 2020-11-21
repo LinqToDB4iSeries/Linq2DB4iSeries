@@ -621,8 +621,8 @@ namespace Tests.Linq
 					select p.Name.LastName;
 
 				var sql = q.ToString()!;
-				
-				Console.WriteLine(sql);
+
+				TestContext.WriteLine(sql);
 
 				Assert.That(sql.IndexOf("First"),    Is.LessThan(0));
 				Assert.That(sql.IndexOf("LastName"), Is.GreaterThan(0));
@@ -1474,8 +1474,6 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 			{
-				db.InlineParameters = true;
-
 				var id = 1;
 				var query = from p in db.GetTable<Parent>()
 					where p.ParentID == id
@@ -1569,6 +1567,37 @@ namespace Tests.Linq
 				var res = table.Take(1).Select(_ => Wrap4(new Guid("b3d9b51c89f9442a893bcd8a6f667d37")) != Wrap4(new Guid("61efdcd4659d41e8910c506a9c2f31c5"))).SingleOrDefault();
 
 				Assert.True(res);
+			}
+		}
+
+
+		[Table("test_mapping_column_2_prop")]
+		public partial class TestMappingColumn1PropInfo 
+		{
+			[Column("id"),          PrimaryKey] public long Id         { get; set; } // bigint
+			[Column("test_number"), NotNull   ] public long TestNumber { get; set; } // bigint
+		}
+
+		[Table("test_mapping_column_2_prop")]
+		public partial class TestMappingColumn2PropInfo 
+		{
+			[Column("test_number"), NotNull   ] public long TestNumber { get; set; } // bigint
+
+			[Column("test_number"), NotNull] public long TestNumber2 { get; set; } // bigint
+			[Column("test_number"), NotNull] public long TestNumber3 { get; set; } // bigint
+			[Column("id"),          PrimaryKey] public long Id         { get; set; } // bigint
+		}
+
+		[Test]
+		public void MaterializeTwoMapped([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		{
+			var data = new[] { new TestMappingColumn1PropInfo  { Id = 1, TestNumber = 3 } };
+			using (var db = GetDataContext(context))
+			using (var table = db.CreateLocalTable(data))
+			{
+				var value = db.GetTable<TestMappingColumn2PropInfo>().First();
+				Assert.That(value.TestNumber, Is.EqualTo(value.TestNumber2));
+				Assert.That(value.TestNumber, Is.EqualTo(value.TestNumber3));
 			}
 		}
 

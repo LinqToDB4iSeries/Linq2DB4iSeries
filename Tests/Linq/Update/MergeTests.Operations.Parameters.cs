@@ -173,9 +173,8 @@ namespace Tests.xUpdate
 			}
 		}
 
-#if NETFRAMEWORK
 		[Test]
-		public void TestParametersInListSourceProperty([IncludeDataSources(TestProvName.DB2iNet)] string context)
+		public void TestParametersInListSourceProperty([IncludeDataSources(ProviderName.DB2)] string context)
 		{
 			using (var db = new TestDataConnection(context))
 			{
@@ -185,7 +184,7 @@ namespace Tests.xUpdate
 				{
 					// must be type that cannot be converted to literal but will be accepted by server
 					// for now we don't generate literals for provider-specific types
-					val = new IBM.Data.DB2.iSeries.iDB2Time(0, 12, 0)
+					val = new IBM.Data.DB2Types.DB2Time(TimeSpan.FromMinutes(12))
 				};
 
 				var table = GetTarget(db);
@@ -206,7 +205,6 @@ namespace Tests.xUpdate
 				Assert.AreEqual(4, db.LastQuery.Count(_ => _ == GetParameterToken(context)));
 			}
 		}
-#endif
 
 		[Test]
 		public void TestParametersInMatchCondition([MergeDataContextSource(false)] string context)
@@ -232,26 +230,6 @@ namespace Tests.xUpdate
 			}
 		}
 
-		private static char GetParameterToken([MergeDataContextSource] string context)
-		{
-			if (TestProvName.IsiSeriesODBC(context) || TestProvName.IsiSeriesOleDb(context))
-				return '?';
-
-			switch (context)
-			{
-				case ProviderName.SapHanaOdbc    :
-				case ProviderName.Informix       :
-					return '?';
-				case ProviderName.SapHanaNative  :
-				case TestProvName.Oracle11Managed:
-				case TestProvName.Oracle11Native :
-				case ProviderName.OracleManaged  :
-				case ProviderName.OracleNative   :
-					return ':';
-			}
-
-			return '@';
-		}
 
 		[Test]
 		public void TestParametersInUpdateCondition([MergeDataContextSource(
@@ -604,7 +582,7 @@ namespace Tests.xUpdate
 			{
 				PrepareData(db);
 
-				var param = DateTime.Now;
+				var param = TestData.DateTime;
 
 				var table = GetTarget(db);
 

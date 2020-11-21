@@ -22,13 +22,13 @@ public class a_CreateData : TestBase
 {
 	static void RunScript(string configString, string divider, string name, Action<IDbConnection>? action = null, string? database = null)
 	{
-		Console.WriteLine("=== " + name + " === \n");
+		TestContext.WriteLine("=== " + name + " === \n");
 
 		var scriptFolder = Path.Combine(Path.GetFullPath("."), "Database", "Create Scripts");
-		Console.WriteLine("Script folder exists: {1}; {0}", scriptFolder, Directory.Exists(scriptFolder));
+		TestContext.WriteLine("Script folder exists: {1}; {0}", scriptFolder, Directory.Exists(scriptFolder));
 
-		var sqlFileName = Path.GetFullPath(Path.Combine(scriptFolder, Path.ChangeExtension(name, "sql")));
-		Console.WriteLine("Sql file exists: {1}; {0}", sqlFileName, File.Exists(sqlFileName));
+		var sqlFileName  = Path.GetFullPath(Path.Combine(scriptFolder, Path.ChangeExtension(name, "sql")));
+		TestContext.WriteLine("Sql file exists: {1}; {0}", sqlFileName, File.Exists(sqlFileName));
 
 		var text = File.ReadAllText(sqlFileName);
 
@@ -44,15 +44,15 @@ public class a_CreateData : TestBase
 
 		var cmds = text
 			.Replace("{DBNAME}", database)
-			.Replace("\r", "")
+			.Replace("\r",    "")
 			.Replace(divider, "\x1")
-			.Split('\x1')
-			.Select(c => c.Trim())
-			.Where(c => !string.IsNullOrEmpty(c))
+			.Split  ('\x1')
+			.Select (c => c.Trim())
+			.Where  (c => !string.IsNullOrEmpty(c))
 			.ToArray();
 
 		if (DataConnection.TraceSwitch.TraceInfo)
-			Console.WriteLine("Commands count: {0}", cmds.Length);
+			TestContext.WriteLine("Commands count: {0}", cmds.Length);
 
 		Exception? exception = null;
 
@@ -65,7 +65,7 @@ public class a_CreateData : TestBase
 				try
 				{
 					if (DataConnection.TraceSwitch.TraceInfo)
-						Console.WriteLine(command);
+						TestContext.WriteLine(command);
 
 					if (configString == ProviderName.OracleNative || configString == TestProvName.Oracle11Native)
 					{
@@ -80,28 +80,28 @@ public class a_CreateData : TestBase
 						db.Execute(command);
 
 					if (DataConnection.TraceSwitch.TraceInfo)
-						Console.WriteLine("\nOK\n");
+						TestContext.WriteLine("\nOK\n");
 				}
 				catch (Exception ex)
 				{
 					if (DataConnection.TraceSwitch.TraceError)
 					{
 						if (!DataConnection.TraceSwitch.TraceInfo)
-							Console.WriteLine(command);
+							TestContext.WriteLine(command);
 
 						var isDrop =
 							command.TrimStart().StartsWith("DROP") ||
 							command.TrimStart().StartsWith("CALL DROP");
 
-						Console.WriteLine(ex.Message);
+						TestContext.WriteLine(ex.Message);
 
 						if (isDrop)
 						{
-							Console.WriteLine("\nnot too OK\n");
+							TestContext.WriteLine("\nnot too OK\n");
 						}
 						else
 						{
-							Console.WriteLine("\nFAILED\n");
+							TestContext.WriteLine("\nFAILED\n");
 
 							if (exception == null)
 								exception = ex;
@@ -115,13 +115,13 @@ public class a_CreateData : TestBase
 				throw exception;
 
 			if (DataConnection.TraceSwitch.TraceInfo)
-				Console.WriteLine("\nBulkCopy LinqDataTypes\n");
+				TestContext.WriteLine("\nBulkCopy LinqDataTypes\n");
 
 			var options = new BulkCopyOptions();
 
 			db.BulkCopy(
 				options,
-				new[]
+				new []
 				{
 					new LinqDataTypes2 { ID =  1, MoneyValue =  1.11m, DateTimeValue = new DateTime(2001,  1,  11,  1, 11, 21, 100), BoolValue = true,  GuidValue = new Guid("ef129165-6ffe-4df9-bb6b-bb16e413c883"), SmallIntValue =  1, StringValue = null, BigIntValue = 1 },
 					new LinqDataTypes2 { ID =  2, MoneyValue =  2.49m, DateTimeValue = new DateTime(2005,  5,  15,  5, 15, 25, 500), BoolValue = false, GuidValue = new Guid("bc663a61-7b40-4681-ac38-f9aaf55b706b"), SmallIntValue =  2, StringValue = "",   BigIntValue = 2 },
@@ -138,11 +138,11 @@ public class a_CreateData : TestBase
 				});
 
 			if (DataConnection.TraceSwitch.TraceInfo)
-				Console.WriteLine("\nBulkCopy Parent\n");
+				TestContext.WriteLine("\nBulkCopy Parent\n");
 
 			db.BulkCopy(
 				options,
-				new[]
+				new []
 				{
 					new Parent { ParentID = 1, Value1 = 1    },
 					new Parent { ParentID = 2, Value1 = null },
@@ -154,11 +154,11 @@ public class a_CreateData : TestBase
 				});
 
 			if (DataConnection.TraceSwitch.TraceInfo)
-				Console.WriteLine("\nBulkCopy Child\n");
+				TestContext.WriteLine("\nBulkCopy Child\n");
 
 			db.BulkCopy(
 				options,
-				new[]
+				new []
 				{
 					new Child { ParentID = 1, ChildID = 11 },
 					new Child { ParentID = 2, ChildID = 21 },
@@ -180,11 +180,11 @@ public class a_CreateData : TestBase
 				});
 
 			if (DataConnection.TraceSwitch.TraceInfo)
-				Console.WriteLine("\nBulkCopy GrandChild\n");
+				TestContext.WriteLine("\nBulkCopy GrandChild\n");
 
 			db.BulkCopy(
 				options,
-				new[]
+				new []
 				{
 					new GrandChild { ParentID = 1, ChildID = 11, GrandChildID = 111 },
 					new GrandChild { ParentID = 2, ChildID = 21, GrandChildID = 211 },
@@ -233,13 +233,218 @@ public class a_CreateData : TestBase
 		}
 	}
 
+	static void RunScript(CreateDataScript script)
+	{
+		RunScript(script.ConfigString, script.Divider, script.Name, script.Action, script.Database);
+	}
+
 	[Test, Order(0)]
 	public void CreateDatabase([CreateDatabaseSources] string context)
 	{
-		if (TestProvName.IsiSeries(context))
+		switch (context)
 		{
-			var script = context.Contains("GAS") ? "DB2iSeriesGAS" : "DB2iSeries";
-			RunScript(context, "\nGO\n", script);
+			case ProviderName.Firebird                         :
+			case TestProvName.Firebird3                        : RunScript(context,          "COMMIT;", "Firebird", FirebirdAction);       break;
+			case ProviderName.PostgreSQL                       :
+			case ProviderName.PostgreSQL92                     :
+			case ProviderName.PostgreSQL93                     :
+			case ProviderName.PostgreSQL95                     :
+			case TestProvName.PostgreSQL10                     :
+			case TestProvName.PostgreSQL11                     :
+			case TestProvName.PostgreSQL12                     :
+			case TestProvName.PostgreSQL13                     : RunScript(context,          "\nGO\n",  "PostgreSQL");                     break;
+			case ProviderName.MySql                            :
+			case ProviderName.MySqlConnector                   :
+			case TestProvName.MySql55                          :
+			case TestProvName.MariaDB                          : RunScript(context,          "\nGO\n",  "MySql");                          break;
+			case ProviderName.SqlServer2000                    : RunScript(context,          "\nGO\n",  "SqlServer2000");                  break;
+			case ProviderName.SqlServer2005                    :
+			case ProviderName.SqlServer2008                    :
+			case ProviderName.SqlServer2012                    :
+			case ProviderName.SqlServer2014                    :
+			case TestProvName.SqlServer2016                    :
+			case ProviderName.SqlServer2017                    :
+			case TestProvName.SqlServer2019                    :
+			case TestProvName.SqlAzure                         : RunScript(context,          "\nGO\n",  "SqlServer");                      break;
+			case ProviderName.SQLiteClassic                    :
+			case ProviderName.SQLiteMS                         : RunScript(context,          "\nGO\n",  "SQLite",   SQLiteAction);
+			                                                     RunScript(context+ ".Data", "\nGO\n",  "SQLite",   SQLiteAction);         break;
+			case TestProvName.SQLiteClassicMiniProfilerMapped  :
+			case TestProvName.SQLiteClassicMiniProfilerUnmapped: RunScript(context,          "\nGO\n",  "SQLite",   SQLiteAction);         break;
+			case ProviderName.OracleManaged                    :
+			case TestProvName.Oracle11Managed                  : RunScript(context,          "\n/\n",   "Oracle");                         break;
+			case ProviderName.SybaseManaged                    : RunScript(context,          "\nGO\n",  "Sybase",   null, "TestDataCore"); break;
+			case ProviderName.Informix                         : RunScript(context,          "\nGO\n",  "Informix", InformixAction);       break;
+			case ProviderName.InformixDB2                      : RunScript(context,          "\nGO\n",  "Informix", InformixDB2Action);    break;
+			case ProviderName.DB2                              : RunScript(context,          "\nGO\n",  "DB2");                            break;
+			case ProviderName.SapHanaNative                    :
+			case ProviderName.SapHanaOdbc                      : RunScript(context,          ";;\n"  ,  "SapHana");                        break;
+			case ProviderName.Access                           : RunScript(context,          "\nGO\n",  "Access",   AccessAction);
+			                                                     RunScript(context+ ".Data", "\nGO\n",  "Access",   AccessAction);         break;
+			case ProviderName.AccessOdbc                       : RunScript(context,          "\nGO\n",  "Access",   AccessODBCAction);
+			                                                     RunScript(context+ ".Data", "\nGO\n",  "Access",   AccessODBCAction);     break;
+			case ProviderName.SqlCe                            : RunScript(context,          "\nGO\n",  "SqlCe");
+			                                                     RunScript(context+ ".Data", "\nGO\n",  "SqlCe");                          break;
+#if NET472
+			case ProviderName.Sybase                           : RunScript(context,          "\nGO\n",  "Sybase",   null, "TestData");     break;
+			case ProviderName.OracleNative                     :
+			case TestProvName.Oracle11Native                   : RunScript(context,          "\n/\n",   "Oracle");                         break;
+#endif
+			default:
+				var script = CustomizationSupport.Interceptor.InterceptCreateData(context);
+				if (script != null)
+				{
+					RunScript(script);
+					break;
+				}
+				throw new InvalidOperationException(context);
+		}
+	}
+
+	static void AccessODBCAction(IDbConnection connection)
+	{
+
+		using (var conn = AccessTools.CreateDataConnection(connection, ProviderName.AccessOdbc))
+		{
+			conn.Execute(@"
+				INSERT INTO AllTypes
+				(
+					bitDataType, decimalDataType, smallintDataType, intDataType,tinyintDataType, moneyDataType, floatDataType, realDataType,
+					datetimeDataType,
+					charDataType, varcharDataType, textDataType, ncharDataType, nvarcharDataType, ntextDataType,
+					binaryDataType, varbinaryDataType, imageDataType, oleobjectDataType,
+					uniqueidentifierDataType
+				)
+				VALUES
+				(
+					1, 2222222, 25555, 7777777, 100, 100000, 20.31, 16.2,
+					?,
+					'1', '234', '567', '23233', '3323', '111',
+					?, ?, ?, ?,
+					?
+				)",
+				new
+				{
+					datetimeDataType         = new DateTime(2012, 12, 12, 12, 12, 12),
+
+					binaryDataType           = new byte[] { 1, 2, 3, 4 },
+					varbinaryDataType        = new byte[] { 1, 2, 3, 5 },
+					imageDataType            = new byte[] { 3, 4, 5, 6 },
+					oleobjectDataType        = new byte[] { 5, 6, 7, 8 },
+
+					uniqueidentifierDataType = new Guid("{6F9619FF-8B86-D011-B42D-00C04FC964FF}"),
+				});
+		}
+	}
+
+	static void AccessAction(IDbConnection connection)
+	{
+		using (var conn = AccessTools.CreateDataConnection(connection, ProviderName.Access))
+		{
+			conn.Execute(@"
+				INSERT INTO AllTypes
+				(
+					bitDataType, decimalDataType, smallintDataType, intDataType,tinyintDataType, moneyDataType, floatDataType, realDataType,
+					datetimeDataType,
+					charDataType, varcharDataType, textDataType, ncharDataType, nvarcharDataType, ntextDataType,
+					binaryDataType, varbinaryDataType, imageDataType, oleobjectDataType,
+					uniqueidentifierDataType
+				)
+				VALUES
+				(
+					1, 2222222, 25555, 7777777, 100, 100000, 20.31, 16.2,
+					@datetimeDataType,
+					'1', '234', '567', '23233', '3323', '111',
+					@binaryDataType, @varbinaryDataType, @imageDataType, @oleobjectDataType,
+					@uniqueidentifierDataType
+				)",
+				new
+				{
+					datetimeDataType = new DateTime(2012, 12, 12, 12, 12, 12),
+
+					binaryDataType    = new byte[] { 1, 2, 3, 4 },
+					varbinaryDataType = new byte[] { 1, 2, 3, 5 },
+					imageDataType     = new byte[] { 3, 4, 5, 6 },
+					oleobjectDataType = new byte[] { 5, 6, 7, 8 },
+
+					uniqueidentifierDataType = new Guid("{6F9619FF-8B86-D011-B42D-00C04FC964FF}"),
+				});
+		}
+	}
+
+	void FirebirdAction(IDbConnection connection)
+	{
+		using (var conn = LinqToDB.DataProvider.Firebird.FirebirdTools.CreateDataConnection(connection))
+		{
+			conn.Execute(@"
+				UPDATE ""Person""
+				SET
+					""FirstName"" = @FIRSTNAME,
+					""LastName""  = @LASTNAME
+				WHERE ""PersonID"" = 4",
+				new
+				{
+					FIRSTNAME = "Jürgen",
+					LASTNAME  = "König",
+				});
+		}
+	}
+
+	static void SQLiteAction(IDbConnection connection)
+	{
+		using (var conn = LinqToDB.DataProvider.SQLite.SQLiteTools.CreateDataConnection(connection))
+		{
+			conn.Execute(@"
+				UPDATE AllTypes
+				SET
+					binaryDataType           = @binaryDataType,
+					varbinaryDataType        = @varbinaryDataType,
+					imageDataType            = @imageDataType,
+					uniqueidentifierDataType = @uniqueidentifierDataType
+				WHERE ID = 2",
+				new
+				{
+					binaryDataType           = new byte[] { 1 },
+					varbinaryDataType        = new byte[] { 2 },
+					imageDataType            = new byte[] { 0, 0, 0, 3 },
+					uniqueidentifierDataType = new Guid("{6F9619FF-8B86-D011-B42D-00C04FC964FF}"),
+				});
+		}
+	}
+
+	static void InformixAction(IDbConnection connection)
+	{
+		using (var conn = LinqToDB.DataProvider.Informix.InformixTools.CreateDataConnection(connection, ProviderName.Informix))
+		{
+			conn.Execute(@"
+				UPDATE AllTypes
+				SET
+					byteDataType = ?,
+					textDataType = ?
+				WHERE ID = 2",
+				new
+				{
+					blob = new byte[] { 1, 2 },
+					text = "BBBBB"
+				});
+		}
+	}
+
+	static void InformixDB2Action(IDbConnection connection)
+	{
+		using (var conn = LinqToDB.DataProvider.Informix.InformixTools.CreateDataConnection(connection, ProviderName.InformixDB2))
+		{
+			conn.Execute(@"
+				UPDATE AllTypes
+				SET
+					byteDataType = ?,
+					textDataType = ?
+				WHERE ID = 2",
+				new
+				{
+					blob = new byte[] { 1, 2 },
+					text = "BBBBB"
+				});
 		}
 	}
 }

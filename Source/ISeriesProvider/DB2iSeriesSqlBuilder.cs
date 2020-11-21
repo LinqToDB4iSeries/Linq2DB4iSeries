@@ -84,7 +84,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected override void BuildInsertOrUpdateQuery(SqlInsertOrUpdateStatement insertOrUpdate)
 		{
-			BuildInsertOrUpdateQueryAsMerge(insertOrUpdate, $"FROM {Constants.SQL.DummyTableName()} FETCH FIRST 1 ROW ONLY");
+			if (DB2iSeriesSqlProviderFlags.SupportsMergeStatement)
+				BuildInsertOrUpdateQueryAsMerge(insertOrUpdate, $"FROM {Constants.SQL.DummyTableName()} FETCH FIRST 1 ROW ONLY");
+			else
+				base.BuildInsertOrUpdateQuery(insertOrUpdate);
 		}
 
 		public override StringBuilder Convert(StringBuilder sb, string value, ConvertType convertType)
@@ -125,6 +128,18 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 
 			return base.Convert(sb, value, convertType);
+		}
+
+		public override StringBuilder BuildTableName(StringBuilder sb, string server, string database, string schema, string table)
+		{
+			if (database != null && database.Length == 0) database = null;
+			if (schema != null && schema.Length == 0) schema = null;
+
+			// "db..table" syntax not supported
+			if (database != null && schema == null)
+				throw new LinqToDBException($"{Provider.Name} requires schema name if database name provided.");
+
+			return base.BuildTableName(sb, null, database, schema, table);
 		}
 
 		#endregion
@@ -185,6 +200,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 				if (truncateTable.ResetIdentity)
 					StringBuilder.Append(" RESTART IDENTITY");
+
+				StringBuilder.Append(" IMMEDIATE");
 			}
 			else
 				base.BuildTruncateTableStatement(truncateTable);
@@ -302,7 +319,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		//Use mapping schema and internal db datatype mapping information to get the appropriate dbType
 		protected override void BuildDataTypeFromDataType(SqlDataType type, bool forCreateTable)
 		{
-			var dbType = MappingSchema.GetDbDataType(type.SystemType, type.Type.DataType, type.Type.Length, type.Type.Precision, type.Type.Scale, forCreateTable);
+			var dbType = MappingSchema.GetDbDataType(type.SystemType, type.Type.DataType, type.Type.Length, type.Type.Precision, type.Type.Scale, forCreateTable, db2iSeriesSqlProviderFlags.SupportsNCharTypes);
 
 			StringBuilder.Append(dbType.ToSqlString());
 		}
@@ -342,6 +359,25 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					StringBuilder.Append("CAST(");
 					base.BuildExpression(expr, buildTableName, checkParentheses, alias, ref addAlias, throwExceptionIfTableNotFound);
 					StringBuilder.Append(" AS ");
+					StringBuilder.Append(typeToCast.ToSqlString());
+					StringBuilder.Append(")");
+				}
+
+				return StringBuilder;
+			}
+			if (expr is SqlValue value && value.Value == null)
+			{
+				var typeToCast = MappingSchema.GetDbTypeForCast(new SqlDataType(value.ValueType));
+
+				//No type found - ommit cast
+				if (typeToCast.DataType == DataType.Undefined)
+				{
+					base.BuildExpression(expr, buildTableName, checkParentheses, alias, ref addAlias, throwExceptionIfTableNotFound);
+				}
+				//Cast to returned type
+				else
+				{
+					StringBuilder.Append("CAST(NULL AS ");
 					StringBuilder.Append(typeToCast.ToSqlString());
 					StringBuilder.Append(")");
 				}
