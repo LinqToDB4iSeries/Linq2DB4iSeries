@@ -9,15 +9,21 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 	class DB2iSeriesSqlOptimizer : BasicSqlOptimizer
 	{
-		public DB2iSeriesSqlOptimizer(SqlProviderFlags sqlProviderFlags) : base(sqlProviderFlags)
+		private readonly DB2iSeriesSqlProviderFlags db2ISeriesSqlProviderFlags;
+
+		public DB2iSeriesSqlOptimizer(SqlProviderFlags sqlProviderFlags, DB2iSeriesSqlProviderFlags db2iSeriesSqlProviderFlags) 
+			: base(sqlProviderFlags)
 		{
+			db2ISeriesSqlProviderFlags = db2iSeriesSqlProviderFlags;
 		}
 
 		public override SqlStatement TransformStatement(SqlStatement statement)
 		{
 			statement = SeparateDistinctFromPagination(statement, q => q.Select.SkipValue != null);
 			statement = ReplaceDistinctOrderByWithRowNumber(statement, q => q.Select.SkipValue != null);
-			statement = ReplaceTakeSkipWithRowNumber(statement, query => query.Select.SkipValue != null && SqlProviderFlags.GetIsSkipSupportedFlag(query), true);
+
+			if (!db2ISeriesSqlProviderFlags.SupportsOffsetClause)
+				statement = ReplaceTakeSkipWithRowNumber(statement, query => query.Select.SkipValue != null && SqlProviderFlags.GetIsSkipSupportedFlag(query), true);
 
 			return statement.QueryType switch
 			{

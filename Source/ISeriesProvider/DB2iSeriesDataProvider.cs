@@ -109,7 +109,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SqlProviderFlags.CanCombineParameters = false;
 			SqlProviderFlags.IsCommonTableExpressionsSupported = true;
 			SqlProviderFlags.IsUpdateFromSupported = false;
-
+			
 			db2iSeriesSqlProviderFlags.SetCustomFlags(SqlProviderFlags);
 			mappingOptions.SetCustomFlags(SqlProviderFlags);
 
@@ -117,7 +117,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetCharField(Constants.DbTypes.NChar, (r, i) => r.GetString(i).TrimEnd(' '));
 			SetCharField(Constants.DbTypes.Graphic, (r, i) => r.GetString(i).TrimEnd(' '));
 
-			sqlOptimizer = new DB2iSeriesSqlOptimizer(SqlProviderFlags);
+			sqlOptimizer = new DB2iSeriesSqlOptimizer(SqlProviderFlags, db2iSeriesSqlProviderFlags);
 			schemaProvider = new DB2iSeriesSchemaProvider(this);
 			bulkCopy = new DB2iSeriesBulkCopy(this);
 
