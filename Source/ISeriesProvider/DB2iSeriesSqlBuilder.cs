@@ -204,7 +204,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 		}
 
-		public override string? GetTableSchemaName(SqlTable table)
+		public override string GetTableSchemaName(SqlTable table)
 		{
 			return table.Schema == null && table.TableOptions.IsTemporaryOptionSet() ? "SESSION" : base.GetTableSchemaName(table);
 		}

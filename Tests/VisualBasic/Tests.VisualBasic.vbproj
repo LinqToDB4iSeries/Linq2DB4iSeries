@@ -9,8 +9,4 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Model\Tests.Model.csproj" />
 	</ItemGroup>
-
-	<ItemGroup>
-	  <PackageReference Update="linq2db.Tools" Version="3.2.3" />
-	</ItemGroup>
 </Project>

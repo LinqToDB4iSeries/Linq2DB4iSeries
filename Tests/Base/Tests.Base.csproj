@@ -31,10 +31,6 @@
 		<PackageReference Include="Microsoft.SqlServer.Types" Version="14.0.1016.290" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <PackageReference Update="linq2db.Tools" Version="3.2.3" />
-	</ItemGroup>
-
 	<ItemGroup Condition=" '$(TargetFramework)' != 'net472' ">
 		<Compile Remove="ServiceModel\**\*.cs;" />
 	</ItemGroup>
