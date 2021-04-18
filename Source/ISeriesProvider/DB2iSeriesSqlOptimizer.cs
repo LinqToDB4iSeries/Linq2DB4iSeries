@@ -17,13 +17,19 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			db2ISeriesSqlProviderFlags = db2iSeriesSqlProviderFlags;
 		}
 
+		public override bool CanCompareSearchConditions => true;
+
+		protected static string[] DB2LikeCharactersToEscape = { "%", "_" };
+
+		public override string[] LikeCharactersToEscape => DB2LikeCharactersToEscape;
+
 		public override SqlStatement TransformStatement(SqlStatement statement)
 		{
 			statement = SeparateDistinctFromPagination(statement, q => q.Select.SkipValue != null);
 			statement = ReplaceDistinctOrderByWithRowNumber(statement, q => q.Select.SkipValue != null);
 
 			if (!db2ISeriesSqlProviderFlags.SupportsOffsetClause)
-				statement = ReplaceTakeSkipWithRowNumber(statement, query => query.Select.SkipValue != null && SqlProviderFlags.GetIsSkipSupportedFlag(query), true);
+				statement = ReplaceTakeSkipWithRowNumber(statement, query => query.Select.SkipValue != null && SqlProviderFlags.GetIsSkipSupportedFlag(query.Select.TakeValue, query.Select.SkipValue), true);
 
 			return statement.QueryType switch
 			{
@@ -47,7 +53,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return text;
 		}
 
-		public override SqlStatement Finalize(SqlStatement statement, bool inlineParameters)
+		public override SqlStatement Finalize(SqlStatement statement)
 		{
 			static long getAbsoluteHashCode(object o) => (long)o.GetHashCode() + (long)int.MaxValue;
 			
@@ -88,13 +94,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			if (statement.SelectQuery != null)
 				(new QueryVisitor()).Visit(statement.SelectQuery.Select, setQueryParameter);
 
-			return base.Finalize(statement, inlineParameters);
+			return base.Finalize(statement);
 		}
 
-		public override ISqlExpression ConvertExpression(ISqlExpression expr, bool withParameters)
+		public override ISqlExpression ConvertExpressionImpl(ISqlExpression expression, ConvertVisitor visitor, 
+			EvaluationContext context)
 		{
-			expr = base.ConvertExpression(expr, withParameters);
-			if (expr is SqlBinaryExpression be)
+			expression = base.ConvertExpressionImpl(expression, visitor, context);
+			if (expression is SqlBinaryExpression be)
 			{
 				switch (be.Operation)
 				{
@@ -111,10 +118,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					case "^":
 						return new SqlFunction(be.SystemType, "BitXor", be.Expr1, be.Expr2);
 					case "+":
-						return be.SystemType == typeof(string) ? new SqlBinaryExpression(be.SystemType, be.Expr1, "||", be.Expr2, be.Precedence) : expr;
+						return be.SystemType == typeof(string) ? new SqlBinaryExpression(be.SystemType, be.Expr1, "||", be.Expr2, be.Precedence) : expression;
 				}
 			}
-			else if (expr is SqlFunction func)
+			else if (expression is SqlFunction func)
 			{
 				switch (func.Name)
 				{
@@ -123,7 +130,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					case "Convert":
 						if (func.SystemType.ToUnderlying() == typeof(bool))
 						{
-							var ex = AlternativeConvertToBoolean(func, 1, withParameters);
+							var ex = AlternativeConvertToBoolean(func, 1);
 							if (ex != null)
 							{
 								return ex;
@@ -201,7 +208,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						return new SqlFunction(func.SystemType, "Graphic", func.Parameters);
 				}
 			}
-			return expr;
+			return expression;
 		}
 
 		protected ISqlExpression AlternativeExists(SqlFunction func)
@@ -219,6 +226,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				new SqlCondition(false, new SqlPredicate.IsNull(query, true)));
 
 			return sc;
+		}
+
+		protected override ISqlExpression ConvertFunction(SqlFunction func)
+		{
+			func = ConvertFunctionParameters(func, false);
+			return base.ConvertFunction(func);
 		}
 	}
 }

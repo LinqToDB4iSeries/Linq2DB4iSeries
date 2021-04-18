@@ -71,7 +71,7 @@ namespace Tests.SchemaProvider
 				//Get table from default schema and fall back to schema indifferent
 				TableSchema getTable(string name) =>
 								dbSchema.Tables.SingleOrDefault(t => t.IsDefaultSchema && t.TableName!.ToLower() == name)
-							??  dbSchema.Tables.SingleOrDefault(t => t.TableName!.ToLower() == name);
+							??  dbSchema.Tables.SingleOrDefault(t => t.TableName!.ToLower() == name)!;
 
 				var table = getTable("parent");
 
@@ -96,6 +96,7 @@ namespace Tests.SchemaProvider
 					case TestProvName.SqlServer2016 :
 					case ProviderName.SqlServer2017 :
 					case TestProvName.SqlServer2019 :
+					case TestProvName.SqlServer2019SequentialAccess :
 					case TestProvName.SqlAzure      :
 						{
 							var indexTable = dbSchema.Tables.Single(t => t.TableName == "IndexTable");
@@ -122,6 +123,7 @@ namespace Tests.SchemaProvider
 					case TestProvName.SqlServer2016 :
 					case ProviderName.SqlServer2017 :
 					case TestProvName.SqlServer2019 :
+					case TestProvName.SqlServer2019SequentialAccess:
 					case TestProvName.SqlAzure      :
 						{
 							var tbl = dbSchema.Tables.Single(at => at.TableName == "AllTypes");
@@ -140,14 +142,14 @@ namespace Tests.SchemaProvider
 		{
 			var e = mappingSchema.GetEntityDescriptor(typeof(T));
 
-			var schemaTable = dbSchema.Tables.FirstOrDefault(_ => _.TableName!.Equals(e.TableName, StringComparison.OrdinalIgnoreCase));
+			var schemaTable = dbSchema.Tables.FirstOrDefault(_ => _.TableName!.Equals(e.TableName, StringComparison.OrdinalIgnoreCase))!;
 			Assert.IsNotNull(schemaTable, e.TableName);
 
 			Assert.That(schemaTable.Columns.Count >= e.Columns.Count);
 
 			foreach (var column in e.Columns)
 			{
-				var schemaColumn = schemaTable.Columns.FirstOrDefault(_ => _.ColumnName.Equals(column.ColumnName, StringComparison.InvariantCultureIgnoreCase));
+				var schemaColumn = schemaTable.Columns.FirstOrDefault(_ => _.ColumnName.Equals(column.ColumnName, StringComparison.InvariantCultureIgnoreCase))!;
 				Assert.IsNotNull(schemaColumn, column.ColumnName);
 
 				if (column.CanBeNull)

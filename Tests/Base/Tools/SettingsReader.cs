@@ -104,7 +104,7 @@ namespace Tests.Tools
 					Merge(settings, baseOnSettings);
 				}
 
-				//Translate connection strings enclosed in brackets as references
+				//Translate connection strings enclosed in brackets as references to other existing connection strings.
 				foreach (var connection in settings.Connections)
 				{
 					var cs = connection.Value.ConnectionString;

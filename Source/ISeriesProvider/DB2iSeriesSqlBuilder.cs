@@ -76,12 +76,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			StringBuilder.AppendLine();
 		}
 
-		protected override void BuildFunction(SqlFunction func)
-		{
-			func = ConvertFunctionParameters(func);
-			base.BuildFunction(func);
-		}
-
 		protected override void BuildInsertOrUpdateQuery(SqlInsertOrUpdateStatement insertOrUpdate)
 		{
 			if (DB2iSeriesSqlProviderFlags.SupportsMergeStatement)
@@ -130,7 +124,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return base.Convert(sb, value, convertType);
 		}
 
-		public override StringBuilder BuildTableName(StringBuilder sb, string server, string database, string schema, string table)
+		public override StringBuilder BuildTableName(StringBuilder sb, string server, string database, string schema, string table, TableOptions tableOptions)
 		{
 			if (database != null && database.Length == 0) database = null;
 			if (schema != null && schema.Length == 0) schema = null;
@@ -139,7 +133,80 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			if (database != null && schema == null)
 				throw new LinqToDBException($"{Provider.Name} requires schema name if database name provided.");
 
-			return base.BuildTableName(sb, null, database, schema, table);
+			return base.BuildTableName(sb, null, database, schema, table, tableOptions);
+		}
+
+		protected override void BuildCreateTableCommand(SqlTable table)
+		{
+			string command;
+
+			if (table.TableOptions.IsTemporaryOptionSet())
+			{
+				switch (table.TableOptions & TableOptions.IsTemporaryOptionSet)
+				{
+					case TableOptions.IsTemporary:
+					case TableOptions.IsTemporary | TableOptions.IsLocalTemporaryData:
+					case TableOptions.IsTemporary | TableOptions.IsLocalTemporaryStructure:
+					case TableOptions.IsTemporary | TableOptions.IsLocalTemporaryStructure | TableOptions.IsLocalTemporaryData:
+					case TableOptions.IsLocalTemporaryData:
+					case TableOptions.IsLocalTemporaryStructure:
+					case TableOptions.IsLocalTemporaryStructure | TableOptions.IsLocalTemporaryData:
+						command = "DECLARE GLOBAL TEMPORARY TABLE ";
+						break;
+					case TableOptions.IsGlobalTemporaryStructure:
+					case TableOptions.IsGlobalTemporaryStructure | TableOptions.IsLocalTemporaryData:
+						command = "CREATE GLOBAL TEMPORARY TABLE ";
+						break;
+					case var value:
+						throw new InvalidOperationException($"Incompatible table options '{value}'");
+				}
+			}
+			else
+			{
+				command = "CREATE TABLE ";
+			}
+
+			StringBuilder.Append(command);
+		}
+
+		protected override void BuildStartCreateTableStatement(SqlCreateTableStatement createTable)
+		{
+			if (createTable.StatementHeader == null && createTable.Table!.TableOptions.HasCreateIfNotExists())
+			{
+				AppendIndent().AppendLine(@"BEGIN");
+
+				Indent++;
+
+				AppendIndent().AppendLine(@"DECLARE CONTINUE HANDLER FOR SQLSTATE '42710' BEGIN END;");
+				AppendIndent().AppendLine(@"EXECUTE IMMEDIATE '");
+
+				Indent++;
+			}
+
+			base.BuildStartCreateTableStatement(createTable);
+		}
+
+		protected override void BuildEndCreateTableStatement(SqlCreateTableStatement createTable)
+		{
+			base.BuildEndCreateTableStatement(createTable);
+
+			if (createTable.StatementHeader == null && createTable.Table!.TableOptions.HasCreateIfNotExists())
+			{
+				Indent--;
+
+				AppendIndent()
+					.AppendLine("';");
+
+				Indent--;
+
+				StringBuilder
+					.AppendLine("END");
+			}
+		}
+
+		public override string? GetTableSchemaName(SqlTable table)
+		{
+			return table.Schema == null && table.TableOptions.IsTemporaryOptionSet() ? "SESSION" : base.GetTableSchemaName(table);
 		}
 
 		#endregion
@@ -175,7 +242,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					var field = trun.Table!.IdentityFields[commandNumber - 1];
 
 					StringBuilder.Append("ALTER TABLE ");
-					ConvertTableName(StringBuilder, trun.Table.Server, trun.Table.Database, trun.Table.Schema, trun.Table.PhysicalName!);
+					ConvertTableName(StringBuilder, trun.Table.Server, trun.Table.Database, trun.Table.Schema, trun.Table.PhysicalName!, trun.Table.TableOptions);
 					StringBuilder.Append(" ALTER ");
 					Convert(StringBuilder, field.PhysicalName, ConvertType.NameToQueryField);
 					StringBuilder.AppendLine(" RESTART WITH 1");
@@ -207,29 +274,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				base.BuildTruncateTableStatement(truncateTable);
 		}
 
-		//Same as DB2 provider - except it adds null value handling
+		//Remove: Same as DB2 provider - except it adds null value handling
+		//Move to specific - adds null value handling
 		protected override void BuildColumnExpression(SelectQuery selectQuery, ISqlExpression expr, string alias, ref bool addAlias)
 		{
-			var wrap = false;
-
-			if (expr.SystemType == typeof(bool))
-			{
-				if (expr is SqlSearchCondition)
-					wrap = true;
-				else
-					wrap = expr is SqlExpression ex && ex.Expr == "{0}" && ex.Parameters.Length == 1 && ex.Parameters[0] is SqlSearchCondition;
-			}
-
 			//Null values need to be explicitly casted
 			if (expr is SqlValue value && value.Value == null)
 			{
 				var colType = MappingSchema.GetDbTypeForCast(new SqlDataType(value.ValueType)).ToSqlString();
 				expr = new SqlExpression(expr.SystemType, "Cast({0} as {1})", Precedence.Primary, expr, new SqlExpression(colType, Precedence.Primary));
 			}
-
-			if (wrap) StringBuilder.Append("CASE WHEN ");
-			base.BuildColumnExpression(selectQuery, expr, alias, ref addAlias);
-			if (wrap) StringBuilder.Append(" THEN 1 ELSE 0 END");
 		}
 
 
@@ -434,7 +488,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		protected override IEnumerable<SqlColumn> GetSelectedColumns(SelectQuery selectQuery)
 		{
 			//TODO: Test this scenario with AlternativeGetSelectedColumns
-			if (NeedSkip(selectQuery) && !selectQuery.OrderBy.IsEmpty)
+			if (NeedSkip(selectQuery.Select.TakeValue, selectQuery.Select.SkipValue) && !selectQuery.OrderBy.IsEmpty)
 				return AlternativeGetSelectedColumns(selectQuery, () => base.GetSelectedColumns(selectQuery));
 
 			return base.GetSelectedColumns(selectQuery);

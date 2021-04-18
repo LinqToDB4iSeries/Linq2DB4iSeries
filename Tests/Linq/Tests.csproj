@@ -29,4 +29,9 @@
 		<PackageReference Include="System.Security.Cryptography.Cng" Version="4.7.0" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <PackageReference Update="linq2db.AspNet" Version="3.2.3" />
+	  <PackageReference Update="linq2db.Tools" Version="3.2.3" />
+	</ItemGroup>
+
 </Project>

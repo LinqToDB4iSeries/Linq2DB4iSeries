@@ -22,8 +22,7 @@ namespace Tests.xUpdate
 		// is silently treated as non-identity field
 		[Table("KeepIdentityTest", Configuration = ProviderName.DB2)]
 		[Table("KeepIdentityTest", Configuration = ProviderName.Sybase)]
-		//[Table("AllTypes")] //default
-		[Table("KeepIdentityTest")] //db2i
+		[Table("AllTypes")]
 		public class TestTable1
 		{
 			[Identity]
@@ -37,8 +36,7 @@ namespace Tests.xUpdate
 
 		[Table("KeepIdentityTest", Configuration = ProviderName.DB2)]
 		[Table("KeepIdentityTest", Configuration = ProviderName.Sybase)]
-		//[Table("AllTypes")] //default
-		[Table("KeepIdentityTest")] //db2i
+		[Table("AllTypes")]
 		public class TestTable2
 		{
 			[Identity, Column(SkipOnInsert = true)]
@@ -62,14 +60,10 @@ namespace Tests.xUpdate
 			[Values(0, 1, 2)] int asyncMode) // 0 == sync, 1 == async, 2 == async with IAsyncEnumerable
 #endif
 		{
+			ResetAllTypesIdentity(context);
+
 			if ((context == ProviderName.OracleNative || context == TestProvName.Oracle11Native) && copyType == BulkCopyType.ProviderSpecific)
 				Assert.Inconclusive("Oracle BulkCopy doesn't support identity triggers");
-
-			if (TestProvNameDb2i.IsiSeries(context) && copyType == BulkCopyType.ProviderSpecific)
-				Assert.Inconclusive("DB2iSeries BulkCopy doesn't support provider specific implementation.");
-
-			if (TestProvNameDb2i.IsiSeries(context) && keepIdentity == true && new[] { BulkCopyType.Default, BulkCopyType.MultipleRows }.Contains(copyType))
-				Assert.Inconclusive("DB2iSeries doesn't support inserting inserting in MultipleRows mode");
 
 			// don't use transactions as some providers will fallback to non-provider-specific implementation then
 			using (var db = new TestDataConnection(context))
@@ -156,12 +150,8 @@ namespace Tests.xUpdate
 			[Values(0, 1, 2)]           int          asyncMode) // 0 == sync, 1 == async, 2 == async with IAsyncEnumerable
 #endif
 		{
-			if (TestProvNameDb2i.IsiSeries(context) && copyType == BulkCopyType.ProviderSpecific)
-				Assert.Inconclusive("DB2iSeries BulkCopy doesn't support provider specific implementation.");
+			ResetAllTypesIdentity(context);
 
-			if (TestProvNameDb2i.IsiSeries(context) && keepIdentity == true && new[] { BulkCopyType.Default, BulkCopyType.MultipleRows }.Contains(copyType))
-				Assert.Inconclusive("DB2iSeries doesn't support inserting inserting in MultipleRows mode");
-			
 			// don't use transactions as some providers will fallback to non-provider-specific implementation then
 			using (var db = new TestDataConnection(context))
 			{
@@ -271,7 +261,6 @@ namespace Tests.xUpdate
 
 			// RowByRow right now uses DataConnection.Insert which doesn't support identity insert
 			if ((copyType       == BulkCopyType.RowByRow
-					|| TestProvNameDb2i.IsiSeries(context)
 					|| context  == ProviderName.Access
 					|| context  == ProviderName.AccessOdbc
 					|| notSupported
@@ -295,13 +284,12 @@ namespace Tests.xUpdate
 		public void ReuseOptionTest([DataSources(false, ProviderName.DB2)] string context)
 		{
 			using (var db = new TestDataConnection(context))
+			using (db.BeginTransaction())
 			{
-				db.BeginTransaction();
-
 				var options = new BulkCopyOptions();
 
-				db.Parent.BulkCopy(options, new [] { new Parent { ParentID = 111001 } });
-				db.Child. BulkCopy(options, new [] { new Child  { ParentID = 111001 } });
+				db.Parent.BulkCopy(options, new[] { new Parent { ParentID = 111001 } });
+				db.Child. BulkCopy(options, new[] { new Child  { ParentID = 111001 } });
 			}
 		}
 	}

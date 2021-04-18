@@ -20,21 +20,16 @@ namespace Tests.DataProvider
 				var userId = 32;
 				var childId = 32;
 
-				//Configuration.Linq.OptimizeJoins = false;
+				var query = db.GetTable<UserTests.Issue825Tests.Parent825>()
+					.Where(p => p.ParentPermissions.Any(perm => perm.UserId == userId))
+					.SelectMany(parent => parent.Childs)
+					.Where(child => child.Id == childId)
+					.Select(child => child.Parent);
 
-				using (new AllowMultipleQuery())
-				{
-					var query = db.GetTable<UserTests.Issue825Tests.Parent825>()
-						.Where(p => p.ParentPermissions.Any(perm => perm.UserId == userId))
-						.SelectMany(parent => parent.Childs)
-						.Where(child => child.Id == childId)
-						.Select(child => child.Parent);
+				var result = query.ToList();
 
-					var result = query.ToList();
-
-					Assert.AreEqual(1, result.Count);
-					Assert.AreEqual(3, result[0].Id);
-				}
+				Assert.AreEqual(1, result.Count);
+				Assert.AreEqual(3, result[0].Id);
 			}
 		}
 
