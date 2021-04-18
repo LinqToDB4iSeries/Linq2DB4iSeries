@@ -14,11 +14,15 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="linq2db.Tools" Version="3.1.6" />
+		<PackageReference Include="linq2db.Tools" Version="3.3.0" />
+		<PackageReference Update="linq2db.AspNet" Version="3.3.0" />
 		<PackageReference Include="NUnit" Version="3.12.0" />
 		<PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
 		<PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+		<PackageReference Include="FastExpressionCompiler" Version="3.0.4" />
+		<PackageReference Include="NodaTime" Version="3.0.5" />
+		
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'net472' ">
