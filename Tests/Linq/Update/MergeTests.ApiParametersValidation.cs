@@ -245,6 +245,7 @@ namespace Tests.xUpdate
 			public string? DatabaseName { get; }
 			public string? SchemaName   { get; }
 			public string TableName     { get; } = null!;
+			public TableOptions TableOptions => TableOptions.None;
 
 			public string GetTableName()
 			{

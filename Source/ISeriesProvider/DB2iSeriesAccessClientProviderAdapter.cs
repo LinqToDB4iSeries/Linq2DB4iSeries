@@ -4,6 +4,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	using System;
 	using System.Data;
 	using System.Linq.Expressions;
+	using LinqToDB.Common;
 	using LinqToDB.Data;
 	using LinqToDB.DataProvider;
 	using LinqToDB.Expressions;

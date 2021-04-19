@@ -21,6 +21,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			IDbConnection connection,
 			DB2iSeriesAccessClientProviderAdapter adapter,
 			Action<DataConnection, Func<string>, Func<int>> traceAction)
+			where T : notnull
 		{
 			var descriptor = dataConnection.MappingSchema.GetEntityDescriptor(typeof(T));
 			var columns = descriptor.Columns.Where(c => !c.SkipOnInsert || options.KeepIdentity == true && c.IsIdentity).ToList();

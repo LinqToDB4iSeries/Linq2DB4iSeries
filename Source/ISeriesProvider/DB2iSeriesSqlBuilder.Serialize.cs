@@ -13,7 +13,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	{
 		private static void AppendConversion(StringBuilder stringBuilder, int value)
 		{
-			stringBuilder.Append("CHR(").Append(value).Append(")");
+			stringBuilder.Append("CHR(").Append(value).Append(')');
 		}
 
 		public static void ConvertStringToSql(StringBuilder stringBuilder, string value)
@@ -52,9 +52,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						"{0:yyyy-MM-dd HH:mm:ss.fffffff}"
 			};
 
-			if (quoted) stringBuilder.Append("'");
+			if (quoted) stringBuilder.Append('\'');
 			stringBuilder.AppendFormat(format, value);
-			if (quoted) stringBuilder.Append("'");
+			if (quoted) stringBuilder.Append('\'');
 		}
 
 		public static string ConvertDateTimeToSql(DataType datatype, DateTime value, bool quoted = true)
@@ -66,9 +66,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static void ConvertTimeToSql(StringBuilder stringBuilder, TimeSpan time, bool quoted = true)
 		{
-			if (quoted) stringBuilder.Append("'");
+			if (quoted) stringBuilder.Append('\'');
 			stringBuilder.Append($"{time:hh\\:mm\\:ss}");
-			if (quoted) stringBuilder.Append("'");
+			if (quoted) stringBuilder.Append('\'');
 		}
 
 		public static string ConvertTimeToSql(TimeSpan time, bool quoted = true)
@@ -85,7 +85,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			foreach (var b in value)
 				stringBuilder.Append(b.ToString("X2"));
 
-			stringBuilder.Append("'");
+			stringBuilder.Append('\'');
 		}
 
 		public static string ConvertBinaryToSql(byte[] value)
@@ -111,7 +111,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			  .Append(s.Substring(16, 16))
 			  .Append("' AS ")
 			  .Append(Constants.DbTypes.Char16ForBitData)
-			  .Append(")");
+			  .Append(')');
 		}
 
 		public static string ConvertGuidToSql(Guid value)

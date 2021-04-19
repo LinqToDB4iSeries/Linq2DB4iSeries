@@ -14,7 +14,6 @@
 		[Test]
 		public void TestLinq2DbComplexQuery2([DataSources] string context)
 		{
-			using (new UseBinaryAggregateExpression(false))
 			using (var db = GetDataContext(context))
 			{
 				var result = db.Child.Where(c => c.ChildID > 1 || c.ChildID > 0);
@@ -48,7 +47,6 @@
 		[Test]
 		public void TestLinq2DbComplexQuery3([DataSources] string context)
 		{
-			using (new UseBinaryAggregateExpression(true))
 			using (var db = GetDataContext(context))
 			{
 				var result = db.Child.Where(c => c.ChildID > 1 || c.ChildID > 0);
@@ -82,7 +80,6 @@
 		[Test]
 		public void TestLinq2DbComplexQueryCache([DataSources] string context)
 		{
-			using (new UseBinaryAggregateExpression(true))
 			using (var db = GetDataContext(context))
 			{
 				var result = db.Child.Where(c => c.ChildID > 1 || c.ChildID > 0);
@@ -124,7 +121,6 @@
 		{
 			var value = true;
 
-			using (new UseBinaryAggregateExpression(true))
 			using (var db = GetDataContext(context))
 			{
 				var query = from p in db.Parent where p.ParentID > 2 && value && true && !false select p;
