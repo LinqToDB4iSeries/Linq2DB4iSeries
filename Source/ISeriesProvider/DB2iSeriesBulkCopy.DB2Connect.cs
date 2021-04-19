@@ -16,13 +16,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	{
 		//Copied from DB2BulkCopy
 		private static BulkCopyRowsCopied ProviderSpecificCopyImpl_DB2<T>(
-		ITable<T> table,
-		BulkCopyOptions options,
-		IEnumerable<T> source,
-		DataConnection dataConnection,
-		IDbConnection connection,
-		DB2.DB2ProviderAdapter.BulkCopyAdapter bulkCopy,
-		Action<DataConnection, Func<string>, Func<int>> traceAction)
+			ITable<T> table,
+			BulkCopyOptions options,
+			IEnumerable<T> source,
+			DataConnection dataConnection,
+			IDbConnection connection,
+			DB2.DB2ProviderAdapter.BulkCopyAdapter bulkCopy,
+			Action<DataConnection, Func<string>, Func<int>> traceAction)
+			where T : notnull
 		{
 			var descriptor = dataConnection.MappingSchema.GetEntityDescriptor(typeof(T));
 			var columns = descriptor.Columns.Where(c => !c.SkipOnInsert || options.KeepIdentity == true && c.IsIdentity).ToList();

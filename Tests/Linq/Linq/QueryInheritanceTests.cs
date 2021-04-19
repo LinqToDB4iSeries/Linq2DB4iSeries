@@ -12,6 +12,7 @@ using NUnit.Framework;
 
 namespace Tests.Linq
 {
+	using LinqToDB.SqlProvider;
 	using Model;
 
 	[TestFixture]
@@ -28,7 +29,8 @@ namespace Tests.Linq
 
 			var sqlBuilder = connection.DataProvider.CreateSqlBuilder(connection.MappingSchema);
 			var sb = new StringBuilder();
-			sqlBuilder.BuildSql(0, query, sb);
+			var optimizationContext = new OptimizationContext(new EvaluationContext(SqlParameterValues.Empty), new AliasesContext(), false);
+			sqlBuilder.BuildSql(0, query, sb, optimizationContext);
 
 			return connection.Query<T>(sb.ToString());
 		}

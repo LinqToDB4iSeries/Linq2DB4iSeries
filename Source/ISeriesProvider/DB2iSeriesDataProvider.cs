@@ -174,7 +174,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			SqlProviderFlags.IsParameterOrderDependent = false;
 
-			SetCharFieldToType<char>(Constants.DbTypes.Char, (r, i) => DataTools.GetChar(r, i));
+			SetCharFieldToType<char>(Constants.DbTypes.Char, DataTools.GetCharExpression);
 
 			var adapter = (DB2.DB2ProviderAdapter)Adapter.GetInstance();
 
@@ -219,6 +219,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			return schemaProvider;
 		}
+
+		public override TableOptions SupportedTableOptions =>
+			TableOptions.IsTemporary |
+			TableOptions.IsLocalTemporaryStructure |
+			TableOptions.IsGlobalTemporaryStructure |
+			TableOptions.IsLocalTemporaryData |
+			TableOptions.CreateIfNotExists |
+			TableOptions.DropIfExists;
 
 		public override ISqlOptimizer GetSqlOptimizer()
 		{
@@ -514,7 +522,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return bulkCopy.BulkCopyAsync(options.BulkCopyType.GetEffectiveType(), table, options, source, cancellationToken);
 		}
 
-#if !NETFRAMEWORK
+#if NATIVE_ASYNC
 		public override Task<BulkCopyRowsCopied> BulkCopyAsync<T>(ITable<T> table, BulkCopyOptions options, IAsyncEnumerable<T> source, CancellationToken cancellationToken)
 		{
 			return bulkCopy.BulkCopyAsync(options.BulkCopyType.GetEffectiveType(), table, options, source, cancellationToken);

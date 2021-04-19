@@ -156,5 +156,21 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		}
 
 		#endregion
+
+		#region Configuration Helpers
+
+		/// <summary>
+		/// Configure connection to use specific iSeries provider and connection string.
+		/// </summary>
+		/// <param name="builder">Instance of <see cref="LinqToDbConnectionOptionsBuilder"/>.</param>
+		/// <param name="provider">iSeries provider to use.</param>
+		/// <param name="connectionString">iSeries connection string.</param>
+		/// <returns>The builder instance so calls can be chained.</returns>
+		public static LinqToDbConnectionOptionsBuilder UseDB2iSeries(this LinqToDbConnectionOptionsBuilder builder, DB2iSeriesDataProvider provider, string connectionString)
+		{
+			return builder.UseConnectionString(provider, connectionString);
+		}
+
+		#endregion
 	}
 }

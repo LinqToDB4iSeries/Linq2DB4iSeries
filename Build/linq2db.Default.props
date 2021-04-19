@@ -1,9 +1,9 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<PropertyGroup>
-		<Version>3.1.6.1</Version>
-		<AssemblyVersion>3.1.6.1</AssemblyVersion>
-		<PackageVersion>3.1.6.1</PackageVersion>
-		<FileVersion>3.1.6.1</FileVersion>
+		<Version>3.3.0</Version>
+		<AssemblyVersion>3.3.0</AssemblyVersion>
+		<PackageVersion>3.3.0</PackageVersion>
+		<FileVersion>3.3.0</FileVersion>
 		
 		<Description>LINQ to DB is a data access technology that provides a run-time infrastructure for managing relational data as objects.  This package is a provider for DB2 on the IBM iSeries.</Description>
 		<Authors>Roy Chase, Nikos Sarris</Authors>

@@ -23,7 +23,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			statement = ReplaceDistinctOrderByWithRowNumber(statement, q => q.Select.SkipValue != null);
 
 			if (!db2ISeriesSqlProviderFlags.SupportsOffsetClause)
-				statement = ReplaceTakeSkipWithRowNumber(statement, query => query.Select.SkipValue != null && SqlProviderFlags.GetIsSkipSupportedFlag(query), true);
+				statement = ReplaceTakeSkipWithRowNumber(statement, query => query.Select.SkipValue != null && SqlProviderFlags.GetIsSkipSupportedFlag(query.Select.TakeValue, query.Select.SkipValue), true);
 
 			return statement.QueryType switch
 			{
@@ -33,67 +33,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			};
 		}
 
-		private static string SanitizeAliasOrParameterName(string text, string alternative)
+		public override bool CanCompareSearchConditions => true;
+
+		public override string[] LikeCharactersToEscape => new string[] { "%", "_" };
+
+		public override ISqlExpression ConvertExpressionImpl(ISqlExpression expr, ConvertVisitor visitor, EvaluationContext context)
 		{
-			if (string.IsNullOrWhiteSpace(text))
-				return null;
-
-			if (text.Equals("_"))
-				return "underscore_";
-
-			if (!text.All(t => "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".Contains(t)))
-				return alternative;
-
-			return text;
-		}
-
-		public override SqlStatement Finalize(SqlStatement statement, bool inlineParameters)
-		{
-			static long getAbsoluteHashCode(object o) => (long)o.GetHashCode() + (long)int.MaxValue;
-			
-			new QueryVisitor().Visit(statement, expr =>
-			{
-				switch (expr.ElementType)
-				{
-					case QueryElementType.SqlParameter:
-						{
-							var p = (SqlParameter)expr;
-							p.Name = SanitizeAliasOrParameterName(p.Name, $"P{getAbsoluteHashCode(p)}");
-
-							break;
-						}
-					case QueryElementType.TableSource:
-						{
-							var table = (SqlTableSource)expr;
-							table.Alias = SanitizeAliasOrParameterName(table.Alias, $"T{table.SourceID}");
-							break;
-						}
-					case QueryElementType.Column:
-						{
-							var column = (SqlColumn)expr;
-							column.Alias = SanitizeAliasOrParameterName(column.Alias, $"C{getAbsoluteHashCode(column)}");
-							break;
-						}
-				}
-			});
-
-			static void setQueryParameter(IQueryElement element)
-			{
-				if (element.ElementType == QueryElementType.SqlParameter)
-				{
-					((SqlParameter)element).IsQueryParameter = false;
-				}
-			}
-
-			if (statement.SelectQuery != null)
-				(new QueryVisitor()).Visit(statement.SelectQuery.Select, setQueryParameter);
-
-			return base.Finalize(statement, inlineParameters);
-		}
-
-		public override ISqlExpression ConvertExpression(ISqlExpression expr, bool withParameters)
-		{
-			expr = base.ConvertExpression(expr, withParameters);
+			expr = base.ConvertExpressionImpl(expr, visitor, context);
 			if (expr is SqlBinaryExpression be)
 			{
 				switch (be.Operation)
@@ -123,7 +69,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					case "Convert":
 						if (func.SystemType.ToUnderlying() == typeof(bool))
 						{
-							var ex = AlternativeConvertToBoolean(func, 1, withParameters);
+							var ex = AlternativeConvertToBoolean(func, 1);
 							if (ex != null)
 							{
 								return ex;
@@ -219,6 +165,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				new SqlCondition(false, new SqlPredicate.IsNull(query, true)));
 
 			return sc;
+		}
+
+		protected override ISqlExpression ConvertFunction(SqlFunction func)
+		{
+			func = ConvertFunctionParameters(func, false);
+			return base.ConvertFunction(func);
 		}
 	}
 }
