@@ -90,12 +90,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			{
 				case ConvertType.NameToQueryParameter:
 					return DB2iSeriesSqlProviderFlags.SupportsNamedParameters
-						? sb.Append("@").Append(value) : sb.Append("?");
+						? sb.Append('@').Append(value) : sb.Append('?');
 
 				case ConvertType.NameToCommandParameter:
 				case ConvertType.NameToSprocParameter:
 					return DB2iSeriesSqlProviderFlags.SupportsNamedParameters
-						? sb.Append(":").Append(value) : sb.Append("?");
+						? sb.Append(':').Append(value) : sb.Append('?');
 					
 				case ConvertType.SprocParameterToName:
 					return value.Length > 0 && value[0] == ':'
@@ -284,6 +284,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				var colType = MappingSchema.GetDbTypeForCast(new SqlDataType(value.ValueType)).ToSqlString();
 				expr = new SqlExpression(expr.SystemType, "Cast({0} as {1})", Precedence.Primary, expr, new SqlExpression(colType, Precedence.Primary));
 			}
+
+			base.BuildColumnExpression(selectQuery, expr, alias, ref addAlias);
 		}
 
 
@@ -414,7 +416,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					base.BuildExpression(expr, buildTableName, checkParentheses, alias, ref addAlias, throwExceptionIfTableNotFound);
 					StringBuilder.Append(" AS ");
 					StringBuilder.Append(typeToCast.ToSqlString());
-					StringBuilder.Append(")");
+					StringBuilder.Append(')');
 				}
 
 				return StringBuilder;
@@ -433,7 +435,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				{
 					StringBuilder.Append("CAST(NULL AS ");
 					StringBuilder.Append(typeToCast.ToSqlString());
-					StringBuilder.Append(")");
+					StringBuilder.Append(')');
 				}
 
 				return StringBuilder;
