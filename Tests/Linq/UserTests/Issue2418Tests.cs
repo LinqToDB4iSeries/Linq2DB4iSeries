@@ -25,9 +25,9 @@ namespace Tests.UserTests
 			builder.AddParameter("path", $"$.{member.Member.Name}");
 
 			var propertyExpression = (MemberExpression) builder.Arguments[2];
-			var memberExpression = (MemberExpression) propertyExpression.Expression;
+			var memberExpression = (MemberExpression) propertyExpression.Expression!;
 			var fieldInfo = (FieldInfo) memberExpression.Member;
-			var valueExpression = (ConstantExpression) memberExpression.Expression;
+			var valueExpression = (ConstantExpression) memberExpression.Expression!;
 			var value = ((PropertyInfo) propertyExpression.Member).GetValue(fieldInfo.GetValue(valueExpression.Value))!;
 
 			builder.AddParameter("value", value.ToString()!);
@@ -86,7 +86,7 @@ namespace Tests.UserTests
 				DataType = DataType.NVarChar,
 				Value    = JsonConvert.SerializeObject(v.Value)
 			});
-			schema.SetConverter<string, DbObject<TestJson>>(json => new DbObject<TestJson>(JsonConvert.DeserializeObject<TestJson>(json)));
+			schema.SetConverter<string, DbObject<TestJson>>(json => new DbObject<TestJson>(JsonConvert.DeserializeObject<TestJson>(json)!));
 			
 			using (var db    = (DataConnection)GetDataContext(context, schema))
 			using (var table = db.CreateLocalTable<TestTable>())

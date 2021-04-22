@@ -20,7 +20,7 @@ namespace Tests.Exceptions
 			{
 			}
 
-			protected override SqlStatement ProcessQuery(SqlStatement statement)
+			protected override SqlStatement ProcessQuery(SqlStatement statement, EvaluationContext context)
 			{
 				if (statement.IsInsert() && statement.RequireInsertClause().Into!.Name == "Parent")
 				{
@@ -36,9 +36,9 @@ namespace Tests.Exceptions
 							return false;
 						}) as SqlSetExpression;
 
-					if (expr != null)
+					if (expr != null && expr.Expression!.TryEvaluateExpression(context, out var expressionValue))
 					{
-						var value = ConvertTo<int>.From(((IValueContainer)expr.Expression!).Value);
+						var value = ConvertTo<int>.From(expressionValue);
 
 						if (value == 555)
 						{
@@ -93,7 +93,7 @@ namespace Tests.Exceptions
 							ParentID = n,
 							Value1   = n
 						}),
-					"Invalid object name 'Parent1'.");
+					"Invalid object name 'Parent1'.")!;
 				Assert.True(ex.GetType().Name == "SqlException");
 
 				ex = Assert.Throws(
@@ -104,7 +104,7 @@ namespace Tests.Exceptions
 							ParentID = n,
 							Value1   = n
 						}),
-					"Invalid object name 'Parent1'.");
+					"Invalid object name 'Parent1'.")!;
 				Assert.True(ex.GetType().Name == "SqlException");
 
 				db.Parent.Delete(p => p.ParentID == n);

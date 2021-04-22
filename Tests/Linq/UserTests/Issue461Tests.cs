@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Linq;
 
 using LinqToDB.Data;
 
@@ -74,7 +70,6 @@ namespace Tests.UserTests
 		[Test]
 		public void SelectToAnonimousTest1([DataSources] string context)
 		{
-			using (new AllowMultipleQuery())
 			using (var db = GetDataContext(context))
 			{
 				var result = (from sep in db.Parent
@@ -109,7 +104,6 @@ namespace Tests.UserTests
 		[Test]
 		public void SelectToAnonymousTest2([DataSources] string context)
 		{
-			using (new AllowMultipleQuery())
 			using (var db = GetDataContext(context))
 			{
 				var result = (from sep in db.Parent
@@ -146,7 +140,6 @@ namespace Tests.UserTests
 		[Test]
 		public void SelectToTypeTest1([DataSources] string context)
 		{
-			using (new AllowMultipleQuery())
 			using (var db = GetDataContext(context))
 			{
 				var result = (from sep in db.Parent
@@ -181,7 +174,6 @@ namespace Tests.UserTests
 		[Test]
 		public void SelectToTypeTest2([DataSources] string context)
 		{
-			using (new AllowMultipleQuery())
 			using (var db = GetDataContext(context))
 			{
 				var result = (from sep in db.Parent
