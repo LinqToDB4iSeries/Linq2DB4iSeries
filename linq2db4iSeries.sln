@@ -9,6 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".doc", ".doc", "{751CE0BA-6
 	ProjectSection(SolutionItems) = preProject
 		MIT-LICENSE.txt = MIT-LICENSE.txt
 		README.md = README.md
+		Tests How-to.txt = Tests How-to.txt
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LinqToDB.DataProvider.DB2iSeries", "Source\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj", "{3E19DA8D-056C-4F05-B976-698498311FC2}"

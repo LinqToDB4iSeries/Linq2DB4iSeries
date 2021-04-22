@@ -1,0 +1,12 @@
+- How to execute the tests in this project:
+
+1. Copy the DataProviders.json file to UserDataProviders.json in "Tests" folder
+2. Replace {HOST}, {USER}, {PASSWORD}, {LIBRARY_LIST} and {DEFAULT_SCHEMA} with your own values. Don't worry about commiting this file is excluded in git
+3. If you are going to run GAS and non GAS tests at the same time you have to use different schemas for each set
+4. You can disable any of the providers in the NET472 and CORE31 Providers sections at the bottom of the file.
+
+- How to maintain the tests from upstream
+
+The test have been set up in a way that tests from upstream can be simply copied over. You have to copy only the source code files and not the project files. All source files can be safely copied over except TestsInitialization.cs in Linq tests (please check out the diff after copying over). Exclude only the Data and DataProvider folders from the Linq tests folder from upstream.
+
+This project was setup to run all DB2 tests. But sometimes tests that target DB2 are not valid for DB2i. All customization is performed in Tests.Base\Db2iInterceptor.cs. You can intercept any test method there and return any valid DB2i providers for that specific test. If no providers are returned the test is ommited altogether. An DB2i specfic tests should be placed in the Tests\Custom folder.
