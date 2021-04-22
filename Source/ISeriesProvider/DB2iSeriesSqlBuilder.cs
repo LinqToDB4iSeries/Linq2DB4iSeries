@@ -274,21 +274,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				base.BuildTruncateTableStatement(truncateTable);
 		}
 
-		//Remove: Same as DB2 provider - except it adds null value handling
-		//Move to specific - adds null value handling
-		protected override void BuildColumnExpression(SelectQuery selectQuery, ISqlExpression expr, string alias, ref bool addAlias)
-		{
-			//Null values need to be explicitly casted
-			if (expr is SqlValue value && value.Value == null)
-			{
-				var colType = MappingSchema.GetDbTypeForCast(new SqlDataType(value.ValueType)).ToSqlString();
-				expr = new SqlExpression(expr.SystemType, "Cast({0} as {1})", Precedence.Primary, expr, new SqlExpression(colType, Precedence.Primary));
-			}
-
-			base.BuildColumnExpression(selectQuery, expr, alias, ref addAlias);
-		}
-
-
 		//Same as DB2 provider - adds alias handling
 		protected override void BuildSelectClause(SelectQuery selectQuery)
 		{
@@ -395,6 +380,19 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 
 			base.BuildUpdateQuery(statement, selectQuery, updateClause);
+		}
+
+		//Null value casting
+		protected override void BuildColumnExpression(SelectQuery selectQuery, ISqlExpression expr, string alias, ref bool addAlias)
+		{
+			//Null values need to be explicitly casted
+			if (expr is SqlValue value && value.Value == null)
+			{
+				var colType = MappingSchema.GetDbTypeForCast(new SqlDataType(value.ValueType)).ToSqlString();
+				expr = new SqlExpression(expr.SystemType, "Cast({0} as {1})", Precedence.Primary, expr, new SqlExpression(colType, Precedence.Primary));
+			}
+
+			base.BuildColumnExpression(selectQuery, expr, alias, ref addAlias);
 		}
 
 		protected override StringBuilder BuildExpression(ISqlExpression expr, bool buildTableName, bool checkParentheses, string alias, ref bool addAlias, bool throwExceptionIfTableNotFound = true)
