@@ -70,7 +70,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				, Table_Schema
 				, Column_Name
 				From QSYS2{delimiter}SYSCOLUMNS
-				where System_Table_Schema in({dataConnection.GetQuotedLibList()})
+				where Table_Schema in({dataConnection.GetQuotedLibList()})
 				 ";
 
 			ColumnInfo drf(IDataReader dr)
@@ -109,7 +109,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			  Join QSYS2{delimiter}SYSKEYCST fk on(fk.Constraint_Schema, fk.Constraint_Name) = (ref.Constraint_Schema, ref.Constraint_Name)
 			  Join QSYS2{delimiter}SYSKEYCST uk on(uk.Constraint_Schema, uk.Constraint_Name) = (ref.Unique_Constraint_Schema, ref.Unique_Constraint_Name)
 			  Where uk.Ordinal_Position = fk.Ordinal_Position
-			  And fk.System_Table_Schema in({dataConnection.GetQuotedLibList()})
+			  And fk.Table_Schema in({dataConnection.GetQuotedLibList()})
 			  Order By ThisSchema, ThisTable, Constraint_Name, Ordinal_Position
 			  ";
 
@@ -138,7 +138,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				   , col.Column_Name   
 			  From QSYS2{delimiter}SYSKEYCST col
 			  Join QSYS2{delimiter}SYSCST    cst On(cst.constraint_SCHEMA, cst.constraint_NAME, cst.constraint_type) = (col.constraint_SCHEMA, col.constraint_NAME, 'PRIMARY KEY')
-			  And cst.System_Table_Schema in({dataConnection.GetQuotedLibList()})
+			  And cst.Table_Schema in({dataConnection.GetQuotedLibList()})
 			  Order By cst.table_SCHEMA, cst.table_NAME, col.Ordinal_position
 			  ";
 
@@ -295,7 +295,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				  , System_Table_Schema
 				  From QSYS2{dataConnection.GetDelimiter()}SYSTABLES 
 				  Where Table_Type In('L', 'P', 'T', 'V')
-				  And System_Table_Schema in ({dataConnection.GetQuotedLibList()})	
+				  And Table_Schema in ({dataConnection.GetQuotedLibList()})	
 				  Order By System_Table_Schema, System_Table_Name
 				 ";
 
@@ -305,7 +305,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			{
 				CatalogName = dr["Catalog_Name"].ToString().TrimEnd(),
 				Description = dr["Table_Text"].ToString().TrimEnd(),
-				IsDefaultSchema = dr["System_Table_Schema"].ToString().TrimEnd() == defaultSchema,
+				IsDefaultSchema = dr["Table_Schema"].ToString().TrimEnd() == defaultSchema,
 				IsView = new[] { "L", "V" }.Contains(dr["Table_Type"].ToString()),
 				SchemaName = dr["Table_Schema"].ToString().TrimEnd(),
 				TableID = dataConnection.Connection.Database + "." + dr["Table_Schema"].ToString().TrimEnd() + "." + dr["Table_Name"].ToString().TrimEnd(),
