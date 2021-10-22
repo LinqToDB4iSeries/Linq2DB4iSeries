@@ -49,8 +49,15 @@ namespace Tests
 				case ("Issue1287Tests", _):
 				//Query contains invalid keyword permission
 				case ("Issue825Tests", "Test"):
+				//Yes it generates bad SQL but the feature isn't really used
+				case ("AnalyticTests", "Issue1799Test1"):
+				case ("AnalyticTests", "Issue1799Test2"):
+				//Test for unsupported WCF feature
+				case ("AsyncTests", "Test"):
+				case ("AsyncTests", "Test1"):
+				case ("AsyncTests", "TestForEach"):
 					return Enumerable.Empty<string>();
-				
+
 				//Access client throws a different exception so it is excluded
 				case ("DataContextTests", "ProviderConnectionStringConstructorTest2"):
 					return contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_AccessClient));
