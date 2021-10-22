@@ -76,11 +76,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			StringBuilder.AppendLine();
 		}
 
-		protected override void BuildFunction(SqlFunction func)
-		{
-			func = ConvertFunctionParameters(func);
-			base.BuildFunction(func);
-		}
+		//protected override void BuildFunction(SqlFunction func)
+		//{
+		//	func = ConvertFunctionParameters(func);
+		//	base.BuildFunction(func);
+		//}
 
 		protected override void BuildInsertOrUpdateQuery(SqlInsertOrUpdateStatement insertOrUpdate)
 		{
@@ -130,7 +130,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return base.Convert(sb, value, convertType);
 		}
 
-		public override StringBuilder BuildTableName(StringBuilder sb, string server, string database, string schema, string table)
+		public override StringBuilder BuildTableName(StringBuilder sb, string server, string database, string schema, string table, TableOptions tableOptions)
 		{
 			if (database != null && database.Length == 0) database = null;
 			if (schema != null && schema.Length == 0) schema = null;
@@ -139,7 +139,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			if (database != null && schema == null)
 				throw new LinqToDBException($"{Provider.Name} requires schema name if database name provided.");
 
-			return base.BuildTableName(sb, null, database, schema, table);
+			return base.BuildTableName(sb, null, database, schema, table, tableOptions);
 		}
 
 		#endregion
@@ -175,7 +175,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					var field = trun.Table!.IdentityFields[commandNumber - 1];
 
 					StringBuilder.Append("ALTER TABLE ");
-					ConvertTableName(StringBuilder, trun.Table.Server, trun.Table.Database, trun.Table.Schema, trun.Table.PhysicalName!);
+					ConvertTableName(StringBuilder, trun.Table.Server, trun.Table.Database, trun.Table.Schema, trun.Table.PhysicalName!, trun.Table.TableOptions);
 					StringBuilder.Append(" ALTER ");
 					Convert(StringBuilder, field.PhysicalName, ConvertType.NameToQueryField);
 					StringBuilder.AppendLine(" RESTART WITH 1");
@@ -210,16 +210,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		//Same as DB2 provider - except it adds null value handling
 		protected override void BuildColumnExpression(SelectQuery selectQuery, ISqlExpression expr, string alias, ref bool addAlias)
 		{
-			var wrap = false;
-
-			if (expr.SystemType == typeof(bool))
-			{
-				if (expr is SqlSearchCondition)
-					wrap = true;
-				else
-					wrap = expr is SqlExpression ex && ex.Expr == "{0}" && ex.Parameters.Length == 1 && ex.Parameters[0] is SqlSearchCondition;
-			}
-
 			//Null values need to be explicitly casted
 			if (expr is SqlValue value && value.Value == null)
 			{
@@ -227,11 +217,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				expr = new SqlExpression(expr.SystemType, "Cast({0} as {1})", Precedence.Primary, expr, new SqlExpression(colType, Precedence.Primary));
 			}
 
-			if (wrap) StringBuilder.Append("CASE WHEN ");
 			base.BuildColumnExpression(selectQuery, expr, alias, ref addAlias);
-			if (wrap) StringBuilder.Append(" THEN 1 ELSE 0 END");
 		}
-
 
 		//Same as DB2 provider - adds alias handling
 		protected override void BuildSelectClause(SelectQuery selectQuery)
@@ -286,10 +273,35 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 		}
 
+		protected override void BuildCreateTableCommand(SqlTable table)
+		{
+			if (table.TableOptions.IsTemporaryOptionSet())
+			{
+				string command;
+				switch (table.TableOptions & TableOptions.IsGlobalTemporaryStructure)
+				{
+					case TableOptions.IsGlobalTemporaryStructure:
+						command = "DECLARE GLOBAL TEMPORARY TABLE ";
+						break;
+					case var value:
+						throw new InvalidOperationException($"Incompatible table options '{value}'");
+				}
+				StringBuilder.Append(command);
+			}
+			else
+			{
+				base.BuildCreateTableCommand(table);
+			}
+		}
+		public override string GetTableSchemaName(SqlTable table)
+		{
+			return table.Schema == null && table.TableOptions.HasIsGlobalTemporaryStructure() ? "SESSION" : base.GetTableSchemaName(table);
+		}
+
 		#endregion
 
 		#region iDB2 specific
-		
+
 		//OleDb provider needs spaces in specific places
 		protected override string Comma => Provider.ProviderType.IsOleDb() ? ", " : base.Comma;
 		
@@ -434,7 +446,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		protected override IEnumerable<SqlColumn> GetSelectedColumns(SelectQuery selectQuery)
 		{
 			//TODO: Test this scenario with AlternativeGetSelectedColumns
-			if (NeedSkip(selectQuery) && !selectQuery.OrderBy.IsEmpty)
+			if (NeedSkip(selectQuery.Select.TakeValue, selectQuery.Select.SkipValue) && !selectQuery.OrderBy.IsEmpty)
 				return AlternativeGetSelectedColumns(selectQuery, () => base.GetSelectedColumns(selectQuery));
 
 			return base.GetSelectedColumns(selectQuery);
@@ -480,6 +492,20 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			if (insertClause.WithIdentity)
 				BuildGetIdentity(insertClause);
+		}
+
+		//Use IF EXISTS syntax
+		protected override void BuildDropTableStatement(SqlDropTableStatement dropTable)
+		{
+			var sb = AppendIndent().Append("DROP TABLE ");
+
+			if (dropTable.Table.TableOptions.HasDropIfExists())
+			{
+				sb.Append("IF EXISTS ");
+			}
+
+			BuildPhysicalTable(dropTable.Table!, null);
+			StringBuilder.AppendLine();
 		}
 
 		#endregion

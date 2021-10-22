@@ -23,7 +23,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			statement = ReplaceDistinctOrderByWithRowNumber(statement, q => q.Select.SkipValue != null);
 
 			if (!db2ISeriesSqlProviderFlags.SupportsOffsetClause)
-				statement = ReplaceTakeSkipWithRowNumber(statement, query => query.Select.SkipValue != null && SqlProviderFlags.GetIsSkipSupportedFlag(query), true);
+				statement = ReplaceTakeSkipWithRowNumber(statement, query => query.Select.SkipValue != null && SqlProviderFlags.GetIsSkipSupportedFlag(query.Select.TakeValue, query.Select.SkipValue), true);
 
 			return statement.QueryType switch
 			{
@@ -47,7 +47,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return text;
 		}
 
-		public override SqlStatement Finalize(SqlStatement statement, bool inlineParameters)
+		public override SqlStatement Finalize(SqlStatement statement)
 		{
 			static long getAbsoluteHashCode(object o) => (long)o.GetHashCode() + (long)int.MaxValue;
 			
@@ -88,12 +88,18 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			if (statement.SelectQuery != null)
 				(new QueryVisitor()).Visit(statement.SelectQuery.Select, setQueryParameter);
 
-			return base.Finalize(statement, inlineParameters);
+			return base.Finalize(statement);
 		}
 
-		public override ISqlExpression ConvertExpression(ISqlExpression expr, bool withParameters)
+		public override bool CanCompareSearchConditions => true;
+
+		protected static string[] DB2iSeriesLikeCharactersToEscape = { "%", "_" };
+
+		public override string[] LikeCharactersToEscape => DB2iSeriesLikeCharactersToEscape;
+
+		public override ISqlExpression ConvertExpressionImpl(ISqlExpression expr, ConvertVisitor visitor, EvaluationContext context)
 		{
-			expr = base.ConvertExpression(expr, withParameters);
+			expr = base.ConvertExpressionImpl(expr, visitor, context);
 			if (expr is SqlBinaryExpression be)
 			{
 				switch (be.Operation)
@@ -123,7 +129,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					case "Convert":
 						if (func.SystemType.ToUnderlying() == typeof(bool))
 						{
-							var ex = AlternativeConvertToBoolean(func, 1, withParameters);
+							var ex = AlternativeConvertToBoolean(func, 1);
 							if (ex != null)
 							{
 								return ex;
@@ -219,6 +225,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				new SqlCondition(false, new SqlPredicate.IsNull(query, true)));
 
 			return sc;
+		}
+
+		protected override ISqlExpression ConvertFunction(SqlFunction func)
+		{
+			func = ConvertFunctionParameters(func, false);
+			return base.ConvertFunction(func);
 		}
 	}
 }

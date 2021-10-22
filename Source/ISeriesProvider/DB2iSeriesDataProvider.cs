@@ -113,6 +113,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			db2iSeriesSqlProviderFlags.SetCustomFlags(SqlProviderFlags);
 			mappingOptions.SetCustomFlags(SqlProviderFlags);
 
+			SetCharFieldToType<char>("CHAR", DataTools.GetCharExpression);
 			SetCharField(Constants.DbTypes.Char, (r, i) => r.GetString(i).TrimEnd(' '));
 			SetCharField(Constants.DbTypes.NChar, (r, i) => r.GetString(i).TrimEnd(' '));
 			SetCharField(Constants.DbTypes.Graphic, (r, i) => r.GetString(i).TrimEnd(' '));
@@ -174,7 +175,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			SqlProviderFlags.IsParameterOrderDependent = false;
 
-			SetCharFieldToType<char>(Constants.DbTypes.Char, (r, i) => DataTools.GetChar(r, i));
+			SetCharFieldToType<char>(Constants.DbTypes.Char, DataTools.GetCharExpression);
 
 			var adapter = (DB2.DB2ProviderAdapter)Adapter.GetInstance();
 
@@ -206,6 +207,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			SqlProviderFlags.IsParameterOrderDependent = true;
 		}
+
+		public override TableOptions SupportedTableOptions =>
+			TableOptions.IsGlobalTemporaryStructure |
+			TableOptions.DropIfExists;
 
 		public override ISqlBuilder CreateSqlBuilder(MappingSchema mappingSchema)
 		{
