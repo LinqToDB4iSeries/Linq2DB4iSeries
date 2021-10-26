@@ -144,8 +144,6 @@ namespace Tests.DataProvider
 			}
 		}
 
-
-
 		[Test]
 		public void CharTrimming([DataSources] string context)
 		{
@@ -176,7 +174,7 @@ namespace Tests.DataProvider
 						{
 							var (expected, actual) = x;
 
-							Assert.AreEqual(!TestProvNameDb2i.IsiSeriesDB2Connect(context) && expected.Char == ' '  ? '\0' : expected.Char, actual.Char);
+							Assert.AreEqual(TestProvNameDb2i.IsiSeriesOleDb(context) && expected.Char == ' '  ? '\0' : expected.Char, actual.Char);
 
 							if (TestProvNameDb2i.IsiSeriesOleDb(context) && expected.NChar == '\u3000') // OleDb strips \u3000
 								Assert.AreEqual('\0', actual.NChar);
