@@ -381,7 +381,7 @@ namespace Tests.Linq
 					from d in db.GetTable<DynamicTable>()
 					select new
 					{
-						NI = Sql.Property<int>(d, TestProvNameDb2i.IsiSeries(context) ? "NotIdentifier"  : "Not Identifier")
+						NI = Sql.Property<int>(d, TestProvNameDb2i.IsiSeries(context) ? "NotIdentifier" : "Not Identifier")
 					};
 
 				var result = query.ToArray();

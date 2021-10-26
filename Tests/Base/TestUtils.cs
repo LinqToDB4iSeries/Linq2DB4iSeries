@@ -4,14 +4,14 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 
+using FirebirdSql.Data.FirebirdClient;
+
 using LinqToDB;
 using LinqToDB.Data;
 using LinqToDB.DataProvider.Firebird;
-using LinqToDB.SchemaProvider;
 
 namespace Tests
 {
-	using System.Diagnostics.CodeAnalysis;
 	using Model;
 
 	public static class TestUtils
@@ -51,8 +51,7 @@ namespace Tests
 		[Sql.Expression("current server", ServerSideOnly = true, Configuration = ProviderName.DB2)]
 		[Sql.Function("current_database", ServerSideOnly = true, Configuration = ProviderName.PostgreSQL)]
 		[Sql.Function("DATABASE"        , ServerSideOnly = true, Configuration = ProviderName.MySql)]
-		//[Sql.Function("DB_NAME"         , ServerSideOnly = true)] //default
-		[Sql.Expression("current server", ServerSideOnly = true)]
+		[Sql.Function("DB_NAME"         , ServerSideOnly = true)]
 		private static string DbName()
 		{
 			throw new InvalidOperationException();
@@ -65,8 +64,7 @@ namespace Tests
 		[Sql.Function("current_schema"  , ServerSideOnly = true, Configuration = ProviderName.PostgreSQL)]
 		[Sql.Function("USER_NAME"       , ServerSideOnly = true, Configuration = ProviderName.Sybase)]
 		[Sql.Expression("current_schema", ServerSideOnly = true, Configuration = ProviderName.SapHana)]
-		//[Sql.Function("SCHEMA_NAME"     , ServerSideOnly = true)] //default
-		[Sql.Expression("current schema", ServerSideOnly = true)]
+		[Sql.Function("SCHEMA_NAME"     , ServerSideOnly = true)]
 		private static string SchemaName()
 		{
 			throw new InvalidOperationException();
@@ -87,7 +85,7 @@ namespace Tests
 		/// </summary>
 		public static string GetSchemaName(IDataContext db)
 		{
-			switch (TestProvNameDb2i.GetFamily(GetContextName(db)))
+			switch (GetContextName(db))
 			{
 				case ProviderName.Informix:
 				case ProviderName.InformixDB2:
@@ -105,7 +103,6 @@ namespace Tests
 				case TestProvName.PostgreSQL12:
 				case TestProvName.PostgreSQL13:
 				case ProviderName.DB2:
-				case TestProvNameDb2i.DB2iBase:
 				case ProviderName.Sybase:
 				case ProviderName.SybaseManaged:
 				case ProviderName.SqlServer2005:
@@ -115,6 +112,7 @@ namespace Tests
 				case TestProvName.SqlServer2016:
 				case ProviderName.SqlServer2017:
 				case TestProvName.SqlServer2019:
+				case TestProvName.SqlServer2019SequentialAccess:
 				case TestProvName.SqlAzure:
 				case ProviderName.SapHanaNative:
 				case ProviderName.SapHanaOdbc:
@@ -143,6 +141,7 @@ namespace Tests
 				case TestProvName.SqlServer2016:
 				case ProviderName.SqlServer2017:
 				case TestProvName.SqlServer2019:
+				case TestProvName.SqlServer2019SequentialAccess:
 				case TestProvName.SqlAzure:
 				case ProviderName.OracleManaged:
 				case ProviderName.OracleNative:
@@ -192,7 +191,7 @@ namespace Tests
 		/// </summary>
 		public static string GetDatabaseName(IDataContext db)
 		{
-			switch (TestProvNameDb2i.GetFamily(GetContextName(db)))
+			switch (GetContextName(db))
 			{
 				case ProviderName.SQLiteClassic:
 				case TestProvName.SQLiteClassicMiniProfilerMapped:
@@ -215,7 +214,6 @@ namespace Tests
 				case TestProvName.PostgreSQL12:
 				case TestProvName.PostgreSQL13:
 				case ProviderName.DB2:
-				case TestProvNameDb2i.DB2iBase:
 				case ProviderName.Sybase:
 				case ProviderName.SybaseManaged:
 				case ProviderName.SqlServer2000:
@@ -226,6 +224,7 @@ namespace Tests
 				case TestProvName.SqlServer2016:
 				case ProviderName.SqlServer2017:
 				case TestProvName.SqlServer2019:
+				case TestProvName.SqlServer2019SequentialAccess:
 				case TestProvName.SqlAzure:
 					return db.GetTable<LinqDataTypes>().Select(_ => DbName()).First();
 				case ProviderName.Informix:
@@ -268,23 +267,28 @@ namespace Tests
 
 		class FirebirdTempTable<T> : TempTable<T>
 		{
-			public FirebirdTempTable(IDataContext db, string? tableName = null, string? databaseName = null, string? schemaName = null)
-				: base(db, tableName, databaseName, schemaName)
+			public FirebirdTempTable(IDataContext db, string? tableName = null, string? databaseName = null, string? schemaName = null, TableOptions tableOptions = TableOptions.NotSet)
+				: base(db, tableName, databaseName, schemaName, tableOptions : tableOptions)
 			{
 			}
 
 			public override void Dispose()
 			{
+				if (DataContext is DataConnection dc && dc.Connection is FbConnection fbc )
+				{
+					FbConnection.ClearPool(fbc);
+				}
+
 				DataContext.Close();
 				FirebirdTools.ClearAllPools();
 				base.Dispose();
 			}
 		}
 
-		static TempTable<T> CreateTable<T>(IDataContext db, string? tableName) =>
+		static TempTable<T> CreateTable<T>(IDataContext db, string? tableName, TableOptions tableOptions = TableOptions.NotSet) =>
 			db.CreateSqlProvider() is FirebirdSqlBuilder ?
-				new FirebirdTempTable<T>(db, tableName) :
-				new         TempTable<T>(db, tableName);
+				new FirebirdTempTable<T>(db, tableName, tableOptions : tableOptions) :
+				new         TempTable<T>(db, tableName, tableOptions : tableOptions);
 
 		static void ClearDataContext(IDataContext db)
 		{
@@ -295,41 +299,50 @@ namespace Tests
 			}
 		}
 
-		public static TempTable<T> CreateLocalTable<T>(this IDataContext db, string? tableName = null)
+		public static TempTable<T> CreateLocalTable<T>(this IDataContext db, string? tableName = null, TableOptions tableOptions = TableOptions.NotSet)
 		{
 			try
 			{
-				return CreateTable<T>(db, tableName);
+				if ((tableOptions & TableOptions.CheckExistence) == TableOptions.CheckExistence)
+					db.DropTable<T>(tableName, tableOptions:tableOptions);
+				return CreateTable<T>(db, tableName, tableOptions);
 			}
 			catch
 			{
 				ClearDataContext(db);
 				db.DropTable<T>(tableName, throwExceptionIfNotExists:false);
-				return CreateTable<T>(db, tableName);
+				return CreateTable<T>(db, tableName, tableOptions);
 			}
 		}
 
-		public static TempTable<T> CreateLocalTable<T>(this IDataContext db, string? tableName, IEnumerable<T> items)
+		public static TempTable<T> CreateLocalTable<T>(this IDataContext db, string? tableName, IEnumerable<T> items, bool insertInTransaction = false)
 		{
-			var table = CreateLocalTable<T>(db, tableName);
+			var table = CreateLocalTable<T>(db, tableName, TableOptions.CheckExistence);
 
-			if (db is DataConnection)
-				using (new DisableLogging())
-					table.Copy(items
-						, new BulkCopyOptions { BulkCopyType = BulkCopyType.MultipleRows }
-						);
-			else
-				using (new DisableLogging())
+			using (new DisableLogging())
+			{
+				if (db is DataConnection dc)
+				{
+					// apply transaction only on insert, as not all dbs support DDL within transaction
+					if (insertInTransaction)
+						dc.BeginTransaction();
+
+					table.Copy(items, new BulkCopyOptions { BulkCopyType = BulkCopyType.MultipleRows });
+
+					if (insertInTransaction)
+						dc.CommitTransaction();
+				}
+				else
 					foreach (var item in items)
 						db.Insert(item, table.TableName);
-
+			}
 
 			return table;
 		}
 
-		public static TempTable<T> CreateLocalTable<T>(this IDataContext db, IEnumerable<T> items)
+		public static TempTable<T> CreateLocalTable<T>(this IDataContext db, IEnumerable<T> items, bool insertInTransaction = false)
 		{
-			return CreateLocalTable(db, null, items);
+			return CreateLocalTable(db, null, items, insertInTransaction);
 		}
 	}
 }

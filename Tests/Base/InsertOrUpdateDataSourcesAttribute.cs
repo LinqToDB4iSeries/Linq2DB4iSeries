@@ -6,22 +6,21 @@ using System.Threading.Tasks;
 
 namespace Tests
 {
+	[AttributeUsage(AttributeTargets.Parameter)]
 	public class InsertOrUpdateDataSourcesAttribute : DataSourcesAttribute
 	{
-		static string[] Unsupported = 
-			Split(new string[]
-			{
+		public static List<string> Unsupported = new List<string>
+		{
 				
-			})
-			.ToArray();
+		}.SelectMany(_ => _.Split(',')).ToList();
 
 		public InsertOrUpdateDataSourcesAttribute(params string[] except)
-			: base(true, Unsupported.Concat(Split(except)).ToArray())
+			: base(true, Unsupported.Concat(except.SelectMany(_ => _.Split(','))).ToArray())
 		{
 		}
 
 		public InsertOrUpdateDataSourcesAttribute(bool includeLinqService, params string[] except)
-			: base(includeLinqService, Unsupported.Concat(Split(except)).ToArray())
+			: base(includeLinqService, Unsupported.Concat(except.SelectMany(_ => _.Split(','))).ToArray())
 		{
 		}
 	}

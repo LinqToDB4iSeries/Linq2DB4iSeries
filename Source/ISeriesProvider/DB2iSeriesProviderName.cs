@@ -29,7 +29,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public const string DB2_DB2Connect_72_GAS = "DB2.iSeries.DB2Connect.72.GAS";
 		public const string DB2_DB2Connect_73_GAS = "DB2.iSeries.DB2Connect.73.GAS";
 
-#if NET45
+#if NETFRAMEWORK
 		public const string DB2_AccessClient_71 = "DB2.iSeries.Net.71";
 		public const string DB2_AccessClient_72 = "DB2.iSeries.Net.72";
 		public const string DB2_AccessClient_73 = "DB2.iSeries.Net.73";

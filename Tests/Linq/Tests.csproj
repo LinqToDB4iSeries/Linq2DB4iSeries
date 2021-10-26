@@ -9,24 +9,23 @@
 		<AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
 	</PropertyGroup>
 
-	<PropertyGroup>
-		<PlatformTarget>x64</PlatformTarget>
-	</PropertyGroup>
-
 	<ItemGroup>
 		<ProjectReference Include="..\VisualBasic\Tests.VisualBasic.vbproj" />
 		<ProjectReference Include="..\FSharp\Tests.FSharp.fsproj" />
+		<PackageReference Include="linq2db.AspNet" Version="3.2.3" />
 	</ItemGroup>
 
-	<ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' OR '$(TargetFramework)' == 'netcoreapp3.1' ">
+	<ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection"  Version="1.1.1"  />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="1.1.2"  />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' != 'net472'">
 		<Compile Remove="Metadata\AttributeReaderTests.cs" />
 		<Compile Remove="Linq\DataServiceTests.cs" />
 		<Compile Remove="Metadata\XmlReaderTests.cs" />
-	</ItemGroup>
-
-	<ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.1' ">
-		<!-- TEMP: explicitly reference specific version to avoid MSB3277 --> 
-		<PackageReference Include="System.Security.Cryptography.Cng" Version="4.7.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection"  Version="3.1.10" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0"  />
 	</ItemGroup>
 
 </Project>
