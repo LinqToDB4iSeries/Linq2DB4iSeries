@@ -18,6 +18,7 @@ namespace Tests
 		public const string All_71 = "DB2.iSeries.71";
 		public const string All_72 = "DB2.iSeries.72";
 		public const string All_73 = "DB2.iSeries.73";
+		public const string All_74 = "DB2.iSeries.74";
 
 		public const string All_NonGAS = "DB2.iSeries.NonGAS";
 		public const string All_GAS = "DB2.iSeries.GAS";
@@ -29,7 +30,7 @@ namespace Tests
 		private static IEnumerable<string> GetProviders(Func<string, bool> predicate)
 			=> DB2iSeriesProviderName.AllNames.Where(predicate);
 
-		private static IEnumerable<string> GetProvidersContaing(string contains)
+		private static IEnumerable<string> GetProvidersContaining(string contains)
 			=> DB2iSeriesProviderName.AllNames.Where(x => x.Contains(contains));
 
 		public static IEnumerable<string> GetAll() => GetProviders((string _) => true);
@@ -44,11 +45,12 @@ namespace Tests
 		public static IEnumerable<string> GetOleDb() => GetProviders(x => x.ProviderType == DB2iSeriesProviderType.OleDb);
 		public static IEnumerable<string> GetDB2Connect() => GetProviders(x => x.ProviderType == DB2iSeriesProviderType.DB2);
 
-		public static IEnumerable<string> Get71() => GetProvidersContaing("71");
-		public static IEnumerable<string> Get72() => GetProvidersContaing("72");
-		public static IEnumerable<string> Get73() => GetProvidersContaing("73");
+		public static IEnumerable<string> Get71() => GetProvidersContaining("71");
+		public static IEnumerable<string> Get72() => GetProvidersContaining("72");
+		public static IEnumerable<string> Get73() => GetProvidersContaining("73");
+		public static IEnumerable<string> Get74() => GetProvidersContaining("74");
 
-		public static IEnumerable<string> GetGAS() => GetProvidersContaing("GAS");
+		public static IEnumerable<string> GetGAS() => GetProvidersContaining("GAS");
 		public static IEnumerable<string> GetNonGAS() => GetProviders(x => !x.Contains("GAS"));
 
 		public static IEnumerable<string> GetProviders(string context)
@@ -64,6 +66,7 @@ namespace Tests
 				All_71 => Get71(),
 				All_72 => Get72(),
 				All_73 => Get73(),
+				All_74 => Get74(),
 
 				All_GAS => GetGAS(),
 				All_NonGAS => GetNonGAS(),

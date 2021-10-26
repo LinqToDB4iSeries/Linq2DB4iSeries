@@ -497,15 +497,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		//Use IF EXISTS syntax
 		protected override void BuildDropTableStatement(SqlDropTableStatement dropTable)
 		{
-			var sb = AppendIndent().Append("DROP TABLE ");
-
-			if (dropTable.Table.TableOptions.HasDropIfExists())
-			{
-				sb.Append("IF EXISTS ");
-			}
-
-			BuildPhysicalTable(dropTable.Table!, null);
-			StringBuilder.AppendLine();
+			if (DB2iSeriesSqlProviderFlags.SupportsDropTableIfExists)
+				this.BuildDropTableStatementIfExists(dropTable);
+			else
+				base.BuildDropTableStatement(dropTable);
 		}
 
 		#endregion

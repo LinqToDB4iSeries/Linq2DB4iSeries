@@ -10,7 +10,7 @@ namespace Tests.DataProvider
 	public partial class DB2iSeriesTests
 	{
 		[Test]
-		public void InsertOrUpdateWithIntegers([IncludeDataSources(TestProvNameDb2i.All_71, TestProvNameDb2i.All_72, TestProvNameDb2i.All_73)] string context)
+		public void InsertOrUpdateWithIntegers([IncludeDataSources(TestProvNameDb2i.All)] string context)
 		{
 			using (var db = new TestDataConnection(context))
 			{

@@ -208,9 +208,18 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SqlProviderFlags.IsParameterOrderDependent = true;
 		}
 
-		public override TableOptions SupportedTableOptions =>
-			TableOptions.IsGlobalTemporaryStructure |
-			TableOptions.DropIfExists;
+		public override TableOptions SupportedTableOptions
+		{
+			get
+			{
+				if(this.db2iSeriesSqlProviderFlags.SupportsDropTableIfExists)
+				{
+					return TableOptions.IsGlobalTemporaryStructure | TableOptions.DropIfExists;
+				}
+
+				return TableOptions.IsGlobalTemporaryStructure;
+			}
+		}
 
 		public override ISqlBuilder CreateSqlBuilder(MappingSchema mappingSchema)
 		{

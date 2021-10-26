@@ -11,7 +11,7 @@ namespace Tests.DataProvider
 	public partial class DB2iSeriesTests
 	{
 		[Test]
-		public void SchemaProvider([IncludeDataSources(TestProvNameDb2i.All_73)] string context)
+		public void SchemaProvider([IncludeDataSources(TestProvNameDb2i.All_73, TestProvNameDb2i.All_74)] string context)
 		{
 			using (var conn = new DataConnection(context))
 			{
