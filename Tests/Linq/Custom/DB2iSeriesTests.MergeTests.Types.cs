@@ -340,7 +340,7 @@ namespace Tests.DataProvider
 
 		private static void AssertChar(char? expected, char? actual, string provider)
 		{
-			if (!TestProvNameDb2i.IsiSeriesDB2Connect(provider) && expected == ' ')
+			if (TestProvNameDb2i.IsiSeriesOleDb(provider) && expected == ' ')
 				expected = '\0';
 			
 			Assert.AreEqual(expected, actual);
