@@ -179,7 +179,8 @@ namespace Tests.xUpdate
 					using (var tmp = await db.CreateTempTableAsync(
 						"TempTable",
 						db.Parent.Select(p => new IDTable { ID = p.ParentID }).ToList(),
-						cancellationToken: cts.Token))
+						cancellationToken: cts.Token,
+						tableOptions: TableOptions.IsGlobalTemporaryStructure))
 					{
 						var list =
 						(
@@ -227,7 +228,8 @@ namespace Tests.xUpdate
 							cts.Cancel();
 							return Task.CompletedTask;
 						},
-						cancellationToken: cts.Token))
+						cancellationToken: cts.Token,
+						tableOptions: TableOptions.IsGlobalTemporaryStructure))
 					{
 						var list =
 						(
