@@ -43,6 +43,8 @@ namespace Tests
 				case ("MergeTests", "TestTypesInsertByMerge"):
 				case ("MergeTests", "TestMergeTypes"):
 				case ("MergeTests", "TestDB2NullsInSource"):
+				//Query incorrect for DB2i - Copied to custom tests
+				case ("DataConnectionTests", "EnumExecuteScalarTest"):
 				//Case valid for DB2 but not for DB2i
 				case ("Issue792Tests", "TestWithTransactionThrowsFromProvider"):
 				//Data not valid for DB2i

@@ -39,7 +39,7 @@ namespace Tests.Data
 
 			using (var conn = new DataConnection(dataProvider, connectionString))
 			{
-				Assert.That(conn.Connection.State,    Is.EqualTo(ConnectionState.Open));
+				Assert.That(conn.Connection.State, Is.EqualTo(ConnectionState.Open));
 				Assert.That(conn.ConfigurationString, Is.Null);
 			}
 		}
@@ -49,7 +49,7 @@ namespace Tests.Data
 		{
 			using (var conn = new DataConnection())
 			{
-				Assert.That(conn.Connection.State,    Is.EqualTo(ConnectionState.Open));
+				Assert.That(conn.Connection.State, Is.EqualTo(ConnectionState.Open));
 				Assert.That(conn.ConfigurationString, Is.EqualTo(DataConnection.DefaultConfiguration));
 			}
 		}
@@ -66,7 +66,7 @@ namespace Tests.Data
 		{
 			using (var conn = new DataConnection(context))
 			{
-				Assert.That(conn.Connection.State,    Is.EqualTo(ConnectionState.Open));
+				Assert.That(conn.Connection.State, Is.EqualTo(ConnectionState.Open));
 				Assert.That(conn.ConfigurationString, Is.EqualTo(context));
 
 				if (context.EndsWith(".2005"))
@@ -84,9 +84,9 @@ namespace Tests.Data
 		}
 
 		[Test]
-		public void EnumExecuteScalarTest()
+		public void EnumExecuteScalarTest([DataSources] string context)
 		{
-			using (var dbm = new DataConnection())
+			using (var dbm = new DataConnection(context))
 			{
 				var gender = dbm.Execute<Gender>("select 'M'");
 
@@ -117,89 +117,89 @@ namespace Tests.Data
 			switch (context)
 			{
 				case ProviderName.DB2:
-				{
-					dataProvider = DataConnection.GetDataProvider("DB2", connectionString)!;
+					{
+						dataProvider = DataConnection.GetDataProvider("DB2", connectionString)!;
 
-					Assert.That(dataProvider, Is.TypeOf<DB2DataProvider>());
+						Assert.That(dataProvider, Is.TypeOf<DB2DataProvider>());
 
-					var sqlServerDataProvider = (DB2DataProvider)dataProvider;
+						var sqlServerDataProvider = (DB2DataProvider)dataProvider;
 
-					Assert.That(sqlServerDataProvider.Version, Is.EqualTo(DB2Version.LUW));
+						Assert.That(sqlServerDataProvider.Version, Is.EqualTo(DB2Version.LUW));
 
-					break;
-				}
+						break;
+					}
 
 				case ProviderName.SqlServer2005:
-				{
-					dataProvider = DataConnection.GetDataProvider("System.Data.SqlClient", "MyConfig.2005", connectionString)!;
+					{
+						dataProvider = DataConnection.GetDataProvider("System.Data.SqlClient", "MyConfig.2005", connectionString)!;
 
-					Assert.That(dataProvider, Is.TypeOf<SqlServerDataProvider>());
+						Assert.That(dataProvider, Is.TypeOf<SqlServerDataProvider>());
 
-					var sqlServerDataProvider = (SqlServerDataProvider)dataProvider;
+						var sqlServerDataProvider = (SqlServerDataProvider)dataProvider;
 
-					Assert.That(sqlServerDataProvider.Version, Is.EqualTo(SqlServerVersion.v2005));
+						Assert.That(sqlServerDataProvider.Version, Is.EqualTo(SqlServerVersion.v2005));
 
-					dataProvider = DataConnection.GetDataProvider("System.Data.SqlClient", connectionString)!;
-					sqlServerDataProvider = (SqlServerDataProvider)dataProvider;
+						dataProvider = DataConnection.GetDataProvider("System.Data.SqlClient", connectionString)!;
+						sqlServerDataProvider = (SqlServerDataProvider)dataProvider;
 
-					Assert.That(sqlServerDataProvider.Version, Is.EqualTo(SqlServerVersion.v2005));
+						Assert.That(sqlServerDataProvider.Version, Is.EqualTo(SqlServerVersion.v2005));
 
-					break;
-				}
+						break;
+					}
 
 				case ProviderName.SqlServer2008:
-				{
-					dataProvider = DataConnection.GetDataProvider("SqlServer", connectionString)!;
+					{
+						dataProvider = DataConnection.GetDataProvider("SqlServer", connectionString)!;
 
-					Assert.That(dataProvider, Is.TypeOf<SqlServerDataProvider>());
+						Assert.That(dataProvider, Is.TypeOf<SqlServerDataProvider>());
 
-					var sqlServerDataProvider = (SqlServerDataProvider)dataProvider;
+						var sqlServerDataProvider = (SqlServerDataProvider)dataProvider;
 
-					Assert.That(sqlServerDataProvider.Version, Is.EqualTo(SqlServerVersion.v2008));
+						Assert.That(sqlServerDataProvider.Version, Is.EqualTo(SqlServerVersion.v2008));
 
-					dataProvider = DataConnection.GetDataProvider("System.Data.SqlClient", connectionString)!;
-					sqlServerDataProvider = (SqlServerDataProvider)dataProvider;
+						dataProvider = DataConnection.GetDataProvider("System.Data.SqlClient", connectionString)!;
+						sqlServerDataProvider = (SqlServerDataProvider)dataProvider;
 
-					Assert.That(sqlServerDataProvider.Version, Is.EqualTo(SqlServerVersion.v2008));
+						Assert.That(sqlServerDataProvider.Version, Is.EqualTo(SqlServerVersion.v2008));
 
-					break;
-				}
+						break;
+					}
 
 				case ProviderName.SqlServer2012:
-				{
-					dataProvider = DataConnection.GetDataProvider("SqlServer.2012", connectionString)!;
+					{
+						dataProvider = DataConnection.GetDataProvider("SqlServer.2012", connectionString)!;
 
-					Assert.That(dataProvider, Is.TypeOf<SqlServerDataProvider>());
+						Assert.That(dataProvider, Is.TypeOf<SqlServerDataProvider>());
 
-					var sqlServerDataProvider = (SqlServerDataProvider)dataProvider;
+						var sqlServerDataProvider = (SqlServerDataProvider)dataProvider;
 
-					Assert.That(sqlServerDataProvider.Version, Is.EqualTo(SqlServerVersion.v2012));
+						Assert.That(sqlServerDataProvider.Version, Is.EqualTo(SqlServerVersion.v2012));
 
-					dataProvider = DataConnection.GetDataProvider("System.Data.SqlClient", connectionString)!;
-					sqlServerDataProvider = (SqlServerDataProvider)dataProvider;
+						dataProvider = DataConnection.GetDataProvider("System.Data.SqlClient", connectionString)!;
+						sqlServerDataProvider = (SqlServerDataProvider)dataProvider;
 
-					Assert.That(sqlServerDataProvider.Version, Is.EqualTo(SqlServerVersion.v2012));
+						Assert.That(sqlServerDataProvider.Version, Is.EqualTo(SqlServerVersion.v2012));
 
-					break;
-				}
+						break;
+					}
 
 				case ProviderName.SqlServer2014:
-				{
-					dataProvider = DataConnection.GetDataProvider("SqlServer", "SqlServer.2012", connectionString)!;
+					{
+						dataProvider = DataConnection.GetDataProvider("SqlServer", "SqlServer.2012", connectionString)!;
 
-					Assert.That(dataProvider, Is.TypeOf<SqlServerDataProvider>());
+						Assert.That(dataProvider, Is.TypeOf<SqlServerDataProvider>());
 
-					var sqlServerDataProvider = (SqlServerDataProvider)dataProvider;
+						var sqlServerDataProvider = (SqlServerDataProvider)dataProvider;
 
-					Assert.That(sqlServerDataProvider.Version, Is.EqualTo(SqlServerVersion.v2012));
+						Assert.That(sqlServerDataProvider.Version, Is.EqualTo(SqlServerVersion.v2012));
 
-					dataProvider = DataConnection.GetDataProvider("System.Data.SqlClient", connectionString)!;
-					sqlServerDataProvider = (SqlServerDataProvider)dataProvider;
+						dataProvider = DataConnection.GetDataProvider("System.Data.SqlClient", connectionString)!;
+						sqlServerDataProvider = (SqlServerDataProvider)dataProvider;
 
-					Assert.That(sqlServerDataProvider.Version, Is.EqualTo(SqlServerVersion.v2012));
+						Assert.That(sqlServerDataProvider.Version, Is.EqualTo(SqlServerVersion.v2012));
 
-					break;
-				}
+						break;
+					}
 
 				case ProviderName.SqlServer2017:
 					{
@@ -313,7 +313,7 @@ namespace Tests.Data
 		{
 			var collection = new ServiceCollection();
 			collection.AddLinqToDbContext<DbConnection1>((provider, options) => options.UseConfigurationString(context));
-			collection.AddLinqToDbContext<DbConnection2>((provider, options) => {});
+			collection.AddLinqToDbContext<DbConnection2>((provider, options) => { });
 
 			var serviceProvider = collection.BuildServiceProvider();
 			var c1 = serviceProvider.GetService<DbConnection1>();
@@ -440,7 +440,7 @@ namespace Tests.Data
 						if (cn.State == ConnectionState.Closed)
 							open = true;
 					};
-				conn.OnBeforeConnectionOpenAsync += async (dc, cn, token) => await Task.Run(() => 
+				conn.OnBeforeConnectionOpenAsync += async (dc, cn, token) => await Task.Run(() =>
 						{
 							if (cn.State == ConnectionState.Closed)
 								openAsync = true;
@@ -756,7 +756,7 @@ namespace Tests.Data
 		public void TestCloneOnClosingOnClosed([DataSources(false)] string context)
 		{
 			var closing = 0;
-			var closed  = 0;
+			var closed = 0;
 
 			using (var db = new DataConnection(context))
 			{
@@ -793,7 +793,7 @@ namespace Tests.Data
 				using (var cdb = (DataConnection)((IDataContext)db).Clone(true))
 				{
 					closing = 0;
-					closed  = 0;
+					closed = 0;
 					_ = cdb.Connection;
 					Assert.AreEqual(0, closing);
 					Assert.AreEqual(0, closed);
@@ -802,9 +802,9 @@ namespace Tests.Data
 					Assert.AreEqual(1, closed);
 
 					closing = 0;
-					closed  = 0;
+					closed = 0;
 					db.OnClosing -= OnClosing;
-					db.OnClosed  -= OnClosed;
+					db.OnClosed -= OnClosed;
 					_ = cdb.Connection;
 					cdb.Close();
 					Assert.AreEqual(1, closing);
@@ -812,7 +812,7 @@ namespace Tests.Data
 				}
 
 				closing = 0;
-				closed  = 0;
+				closed = 0;
 				_ = db.Connection;
 				Assert.AreEqual(0, closing);
 				Assert.AreEqual(0, closed);
@@ -839,7 +839,7 @@ namespace Tests.Data
 		[Test]
 		public void TestCloneOnBeforeConnectionOpenOnConnectionOpened([DataSources(false)] string context)
 		{
-			var open   = 0;
+			var open = 0;
 			var opened = 0;
 
 			using (var db = new DataConnection(context))
@@ -861,7 +861,7 @@ namespace Tests.Data
 
 				db.Close();
 				db.OnBeforeConnectionOpen += OnBeforeConnectionOpen;
-				db.OnConnectionOpened     += OnConnectionOpened;
+				db.OnConnectionOpened += OnConnectionOpened;
 				Assert.AreEqual(0, open);
 				Assert.AreEqual(0, opened);
 				_ = db.Connection;
@@ -870,28 +870,28 @@ namespace Tests.Data
 
 				using (var cdb = (DataConnection)((IDataContext)db).Clone(true))
 				{
-					open   = 0;
+					open = 0;
 					opened = 0;
 					Assert.AreEqual(0, open);
 					Assert.AreEqual(0, opened);
 					cdb.Connection.Close();
-					open   = 0;
+					open = 0;
 					opened = 0;
 					_ = cdb.Connection;
 					Assert.AreEqual(1, open);
 					Assert.AreEqual(1, opened);
 
-					open   = 0;
+					open = 0;
 					opened = 0;
 					cdb.Close();
 					db.OnBeforeConnectionOpen -= OnBeforeConnectionOpen;
-					db.OnConnectionOpened     -= OnConnectionOpened;
+					db.OnConnectionOpened -= OnConnectionOpened;
 					_ = cdb.Connection;
 					Assert.AreEqual(1, open);
 					Assert.AreEqual(1, opened);
 				}
 
-				open   = 0;
+				open = 0;
 				opened = 0;
 				db.Close();
 				Assert.AreEqual(0, open);
@@ -911,13 +911,13 @@ namespace Tests.Data
 			}
 
 			void OnBeforeConnectionOpen(DataConnection dc, IDbConnection cn) => open++;
-			void OnConnectionOpened    (DataConnection dc, IDbConnection cn) => opened++;
+			void OnConnectionOpened(DataConnection dc, IDbConnection cn) => opened++;
 		}
 
 		[Test]
 		public async Task TestCloneOnBeforeConnectionOpenAsyncOnConnectionOpenedAsync([DataSources(false)] string context)
 		{
-			var open   = 0;
+			var open = 0;
 			var opened = 0;
 
 			using (var db = new DataConnection(context))
@@ -939,7 +939,7 @@ namespace Tests.Data
 
 				db.Close();
 				db.OnBeforeConnectionOpenAsync += OnBeforeConnectionOpenAsync;
-				db.OnConnectionOpenedAsync     += OnConnectionOpenedAsync;
+				db.OnConnectionOpenedAsync += OnConnectionOpenedAsync;
 				Assert.AreEqual(0, open);
 				Assert.AreEqual(0, opened);
 				await db.EnsureConnectionAsync();
@@ -948,28 +948,28 @@ namespace Tests.Data
 
 				using (var cdb = (DataConnection)((IDataContext)db).Clone(true))
 				{
-					open   = 0;
+					open = 0;
 					opened = 0;
 					Assert.AreEqual(0, open);
 					Assert.AreEqual(0, opened);
 					cdb.Connection.Close();
-					open   = 0;
+					open = 0;
 					opened = 0;
 					await cdb.EnsureConnectionAsync();
 					Assert.AreEqual(1, open);
 					Assert.AreEqual(1, opened);
 
-					open   = 0;
+					open = 0;
 					opened = 0;
 					cdb.Close();
 					db.OnBeforeConnectionOpenAsync -= OnBeforeConnectionOpenAsync;
-					db.OnConnectionOpenedAsync     -= OnConnectionOpenedAsync;
+					db.OnConnectionOpenedAsync -= OnConnectionOpenedAsync;
 					await cdb.EnsureConnectionAsync();
 					Assert.AreEqual(1, open);
 					Assert.AreEqual(1, opened);
 				}
 
-				open   = 0;
+				open = 0;
 				opened = 0;
 				db.Close();
 				Assert.AreEqual(0, open);
@@ -998,7 +998,7 @@ namespace Tests.Data
 			{
 				opened++;
 				return Task.CompletedTask;
-		}
+			}
 		}
 
 		// strange provider errors, review in v3 with more recent providers
@@ -1070,9 +1070,9 @@ namespace Tests.Data
 		[Table("Categories")]
 		public class Category
 		{
-			[PrimaryKey, Identity] public int     CategoryID;
-			[Column, NotNull]      public string  CategoryName = null!;
-			[Column]               public string? Description;
+			[PrimaryKey, Identity] public int CategoryID;
+			[Column, NotNull] public string CategoryName = null!;
+			[Column] public string? Description;
 
 			[Association(ThisKey = "CategoryID", OtherKey = "CategoryID")]
 			public List<Product> Products = null!;
@@ -1087,10 +1087,10 @@ namespace Tests.Data
 		[Table(Name = "Products")]
 		public class Product
 		{
-			[PrimaryKey, Identity]                                         public int       ProductID;
-			[Column, NotNull]                                              public string    ProductName = null!;
-			[Column]                                                       public int?      CategoryID;
-			[Column]                                                       public string?   QuantityPerUnit;
+			[PrimaryKey, Identity] public int ProductID;
+			[Column, NotNull] public string ProductName = null!;
+			[Column] public int? CategoryID;
+			[Column] public string? QuantityPerUnit;
 			[Association(ThisKey = "CategoryID", OtherKey = "CategoryID")] public Category? Category;
 
 			public static readonly Product[] Data = new[]
@@ -1109,17 +1109,17 @@ namespace Tests.Data
 			[DataSources(false)] string context, [Values] bool withScope)
 		{
 			if (withScope && (
-				context == ProviderName.DB2            ||
-				context == ProviderName.InformixDB2    ||
+				context == ProviderName.DB2 ||
+				context == ProviderName.InformixDB2 ||
 				context == ProviderName.MySqlConnector ||
-				context == ProviderName.SapHanaNative  ||
-				context == ProviderName.SqlCe          ||
-				context == ProviderName.Sybase         ||
-				context.Contains("Firebird")           ||
-				context.Contains("Oracle")             ||
-				context.Contains("PostgreSQL")         ||
-				context.Contains("SqlServer")          ||
-				context.Contains("SqlAzure")           ||
+				context == ProviderName.SapHanaNative ||
+				context == ProviderName.SqlCe ||
+				context == ProviderName.Sybase ||
+				context.Contains("Firebird") ||
+				context.Contains("Oracle") ||
+				context.Contains("PostgreSQL") ||
+				context.Contains("SqlServer") ||
+				context.Contains("SqlAzure") ||
 				context.Contains(ProviderName.SQLiteClassic)
 				))
 			{
@@ -1161,20 +1161,20 @@ namespace Tests.Data
 			[DataSources(false)] string context, [Values] bool withScope)
 		{
 			if (withScope && (
-				context == ProviderName.DB2                 ||
-				context == ProviderName.InformixDB2         ||
-				context == ProviderName.SapHanaOdbc         ||
-				context == ProviderName.SqlCe               ||
-				context == ProviderName.Sybase              ||
+				context == ProviderName.DB2 ||
+				context == ProviderName.InformixDB2 ||
+				context == ProviderName.SapHanaOdbc ||
+				context == ProviderName.SqlCe ||
+				context == ProviderName.Sybase ||
 #if !NET472
 				(context.Contains("Oracle") && context.Contains("Managed")) ||
 				context == ProviderName.SapHanaNative       ||
 #endif
 				TestProvName.AllMySqlData.Contains(context) ||
-				context.StartsWith("Access")                ||
-				context.Contains("SqlServer")               ||
-				context.Contains("SqlAzure")                ||
-				context.Contains("PostgreSQL")              ||
+				context.StartsWith("Access") ||
+				context.Contains("SqlServer") ||
+				context.Contains("SqlAzure") ||
+				context.Contains("PostgreSQL") ||
 				context.Contains(ProviderName.SQLiteClassic)
 				))
 			{
