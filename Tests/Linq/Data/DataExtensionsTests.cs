@@ -81,12 +81,12 @@ namespace Tests.Data
 		}
 
 		[Test]
-		public void TestObject3()
+		public void TestObject3([DataSources] string context)
 		{
 			var arr1 = new byte[] { 48, 57 };
 			var arr2 = new byte[] { 42 };
 
-			using (var conn = new DataConnection())
+			using (var conn = new DataConnection(context))
 			{
 				Assert.That(conn.Execute<byte[]>("SELECT @p", new { p = arr1 }), Is.EqualTo(arr1));
 				Assert.That(conn.Execute<byte[]>("SELECT @p", new { p = arr2 }), Is.EqualTo(arr2));
@@ -94,18 +94,18 @@ namespace Tests.Data
 		}
 
 		[Test]
-		public void TestObject4()
+		public void TestObject4([DataSources] string context)
 		{
-			using (var conn = new DataConnection())
+			using (var conn = new DataConnection(context))
 			{
 				Assert.That(conn.Execute<int>("SELECT @p", new { p = 1 }), Is.EqualTo(1));
 			}
 		}
 
 		[Test]
-		public void TestObject5()
+		public void TestObject5([DataSources] string context)
 		{
-			using (var conn = new DataConnection())
+			using (var conn = new DataConnection(context))
 			{
 				var res = conn.Execute<string>(
 					"SELECT @p",
@@ -173,9 +173,9 @@ namespace Tests.Data
 
 
 		[Test]
-		public void TestObject6()
+		public void TestObject6([DataSources] string context)
 		{
-			using (var conn = new DataConnection())
+			using (var conn = new DataConnection(context))
 			{
 				Assert.That(conn.Execute<string>(
 					"SELECT @p",
@@ -229,7 +229,7 @@ namespace Tests.Data
 		}
 
 		[Test]
-		public void TestDataParameterMapping1()
+		public void TestDataParameterMapping1([DataSources] string context)
 		{
 			var ms = new MappingSchema();
 
@@ -237,7 +237,7 @@ namespace Tests.Data
 			ms.SetConvertExpression<TwoValues,DataParameter>(tv => new DataParameter { Value = (long)tv.Value1 << 16 | tv.Value2 });
 #pragma warning restore CS0675
 
-			using (var conn = new DataConnection().AddMappingSchema(ms))
+			using (var conn = new DataConnection(context).AddMappingSchema(ms))
 			{
 				var n = conn.Execute<long>("SELECT @p", new { p = new TwoValues { Value1 = 1, Value2 = 2 } });
 
