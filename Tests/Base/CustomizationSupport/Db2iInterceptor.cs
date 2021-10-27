@@ -49,6 +49,9 @@ namespace Tests
 				case ("Issue792Tests", "TestWithTransactionThrowsFromProvider"):
 				//Data not valid for DB2i
 				case ("Issue1287Tests", _):
+				//Implicit transactions do not function properly in .NET
+				case ("DataConnectionTests", "TestDisposeFlagCloning962Test1"):
+				case ("DataConnectionTests", "TestDisposeFlagCloning962Test2"):
 				//Query contains invalid keyword permission
 				case ("Issue825Tests", "Test"):
 				//Yes it generates bad SQL but the feature isn't really used
