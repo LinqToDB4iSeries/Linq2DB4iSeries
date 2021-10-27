@@ -31,6 +31,8 @@ namespace Tests
 				//Tests have property have space - Copied to custom tests
 				case ("DynamicColumnsTests", "SqlPropertyNoStoreNonIdentifier"):
 				case ("DynamicColumnsTests", "SqlPropertyNoStoreNonIdentifierGrouping"):
+				//Valid afor DB2 but not DB2i - Test copied to custom
+				case ("DropTableTests", "DropSpecificDatabaseTableTest"):
 				//Test copied to custom to reduce default source row number
 				case ("MergeTests", "BigSource"):
 				//Tests passing provider specific parameter types - Generic linq2db test - Not applicable
