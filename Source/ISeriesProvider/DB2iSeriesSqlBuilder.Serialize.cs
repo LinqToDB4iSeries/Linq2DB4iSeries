@@ -40,6 +40,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return sb.ToString();
 		}
 
+		public static void ConvertDoubleToSql(StringBuilder sb, double value)
+		{
+			sb.Append("CAST(").Append(value).Append(" AS DOUBLE)");
+		}
+
+		public static void ConvertInt64ToSql(StringBuilder sb, double value)
+		{
+			sb.Append("CAST(").Append(value).Append(" AS BIGINT)");
+		}
+
 		public static void ConvertDateTimeToSql(StringBuilder stringBuilder, DataType datatype, DateTime value, bool quoted = true)
 		{
 			var format = datatype switch

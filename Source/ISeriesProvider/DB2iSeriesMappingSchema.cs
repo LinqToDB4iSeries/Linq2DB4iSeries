@@ -16,7 +16,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			ColumnNameComparer = StringComparer.OrdinalIgnoreCase;
 
 			SetDataType(typeof(string), new SqlDataType(DataType.NVarChar, typeof(string), 255));
-			
+
+			SetValueToSqlConverter(typeof(long), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertInt64ToSql(sb, (long)v));
+			SetValueToSqlConverter(typeof(double), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertDoubleToSql(sb, (double)v));
 			SetValueToSqlConverter(typeof(string), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertStringToSql(sb, v.ToString()));
 			SetValueToSqlConverter(typeof(char), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertCharToSql(sb, (char)v));
 			SetValueToSqlConverter(typeof(byte[]), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertBinaryToSql(sb, (byte[])v));

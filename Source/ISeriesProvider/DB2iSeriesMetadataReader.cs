@@ -184,35 +184,40 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	{
 		public void Build(Sql.ISqExtensionBuilder builder)
 		{
+			static SqlValue AsT<T>(T value)
+			{
+				return new SqlValue(value);
+			}
+
 			var part = builder.GetValue<Sql.DateParts>(0);
 			var startDate = builder.GetExpression(1);
 			var endDate = builder.GetExpression(2);
 
-			var secondsExpr = builder.Mul<int>(builder.Sub<int>(
-					new SqlFunction(typeof(int), "Days", endDate),
-					new SqlFunction(typeof(int), "Days", startDate)),
-				new SqlValue(86400));
+			var secondsExpr = builder.Mul<long>(builder.Sub<long>(
+					new SqlFunction(typeof(long), "Days", endDate),
+					new SqlFunction(typeof(long), "Days", startDate)),
+				AsT(86400L));
 
-			var midnight = builder.Sub<int>(
-				new SqlFunction(typeof(int), "MIDNIGHT_SECONDS", endDate),
-				new SqlFunction(typeof(int), "MIDNIGHT_SECONDS", startDate));
+			var midnight = builder.Sub<long>(
+				new SqlFunction(typeof(long), "MIDNIGHT_SECONDS", endDate),
+				new SqlFunction(typeof(long), "MIDNIGHT_SECONDS", startDate));
 
-			var resultExpr = builder.Add<int>(secondsExpr, midnight);
+			var resultExpr = builder.Add<long>(secondsExpr, midnight);
 
 			switch (part)
 			{
-				case Sql.DateParts.Day: resultExpr = builder.Div(resultExpr, 86400); break;
-				case Sql.DateParts.Hour: resultExpr = builder.Div(resultExpr, 3600); break;
-				case Sql.DateParts.Minute: resultExpr = builder.Div(resultExpr, 60); break;
+				case Sql.DateParts.Day: resultExpr = builder.Div<long>(resultExpr, AsT(86400L)); break;
+				case Sql.DateParts.Hour: resultExpr = builder.Div<long>(resultExpr, AsT(3600L)); break;
+				case Sql.DateParts.Minute: resultExpr = builder.Div<long>(resultExpr, AsT(60L)); break;
 				case Sql.DateParts.Second: break;
 				case Sql.DateParts.Millisecond:
-					resultExpr = builder.Add<int>(
-						builder.Mul(resultExpr, 1000),
-						builder.Div(
-							builder.Sub<int>(
-								new SqlFunction(typeof(int), "MICROSECOND", endDate),
-								new SqlFunction(typeof(int), "MICROSECOND", startDate)),
-							1000));
+					resultExpr = builder.Add<long>(
+						builder.Mul<long>(resultExpr, AsT(1000L)),
+						builder.Div<long>(
+							builder.Sub<long>(
+								new SqlFunction(typeof(long), "MICROSECOND", endDate),
+								new SqlFunction(typeof(long), "MICROSECOND", startDate)),
+							AsT(1000L)));
 					break;
 				default:
 					throw new ArgumentOutOfRangeException();
