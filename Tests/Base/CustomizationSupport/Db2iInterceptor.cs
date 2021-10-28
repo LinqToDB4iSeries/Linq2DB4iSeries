@@ -52,6 +52,18 @@ namespace Tests
 				case ("Issue792Tests", "TestWithTransactionThrowsFromProvider"):
 				//Data not valid for DB2i
 				case ("Issue1287Tests", _):
+				case ("TableOptionsTests", "CheckExistenceTest"):
+				case ("TableOptionsTests", "CreateIfNotExistsTest"):
+				case ("TableOptionsTests", "CreateTempIfNotExistsTest"):
+				case ("TableOptionsTests", "DB2TableOptionsTest"):
+				case ("TableOptionsTests", "FluentMappingTest"):
+				case ("TableOptionsTests", "IsTemporaryFlagTest"):
+				case ("TableOptionsTests", "IsTemporaryMethodTest"):
+				case ("TableOptionsTests", "IsTemporaryMethodTest2"):
+				case ("TableOptionsTests", "IsTemporaryMethodTest3"):
+				case ("TableOptionsTests", "IsTemporaryOptionAsyncTest"):
+				case ("TableOptionsTests", "IsTemporaryOptionTest"):
+				case ("TableOptionsTests", "TableOptionsMethodTest"):
 				//Implicit transactions do not function properly in .NET
 				case ("DataConnectionTests", "TestDisposeFlagCloning962Test1"):
 				case ("DataConnectionTests", "TestDisposeFlagCloning962Test2"):
