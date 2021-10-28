@@ -9,6 +9,7 @@ using LinqToDB.Common;
 using LinqToDB.Data;
 using NUnit.Framework;
 using LinqToDB.Mapping;
+using LinqToDB.Tools.Comparers;
 
 #if NETFRAMEWORK
 using IBM.Data.DB2.iSeries;
@@ -604,6 +605,166 @@ namespace Tests.DataProvider
 
 				Assert.AreEqual(1, list.Count);
 				Assert.AreEqual('Y', list[0].charDataType);
+			}
+		}
+
+		[Test]
+		public void TestGuid([IncludeDataSources(CurrentProvider)] string context)
+		{
+			using (var conn = new DataConnection(context))
+			{
+				Assert.That(
+					conn.Execute<Guid>("SELECT Cast('6F9619FF-8B86-D011-B42D-00C04FC964FF' as varchar(38))  FROM SYSIBM.SYSDUMMY1"),
+					Is.EqualTo(new Guid("6F9619FF-8B86-D011-B42D-00C04FC964FF")));
+
+				Assert.That(
+					conn.Execute<Guid?>("SELECT Cast('6F9619FF-8B86-D011-B42D-00C04FC964FF' as varchar(38)) FROM SYSIBM.SYSDUMMY1"),
+					Is.EqualTo(new Guid("6F9619FF-8B86-D011-B42D-00C04FC964FF")));
+
+				var guid = TestData.Guid1;
+
+				Assert.That(conn.Execute<Guid>("SELECT Cast(@p as char(16) for bit data) FROM SYSIBM.SYSDUMMY1", DataParameter.Create("p", guid)), Is.EqualTo(guid));
+				Assert.That(conn.Execute<Guid>("SELECT Cast(@p as char(16) for bit data) FROM SYSIBM.SYSDUMMY1", new DataParameter { Name = "p", Value = guid }), Is.EqualTo(guid));
+			}
+		}
+
+		[Table]
+		class TestTimeTypes
+		{
+			[Column]
+			public int Id { get; set; }
+
+			[Column(DataType = DataType.Date)]
+			public DateTime Date1 { get; set; }
+
+			[Column(DbType = "Date")]
+			public DateTime Date2 { get; set; }
+
+			[Column]
+			public TimeSpan Time { get; set; }
+
+			[Column(Precision = 0)]
+			public DateTime TimeStamp0 { get; set; }
+
+			[Column(DbType = "timestamp(1)")]
+			public DateTime TimeStamp1 { get; set; }
+
+			[Column(Precision = 2)]
+			public DateTime TimeStamp2 { get; set; }
+
+			//[Column(DbType = "timestamp(3)")]
+			[Column(Precision = 3)]
+			public DateTime TimeStamp3 { get; set; }
+
+			[Column(Precision = 4)]
+			public DateTime TimeStamp4 { get; set; }
+
+			//[Column(DbType = "TimeStamp(5)")]
+			[Column(Precision = 5)]
+			public DateTime TimeStamp5 { get; set; }
+
+			[Column(Precision = 6)]
+			public DateTime TimeStamp6 { get; set; }
+
+			//[Column(DbType = "timestamp(7)")]
+			[Column(Precision = 7)]
+			public DateTime TimeStamp7 { get; set; }
+
+			static TestTimeTypes()
+			{
+				Data = new[]
+				{
+					new TestTimeTypes() { Id = 1, Date1 = new DateTime(1234, 5, 6), Date2 = new DateTime(1234, 5, 7), Time = new TimeSpan(21, 2, 3) },
+					new TestTimeTypes() { Id = 2, Date1 = new DateTime(6543, 2, 1), Date2 = new DateTime(1234, 5, 8), Time = new TimeSpan(23, 2, 1) }
+				};
+
+				for (var i = 1; i <= Data.Length; i++)
+				{
+					var idx = i - 1;
+					Data[idx].TimeStamp0 = new DateTime(1000, 1, 10, 2, 20, 30 + i, 0);
+					Data[idx].TimeStamp1 = new DateTime(1000, 1, 10, 2, 20, 30, i * 100);
+					Data[idx].TimeStamp2 = new DateTime(1000, 1, 10, 2, 20, 30, i * 10);
+					Data[idx].TimeStamp3 = new DateTime(1000, 1, 10, 2, 20, 30, i);
+					Data[idx].TimeStamp4 = new DateTime(1000, 1, 10, 2, 20, 30, 1).AddTicks(1000 * i);
+					Data[idx].TimeStamp5 = new DateTime(1000, 1, 10, 2, 20, 30, 1).AddTicks(100 * i);
+					Data[idx].TimeStamp6 = new DateTime(1000, 1, 10, 2, 20, 30, 1).AddTicks(10 * i);
+					Data[idx].TimeStamp7 = new DateTime(1000, 1, 10, 2, 20, 30, 1).AddTicks(1 * i);
+				}
+			}
+
+			public static TestTimeTypes[] Data;
+
+			public static Func<TestTimeTypes, TestTimeTypes, bool> Comparer = ComparerBuilder.GetEqualsFunc<TestTimeTypes>();
+		}
+
+		[Test]
+		public void TestTimespanAndTimeValues([IncludeDataSources(false, CurrentProvider)] string context, [Values] bool useParameters)
+		{
+			using (var db = GetDataContext(context))
+			using (var table = db.CreateLocalTable(TestTimeTypes.Data))
+			{
+				db.InlineParameters = !useParameters;
+
+				var record = table.Where(_ => _.Id == 1).Single();
+				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+
+				record = table.Where(_ => _.Date1 == TestTimeTypes.Data[0].Date1).Single();
+				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+
+				record = table.Where(_ => _.Date2 == TestTimeTypes.Data[0].Date2).Single();
+				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+
+				record = table.Where(_ => _.Time == TestTimeTypes.Data[0].Time).Single();
+				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+
+				record = table.Where(_ => _.TimeStamp0 == TestTimeTypes.Data[0].TimeStamp0).Single();
+				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+
+				record = table.Where(_ => _.TimeStamp1 == TestTimeTypes.Data[0].TimeStamp1).Single();
+				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+
+				record = table.Where(_ => _.TimeStamp2 == TestTimeTypes.Data[0].TimeStamp2).Single();
+				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+
+				record = table.Where(_ => _.TimeStamp3 == TestTimeTypes.Data[0].TimeStamp3).Single();
+				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+
+				record = table.Where(_ => _.TimeStamp4 == TestTimeTypes.Data[0].TimeStamp4).Single();
+				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+
+				record = table.Where(_ => _.TimeStamp5 == TestTimeTypes.Data[0].TimeStamp5).Single();
+				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+
+				record = table.Where(_ => _.TimeStamp6 == TestTimeTypes.Data[0].TimeStamp6).Single();
+				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+
+				record = table.Where(_ => _.TimeStamp7 == TestTimeTypes.Data[0].TimeStamp7).Single();
+				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+			}
+		}
+
+		[Table]
+		class TestParametersTable
+		{
+			[Column] public int Id { get; set; }
+			[Column] public string? Text { get; set; }
+		}
+
+		// https://github.com/linq2db/linq2db/issues/2091
+		[Test]
+		public void TestParametersUsed([IncludeDataSources(CurrentProvider)] string context)
+		{
+			using (var db = new DataConnection(context))
+			using (var table = db.CreateLocalTable<TestParametersTable>())
+			{
+				var newText = new TestParametersTable() { Id = 12, Text = "Hallo Welt!" };
+				db.Insert(newText);
+
+				var text = "bla";
+				var query = from f in table where f.Text == text select f;
+				var result = query.ToArray();
+
+				Assert.True(db.LastQuery!.Contains("@"));
 			}
 		}
 	}

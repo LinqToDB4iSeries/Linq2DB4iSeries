@@ -26,6 +26,7 @@ namespace Tests
 				//Test targets DB2 provider
 				case ("SchemaProviderTests", "DB2Test"):
 				case ("MiniProfilerTests", "TestDB2"):
+				case ("DB2Tests", _):
 				//Tests have internal logic based on BulkCopyType - Copied to custom tests
 				case ("BulkCopyTests", "KeepIdentity_SkipOnInsertTrue"):
 				case ("BulkCopyTests", "KeepIdentity_SkipOnInsertFalse"):
