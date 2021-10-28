@@ -609,7 +609,7 @@ namespace Tests.DataProvider
 		}
 
 		[Test]
-		public void TestGuid([IncludeDataSources(CurrentProvider)] string context)
+		public void TestGuid([IncludeDataSources(TestProvNameDb2i.All)] string context)
 		{
 			using (var conn = new DataConnection(context))
 			{
@@ -698,7 +698,7 @@ namespace Tests.DataProvider
 		}
 
 		[Test]
-		public void TestTimespanAndTimeValues([IncludeDataSources(false, CurrentProvider)] string context, [Values] bool useParameters)
+		public void TestTimespanAndTimeValues([IncludeDataSources(false, TestProvNameDb2i.All)] string context, [Values] bool useParameters)
 		{
 			using (var db = GetDataContext(context))
 			using (var table = db.CreateLocalTable(TestTimeTypes.Data))
@@ -752,7 +752,7 @@ namespace Tests.DataProvider
 
 		// https://github.com/linq2db/linq2db/issues/2091
 		[Test]
-		public void TestParametersUsed([IncludeDataSources(CurrentProvider)] string context)
+		public void TestParametersUsed([IncludeDataSources(TestProvNameDb2i.All)] string context)
 		{
 			using (var db = new DataConnection(context))
 			using (var table = db.CreateLocalTable<TestParametersTable>())
