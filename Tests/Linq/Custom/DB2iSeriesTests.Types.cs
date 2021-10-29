@@ -764,7 +764,7 @@ namespace Tests.DataProvider
 				var query = from f in table where f.Text == text select f;
 				var result = query.ToArray();
 
-				Assert.True(db.LastQuery!.Contains("@"));
+				Assert.True(db.LastQuery!.Contains(db.GetParameterMarker("")));
 			}
 		}
 	}
