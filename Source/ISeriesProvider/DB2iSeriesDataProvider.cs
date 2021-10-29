@@ -328,8 +328,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					{
 						value = value switch
 						{
-							DateTime dateTime => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(DataType.Date, dateTime, false),
-							DateTimeOffset dateTimeOffset => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(DataType.Date, dateTimeOffset.DateTime, false),
+							DateTime dateTime => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(DataType.DateTime, dateTime, false),
+							DateTimeOffset dateTimeOffset => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(DataType.DateTime, dateTimeOffset.DateTime, false),
 							_ => value
 						};
 					}
