@@ -71,9 +71,6 @@ namespace Tests
 				case ("DataConnectionTests", "TestDisposeFlagCloning962Test2"):
 				//Query contains invalid keyword permission
 				case ("Issue825Tests", "Test"):
-				//Yes it generates bad SQL but the feature isn't really used
-				case ("AnalyticTests", "Issue1799Test1"):
-				case ("AnalyticTests", "Issue1799Test2"):
 				//Test for unsupported WCF feature
 				case ("AsyncTests", "Test"):
 				case ("AsyncTests", "Test1"):

@@ -5,6 +5,7 @@ using LinqToDB.Metadata;
 namespace LinqToDB.DataProvider.DB2iSeries
 {
 	using SqlQuery;
+	using System.Collections.Generic;
 	using System.Linq;
 
 	class DB2iSeriesMetadataReader : IMetadataReader
@@ -184,23 +185,67 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	{
 		public void Build(Sql.ISqExtensionBuilder builder)
 		{
+			// Generally, this is used to wrap literal numbers as longs and doubles.
+			// This is because the iSeries expects that literals are 32-bit integers.
+			// This causes overflows unless the values are specifically cast to larger types.
 			static SqlValue AsT<T>(T value)
 			{
 				return new SqlValue(value);
+			}
+
+			static ISqlExpression Days(ISqlExpression value)
+			{
+				return new SqlFunction(typeof(long), "DAYS", value);
+			}
+
+			static ISqlExpression MidnightSeconds(ISqlExpression value)
+			{
+				return new SqlFunction(typeof(long), "MIDNIGHT_SECONDS", value);
+			}
+
+			static ISqlExpression Microsecond(ISqlExpression value)
+			{
+				return new SqlFunction(typeof(long), "MICROSECOND", value);
+			}
+
+			// Takes a expression that may be a LAG or LEAD function.
+			// If they are, the wrapper function needs to be applied within the LAG or LEAD function.
+			// Otherwise, the value can be wrapped in the wrapper function directly.
+			static ISqlExpression TransformLagAndLead(ISqlExpression iexpr, Func<ISqlExpression, ISqlExpression> wrapper)
+			{
+				if (iexpr is SqlExpression expr
+					&& (expr.Expr.StartsWith("LAG", StringComparison.OrdinalIgnoreCase)
+					|| expr.Expr.StartsWith("LEAD", StringComparison.OrdinalIgnoreCase)))
+				{
+					var newParams = new List<ISqlExpression>(expr.Parameters.Length);
+
+					var param = expr.Parameters.First();
+					// Wrap the parameter rather than the whole expression.
+					newParams.Add(wrapper(param));
+					newParams.AddRange(expr.Parameters.Skip(1));
+
+					return new SqlExpression(expr.SystemType, expr.Expr, expr.Precedence, expr.IsAggregate, expr.IsPure, newParams.ToArray());
+				}
+
+				// Wrap the whole expression.
+				return wrapper(iexpr);
 			}
 
 			var part = builder.GetValue<Sql.DateParts>(0);
 			var startDate = builder.GetExpression(1);
 			var endDate = builder.GetExpression(2);
 
-			var secondsExpr = builder.Mul<long>(builder.Sub<long>(
-					new SqlFunction(typeof(long), "Days", endDate),
-					new SqlFunction(typeof(long), "Days", startDate)),
+			// If start or endDate are functions rather than values, they may need to be transformed.
+			var startDays = TransformLagAndLead(startDate, Days);
+			var endDays = TransformLagAndLead(endDate, Days);
+			var startMidnightSeconds = TransformLagAndLead(startDate, MidnightSeconds);
+			var endMidnightSeconds = TransformLagAndLead(endDate, MidnightSeconds);
+
+			var secondsExpr = builder.Mul<long>(
+				builder.Sub<long>(endDays, startDays),
 				AsT(86400L));
 
-			var midnight = builder.Sub<long>(
-				new SqlFunction(typeof(long), "MIDNIGHT_SECONDS", endDate),
-				new SqlFunction(typeof(long), "MIDNIGHT_SECONDS", startDate));
+			var midnight = builder.Sub<long>(endMidnightSeconds, startMidnightSeconds);
 
 			var resultExpr = builder.Add<long>(secondsExpr, midnight);
 
@@ -211,12 +256,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case Sql.DateParts.Minute: resultExpr = builder.Div<long>(resultExpr, AsT(60L)); break;
 				case Sql.DateParts.Second: break;
 				case Sql.DateParts.Millisecond:
+					var startMicrosecond = TransformLagAndLead(startDate, Microsecond);
+					var endMicrosecond = TransformLagAndLead(endDate, Microsecond);
 					resultExpr = builder.Add<long>(
 						builder.Mul<long>(resultExpr, AsT(1000L)),
 						builder.Div<long>(
-							builder.Sub<long>(
-								new SqlFunction(typeof(long), "MICROSECOND", endDate),
-								new SqlFunction(typeof(long), "MICROSECOND", startDate)),
+							builder.Sub<long>(endMicrosecond, startMicrosecond),
 							AsT(1000L)));
 					break;
 				default:
