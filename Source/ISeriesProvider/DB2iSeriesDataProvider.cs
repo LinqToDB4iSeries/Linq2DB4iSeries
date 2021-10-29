@@ -319,7 +319,21 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					break;
 
 				case DataType.DateTime2:
+				case DataType.DateTime:
 					dataType = dataType.WithDataType(DataType.DateTime);
+#if NETFRAMEWORK
+					// iAccessClient fails when passing DateTime objects.
+					// Convert them to strings instead.
+					if (ProviderType.IsAccessClient())
+					{
+						value = value switch
+						{
+							DateTime dateTime => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(DataType.Date, dateTime, false),
+							DateTimeOffset dateTimeOffset => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(DataType.Date, dateTimeOffset.DateTime, false),
+							_ => value
+						};
+					}
+#endif
 					break;
 #if NETFRAMEWORK
 				case DataType.Date:
