@@ -75,6 +75,12 @@ namespace Tests
 				case ("AsyncTests", "Test"):
 				case ("AsyncTests", "Test1"):
 				case ("AsyncTests", "TestForEach"):
+				//Invalid query in test
+				case ("DataExtensionsTests", "TestDataParameterMapping1"):
+				case ("DataExtensionsTests", "TestObject3"):
+				case ("DataExtensionsTests", "TestObject4"):
+				case ("DataExtensionsTests", "TestObject5"):
+				case ("DataExtensionsTests", "TestObject6"):
 					return Enumerable.Empty<string>();
 
 				//Access client throws a different exception so it is excluded
