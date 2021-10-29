@@ -207,6 +207,42 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						return new SqlFunction(func.SystemType, "Graphic", func.Parameters);
 				}
 			}
+			else if (expr is SqlSearchCondition search)
+			{
+				List<SqlCondition> conditions = new();
+				bool buildNew = false;
+
+				for(int i = 0; i < search.Conditions.Count; i++)
+				{
+					var condition = search.Conditions[i];
+
+					if(condition.Predicate is SqlPredicate.ExprExpr predicate
+						&& predicate.Expr1.ElementType == QueryElementType.SearchCondition
+						&& predicate.Expr2.ElementType == QueryElementType.SqlFunction
+						&& predicate.Expr2 is SqlFunction function2
+						&& function2.Name == "CASE")
+					{
+						var expr1 = new SqlFunction(typeof(bool), "CASE", new ISqlExpression[] {
+							predicate.Expr1,
+							new SqlValue(true),
+							new SqlValue(false)
+						}); 
+						var newPredicate = new SqlPredicate.ExprExpr(expr1, predicate.Operator, predicate.Expr2, predicate.WithNull);
+						var newCondition = new SqlCondition(condition.IsNot, newPredicate, condition.IsOr);
+						conditions.Add(newCondition);
+						buildNew = true;
+					}
+					else
+					{
+						conditions.Add(condition);
+					}
+				}
+
+				if(buildNew)
+				{
+					return new SqlSearchCondition(conditions);
+				}
+			}
 			return expr;
 		}
 
