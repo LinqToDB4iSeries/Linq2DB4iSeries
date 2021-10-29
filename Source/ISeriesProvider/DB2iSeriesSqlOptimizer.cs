@@ -207,39 +207,71 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						return new SqlFunction(func.SystemType, "Graphic", func.Parameters);
 				}
 			}
+			// Transform SqlSearchCondition
 			else if (expr is SqlSearchCondition search)
 			{
+				// This list will contain transformed conditions and will only be used if a new SqlSearchCondition is returned.
 				List<SqlCondition> conditions = new();
 				bool buildNew = false;
 
+				// Tranform the conditions within a SqlSearchCondition
 				for(int i = 0; i < search.Conditions.Count; i++)
 				{
 					var condition = search.Conditions[i];
 
-					if(condition.Predicate is SqlPredicate.ExprExpr predicate
-						&& predicate.Expr1.ElementType == QueryElementType.SearchCondition
-						&& predicate.Expr2.ElementType == QueryElementType.SqlFunction
-						&& predicate.Expr2 is SqlFunction function2
-						&& function2.Name == "CASE")
+					// A predicate cannot directly compare two search expressions.
+					// DB2i has no boolean type, so expressions like `a = b` do not return booleans.
+					// Instead they are typeless expressions.
+					// Expressions like `(a = b) = false` are invalid because an expression cannot be compared to value.
+					// Expressions like `(a = b) = (c = d)` are also invalid because an expression cannot be compared to another expression.
+					// Instead, nested search conditions must be placed inside case statements that returns numbers representing true and false.
+					// The expression above becomes (case when a = b then 1 else 0 end) = (case when c = d then 1 else 0 end).
+					if (condition.Predicate is SqlPredicate.ExprExpr predicate
+						&& (predicate.Expr1.ElementType == QueryElementType.SearchCondition
+						|| predicate.Expr2.ElementType == QueryElementType.SearchCondition))
 					{
-						var expr1 = new SqlFunction(typeof(bool), "CASE", new ISqlExpression[] {
-							predicate.Expr1,
-							new SqlValue(true),
-							new SqlValue(false)
-						}); 
-						var newPredicate = new SqlPredicate.ExprExpr(expr1, predicate.Operator, predicate.Expr2, predicate.WithNull);
+						var expr1 = predicate.Expr1;
+						var expr2 = predicate.Expr2;
+
+						// If expr1 is a SqlSearchCondition, wrap it in a case statement.
+						if(expr1.ElementType == QueryElementType.SearchCondition)
+						{
+							expr1 = new SqlFunction(typeof(bool), "CASE", new ISqlExpression[] {
+								expr1,
+								new SqlValue(true),
+								new SqlValue(false)
+							});
+						}
+
+						// If expr2 is a SqlSearchCondition, wrap it in a case statement.
+						if (expr2.ElementType == QueryElementType.SearchCondition)
+						{
+							expr2 = new SqlFunction(typeof(bool), "CASE", new ISqlExpression[] {
+								expr2,
+								new SqlValue(true),
+								new SqlValue(false)
+							});
+						}
+
+						// Build the new predicate.
+						var newPredicate = new SqlPredicate.ExprExpr(expr1, predicate.Operator, expr2, predicate.WithNull);
 						var newCondition = new SqlCondition(condition.IsNot, newPredicate, condition.IsOr);
 						conditions.Add(newCondition);
+
+						// Set the flag to build a new SqlSearchCondition using the new conditions.
 						buildNew = true;
 					}
 					else
 					{
+						// Untransformed conditions should be kept.
 						conditions.Add(condition);
 					}
 				}
 
 				if(buildNew)
 				{
+					// We must return a new SqlSearchCondition.
+					// Modifying the existing one will break the library because the result is check for reference equality.
 					return new SqlSearchCondition(conditions);
 				}
 			}
