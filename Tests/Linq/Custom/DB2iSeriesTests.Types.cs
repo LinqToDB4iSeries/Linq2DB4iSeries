@@ -333,32 +333,44 @@ namespace Tests.DataProvider
 		[Test]
 		public void TestString([IncludeDataSources(TestProvNameDb2i.All)] string context)
 		{
+			string ExecuteScalarTest(DataConnection conn, string value, string castTo = null)
+			{
+				var result =  conn.ExecuteScalar<string>(value, castTo);
+
+				if (TestProvNameDb2i.IsiSeriesAccessClient(context))
+				{
+					return result?.Trim();
+				}
+
+				return result;
+			}
+
 			using (var conn = new DataConnection(context))
 			{
 				var asciiText = "123ab"; var quotedAsciiText = asciiText.AsQuoted();
 				var unicodeText = "αβγδε"; var quotedUnicodeText = unicodeText.AsQuoted();
 
-				Assert.That(conn.ExecuteScalar<string>(quotedAsciiText, "char(5)"), Is.EqualTo(asciiText));
-				Assert.That(conn.ExecuteScalar<string>(quotedAsciiText, "char(20)"), Is.EqualTo(asciiText));
-				Assert.That(conn.ExecuteScalar<string>("NULL", "char(5)"), Is.Null);
+				Assert.That(ExecuteScalarTest(conn, quotedAsciiText, "char(5)"), Is.EqualTo(asciiText));
+				Assert.That(ExecuteScalarTest(conn, quotedAsciiText, "char(20)"), Is.EqualTo(asciiText));
+				Assert.That(ExecuteScalarTest(conn, "NULL", "char(5)"), Is.Null);
 
-				Assert.That(conn.ExecuteScalar<string>(quotedAsciiText, "varchar(5)"), Is.EqualTo(asciiText));
-				Assert.That(conn.ExecuteScalar<string>(quotedAsciiText, "varchar(20)"), Is.EqualTo(asciiText));
-				Assert.That(conn.ExecuteScalar<string>("NULL", "varchar(5)"), Is.Null);
+				Assert.That(ExecuteScalarTest(conn, quotedAsciiText, "varchar(5)"), Is.EqualTo(asciiText));
+				Assert.That(ExecuteScalarTest(conn, quotedAsciiText, "varchar(20)"), Is.EqualTo(asciiText));
+				Assert.That(ExecuteScalarTest(conn, "NULL", "varchar(5)"), Is.Null);
 
-				Assert.That(conn.ExecuteScalar<string>(quotedAsciiText, "clob"), Is.EqualTo(asciiText));
-				Assert.That(conn.ExecuteScalar<string>("NULL", "clob"), Is.Null);
+				Assert.That(ExecuteScalarTest(conn, quotedAsciiText, "clob"), Is.EqualTo(asciiText));
+				Assert.That(ExecuteScalarTest(conn, "NULL", "clob"), Is.Null);
 
-				Assert.That(conn.ExecuteScalar<string>(quotedUnicodeText, "nchar(5)"), Is.EqualTo(unicodeText));
-				//Assert.That(conn.ExecuteScalar<string>(quotedUnicodeText, "nchar(20)"), Is.EqualTo(unicodeText));
-				Assert.That(conn.ExecuteScalar<string>("NULL", "nchar(5)"), Is.Null);
+				Assert.That(ExecuteScalarTest(conn, quotedUnicodeText, "nchar(5)"), Is.EqualTo(unicodeText));
+				//Assert.That(ExecuteScalarTest(conn, quotedUnicodeText, "nchar(20)"), Is.EqualTo(unicodeText));
+				Assert.That(ExecuteScalarTest(conn, "NULL", "nchar(5)"), Is.Null);
 
-				Assert.That(conn.ExecuteScalar<string>(quotedUnicodeText, "nvarchar(5)"), Is.EqualTo(unicodeText));
-				Assert.That(conn.ExecuteScalar<string>(quotedUnicodeText, "nvarchar(20)"), Is.EqualTo(unicodeText));
-				Assert.That(conn.ExecuteScalar<string>("NULL", "nvarchar(5)"), Is.Null);
+				Assert.That(ExecuteScalarTest(conn, quotedUnicodeText, "nvarchar(5)"), Is.EqualTo(unicodeText));
+				Assert.That(ExecuteScalarTest(conn, quotedUnicodeText, "nvarchar(20)"), Is.EqualTo(unicodeText));
+				Assert.That(ExecuteScalarTest(conn, "NULL", "nvarchar(5)"), Is.Null);
 
-				Assert.That(conn.ExecuteScalar<string>(quotedUnicodeText, "nclob"), Is.EqualTo(unicodeText));
-				Assert.That(conn.ExecuteScalar<string>("NULL", "nclob"), Is.Null);
+				Assert.That(ExecuteScalarTest(conn, quotedUnicodeText, "nclob"), Is.EqualTo(unicodeText));
+				Assert.That(ExecuteScalarTest(conn, "NULL", "nclob"), Is.Null);
 
 				Assert.That(
 					conn.ExecuteScalarParameter<string>(DataParameter.Char("p", asciiText), "char(5)"),
