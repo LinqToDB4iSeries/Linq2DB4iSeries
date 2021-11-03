@@ -418,7 +418,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					break;
 				case DataType.Date:
 
-					if (ProviderType.IsAccessClient())
+					if (ProviderType.IsAccessClient() || ProviderType.IsOleDb())
 					{
 						//Date parameters will only accept iDb2Date or string representation of time
 						value = value switch
@@ -427,6 +427,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 							DateTimeOffset dateTimeOffset => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(DataType.Date, dateTimeOffset.DateTime, false),
 							_ => value
 						};
+					}
+
+					if (ProviderType.IsOleDb())
+					{
+						dataType = dataType.WithDataType(DataType.VarChar)
+							.WithDbType(Constants.DbTypes.TimeStamp);
 					}
 					break;
 				case DataType.Time:

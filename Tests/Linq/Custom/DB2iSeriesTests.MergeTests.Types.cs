@@ -56,7 +56,7 @@ namespace Tests.DataProvider
 			[Column("FieldDecimal")]
 			public decimal? FieldDecimal;
 
-			[Column("FieldDate")]
+			[Column("FieldDate", DataType = DataType.Date)]
 			public DateTime? FieldDate;
 
 			[Column("FieldTime")]

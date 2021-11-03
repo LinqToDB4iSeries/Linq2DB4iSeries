@@ -81,7 +81,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			if(percision == null)
 			{
-				return ".fffffff";
+				return ".ffffff";
 			}
 			else if(percision == 0)
 			{
