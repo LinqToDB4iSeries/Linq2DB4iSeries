@@ -218,7 +218,7 @@ namespace Tests.DataProvider
 					conn.ExecuteScalarParameter<DateTime>("p", "date", dateTime, DataType.Date), Is.EqualTo(dateTime));
 
 				//iSeries native provider cannot assign datetime parameter to date
-				if (!TestProvNameDb2i.IsiSeriesAccessClient(context))
+				if (!TestProvNameDb2i.IsiSeriesAccessClient(context) && !TestProvNameDb2i.IsiSeriesOleDb(context))
 				{
 					Assert.That(
 					conn.ExecuteScalarParameter<DateTime>("p", "date", dateTime), Is.EqualTo(dateTime));
