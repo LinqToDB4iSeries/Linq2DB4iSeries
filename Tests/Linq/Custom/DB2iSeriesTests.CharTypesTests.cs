@@ -99,7 +99,7 @@ namespace Tests.DataProvider
 
 
 		[Test]
-		public void StringTrimming([DataSources] string context)
+		public void StringTrimming([DataSources(TestProvNameDb2i.All_AccessClient)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
