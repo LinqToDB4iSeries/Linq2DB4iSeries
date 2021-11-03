@@ -8,9 +8,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 	class DB2iSeriesMultipleRowsHelper<T> : MultipleRowsHelper<T>
 	{
-		public DB2iSeriesMultipleRowsHelper(ITable<T> table, BulkCopyOptions options)
+		private readonly DB2iSeriesSqlProviderFlags db2ISeriesSqlProviderFlags;
+
+		public DB2iSeriesMultipleRowsHelper(ITable<T> table, BulkCopyOptions options, DB2iSeriesSqlProviderFlags db2ISeriesSqlProviderFlags)
 			: base(table, options)
 		{
+			this.db2ISeriesSqlProviderFlags = db2ISeriesSqlProviderFlags;
 		}
 
 		public override void BuildColumns(object item, Func<ColumnDescriptor, bool> skipConvert = null)
@@ -33,7 +36,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 				// wrap the parameter with a cast
 				var dbType = value == null ? columnType : DataConnection.MappingSchema.GetDataType(value.GetType());
-				var casttype = DataConnection.MappingSchema.GetDbTypeForCast(dbType).ToSqlString();
+				var casttype = DataConnection.MappingSchema.GetDbTypeForCast(this.db2ISeriesSqlProviderFlags, dbType).ToSqlString();
 
 				if (value == null)
 				{

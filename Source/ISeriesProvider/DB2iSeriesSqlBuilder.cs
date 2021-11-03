@@ -76,12 +76,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			StringBuilder.AppendLine();
 		}
 
-		//protected override void BuildFunction(SqlFunction func)
-		//{
-		//	func = ConvertFunctionParameters(func);
-		//	base.BuildFunction(func);
-		//}
-
 		protected override void BuildInsertOrUpdateQuery(SqlInsertOrUpdateStatement insertOrUpdate)
 		{
 			if (DB2iSeriesSqlProviderFlags.SupportsMergeStatement)
@@ -213,7 +207,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			//Null values need to be explicitly casted
 			if (expr is SqlValue value && value.Value == null)
 			{
-				var colType = MappingSchema.GetDbTypeForCast(new SqlDataType(value.ValueType)).ToSqlString();
+				var colType = MappingSchema.GetDbTypeForCast(this.DB2iSeriesSqlProviderFlags, new SqlDataType(value.ValueType)).ToSqlString();
 				expr = new SqlExpression(expr.SystemType, "Cast({0} as {1})", Precedence.Primary, expr, new SqlExpression(colType, Precedence.Primary));
 			}
 
@@ -331,7 +325,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		//Use mapping schema and internal db datatype mapping information to get the appropriate dbType
 		protected override void BuildDataTypeFromDataType(SqlDataType type, bool forCreateTable)
 		{
-			var dbType = MappingSchema.GetDbDataType(type.SystemType, type.Type.DataType, type.Type.Length, type.Type.Precision, type.Type.Scale, forCreateTable, db2iSeriesSqlProviderFlags.SupportsNCharTypes);
+			var dbType = MappingSchema.GetDbDataType(type.SystemType, type.Type.DataType, type.Type.Length, type.Type.Precision, type.Type.Scale, false, db2iSeriesSqlProviderFlags.SupportsNCharTypes);
 
 			StringBuilder.Append(dbType.ToSqlString());
 		}
@@ -358,7 +352,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			//Parameter markers need to be explicitly type casted in many cases in iDB2
 			if (expr is SqlParameter parameter && parameter.Name != null)
 			{
-				var typeToCast = MappingSchema.GetDbTypeForCast(new SqlDataType(parameter.Type));
+				var typeToCast = MappingSchema.GetDbTypeForCast(this.DB2iSeriesSqlProviderFlags, new SqlDataType(parameter.Type));
 
 				//No type found - ommit cast
 				if (typeToCast.DataType == DataType.Undefined)
@@ -379,7 +373,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 			if (expr is SqlValue value && value.Value == null)
 			{
-				var typeToCast = MappingSchema.GetDbTypeForCast(new SqlDataType(value.ValueType));
+				var typeToCast = MappingSchema.GetDbTypeForCast(this.DB2iSeriesSqlProviderFlags, new SqlDataType(value.ValueType));
 
 				//No type found - ommit cast
 				if (typeToCast.DataType == DataType.Undefined)
@@ -408,8 +402,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			//otherwise return variant datatype, to differentiate from undefined
 			var typeToCast = value switch
 			{
-				SqlParameter sqlParameter when sqlParameter.Name != null => MappingSchema.GetDbTypeForCast(dataType),
-				SqlValue _ => MappingSchema.GetDbTypeForCast(dataType),
+				SqlParameter sqlParameter when sqlParameter.Name != null => MappingSchema.GetDbTypeForCast(this.DB2iSeriesSqlProviderFlags, dataType),
+				SqlValue _ => MappingSchema.GetDbTypeForCast(this.DB2iSeriesSqlProviderFlags, dataType),
 				_ => new DbDataType(null, DataType.Variant)
 			};
 

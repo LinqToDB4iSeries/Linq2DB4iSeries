@@ -50,7 +50,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			sb.Append("CAST(").Append(value).Append(" AS BIGINT)");
 		}
 
-		public static void ConvertDateTimeToSql(StringBuilder stringBuilder, DataType datatype, DateTime value, bool quoted = true)
+		public static void ConvertDateTimeToSql(StringBuilder stringBuilder, DataType datatype, DateTime value, bool quoted = true, int? percision = null)
 		{
 			var format = datatype switch
 			{
@@ -59,7 +59,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 				_ => value.Millisecond == 0 ?
 						"{0:yyyy-MM-dd HH:mm:ss}" :
-						"{0:yyyy-MM-dd HH:mm:ss.fffffff}"
+						$"{{0:yyyy-MM-dd HH:mm:ss{getMilisecondsFormat(percision)}}}"
 			};
 
 			if (quoted) stringBuilder.Append("'");
@@ -67,11 +67,30 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			if (quoted) stringBuilder.Append("'");
 		}
 
-		public static string ConvertDateTimeToSql(DataType datatype, DateTime value, bool quoted = true)
+		public static string ConvertDateTimeToSql(DataType datatype, DateTime value, bool quoted = true, int? percision = null)
 		{
 			var sb = new StringBuilder();
-			ConvertDateTimeToSql(sb, datatype, value, quoted);
+			ConvertDateTimeToSql(sb, datatype, value, quoted, percision);
 			return sb.ToString();
+		}
+
+		/// <summary>
+		/// The Ole Db provider requires DateTime strings to match the DB type's percision.
+		/// </summary>
+		private static string getMilisecondsFormat(int? percision)
+		{
+			if(percision == null)
+			{
+				return ".fffffff";
+			}
+			else if(percision == 0)
+			{
+				return string.Empty;
+			}
+			else
+			{
+				return $".{new string('f', percision.Value)}";
+			}
 		}
 
 		public static void ConvertTimeToSql(StringBuilder stringBuilder, TimeSpan time, bool quoted = true)
@@ -190,9 +209,25 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					"yyyy-MM-dd-HH.mm.ss.ffffffffff",
 					"yyyy-MM-dd-HH.mm.ss.fffffffffff",
 					"yyyy-MM-dd-HH.mm.ss.ffffffffffff",
+					"HH.mm.ss",
 				},
 				CultureInfo.InvariantCulture,
 				DateTimeStyles.None);
+		}
+
+		public static TimeSpan ParseTimeSpan(string value)
+		{
+			if (TimeSpan.TryParse(value, out var res))
+				return res;
+
+			return TimeSpan.ParseExact(
+				value,
+				new[]
+				{
+					@"hh\.mm\.ss",
+				},
+				CultureInfo.InvariantCulture,
+				TimeSpanStyles.None);
 		}
 	}
 }

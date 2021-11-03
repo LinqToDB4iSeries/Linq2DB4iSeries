@@ -148,7 +148,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				options.MaxBatchSize = MAX_ALLOWABLE_MULTIPLE_ROWS_BATCH_SIZE;
 			}
 
-			return MultipleRowsCopy2(new DB2iSeriesMultipleRowsHelper<T>(table, options), source, " FROM " + Constants.SQL.DummyTableName());
+			var rowHelper = new DB2iSeriesMultipleRowsHelper<T>(table, options, this.dataProvider.DB2iSeriesSqlProviderFlags);
+
+			return MultipleRowsCopy2(rowHelper, source, " FROM " + Constants.SQL.DummyTableName());
 		}
 
 		protected override Task<BulkCopyRowsCopied> MultipleRowsCopyAsync<T>(ITable<T> table, BulkCopyOptions options, IEnumerable<T> source, CancellationToken cancellationToken)
@@ -158,7 +160,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				options.MaxBatchSize = MAX_ALLOWABLE_MULTIPLE_ROWS_BATCH_SIZE;
 			}
 
-			return MultipleRowsCopy2Async(new DB2iSeriesMultipleRowsHelper<T>(table, options), source, " FROM " + Constants.SQL.DummyTableName(), cancellationToken);
+			var rowHelper = new DB2iSeriesMultipleRowsHelper<T>(table, options, this.dataProvider.DB2iSeriesSqlProviderFlags);
+
+			return MultipleRowsCopy2Async(rowHelper, source, " FROM " + Constants.SQL.DummyTableName(), cancellationToken);
 		}
 
 #if !NETFRAMEWORK
@@ -168,8 +172,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			{
 				options.MaxBatchSize = MAX_ALLOWABLE_MULTIPLE_ROWS_BATCH_SIZE;
 			}
+			
+			var rowHelper = new DB2iSeriesMultipleRowsHelper<T>(table, options, this.dataProvider.DB2iSeriesSqlProviderFlags);
 
-			return MultipleRowsCopy2Async(new DB2iSeriesMultipleRowsHelper<T>(table, options), source, " FROM " + Constants.SQL.DummyTableName(), cancellationToken);
+			return MultipleRowsCopy2Async(rowHelper, source, " FROM " + Constants.SQL.DummyTableName(), cancellationToken);
 		}
 #endif
 	}

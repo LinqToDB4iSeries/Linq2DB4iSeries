@@ -11,7 +11,8 @@
 			bool supportsNamedParameters,
 			bool supportsMergeStatement,
 			bool supportsNCharTypes,
-			bool supportsDropTableIfExists)
+			bool supportsDropTableIfExists,
+			bool supportsArbitraryTimeStampPercision)
 		{
 			SupportsOffsetClause = supportsOffsetClause;
 			SupportsTruncateTable = supportsTruncateTable;
@@ -19,6 +20,7 @@
 			SupportsMergeStatement = supportsMergeStatement;
 			SupportsNCharTypes = supportsNCharTypes;
 			SupportsDropTableIfExists = supportsDropTableIfExists;
+			SupportsArbitraryTimeStampPercision = supportsArbitraryTimeStampPercision;
 		}
 
 		public DB2iSeriesSqlProviderFlags(SqlProviderFlags sqlProviderFlags)
@@ -28,7 +30,8 @@
 				 supportsNamedParameters: sqlProviderFlags.CustomFlags.Contains(Constants.ProviderFlags.SupportsNamedParameters),
 				 supportsMergeStatement: sqlProviderFlags.CustomFlags.Contains(Constants.ProviderFlags.SupportsMergeStatement),
 				 supportsNCharTypes: sqlProviderFlags.CustomFlags.Contains(Constants.ProviderFlags.SupportsNCharTypes),
-				 supportsDropTableIfExists: sqlProviderFlags.CustomFlags.Contains(Constants.ProviderFlags.SupportsDropTableIfExists))
+				 supportsDropTableIfExists: sqlProviderFlags.CustomFlags.Contains(Constants.ProviderFlags.SupportsDropTableIfExists),
+				 supportsArbitraryTimeStampPercision: sqlProviderFlags.CustomFlags.Contains(Constants.ProviderFlags.SupportsArbitraryTimeStampPercision))
 		{
 
 		}
@@ -40,7 +43,8 @@
 				 supportsNamedParameters: options.ProviderType.IsIBM(),
 				 supportsMergeStatement: options.SupportsMergeStatement,
 				 supportsNCharTypes: options.SupportsNCharTypes,
-				 supportsDropTableIfExists: options.SupportsDropIfExists)
+				 supportsDropTableIfExists: options.SupportsDropIfExists,
+				 supportsArbitraryTimeStampPercision: options.SupportsArbitraryTimeStampPercision)
 		{
 
 		}
@@ -54,7 +58,8 @@
 				 supportsNamedParameters: providerType.IsIBM(),
 				 supportsMergeStatement: version >= DB2iSeriesVersion.V7_1,
 				 supportsNCharTypes: version >= DB2iSeriesVersion.V7_1,
-				 supportsDropTableIfExists: version >= DB2iSeriesVersion.V7_4
+				 supportsDropTableIfExists: version >= DB2iSeriesVersion.V7_4,
+				 supportsArbitraryTimeStampPercision: version >= DB2iSeriesVersion.V7_2
 				 )
 		{
 
@@ -66,6 +71,7 @@
 		public bool SupportsMergeStatement { get; }
 		public bool SupportsNCharTypes { get; }
 		public bool SupportsDropTableIfExists { get; }
+		public bool SupportsArbitraryTimeStampPercision { get; }
 
 		public void SetCustomFlags(SqlProviderFlags sqlProviderFlags)
 		{
@@ -75,6 +81,7 @@
 			sqlProviderFlags.SetFlag(Constants.ProviderFlags.SupportsMergeStatement, SupportsMergeStatement);
 			sqlProviderFlags.SetFlag(Constants.ProviderFlags.SupportsNCharTypes, SupportsNCharTypes);
 			sqlProviderFlags.SetFlag(Constants.ProviderFlags.SupportsDropTableIfExists, SupportsDropTableIfExists);
+			sqlProviderFlags.SetFlag(Constants.ProviderFlags.SupportsArbitraryTimeStampPercision, SupportsArbitraryTimeStampPercision);
 		}
 	}
 }

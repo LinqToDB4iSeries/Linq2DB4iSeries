@@ -244,7 +244,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			};
 		}
 
-		public static DbDataType GetDbTypeForCast(SqlDataType type, MappingSchema mappingSchema)
+		public static DbDataType GetDbTypeForCast(SqlDataType type, MappingSchema mappingSchema, DB2iSeriesSqlProviderFlags flags)
 		{
 			if (!string.IsNullOrEmpty(type.Type.DbType))
 			{
@@ -317,7 +317,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					case DataType.DateTime:
 					case DataType.DateTimeOffset:
 					case DataType.DateTime2:
-						type = new SqlDataType(new DbDataType(type.Type.SystemType, DataType.DateTime, Constants.DbTypes.TimeStamp, null, null, null));
+						if(flags.SupportsArbitraryTimeStampPercision)
+							type = new SqlDataType(new DbDataType(type.Type.SystemType, DataType.DateTime, Constants.DbTypes.TimeStamp, null, type.Type.Precision, null));
+						else
+							type = new SqlDataType(new DbDataType(type.Type.SystemType, DataType.DateTime, Constants.DbTypes.TimeStamp, null, null, null));
 						break;
 					default: break;
 				}

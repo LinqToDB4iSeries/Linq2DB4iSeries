@@ -38,9 +38,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return DB2iSeriesDbTypes.GetDbDataType(systemType, dataType, length, precision, scale, mappingSchema.IsGuidMappedAsString(), forceDefaultAttributes, supportsNCharTypes);
 		}
 
-		public static DbDataType GetDbTypeForCast(this MappingSchema mappingSchema, SqlDataType type)
+		public static DbDataType GetDbTypeForCast(this MappingSchema mappingSchema, DB2iSeriesSqlProviderFlags flags, SqlDataType type)
 		{
-			return DB2iSeriesDbTypes.GetDbTypeForCast(type, mappingSchema);
+			return DB2iSeriesDbTypes.GetDbTypeForCast(type, mappingSchema, flags);
 		}
 
 		public static IDbConnection GetProviderConnection(this DataConnection dataConnection)

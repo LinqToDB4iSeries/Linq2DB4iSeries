@@ -261,6 +261,34 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						// Set the flag to build a new SqlSearchCondition using the new conditions.
 						buildNew = true;
 					}
+					else if(condition.Predicate is SqlPredicate.ExprExpr p2
+						&& (p2.Expr1.ElementType == QueryElementType.SqlParameter
+						&& p2.Expr2.ElementType == QueryElementType.SqlField
+						|| p2.Expr1.ElementType == QueryElementType.SqlField
+						&& p2.Expr2.ElementType == QueryElementType.SqlParameter))
+					{
+						var fieldType = p2.Expr1.ElementType switch
+						{
+							QueryElementType.SqlField => ((SqlField)p2.Expr1).Type,
+							_ => ((SqlField)p2.Expr2).Type
+						};
+
+						var param = p2.Expr1.ElementType switch
+						{
+							QueryElementType.SqlParameter => (SqlParameter)p2.Expr1,
+							_ => (SqlParameter)p2.Expr2
+						};
+
+						if(fieldType != null && param.Type.DataType == DataType.Undefined)
+						{
+							param.Type = param.Type.WithDataType(fieldType.Value.DataType)
+								.WithScale(fieldType.Value.Scale)
+								.WithLength(fieldType.Value.Length)
+								.WithPrecision(fieldType.Value.Precision);
+						}
+
+						conditions.Add(condition);
+					}
 					else
 					{
 						// Untransformed conditions should be kept.

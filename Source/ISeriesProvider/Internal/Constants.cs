@@ -11,6 +11,7 @@
 			public const string SupportsMergeStatement = "SupportsMergeStatement";
 			public const string SupportsNCharTypes = "SupportsNCharTypes";
 			public const string SupportsDropTableIfExists = "SupportsDropTableIfExists";
+			public const string SupportsArbitraryTimeStampPercision = "SupportsArbitraryTimeStampPercision";
 		}
 
 		public static class DbTypes

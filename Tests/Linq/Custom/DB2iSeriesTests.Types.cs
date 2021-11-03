@@ -643,30 +643,28 @@ namespace Tests.DataProvider
 			[Column]
 			public TimeSpan Time { get; set; }
 
+			// Percision must be explicitly stated from anything other than the default of 6.
 			[Column(Precision = 0)]
 			public DateTime TimeStamp0 { get; set; }
 
-			[Column(DbType = "timestamp(1)")]
+			[Column(Precision = 1)]
 			public DateTime TimeStamp1 { get; set; }
 
 			[Column(Precision = 2)]
 			public DateTime TimeStamp2 { get; set; }
 
-			//[Column(DbType = "timestamp(3)")]
 			[Column(Precision = 3)]
 			public DateTime TimeStamp3 { get; set; }
 
 			[Column(Precision = 4)]
 			public DateTime TimeStamp4 { get; set; }
 
-			//[Column(DbType = "TimeStamp(5)")]
 			[Column(Precision = 5)]
 			public DateTime TimeStamp5 { get; set; }
 
 			[Column(Precision = 6)]
 			public DateTime TimeStamp6 { get; set; }
 
-			//[Column(DbType = "timestamp(7)")]
 			[Column(Precision = 7)]
 			public DateTime TimeStamp7 { get; set; }
 

@@ -25,6 +25,7 @@
 			SupportsMergeStatement = version >= DB2iSeriesVersion.V7_1;
 			SupportsNCharTypes = version >= DB2iSeriesVersion.V7_1;
 			SupportsDropIfExists = version >= DB2iSeriesVersion.V7_4;
+			SupportsArbitraryTimeStampPercision = version >= DB2iSeriesVersion.V7_2;
 		}
 
 		public DB2iSeriesProviderOptions()
@@ -44,6 +45,7 @@
 		public bool SupportsMergeStatement { get; set; }
 		public bool SupportsNCharTypes { get; set; }
 		public bool SupportsDropIfExists { get; set; }
+		public bool SupportsArbitraryTimeStampPercision { get; set; }
 		public bool MapGuidAsString { get; set; }
 	}
 }
