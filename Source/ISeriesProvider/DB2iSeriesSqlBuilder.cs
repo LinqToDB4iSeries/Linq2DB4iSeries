@@ -458,7 +458,28 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					if (ep.Expr1 is SqlFunction function
 						&& function.Name == "Date"
 						&& ep.Expr2 is SqlParameter parameter)
+					{
 						parameter.Type = parameter.Type.WithDataType(DataType.Date);
+
+						if (Provider.ProviderType.IsOleDb())
+						{
+							parameter.ValueConverter = obj =>
+							{
+								if (obj == null) return null;
+
+								if (obj is DateTime dt)
+								{
+									return dt.ToString("yyyy-MM-dd");
+								}
+								else if (obj is DateTimeOffset dto)
+								{
+									return dto.ToString("yyyy-MM-dd");
+								}
+
+								return obj;
+							};
+						}
+					}
 
 					break;
 			}
