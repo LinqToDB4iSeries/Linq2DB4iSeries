@@ -88,7 +88,14 @@ namespace Tests.DataProvider
 					TestType<byte[]>(conn, "blobDataType", DataType.VarBinary, skipDefaultNull: true, skipUndefinedNull: true,
 						skipDefault: true, skipUndefined: true), Is.EqualTo(new byte[] { 0xF2, 0xF3, 0xF4 }));
 
-				Assert.That(TestType<string>(conn, "graphicDataType", DataType.Char), Is.EqualTo("graphic"));
+				var sot = TestType<string>(conn, "graphicDataType", DataType.Char);
+
+				if(TestProvNameDb2i.IsiSeriesAccessClient(context))
+				{
+					sot = sot.Trim();
+				}
+
+				Assert.That(sot, Is.EqualTo("graphic"));
 				Assert.That(TestType<string>(conn, "vargraphicDataType", DataType.VarChar), Is.EqualTo("vargraphic"));
 
 				Assert.That(TestType<DateTime?>(conn, "dateDataType", DataType.Date, skipDefault: true, skipUndefined: true),
