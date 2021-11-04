@@ -42,10 +42,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static void ConvertDoubleToSql(StringBuilder sb, double value)
 		{
-			sb.Append("CAST(").Append(value).Append(" AS DOUBLE)");
+			sb.Append("CAST(").Append(value.ToString("R")).Append(" AS DOUBLE)");
 		}
 
-		public static void ConvertInt64ToSql(StringBuilder sb, double value)
+		public static void ConvertInt64ToSql(StringBuilder sb, long value)
 		{
 			sb.Append("CAST(").Append(value).Append(" AS BIGINT)");
 		}
