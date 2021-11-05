@@ -224,6 +224,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		private void SetupOdbc()
 		{
 			SqlProviderFlags.IsParameterOrderDependent = true;
+
+			var adapter = (OdbcProviderAdapter)Adapter.GetInstance();
+
+			var stringWrapper = GetStaticMethodWrapper(typeof(string), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.TrimString));
+
+			SetProviderField(typeof(string), typeof(string), "GetString", stringWrapper, dataReaderType: adapter.DataReaderType);
 		}
 
 		private void SetupOleDb()

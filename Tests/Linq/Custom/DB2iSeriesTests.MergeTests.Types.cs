@@ -348,10 +348,12 @@ namespace Tests.DataProvider
 
 		private static void AssertString(string? expected, string? actual, string provider)
 		{
-			if (TestProvNameDb2i.IsiSeriesOleDb(provider))
-				expected = expected?.TrimEnd(' ');
+			var exp = expected?.TrimEnd(' ');
 
-			Assert.AreEqual(expected, actual);
+			if (TestProvNameDb2i.IsiSeriesOleDb(provider) && (exp?.EndsWith("\0")).GetValueOrDefault())
+				exp = exp?.TrimEnd(' ', '\0');
+
+			Assert.AreEqual(exp, actual);
 		}
 
 		private static void AssertTime(TimeSpan? expected, TimeSpan? actual, string provider)
