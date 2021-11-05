@@ -235,6 +235,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			var dateTimeWrapper = GetStaticMethodWrapper(typeof(string), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.ParseDateTime));
 
 			SetProviderField(typeof(DateTime), typeof(string), "GetString", dateTimeWrapper, dataReaderType: adapter.DataReaderType);
+			SetProviderField(typeof(DateTimeOffset), typeof(string), "GetString", dateTimeWrapper, dataReaderType: adapter.DataReaderType);
 
 			var timeSpanWrapper = GetStaticMethodWrapper(typeof(string), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.ParseTimeSpan));
 
