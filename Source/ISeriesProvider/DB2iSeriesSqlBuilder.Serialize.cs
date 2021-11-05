@@ -198,10 +198,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static DateTime ParseDateTime(string value)
 		{
-			if (DateTime.TryParse(value, out var res))
-				return res;
-
-			return DateTime.ParseExact(
+			bool success = DateTime.TryParseExact(
 				value,
 				new[]
 				{
@@ -219,10 +216,18 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					"yyyy-MM-dd-HH.mm.ss.ffffffffff",
 					"yyyy-MM-dd-HH.mm.ss.fffffffffff",
 					"yyyy-MM-dd-HH.mm.ss.ffffffffffff",
-					"HH.mm.ss",
 				},
 				CultureInfo.InvariantCulture,
-				DateTimeStyles.None);
+				DateTimeStyles.None,
+				out var result);
+
+			if (success) return result;
+
+			success = DateTime.TryParseExact(value, "HH.mm.ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out result);
+
+			if (success) return new DateTime(1, 1, 1, result.Hour, result.Minute, result.Second);
+
+			return DateTime.Parse(value);
 		}
 
 		public static TimeSpan ParseTimeSpan(string value)
