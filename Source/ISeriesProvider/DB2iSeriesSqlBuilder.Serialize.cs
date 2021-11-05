@@ -186,6 +186,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return stringBuilder.ToString();
 		}
 
+		public static string TrimString(string value)
+		{
+			if (value == null)
+			{
+				return null;
+			}
+
+			return value.TrimEnd(' ');
+		}
+
 		public static DateTime ParseDateTime(string value)
 		{
 			if (DateTime.TryParse(value, out var res))
