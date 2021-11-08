@@ -755,8 +755,12 @@ namespace Tests.DataProvider
 				record = table.Where(_ => _.TimeStamp6 == TestTimeTypes.Data[0].TimeStamp6).Single();
 				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
 
-				record = table.Where(_ => _.TimeStamp7 == TestTimeTypes.Data[0].TimeStamp7).Single();
-				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+				// older versions of the iSeries OS do not support timespans with percision > 6.
+				if (TestProvNameDb2i.GetVersion(context) > LinqToDB.DataProvider.DB2iSeries.DB2iSeriesVersion.V7_2)
+				{
+					record = table.Where(_ => _.TimeStamp7 == TestTimeTypes.Data[0].TimeStamp7).Single();
+					Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+				}
 			}
 		}
 

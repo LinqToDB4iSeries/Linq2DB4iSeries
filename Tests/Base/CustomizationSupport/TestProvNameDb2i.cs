@@ -93,5 +93,34 @@ namespace Tests
 			else 
 				return provider;
 		}
+
+		public static DB2iSeriesVersion? GetVersion(string context)
+		{
+			if(! IsiSeries(context))
+			{
+				return null;
+			}
+
+			if(context.Contains("71"))
+			{
+				return DB2iSeriesVersion.V7_1;
+			}
+			else if (context.Contains("72"))
+			{
+				return DB2iSeriesVersion.V7_2;
+			}
+			else if (context.Contains("73"))
+			{
+				return DB2iSeriesVersion.V7_3;
+			}
+			else if (context.Contains("74"))
+			{
+				return DB2iSeriesVersion.V7_4;
+			}
+			else
+			{
+				return DB2iSeriesVersion.V7_1;
+			}
+		}
 	}
 }
