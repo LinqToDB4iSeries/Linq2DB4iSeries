@@ -85,6 +85,8 @@ namespace Tests
 		public static bool IsiSeriesOleDb(string provider) => provider.StartsWith(DB2iBase) && provider.ToUpper().Contains("OLEDB");
 		public static bool IsiSeriesDB2Connect(string provider) => provider.StartsWith(DB2iBase) && provider.ToUpper().Contains("CONNECT");
 		public static bool IsiSeriesAccessClient(string provider) => IsiSeries(provider) && !IsiSeriesODBC(provider) && !IsiSeriesOleDb(provider) && !IsiSeriesDB2Connect(provider);
+		
+		public static bool IsGAS(string provider) => provider.StartsWith(DB2iBase) && provider.ToUpper().Contains("GAS");
 
 		public static string GetFamily(string provider)
 		{
