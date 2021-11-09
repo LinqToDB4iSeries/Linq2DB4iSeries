@@ -20,11 +20,11 @@
 			},
 			"DB2.iSeries.OleDb.Base": {
 				"Provider": "DB2.iSeries.OleDb.74",
-				"ConnectionString": "Provider=IBMDASQL;Data Source={HOST};User Id={USER};Password={PASSWORD};Default Collection={DEFAULT_SCHEMA};Convert Date Time To Char=FALSE;Library List={LIBRARY_LIST};Maximum Decimal Precision=63;Maximum Decimal Scale=63;Naming Convention=0"
+				"ConnectionString": "Provider=IBMDASQL;Data Source={HOST};User Id={USER};Password={PASSWORD};Default Collection={DEFAULT_SCHEMA};Convert Date Time To Char=TRUE;Library List={LIBRARY_LIST};Maximum Decimal Precision=63;Maximum Decimal Scale=63;Naming Convention=0"
 			},
 			"DB2.iSeries.OleDb.Base.GAS": {
 				"Provider": "DB2.iSeries.OleDb.74.GAS",
-				"ConnectionString": "Provider=IBMDASQL;Data Source={HOST};User Id={USER};Password={PASSWORD};Default Collection={DEFAULT_SCHEMA};Convert Date Time To Char=FALSE;Library List={LIBRARY_LIST};Maximum Decimal Precision=63;Maximum Decimal Scale=63;Naming Convention=0"
+				"ConnectionString": "Provider=IBMDASQL;Data Source={HOST};User Id={USER};Password={PASSWORD};Default Collection={DEFAULT_SCHEMA};Convert Date Time To Char=TRUE;Library List={LIBRARY_LIST};Maximum Decimal Precision=63;Maximum Decimal Scale=63;Naming Convention=0"
 			},
 			"DB2.iSeries.DB2Connect.Base": {
 				"Provider": "DB2.iSeries.DB2Connect.74",
