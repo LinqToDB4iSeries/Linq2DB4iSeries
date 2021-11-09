@@ -3,7 +3,7 @@
 	<Import Project="linq2db.Default.props" />
 
 	<PropertyGroup>
-		<TargetFrameworks>net472;netcoreapp3.1;net5.0</TargetFrameworks>
+		<TargetFrameworks>net472;netcoreapp3.1</TargetFrameworks>
 		<Configurations>Debug;Release;</Configurations>
 		<NoWarn>$(NoWarn);CS0649;CS0429</NoWarn>
 		<AssemblyOriginatorKeyFile>..\..\Build\linq2db.snk</AssemblyOriginatorKeyFile>
