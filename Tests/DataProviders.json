@@ -250,38 +250,5 @@
 			"DB2.iSeries.DB2Connect.73.GAS",
 			"DB2.iSeries.DB2Connect.74.GAS"
 		]
-	},
-	"NET50": {
-		"BasedOn": "LocalConnectionStrings",
-		"DefaultConfiguration": "DB2.iSeries.OleDb.74",
-		"Providers":
-		[
-			"DB2.iSeries.ODBC.71",
-			"DB2.iSeries.ODBC.72",
-			"DB2.iSeries.ODBC.73",
-			"DB2.iSeries.ODBC.74",
-			"DB2.iSeries.ODBC.71.GAS",
-			"DB2.iSeries.ODBC.72.GAS",
-			"DB2.iSeries.ODBC.73.GAS",
-			"DB2.iSeries.ODBC.74.GAS",
-
-			"DB2.iSeries.OleDb.71",
-			"DB2.iSeries.OleDb.72",
-			"DB2.iSeries.OleDb.73",
-			"DB2.iSeries.OleDb.74",
-			"DB2.iSeries.OleDb.71.GAS",
-			"DB2.iSeries.OleDb.72.GAS",
-			"DB2.iSeries.OleDb.73.GAS",
-			"DB2.iSeries.OleDb.74.GAS",
-
-			"DB2.iSeries.DB2Connect.71",
-			"DB2.iSeries.DB2Connect.72",
-			"DB2.iSeries.DB2Connect.73",
-			"DB2.iSeries.DB2Connect.74",
-			"DB2.iSeries.DB2Connect.71.GAS",
-			"DB2.iSeries.DB2Connect.72.GAS",
-			"DB2.iSeries.DB2Connect.73.GAS",
-			"DB2.iSeries.DB2Connect.74.GAS"
-		]
 	}
 }
