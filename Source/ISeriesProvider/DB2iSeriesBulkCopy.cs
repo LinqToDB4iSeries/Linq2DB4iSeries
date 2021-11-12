@@ -12,10 +12,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		const int MAX_ALLOWABLE_MULTIPLE_ROWS_BATCH_SIZE = 100;
 
 		private readonly DB2iSeriesDataProvider dataProvider;
+		private readonly DB2iSeriesSqlProviderFlags dB2ISeriesSqlProviderFlags;
 
-		public DB2iSeriesBulkCopy(DB2iSeriesDataProvider dataProvider)
+		public DB2iSeriesBulkCopy(DB2iSeriesDataProvider dataProvider, DB2iSeriesSqlProviderFlags dB2ISeriesSqlProviderFlags)
 		{
 			this.dataProvider = dataProvider;
+			this.dB2ISeriesSqlProviderFlags = dB2ISeriesSqlProviderFlags;
 		}
 
 		protected override BulkCopyRowsCopied ProviderSpecificCopy<T>(
@@ -113,7 +115,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					if (connection != null)
 					{
 						var enumerator = source.GetAsyncEnumerator(cancellationToken);
-						await using (enumerator.ConfigureAwait(Configuration.ContinueOnCapturedContext))
+						await using (enumerator.ConfigureAwait(Common.Configuration.ContinueOnCapturedContext))
 						{
 							// call the synchronous provider-specific implementation as provider doesn't support async
 							return ProviderSpecificCopyImpl_DB2(
@@ -129,7 +131,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				}
 			}
 
-			return await MultipleRowsCopyAsync(table, options, source, cancellationToken).ConfigureAwait(Configuration.ContinueOnCapturedContext);
+			return await MultipleRowsCopyAsync(table, options, source, cancellationToken).ConfigureAwait(Common.Configuration.ContinueOnCapturedContext);
 		}
 
 		private static IEnumerable<T> AsyncToSyncEnumerable<T>(IAsyncEnumerator<T> enumerator)
@@ -148,7 +150,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				options.MaxBatchSize = MAX_ALLOWABLE_MULTIPLE_ROWS_BATCH_SIZE;
 			}
 
-			return MultipleRowsCopy2(new DB2iSeriesMultipleRowsHelper<T>(table, options), source, " FROM " + Constants.SQL.DummyTableName());
+			return MultipleRowsCopy2(new DB2iSeriesMultipleRowsHelper<T>(table, options, dB2ISeriesSqlProviderFlags), source, " FROM " + Constants.SQL.DummyTableName());
 		}
 
 		protected override Task<BulkCopyRowsCopied> MultipleRowsCopyAsync<T>(ITable<T> table, BulkCopyOptions options, IEnumerable<T> source, CancellationToken cancellationToken)
@@ -158,7 +160,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				options.MaxBatchSize = MAX_ALLOWABLE_MULTIPLE_ROWS_BATCH_SIZE;
 			}
 
-			return MultipleRowsCopy2Async(new DB2iSeriesMultipleRowsHelper<T>(table, options), source, " FROM " + Constants.SQL.DummyTableName(), cancellationToken);
+			return MultipleRowsCopy2Async(new DB2iSeriesMultipleRowsHelper<T>(table, options, dB2ISeriesSqlProviderFlags), source, " FROM " + Constants.SQL.DummyTableName(), cancellationToken);
 		}
 
 #if NATIVE_ASYNC
@@ -169,7 +171,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				options.MaxBatchSize = MAX_ALLOWABLE_MULTIPLE_ROWS_BATCH_SIZE;
 			}
 
-			return MultipleRowsCopy2Async(new DB2iSeriesMultipleRowsHelper<T>(table, options), source, " FROM " + Constants.SQL.DummyTableName(), cancellationToken);
+			return MultipleRowsCopy2Async(new DB2iSeriesMultipleRowsHelper<T>(table, options, dB2ISeriesSqlProviderFlags), source, " FROM " + Constants.SQL.DummyTableName(), cancellationToken);
 		}
 #endif
 	}

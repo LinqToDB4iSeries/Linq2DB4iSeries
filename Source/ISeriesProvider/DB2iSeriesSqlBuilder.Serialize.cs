@@ -40,16 +40,22 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return sb.ToString();
 		}
 
-		public static void ConvertDateTimeToSql(StringBuilder stringBuilder, DataType datatype, DateTime value, bool quoted = true)
+		private static readonly string[] sqlDateTimeFormats = Enumerable.Range(0, 12)
+			.Select(x => x switch
+			{
+				0 => " HH:mm:ss",
+				_ => $" HH:mm:ss.{new string('f', x)}",
+			})
+			.Select(x => $"{{0:yyyy-MM-dd{x}}}")
+			.ToArray();
+
+		public static void ConvertDateTimeToSql(StringBuilder stringBuilder, DataType datatype, DateTime value, bool quoted = true, int? precision = null)
 		{
 			var format = datatype switch
 			{
 				DataType.Date => "{0:yyyy-MM-dd}",
 				DataType.Time => "{0:HH:mm:ss}",
-
-				_ => value.Millisecond == 0 ?
-						"{0:yyyy-MM-dd HH:mm:ss}" :
-						"{0:yyyy-MM-dd HH:mm:ss.fffffff}"
+				_ => GetSqlDateTimeFormat(value.Millisecond, precision)
 			};
 
 			if (quoted) stringBuilder.Append('\'');
@@ -57,11 +63,26 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			if (quoted) stringBuilder.Append('\'');
 		}
 
-		public static string ConvertDateTimeToSql(DataType datatype, DateTime value, bool quoted = true)
+		public static string ConvertDateTimeToSql(DataType datatype, DateTime value, bool quoted = true, int? percision = null)
 		{
 			var sb = new StringBuilder();
-			ConvertDateTimeToSql(sb, datatype, value, quoted);
+			ConvertDateTimeToSql(sb, datatype, value, quoted, percision);
 			return sb.ToString();
+		}
+
+		/// <summary>
+		/// The Ole Db provider requires DateTime strings to match the DB type's percision.
+		/// </summary>
+		private static string GetSqlDateTimeFormat(int value, int? precision)
+		{
+			if (value == 0 || precision == 0)
+				return sqlDateTimeFormats[0];
+			else if (precision == null)
+				return sqlDateTimeFormats[6];
+			else if (precision.Value <= sqlDateTimeFormats.Length)
+				return sqlDateTimeFormats[precision.Value];
+			else
+				return $"{sqlDateTimeFormats[0]}.{new string('f', precision.Value)}";
 		}
 
 		public static void ConvertTimeToSql(StringBuilder stringBuilder, TimeSpan time, bool quoted = true)
@@ -76,6 +97,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			var sb = new StringBuilder();
 			ConvertTimeToSql(sb, time, quoted);
 			return sb.ToString();
+		}
+
+		public static void ConvertDoubleToSql(StringBuilder sb, double value)
+		{
+			sb.Append("CAST(").Append(value.ToString("R")).Append(" AS DOUBLE)");
+		}
+
+		public static void ConvertInt64ToSql(StringBuilder sb, long value)
+		{
+			sb.Append("CAST(").Append(value).Append(" AS BIGINT)");
 		}
 
 		public static void ConvertBinaryToSql(StringBuilder stringBuilder, byte[] value)
@@ -135,7 +166,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			{
 				ccsid = name.Substring(ccsidIndex);
 				name = name.Substring(0, ccsidIndex);
-			}	
+			}
 
 			var stringBuilder = new StringBuilder();
 
@@ -157,32 +188,47 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return stringBuilder.ToString();
 		}
 
+		public static string TrimString(string value)
+		{
+			if (value == null)
+			{
+				return null;
+			}
+
+			return value.TrimEnd(' ');
+		}
+
+		private static readonly string[] parseDateTimeFormats = Enumerable.Range(-1, 14)
+			.Select(x => x switch
+			{
+				-1 => "",
+				0 => "-HH.mm.ss",
+				_ => $"-HH.mm.ss.{new string('f', x)}",
+			})
+			.Select(x => $"yyyy-MM-dd{x}")
+			.ToArray();
+
+		private static readonly string[] parseTimeFormats = new[]
+		{
+			@"hh\.mm\.ss"
+		};
+
 		public static DateTime ParseDateTime(string value)
 		{
-			if (DateTime.TryParse(value, out var res))
-				return res;
+			if (DateTime.TryParseExact(value, parseDateTimeFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var result))
+				return result;
+			else if (DateTime.TryParseExact(value, "HH.mm.ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out result))
+				return new DateTime(1, 1, 1, result.Hour, result.Minute, result.Second);
+			else
+				return DateTime.Parse(value);
+		}
 
-			return DateTime.ParseExact(
-				value,
-				new[]
-				{
-					"yyyy-MM-dd",
-					"yyyy-MM-dd-HH.mm.ss",
-					"yyyy-MM-dd-HH.mm.ss.f",
-					"yyyy-MM-dd-HH.mm.ss.ff",
-					"yyyy-MM-dd-HH.mm.ss.fff",
-					"yyyy-MM-dd-HH.mm.ss.ffff",
-					"yyyy-MM-dd-HH.mm.ss.fffff",
-					"yyyy-MM-dd-HH.mm.ss.ffffff",
-					"yyyy-MM-dd-HH.mm.ss.fffffff",
-					"yyyy-MM-dd-HH.mm.ss.ffffffff",
-					"yyyy-MM-dd-HH.mm.ss.fffffffff",
-					"yyyy-MM-dd-HH.mm.ss.ffffffffff",
-					"yyyy-MM-dd-HH.mm.ss.fffffffffff",
-					"yyyy-MM-dd-HH.mm.ss.ffffffffffff",
-				},
-				CultureInfo.InvariantCulture,
-				DateTimeStyles.None);
+		public static TimeSpan ParseTimeSpan(string value)
+		{
+			if (TimeSpan.TryParse(value, out var res))
+				return res;
+			else 
+				return TimeSpan.ParseExact(value, parseTimeFormats, CultureInfo.InvariantCulture, TimeSpanStyles.None);
 		}
 	}
 }

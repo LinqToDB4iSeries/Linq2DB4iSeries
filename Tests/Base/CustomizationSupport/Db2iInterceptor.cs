@@ -25,12 +25,16 @@ namespace Tests
 			{
 				//Test targets DB2 provider
 				case ("SchemaProviderTests", "DB2Test"):
+				case ("MiniProfilerTests", "TestDB2"):
+				case ("DB2Tests", _):
 				//Tests have internal logic based on BulkCopyType - Copied to custom tests
 				case ("BulkCopyTests", "KeepIdentity_SkipOnInsertTrue"):
 				case ("BulkCopyTests", "KeepIdentity_SkipOnInsertFalse"):
 				//Tests have property have space - Copied to custom tests
 				case ("DynamicColumnsTests", "SqlPropertyNoStoreNonIdentifier"):
 				case ("DynamicColumnsTests", "SqlPropertyNoStoreNonIdentifierGrouping"):
+				//Valid for DB2 but not DB2i - Test copied to custom
+				case ("DropTableTests", "DropSpecificDatabaseTableTest"):
 				//Test copied to custom to reduce default source row number
 				case ("MergeTests", "BigSource"):
 				//Tests passing provider specific parameter types - Generic linq2db test - Not applicable
@@ -43,14 +47,42 @@ namespace Tests
 				case ("MergeTests", "TestTypesInsertByMerge"):
 				case ("MergeTests", "TestMergeTypes"):
 				case ("MergeTests", "TestDB2NullsInSource"):
+				case ("Issue681Tests", "TestTableFQN"):
+				//Query incorrect for DB2i - Copied to custom tests
+				case ("DataConnectionTests", "EnumExecuteScalarTest"):
 				//Case valid for DB2 but not for DB2i
 				case ("Issue792Tests", "TestWithTransactionThrowsFromProvider"):
 				//Data not valid for DB2i
 				case ("Issue1287Tests", _):
+				case ("TableOptionsTests", "CheckExistenceTest"):
+				case ("TableOptionsTests", "CreateIfNotExistsTest"):
+				case ("TableOptionsTests", "CreateTempIfNotExistsTest"):
+				case ("TableOptionsTests", "DB2TableOptionsTest"):
+				case ("TableOptionsTests", "FluentMappingTest"):
+				case ("TableOptionsTests", "IsTemporaryFlagTest"):
+				case ("TableOptionsTests", "IsTemporaryMethodTest"):
+				case ("TableOptionsTests", "IsTemporaryMethodTest2"):
+				case ("TableOptionsTests", "IsTemporaryMethodTest3"):
+				case ("TableOptionsTests", "IsTemporaryOptionAsyncTest"):
+				case ("TableOptionsTests", "IsTemporaryOptionTest"):
+				case ("TableOptionsTests", "TableOptionsMethodTest"):
+				//Implicit transactions do not function properly in .NET
+				case ("DataConnectionTests", "TestDisposeFlagCloning962Test1"):
+				case ("DataConnectionTests", "TestDisposeFlagCloning962Test2"):
 				//Query contains invalid keyword permission
 				case ("Issue825Tests", "Test"):
+				//Test for unsupported WCF feature
+				case ("AsyncTests", "Test"):
+				case ("AsyncTests", "Test1"):
+				case ("AsyncTests", "TestForEach"):
+				//Invalid query in test
+				case ("DataExtensionsTests", "TestDataParameterMapping1"):
+				case ("DataExtensionsTests", "TestObject3"):
+				case ("DataExtensionsTests", "TestObject4"):
+				case ("DataExtensionsTests", "TestObject5"):
+				case ("DataExtensionsTests", "TestObject6"):
 					return Enumerable.Empty<string>();
-				
+
 				//Access client throws a different exception so it is excluded
 				case ("DataContextTests", "ProviderConnectionStringConstructorTest2"):
 					return contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_AccessClient));
