@@ -12,7 +12,7 @@
 			bool supportsMergeStatement,
 			bool supportsNCharTypes,
 			bool supportsDropTableIfExists,
-			bool supportsArbitraryTimeStampPercision)
+			bool supportsArbitraryTimeStampPrecision)
 		{
 			SupportsOffsetClause = supportsOffsetClause;
 			SupportsTruncateTable = supportsTruncateTable;
@@ -20,7 +20,7 @@
 			SupportsMergeStatement = supportsMergeStatement;
 			SupportsNCharTypes = supportsNCharTypes;
 			SupportsDropTableIfExists = supportsDropTableIfExists;
-			SupportsArbitraryTimeStampPercision = supportsArbitraryTimeStampPercision;
+			SupportsArbitraryTimeStampPrecision = supportsArbitraryTimeStampPrecision;
 		}
 
 		public DB2iSeriesSqlProviderFlags(SqlProviderFlags sqlProviderFlags)
@@ -31,7 +31,7 @@
 				 supportsMergeStatement: sqlProviderFlags.CustomFlags.Contains(Constants.ProviderFlags.SupportsMergeStatement),
 				 supportsNCharTypes: sqlProviderFlags.CustomFlags.Contains(Constants.ProviderFlags.SupportsNCharTypes),
 				 supportsDropTableIfExists: sqlProviderFlags.CustomFlags.Contains(Constants.ProviderFlags.SupportsDropTableIfExists),
-				 supportsArbitraryTimeStampPercision: sqlProviderFlags.CustomFlags.Contains(Constants.ProviderFlags.SupportsArbitraryTimeStampPercision))
+				 supportsArbitraryTimeStampPrecision: sqlProviderFlags.CustomFlags.Contains(Constants.ProviderFlags.SupportsArbitraryTimeStampPrecision))
 		{
 
 		}
@@ -44,7 +44,7 @@
 				 supportsMergeStatement: options.SupportsMergeStatement,
 				 supportsNCharTypes: options.SupportsNCharTypes,
 				 supportsDropTableIfExists: options.SupportsDropIfExists,
-				 supportsArbitraryTimeStampPercision: options.SupportsArbitraryTimeStampPercision)
+				 supportsArbitraryTimeStampPrecision: options.SupportsArbitraryTimeStampPrecision)
 		{
 
 		}
@@ -59,7 +59,7 @@
 				 supportsMergeStatement: version >= DB2iSeriesVersion.V7_1,
 				 supportsNCharTypes: version >= DB2iSeriesVersion.V7_1,
 				 supportsDropTableIfExists: version >= DB2iSeriesVersion.V7_4,
-				 supportsArbitraryTimeStampPercision: version >= DB2iSeriesVersion.V7_2
+				 supportsArbitraryTimeStampPrecision: version >= DB2iSeriesVersion.V7_2
 				 )
 		{
 
@@ -71,7 +71,7 @@
 		public bool SupportsMergeStatement { get; }
 		public bool SupportsNCharTypes { get; }
 		public bool SupportsDropTableIfExists { get; }
-		public bool SupportsArbitraryTimeStampPercision { get; }
+		public bool SupportsArbitraryTimeStampPrecision { get; }
 
 		public void SetCustomFlags(SqlProviderFlags sqlProviderFlags)
 		{
@@ -81,7 +81,7 @@
 			sqlProviderFlags.SetFlag(Constants.ProviderFlags.SupportsMergeStatement, SupportsMergeStatement);
 			sqlProviderFlags.SetFlag(Constants.ProviderFlags.SupportsNCharTypes, SupportsNCharTypes);
 			sqlProviderFlags.SetFlag(Constants.ProviderFlags.SupportsDropTableIfExists, SupportsDropTableIfExists);
-			sqlProviderFlags.SetFlag(Constants.ProviderFlags.SupportsArbitraryTimeStampPercision, SupportsArbitraryTimeStampPercision);
+			sqlProviderFlags.SetFlag(Constants.ProviderFlags.SupportsArbitraryTimeStampPrecision, SupportsArbitraryTimeStampPrecision);
 		}
 	}
 }

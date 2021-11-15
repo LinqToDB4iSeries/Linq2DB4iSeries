@@ -100,7 +100,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			DbSmallInt, DbInteger, DbBigInt,
 
-			DbDecimal, DbReal,DbFloat, DbDouble,
+			DbDecimal, DbReal, DbFloat, DbDouble,
 
 			DbTimestamp, DbDate, DbTime,
 
@@ -317,7 +317,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					case DataType.DateTime:
 					case DataType.DateTimeOffset:
 					case DataType.DateTime2:
-						type = new SqlDataType(new DbDataType(type.Type.SystemType, DataType.DateTime, Constants.DbTypes.TimeStamp, null, flags.SupportsArbitraryTimeStampPercision ? type.Type.Precision : null, null));
+						type = new SqlDataType(new DbDataType(type.Type.SystemType, DataType.DateTime, Constants.DbTypes.TimeStamp, null, flags.SupportsArbitraryTimeStampPrecision ? type.Type.Precision : null, null));
 						break;
 					default: break;
 				}

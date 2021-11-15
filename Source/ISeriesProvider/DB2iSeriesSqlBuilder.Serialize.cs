@@ -63,15 +63,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			if (quoted) stringBuilder.Append('\'');
 		}
 
-		public static string ConvertDateTimeToSql(DataType datatype, DateTime value, bool quoted = true, int? percision = null)
+		public static string ConvertDateTimeToSql(DataType datatype, DateTime value, bool quoted = true, int? precision = null)
 		{
 			var sb = new StringBuilder();
-			ConvertDateTimeToSql(sb, datatype, value, quoted, percision);
+			ConvertDateTimeToSql(sb, datatype, value, quoted, precision);
 			return sb.ToString();
 		}
 
 		/// <summary>
-		/// The Ole Db provider requires DateTime strings to match the DB type's percision.
+		/// The Ole Db provider requires DateTime strings to match the DB type's precision.
 		/// </summary>
 		private static string GetSqlDateTimeFormat(int value, int? precision)
 		{

@@ -10,18 +10,18 @@
 		<Nullable>disable</Nullable>
 	</PropertyGroup>
 	
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' OR '$(TargetFramework)' == 'net46' ">
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net45' OR '$(TargetFramework)' == 'net472' ">
 		<Reference Include="System.Data.Linq" />
 		<Reference Include="System.Data.DataSetExtensions" />
 	</ItemGroup>
-
-	<ItemGroup Condition=" '$(TargetFramework)' != 'net45' AND '$(TargetFramework)' != 'net46' ">
+	
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net45' AND '$(TargetFramework)' != 'net472' ">
 		<Compile Remove="DB2iSeriesAccessClientProviderAdapter.cs" />
 		<Compile Remove="DB2iSeriesBulkCopy.AccessClient.cs" />
 		<Compile Remove="DB2iSeriesAttributeReader.cs" />
 	</ItemGroup>
 
-	<ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.1' OR '$(TargetFramework)' == 'netcoreapp3.1' OR '$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'netcoreapp2.1' ">
+	<ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'net472' ">
 		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="5.0.0" />
 	</ItemGroup>
 
