@@ -113,7 +113,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			db2iSeriesSqlProviderFlags.SetCustomFlags(SqlProviderFlags);
 			mappingOptions.SetCustomFlags(SqlProviderFlags);
 
-			SetCharFieldToType<char>("CHAR", DataTools.GetCharExpression);
+			SetCharFieldToType<char>(Constants.DbTypes.Char, DataTools.GetCharExpression);
 			SetCharField(Constants.DbTypes.Char, (r, i) => r.GetString(i).TrimEnd(' '));
 			SetCharField(Constants.DbTypes.NChar, (r, i) => r.GetString(i).TrimEnd(' '));
 			SetCharField(Constants.DbTypes.Graphic, (r, i) => r.GetString(i).TrimEnd(' '));
@@ -211,8 +211,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			SqlProviderFlags.IsParameterOrderDependent = false;
 
-			SetCharFieldToType<char>(Constants.DbTypes.Char, DataTools.GetCharExpression);
-
 			var adapter = (DB2.DB2ProviderAdapter)Adapter.GetInstance();
 
 			SetProviderField(typeof(long), adapter.DB2Int64Type, adapter.GetDB2Int64ReaderMethod, dataReaderType: adapter.DataReaderType);
@@ -240,9 +238,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			var adapter = (OdbcProviderAdapter)Adapter.GetInstance();
 
-			var stringWrapper = GetStaticMethodWrapper(typeof(string), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.TrimString));
+			//var stringWrapper = GetStaticMethodWrapper(typeof(string), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.TrimString));
 
-			SetProviderField(typeof(string), typeof(string), "GetString", stringWrapper, dataReaderType: adapter.DataReaderType);
+			SetProviderField<IDataReader, string, string>((r, i) => r.GetString(i).TrimEnd(' '));
+			//SetProviderField(typeof(string), typeof(string), "GetString", stringWrapper, dataReaderType: adapter.DataReaderType);
 		}
 
 		private void SetupOleDb()
@@ -251,14 +250,18 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			var adapter = (OleDbProviderAdapter)Adapter.GetInstance();
 
-			var dateTimeWrapper = GetStaticMethodWrapper(typeof(string), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.ParseDateTime));
+			//var dateTimeWrapper = GetStaticMethodWrapper(typeof(string), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.ParseDateTime));
 
-			SetProviderField(typeof(DateTime), typeof(string), "GetString", dateTimeWrapper, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(DateTimeOffset), typeof(string), "GetString", dateTimeWrapper, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(DateTime), typeof(string), "GetString", dateTimeWrapper, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(DateTimeOffset), typeof(string), "GetString", dateTimeWrapper, dataReaderType: adapter.DataReaderType);
 
-			var timeSpanWrapper = GetStaticMethodWrapper(typeof(string), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.ParseTimeSpan));
+			//var timeSpanWrapper = GetStaticMethodWrapper(typeof(string), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.ParseTimeSpan));
 
-			SetProviderField(typeof(TimeSpan), typeof(string), "GetString", timeSpanWrapper, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(TimeSpan), typeof(string), "GetString", timeSpanWrapper, dataReaderType: adapter.DataReaderType);
+
+			SetProviderField<IDataReader, DateTime, string>((r, i) => DB2iSeriesSqlBuilder.ParseDateTime(r.GetString(i)));
+			SetProviderField<IDataReader, DateTimeOffset, string>((r, i) => DB2iSeriesSqlBuilder.ParseDateTime(r.GetString(i)));
+			SetProviderField<IDataReader, TimeSpan, string>((r, i) => DB2iSeriesSqlBuilder.ParseTimeSpan(r.GetString(i)));
 		}
 
 		private static Delegate GetPropertyWrapper(Type type, string propertyName)
