@@ -141,7 +141,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SqlProviderFlags.IsParameterOrderDependent = true;
 
 			var adapter = (DB2iSeriesAccessClientProviderAdapter)Adapter.GetInstance();
-
+			
 			SetProviderField(typeof(long), adapter.iDB2BigIntType, adapter.GetiDB2BigIntReaderMethod, dataReaderType: adapter.DataReaderType);
 			SetProviderField(typeof(byte[]), adapter.iDB2BinaryType, adapter.GetiDB2BinaryReaderMethod, dataReaderType: adapter.DataReaderType);
 			SetProviderField(typeof(byte[]), adapter.iDB2BlobType, adapter.GetiDB2BlobReaderMethod, dataReaderType: adapter.DataReaderType);
@@ -174,10 +174,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			var timeWrapper = GetPropertyWrapper(adapter.iDB2TimeType, "Value");
 
 			SetProviderField(typeof(DateTime), adapter.iDB2TimeType, adapter.GetiDB2TimeReaderMethod, timeWrapper, dataReaderType: adapter.DataReaderType);
-
-			var timeStampWrapper = GetRenderParseWrapper(adapter.iDB2TimeStampType, "ToNativeFormat", typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.ParseDateTime));
-
-			SetProviderField(typeof(DateTime), adapter.iDB2TimeStampType, adapter.GetiDB2TimeStampReaderMethod, timeStampWrapper, dataReaderType: adapter.DataReaderType);
+			//TODO: To Timestamp
+			SetProviderField(typeof(DateTime), adapter.iDB2TimeStampType, adapter.GetiDB2TimeStampReaderMethod, getTimeStampWrapper(adapter.iDB2TimeStampType), dataReaderType: adapter.DataReaderType);
 			SetProviderField(typeof(byte[]), adapter.iDB2VarBinaryType, adapter.GetiDB2VarBinaryReaderMethod, dataReaderType: adapter.DataReaderType);
 			
 			var varCharWrapper = GetRenderParseWrapper(adapter.iDB2VarCharType, nameof(object.ToString), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.TrimString));
@@ -189,6 +187,23 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			SetProviderField(typeof(string), adapter.iDB2VarGraphicType, adapter.GetiDB2VarGraphicReaderMethod, varGrphicWrapper, dataReaderType: adapter.DataReaderType);
 			SetProviderField(typeof(string), adapter.iDB2XmlType, adapter.GetiDB2XmlReaderMethod, dataReaderType: adapter.DataReaderType);
+
+			static Delegate getTimeStampWrapper(Type iDB2TimeStampType)
+			{
+				//Warning: iDB2TimeStampt produces wrong value for picoseconds when created from DateTime or the milliseconds overload
+				//It only works properly when parsing from string or using the picoseconds overload
+
+				//String render and parse variation
+				//return GetRenderParseWrapper(iDB2TimeStampType, "ToNativeFormat", typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.ParseDateTime));
+
+				//Calculation on inner DateTime and Picoseconds variations
+				var parameter = Expression.Parameter(iDB2TimeStampType);
+				var value = Expression.Property(parameter, "Value");
+				var picosecondValue = Expression.Property(parameter, "Picosecond");
+				Expression<Func<DateTime, long, DateTime>> f = (dt, p) => new DateTime(dt.Ticks - dt.Millisecond * 10000 + p / 100000);
+				var calc = Expression.Invoke(f, value, picosecondValue);
+				return Expression.Lambda(calc, parameter).Compile();
+			}
 		}
 #endif
 

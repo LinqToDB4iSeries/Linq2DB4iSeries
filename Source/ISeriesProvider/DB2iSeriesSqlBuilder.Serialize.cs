@@ -40,7 +40,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return sb.ToString();
 		}
 
-		private static readonly string[] sqlDateTimeFormats = Enumerable.Range(0, 12)
+		private static readonly string[] sqlDateTimeFormats = Enumerable.Range(0, 8)
 			.Select(x => x switch
 			{
 				0 => " HH:mm:ss",
@@ -82,7 +82,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			else if (precision.Value <= sqlDateTimeFormats.Length)
 				return sqlDateTimeFormats[precision.Value];
 			else
-				return $"{sqlDateTimeFormats[0]}.{new string('f', precision.Value)}";
+				return sqlDateTimeFormats.Last();
 		}
 
 		public static void ConvertTimeToSql(StringBuilder stringBuilder, TimeSpan time, bool quoted = true)
@@ -198,7 +198,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return value.TrimEnd(' ');
 		}
 
-		private static readonly string[] parseDateTimeFormats = Enumerable.Range(-1, 14)
+		private static readonly string[] parseDateTimeFormats = Enumerable.Range(-1, 9)
 			.Select(x => x switch
 			{
 				-1 => "",
