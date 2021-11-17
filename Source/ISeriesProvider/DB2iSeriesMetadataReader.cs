@@ -224,7 +224,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					newParams.Add(wrapper(param));
 					newParams.AddRange(expr.Parameters.Skip(1));
 
-					return new SqlExpression(expr.SystemType, expr.Expr, expr.Precedence, newParams.ToArray());
+					return new SqlExpression(expr.SystemType, expr.Expr, expr.Precedence, expr.Flags, newParams.ToArray());
 				}
 
 				// Wrap the whole expression.
