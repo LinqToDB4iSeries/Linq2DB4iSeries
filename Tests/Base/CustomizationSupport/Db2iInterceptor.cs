@@ -81,6 +81,14 @@ namespace Tests
 				case ("DataExtensionsTests", "TestObject4"):
 				case ("DataExtensionsTests", "TestObject5"):
 				case ("DataExtensionsTests", "TestObject6"):
+				//There is no collation in DB2i
+				case ("SqlExtensionsTests", "TestSqlCollate1"):
+				case ("SqlExtensionsTests", "TestSqlCollate2"):
+				//Unsupported table options
+				case ("CreateTempTableTests", "CreateTable_NoDisposeError"):
+				case ("CreateTempTableTests", "CreateTableAsyncCanceled"):
+				case ("CreateTempTableTests", "CreateTableAsyncCanceled2"):
+				case ("CreateTempTableTests", "CreateTable_NoDisposeErrorAsync"):
 					return Enumerable.Empty<string>();
 
 				//Access client throws a different exception so it is excluded

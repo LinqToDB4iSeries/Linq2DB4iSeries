@@ -17,8 +17,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			SetDataType(typeof(string), new SqlDataType(DataType.NVarChar, typeof(string), 255));
 
-			SetValueToSqlConverter(typeof(long), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertInt64ToSql(sb, (long)v));
-			SetValueToSqlConverter(typeof(double), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertDoubleToSql(sb, (double)v));
 			SetValueToSqlConverter(typeof(string), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertStringToSql(sb, v.ToString()));
 			SetValueToSqlConverter(typeof(char), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertCharToSql(sb, (char)v));
 			SetValueToSqlConverter(typeof(byte[]), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertBinaryToSql(sb, (byte[])v));
@@ -27,7 +25,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetValueToSqlConverter(typeof(DateTime), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(sb, dt.Type.DataType, (DateTime)v, precision: dt.Type.Precision));
 
 			// set reader conversions from literals
-			SetConverter<string, DateTime>(DB2iSeriesSqlBuilder.ParseDateTime);
+			SetConverter<string, DateTime>(SqlDateTimeParser.ParseDateTime);
 
 			AddMetadataReader(new DB2iSeriesMetadataReader(configuration));
 #if NETFRAMEWORK

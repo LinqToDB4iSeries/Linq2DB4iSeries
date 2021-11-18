@@ -113,16 +113,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			db2iSeriesSqlProviderFlags.SetCustomFlags(SqlProviderFlags);
 			mappingOptions.SetCustomFlags(SqlProviderFlags);
 
-			Expression<Func<IDataReader, int, string>> GetTrimmedStringExpression
-				= (r, i) => DB2iSeriesSqlBuilder.TrimString(r.GetString(i));
-
 			SetCharFieldToType<char>(Constants.DbTypes.Char, DataTools.GetCharExpression);
-			SetCharField(Constants.DbTypes.Char, GetTrimmedStringExpression);
-			SetCharField(Constants.DbTypes.NChar, GetTrimmedStringExpression);
-			SetCharField(Constants.DbTypes.Graphic, GetTrimmedStringExpression);
-			SetCharField(Constants.DbTypes.VarChar, GetTrimmedStringExpression);
-			SetCharField(Constants.DbTypes.NVarChar, GetTrimmedStringExpression);
-			SetCharField(Constants.DbTypes.VarGraphic, GetTrimmedStringExpression);
+			SetCharField(Constants.DbTypes.Char, ReaderExpressionTools.GetTrimmedStringExpression);
+			SetCharField(Constants.DbTypes.NChar, ReaderExpressionTools.GetTrimmedStringExpression);
+			SetCharField(Constants.DbTypes.Graphic, ReaderExpressionTools.GetTrimmedStringExpression);
+			SetCharField(Constants.DbTypes.VarChar, ReaderExpressionTools.GetTrimmedStringExpression);
+			SetCharField(Constants.DbTypes.NVarChar, ReaderExpressionTools.GetTrimmedStringExpression);
+			SetCharField(Constants.DbTypes.VarGraphic, ReaderExpressionTools.GetTrimmedStringExpression);
 
 			sqlOptimizer = new DB2iSeriesSqlOptimizer(SqlProviderFlags, db2iSeriesSqlProviderFlags);
 			schemaProvider = new DB2iSeriesSchemaProvider(this);
@@ -272,9 +269,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			var adapter = (OleDbProviderAdapter)Adapter.GetInstance();
 
 			//Custom mapping from CHAR converted dates and times. Converting datetimes to char needed in connection string.
-			SetProviderField<IDataReader, DateTime, string>((r, i) => DB2iSeriesSqlBuilder.ParseDateTime(r.GetString(i)));
-			SetProviderField<IDataReader, DateTimeOffset, string>((r, i) => DB2iSeriesSqlBuilder.ParseDateTime(r.GetString(i)));
-			SetProviderField<IDataReader, TimeSpan, string>((r, i) => DB2iSeriesSqlBuilder.ParseTimeSpan(r.GetString(i)));
+			SetProviderField<IDataReader, DateTime, string>((r, i) => SqlDateTimeParser.ParseDateTime(r.GetString(i)));
+			SetProviderField<IDataReader, DateTimeOffset, string>((r, i) => SqlDateTimeParser.ParseDateTime(r.GetString(i)));
+			SetProviderField<IDataReader, TimeSpan, string>((r, i) => SqlDateTimeParser.ParseTimeSpan(r.GetString(i)));
 		}
 
 		//private static Delegate GetPropertyWrapper(Type type, string propertyName)
