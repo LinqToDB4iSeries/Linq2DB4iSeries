@@ -189,15 +189,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		}
 
 		public static string TrimString(string value)
-		{
-			if (value == null)
-			{
-				return null;
-			}
-
-			return value.TrimEnd(' ');
-		}
-
+			=> value?.TrimEnd(' ');
+		
 		private static readonly string[] parseDateTimeFormats = Enumerable.Range(-1, 9)
 			.Select(x => x switch
 			{

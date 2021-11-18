@@ -113,10 +113,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			db2iSeriesSqlProviderFlags.SetCustomFlags(SqlProviderFlags);
 			mappingOptions.SetCustomFlags(SqlProviderFlags);
 
+			Expression<Func<IDataReader, int, string>> GetTrimmedStringExpression
+				= (r, i) => DB2iSeriesSqlBuilder.TrimString(r.GetString(i));
+
 			SetCharFieldToType<char>(Constants.DbTypes.Char, DataTools.GetCharExpression);
-			SetCharField(Constants.DbTypes.Char, (r, i) => r.GetString(i).TrimEnd(' '));
-			SetCharField(Constants.DbTypes.NChar, (r, i) => r.GetString(i).TrimEnd(' '));
-			SetCharField(Constants.DbTypes.Graphic, (r, i) => r.GetString(i).TrimEnd(' '));
+			SetCharField(Constants.DbTypes.Char, GetTrimmedStringExpression);
+			SetCharField(Constants.DbTypes.NChar, GetTrimmedStringExpression);
+			SetCharField(Constants.DbTypes.Graphic, GetTrimmedStringExpression);
+			SetCharField(Constants.DbTypes.VarChar, GetTrimmedStringExpression);
+			SetCharField(Constants.DbTypes.NVarChar, GetTrimmedStringExpression);
+			SetCharField(Constants.DbTypes.VarGraphic, GetTrimmedStringExpression);
 
 			sqlOptimizer = new DB2iSeriesSqlOptimizer(SqlProviderFlags, db2iSeriesSqlProviderFlags);
 			schemaProvider = new DB2iSeriesSchemaProvider(this);
@@ -141,52 +147,68 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SqlProviderFlags.IsParameterOrderDependent = true;
 
 			var adapter = (DB2iSeriesAccessClientProviderAdapter)Adapter.GetInstance();
-			
-			SetProviderField(typeof(long), adapter.iDB2BigIntType, adapter.GetiDB2BigIntReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(byte[]), adapter.iDB2BinaryType, adapter.GetiDB2BinaryReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(byte[]), adapter.iDB2BlobType, adapter.GetiDB2BlobReaderMethod, dataReaderType: adapter.DataReaderType);
 
-			var charWrapper = GetRenderParseWrapper(adapter.iDB2CharType, nameof(object.ToString), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.TrimString));
+			//The original implementation had erronously toType and providerType reversed so the following mapping effectivily did nothing
+			//Leaving commented for reference in case something needs to be readded
+			//In case these are readded they override the generic char trimmings setup with SetCharField
 
-			SetProviderField(typeof(string), adapter.iDB2CharType, adapter.GetiDB2CharReaderMethod, charWrapper, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(byte[]), adapter.iDB2CharBitDataType, adapter.GetiDB2CharBitDataReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(string), adapter.iDB2ClobType, adapter.GetiDB2ClobReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(string), adapter.iDB2DataLinkType, adapter.GetiDB2DataLinkReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(string), adapter.iDB2DbClobType, adapter.GetiDB2DbClobReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(decimal), adapter.iDB2DecFloat16Type, adapter.GetiDB2DecFloat16ReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(decimal), adapter.iDB2DecFloat34Type, adapter.GetiDB2DecFloat34ReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(decimal), adapter.iDB2DecimalType, adapter.GetiDB2DecimalReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(double), adapter.iDB2DoubleType, adapter.GetiDB2DoubleReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(long), adapter.iDB2BigIntType, adapter.GetiDB2BigIntReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(byte[]), adapter.iDB2BinaryType, adapter.GetiDB2BinaryReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(byte[]), adapter.iDB2BlobType, adapter.GetiDB2BlobReaderMethod, dataReaderType: adapter.DataReaderType);
 
-			var graphicWrapper = GetRenderParseWrapper(adapter.iDB2GraphicType, nameof(object.ToString), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.TrimString));
+			//var charWrapper = GetRenderParseWrapper(adapter.iDB2CharType, nameof(object.ToString), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.TrimString));
 
-			SetProviderField(typeof(string), adapter.iDB2GraphicType, adapter.GetiDB2GraphicReaderMethod, graphicWrapper, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(int), adapter.iDB2IntegerType, adapter.GetiDB2IntegerReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(decimal), adapter.iDB2NumericType, adapter.GetiDB2NumericReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(float), adapter.iDB2RealType, adapter.GetiDB2RealReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(byte[]), adapter.iDB2RowidType, adapter.GetiDB2RowidReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(short), adapter.iDB2SmallIntType, adapter.GetiDB2SmallIntReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(string), adapter.iDB2CharType, adapter.GetiDB2CharReaderMethod, charWrapper, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(byte[]), adapter.iDB2CharBitDataType, adapter.GetiDB2CharBitDataReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(string), adapter.iDB2ClobType, adapter.GetiDB2ClobReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(string), adapter.iDB2DataLinkType, adapter.GetiDB2DataLinkReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(string), adapter.iDB2DbClobType, adapter.GetiDB2DbClobReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(decimal), adapter.iDB2DecFloat16Type, adapter.GetiDB2DecFloat16ReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(decimal), adapter.iDB2DecFloat34Type, adapter.GetiDB2DecFloat34ReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(decimal), adapter.iDB2DecimalType, adapter.GetiDB2DecimalReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(double), adapter.iDB2DoubleType, adapter.GetiDB2DoubleReaderMethod, dataReaderType: adapter.DataReaderType);
 
-			var dateWrapper = GetPropertyWrapper(adapter.iDB2DateType, "Value");
+			//var graphicWrapper = GetRenderParseWrapper(adapter.iDB2GraphicType, nameof(object.ToString), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.TrimString));
 
-			SetProviderField(typeof(DateTime), adapter.iDB2DateType, adapter.GetiDB2DateReaderMethod, dateWrapper, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(string), adapter.iDB2GraphicType, adapter.GetiDB2GraphicReaderMethod, graphicWrapper, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(int), adapter.iDB2IntegerType, adapter.GetiDB2IntegerReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(decimal), adapter.iDB2NumericType, adapter.GetiDB2NumericReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(float), adapter.iDB2RealType, adapter.GetiDB2RealReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(byte[]), adapter.iDB2RowidType, adapter.GetiDB2RowidReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(short), adapter.iDB2SmallIntType, adapter.GetiDB2SmallIntReaderMethod, dataReaderType: adapter.DataReaderType);
 
-			var timeWrapper = GetPropertyWrapper(adapter.iDB2TimeType, "Value");
+			//var dateWrapper = GetPropertyWrapper(adapter.iDB2DateType, "Value");
 
-			SetProviderField(typeof(DateTime), adapter.iDB2TimeType, adapter.GetiDB2TimeReaderMethod, timeWrapper, dataReaderType: adapter.DataReaderType);
-			//TODO: To Timestamp
+			//SetProviderField(typeof(DateTime), adapter.iDB2DateType, adapter.GetiDB2DateReaderMethod, dateWrapper, dataReaderType: adapter.DataReaderType);
+
+			//var timeWrapper = GetPropertyWrapper(adapter.iDB2TimeType, "Value");
+
+			//SetProviderField(typeof(DateTime), adapter.iDB2TimeType, adapter.GetiDB2TimeReaderMethod, timeWrapper, dataReaderType: adapter.DataReaderType);
+
+			////TODO: Test Timestamp from time
+			//SetProviderField(typeof(TimeSpan), adapter.iDB2TimeType, adapter.GetiDB2TimeReaderMethod, getTimeSpanFromTimeWrapper(adapter.iDB2TimeType), dataReaderType: adapter.DataReaderType);
+
 			SetProviderField(typeof(DateTime), adapter.iDB2TimeStampType, adapter.GetiDB2TimeStampReaderMethod, getTimeStampWrapper(adapter.iDB2TimeStampType), dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(byte[]), adapter.iDB2VarBinaryType, adapter.GetiDB2VarBinaryReaderMethod, dataReaderType: adapter.DataReaderType);
-			
-			var varCharWrapper = GetRenderParseWrapper(adapter.iDB2VarCharType, nameof(object.ToString), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.TrimString));
+			SetProviderField(typeof(DateTimeOffset), adapter.iDB2TimeStampType, adapter.GetiDB2TimeStampReaderMethod, getTimeStampWrapper(adapter.iDB2TimeStampType), dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(byte[]), adapter.iDB2VarBinaryType, adapter.GetiDB2VarBinaryReaderMethod, dataReaderType: adapter.DataReaderType);
 
-			SetProviderField(typeof(string), adapter.iDB2VarCharType, adapter.GetiDB2VarCharReaderMethod, varCharWrapper, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(byte[]), adapter.iDB2VarCharBitDataType, adapter.GetiDB2VarCharBitDataReaderMethod, dataReaderType: adapter.DataReaderType);
-			
-			var varGrphicWrapper = GetRenderParseWrapper(adapter.iDB2VarGraphicType, nameof(object.ToString), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.TrimString));
+			//var varCharWrapper = GetRenderParseWrapper(adapter.iDB2VarCharType, nameof(object.ToString), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.TrimString));
 
-			SetProviderField(typeof(string), adapter.iDB2VarGraphicType, adapter.GetiDB2VarGraphicReaderMethod, varGrphicWrapper, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(string), adapter.iDB2XmlType, adapter.GetiDB2XmlReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(string), adapter.iDB2VarCharType, adapter.GetiDB2VarCharReaderMethod, varCharWrapper, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(byte[]), adapter.iDB2VarCharBitDataType, adapter.GetiDB2VarCharBitDataReaderMethod, dataReaderType: adapter.DataReaderType);
+
+			//var varGrphicWrapper = GetRenderParseWrapper(adapter.iDB2VarGraphicType, nameof(object.ToString), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.TrimString));
+
+			//SetProviderField(typeof(string), adapter.iDB2VarGraphicType, adapter.GetiDB2VarGraphicReaderMethod, varGrphicWrapper, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(string), adapter.iDB2XmlType, adapter.GetiDB2XmlReaderMethod, dataReaderType: adapter.DataReaderType);
+
+			//static Delegate getTimeSpanFromTimeWrapper(Type iDB2TimeType)
+			//{
+			//	var parameter = Expression.Parameter(iDB2TimeType);
+			//	var value = Expression.Property(parameter, "Value");
+			//	var timeOfDay = Expression.Property(value, nameof(DateTime.TimeOfDay));
+			//	return Expression.Lambda(timeOfDay, parameter).Compile();
+			//}
 
 			static Delegate getTimeStampWrapper(Type iDB2TimeStampType)
 			{
@@ -213,23 +235,27 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			var adapter = (DB2.DB2ProviderAdapter)Adapter.GetInstance();
 
-			SetProviderField(typeof(long), adapter.DB2Int64Type, adapter.GetDB2Int64ReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(int), adapter.DB2Int32Type, adapter.GetDB2Int32ReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(short), adapter.DB2Int16Type, adapter.GetDB2Int16ReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(decimal), adapter.DB2DecimalType, adapter.GetDB2DecimalReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(decimal), adapter.DB2DecimalFloatType, adapter.GetDB2DecimalFloatReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(float), adapter.DB2RealType, adapter.GetDB2RealReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(float), adapter.DB2Real370Type, adapter.GetDB2Real370ReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(double), adapter.DB2DoubleType, adapter.GetDB2DoubleReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(string), adapter.DB2StringType, adapter.GetDB2StringReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(string), adapter.DB2ClobType, adapter.GetDB2ClobReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(byte[]), adapter.DB2BinaryType, adapter.GetDB2BinaryReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(byte[]), adapter.DB2BlobType, adapter.GetDB2BlobReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(DateTime), adapter.DB2DateType, adapter.GetDB2DateReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(TimeSpan), adapter.DB2TimeType, adapter.GetDB2TimeReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(DateTime), adapter.DB2TimeStampType, adapter.GetDB2TimeStampReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(string), adapter.DB2XmlType, adapter.GetDB2XmlReaderMethod, dataReaderType: adapter.DataReaderType);
-			SetProviderField(typeof(byte[]), adapter.DB2RowIdType, adapter.GetDB2RowIdReaderMethod, dataReaderType: adapter.DataReaderType);
+			//The original implementation had erronously toType and providerType reversed so the following mapping effectivily did nothing
+			//Leaving commented for reference in case something needs to be readded
+			//In case these are readded they override the generic char trimmings setup with SetCharField
+
+			//SetProviderField(typeof(long), adapter.DB2Int64Type, adapter.GetDB2Int64ReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(int), adapter.DB2Int32Type, adapter.GetDB2Int32ReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(short), adapter.DB2Int16Type, adapter.GetDB2Int16ReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(decimal), adapter.DB2DecimalType, adapter.GetDB2DecimalReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(decimal), adapter.DB2DecimalFloatType, adapter.GetDB2DecimalFloatReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(float), adapter.DB2RealType, adapter.GetDB2RealReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(float), adapter.DB2Real370Type, adapter.GetDB2Real370ReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(double), adapter.DB2DoubleType, adapter.GetDB2DoubleReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(string), adapter.DB2StringType, adapter.GetDB2StringReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(string), adapter.DB2ClobType, adapter.GetDB2ClobReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(byte[]), adapter.DB2BinaryType, adapter.GetDB2BinaryReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(byte[]), adapter.DB2BlobType, adapter.GetDB2BlobReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(DateTime), adapter.DB2DateType, adapter.GetDB2DateReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(TimeSpan), adapter.DB2TimeType, adapter.GetDB2TimeReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(DateTime), adapter.DB2TimeStampType, adapter.GetDB2TimeStampReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(string), adapter.DB2XmlType, adapter.GetDB2XmlReaderMethod, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(byte[]), adapter.DB2RowIdType, adapter.GetDB2RowIdReaderMethod, dataReaderType: adapter.DataReaderType);
 		}
 
 		private void SetupOdbc()
@@ -237,11 +263,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SqlProviderFlags.IsParameterOrderDependent = true;
 
 			var adapter = (OdbcProviderAdapter)Adapter.GetInstance();
-
-			//var stringWrapper = GetStaticMethodWrapper(typeof(string), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.TrimString));
-
-			SetProviderField<IDataReader, string, string>((r, i) => r.GetString(i).TrimEnd(' '));
-			//SetProviderField(typeof(string), typeof(string), "GetString", stringWrapper, dataReaderType: adapter.DataReaderType);
 		}
 
 		private void SetupOleDb()
@@ -250,45 +271,37 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			var adapter = (OleDbProviderAdapter)Adapter.GetInstance();
 
-			//var dateTimeWrapper = GetStaticMethodWrapper(typeof(string), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.ParseDateTime));
-
-			//SetProviderField(typeof(DateTime), typeof(string), "GetString", dateTimeWrapper, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(DateTimeOffset), typeof(string), "GetString", dateTimeWrapper, dataReaderType: adapter.DataReaderType);
-
-			//var timeSpanWrapper = GetStaticMethodWrapper(typeof(string), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.ParseTimeSpan));
-
-			//SetProviderField(typeof(TimeSpan), typeof(string), "GetString", timeSpanWrapper, dataReaderType: adapter.DataReaderType);
-
+			//Custom mapping from CHAR converted dates and times. Converting datetimes to char needed in connection string.
 			SetProviderField<IDataReader, DateTime, string>((r, i) => DB2iSeriesSqlBuilder.ParseDateTime(r.GetString(i)));
 			SetProviderField<IDataReader, DateTimeOffset, string>((r, i) => DB2iSeriesSqlBuilder.ParseDateTime(r.GetString(i)));
 			SetProviderField<IDataReader, TimeSpan, string>((r, i) => DB2iSeriesSqlBuilder.ParseTimeSpan(r.GetString(i)));
 		}
 
-		private static Delegate GetPropertyWrapper(Type type, string propertyName)
-		{
-			var param = Expression.Parameter(type);
-			var property = type.GetProperty(propertyName);
-			var expression = Expression.Property(param, property);
-			return Expression.Lambda(expression, param).Compile();
-		}
+		//private static Delegate GetPropertyWrapper(Type type, string propertyName)
+		//{
+		//	var param = Expression.Parameter(type);
+		//	var property = type.GetProperty(propertyName);
+		//	var expression = Expression.Property(param, property);
+		//	return Expression.Lambda(expression, param).Compile();
+		//}
 
-		private static Delegate GetRenderParseWrapper(Type paramType, string renderMethodName, Type parserType, string parseMethodName)
-		{
-			var param = Expression.Parameter(paramType);
-			var renderMethod = paramType.GetMethod(renderMethodName);
-			var renderCall = Expression.Call(param, renderMethod);
-			var parseMethod = parserType.GetMethod(parseMethodName);
-			var parseCall = Expression.Call(parseMethod, renderCall);
-			return Expression.Lambda(parseCall, param).Compile();
-		}
+		//private static Delegate GetRenderParseWrapper(Type paramType, string renderMethodName, Type parserType, string parseMethodName)
+		//{
+		//	var param = Expression.Parameter(paramType);
+		//	var renderMethod = paramType.GetMethod(renderMethodName);
+		//	var renderCall = Expression.Call(param, renderMethod);
+		//	var parseMethod = parserType.GetMethod(parseMethodName);
+		//	var parseCall = Expression.Call(parseMethod, renderCall);
+		//	return Expression.Lambda(parseCall, param).Compile();
+		//}
 
-		private static Delegate GetStaticMethodWrapper(Type paramType, Type staticType, string methodName)
-		{
-			var param = Expression.Parameter(paramType);
-			var method = staticType.GetMethod(methodName);
-			var expression = Expression.Call(method, param);
-			return Expression.Lambda(expression, param).Compile();
-		}
+		//private static Delegate GetStaticMethodWrapper(Type paramType, Type staticType, string methodName)
+		//{
+		//	var param = Expression.Parameter(paramType);
+		//	var method = staticType.GetMethod(methodName);
+		//	var expression = Expression.Call(method, param);
+		//	return Expression.Lambda(expression, param).Compile();
+		//}
 
 		/// <summary>
 		/// This is identical to the base method except that it wraps the method call in a delagate.
@@ -454,7 +467,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 					if(ProviderType.IsOdbcOrOleDb())
 					{
-						dataType = dataType.WithDataType(DataType.VarChar)
+						dataType = dataType
+							.WithDataType(DataType.VarChar)
 							.WithDbType(Constants.DbTypes.TimeStamp);
 					}
 
@@ -474,7 +488,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 					if (ProviderType.IsOleDb())
 					{
-						dataType = dataType.WithDataType(DataType.VarChar)
+						dataType = dataType
+							.WithDataType(DataType.VarChar)
 							.WithDbType(Constants.DbTypes.TimeStamp);
 					}
 					break;
@@ -646,7 +661,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				new OdbcDataReaderWrapper(odbcDataReader) : reader;
 			}
 
-			return base.GetReaderExpression(reader, idx, readerExpression, toType);
+			var e = base.GetReaderExpression(reader, idx, readerExpression, toType);
+			return e;
 		}
 
 		public override bool? IsDBNullAllowed(IDataReader reader, int idx)

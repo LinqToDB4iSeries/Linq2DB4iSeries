@@ -61,7 +61,7 @@ namespace Tests.DataProvider
 			{
 				Assert.That(TestType<decimal?>(conn, "decfloat16DataType", DataType.Decimal, castTo: "DECIMAL(20, 10)"), Is.EqualTo(888.456m));
 				Assert.That(TestType<decimal?>(conn, "decfloat34DataType", DataType.Decimal, castTo: "DECIMAL(20, 10)"), Is.EqualTo(777.987m));
-				
+
 				Assert.That(TestType<long?>(conn, "bigintDataType", DataType.Int64), Is.EqualTo(1000000L));
 				Assert.That(TestType<int?>(conn, "intDataType", DataType.Int32), Is.EqualTo(444444));
 				Assert.That(TestType<short?>(conn, "smallintDataType", DataType.Int16), Is.EqualTo(100));
@@ -88,14 +88,7 @@ namespace Tests.DataProvider
 					TestType<byte[]>(conn, "blobDataType", DataType.VarBinary, skipDefaultNull: true, skipUndefinedNull: true,
 						skipDefault: true, skipUndefined: true), Is.EqualTo(new byte[] { 0xF2, 0xF3, 0xF4 }));
 
-				var sot = TestType<string>(conn, "graphicDataType", DataType.Char);
-
-				if(TestProvNameDb2i.IsiSeriesAccessClient(context))
-				{
-					sot = sot.Trim();
-				}
-
-				Assert.That(sot, Is.EqualTo("graphic"));
+				Assert.That(TestType<string>(conn, "graphicDataType", DataType.Char), Is.EqualTo("graphic"));
 				Assert.That(TestType<string>(conn, "vargraphicDataType", DataType.VarChar), Is.EqualTo("vargraphic"));
 
 				Assert.That(TestType<DateTime?>(conn, "dateDataType", DataType.Date, skipDefault: true, skipUndefined: true),
@@ -110,7 +103,7 @@ namespace Tests.DataProvider
 				Assert.That(conn.Execute<byte[]>("SELECT rowidDataType FROM AllTypes WHERE ID = 2").Length, Is.Not.EqualTo(0));
 
 				//XML not supported in ODBC driver
-				if (!context.ToUpper().Contains("ODBC"))
+				if (!TestProvNameDb2i.IsiSeriesODBC(context))
 				{
 					Assert.That(TestType<string>(conn, "xmlDataType", DataType.Xml, skipPass: true),
 						Is.EqualTo("<root><element strattr=\"strvalue\" intattr=\"12345\"/></root>"));
@@ -217,8 +210,9 @@ namespace Tests.DataProvider
 				Assert.That(
 					conn.ExecuteScalarParameter<DateTime>("p", "date", dateTime, DataType.Date), Is.EqualTo(dateTime));
 
-				//iSeries native provider cannot assign datetime parameter to date
-				if (!TestProvNameDb2i.IsiSeriesAccessClient(context) && !TestProvNameDb2i.IsiSeriesOleDb(context))
+				//iSeries native provider and oledb provider cannot assign datetime parameter to date
+				if (!TestProvNameDb2i.IsiSeriesAccessClient(context) 
+					&& !TestProvNameDb2i.IsiSeriesOleDb(context))
 				{
 					Assert.That(
 					conn.ExecuteScalarParameter<DateTime>("p", "date", dateTime), Is.EqualTo(dateTime));
@@ -335,14 +329,7 @@ namespace Tests.DataProvider
 		{
 			string ExecuteScalarTest(DataConnection conn, string value, string castTo = null)
 			{
-				var result =  conn.ExecuteScalar<string>(value, castTo);
-
-				if (TestProvNameDb2i.IsiSeriesAccessClient(context))
-				{
-					return result?.Trim();
-				}
-
-				return result;
+				return  conn.ExecuteScalar<string>(value, castTo);
 			}
 
 			using (var conn = new DataConnection(context))
