@@ -145,7 +145,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case Sql.DateParts.Hour: expStr = "{0} + ({1}) Hour"; break;
 				case Sql.DateParts.Minute: expStr = "{0} + ({1}) Minute"; break;
 				case Sql.DateParts.Second: expStr = "{0} + ({1}) Second"; break;
-				case Sql.DateParts.Millisecond: expStr = "{0} + (({1}) * 1000) Microsecond"; break;
+				case Sql.DateParts.Millisecond: expStr = "{0} + (({1}) * CAST(1000 AS BIGINT)) Microsecond"; break;
 				default:
 					throw new ArgumentOutOfRangeException();
 			}
@@ -172,7 +172,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case Sql.DateParts.Hour: partStr = "HOUR({date})"; break;
 				case Sql.DateParts.Minute: partStr = "MINUTE({date})"; break;
 				case Sql.DateParts.Second: partStr = "SECOND({date})"; break;
-				case Sql.DateParts.Millisecond: partStr = "MICROSECOND({date}) / 1000"; break;
+				case Sql.DateParts.Millisecond: partStr = "MICROSECOND({date}) / CAST(1000 AS BIGINT)"; break;
 				default:
 					throw new ArgumentOutOfRangeException();
 			}
@@ -185,84 +185,35 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	{
 		public void Build(Sql.ISqExtensionBuilder builder)
 		{
-			// Generally, this is used to wrap literal numbers as longs and doubles.
-			// This is because the iSeries expects that literals are 32-bit integers.
-			// This causes overflows unless the values are specifically cast to larger types.
-			static SqlValue AsT<T>(T value)
-			{
-				return new SqlValue(value);
-			}
-
-			static ISqlExpression Days(ISqlExpression value)
-			{
-				return new SqlFunction(typeof(long), "DAYS", value);
-			}
-
-			static ISqlExpression MidnightSeconds(ISqlExpression value)
-			{
-				return new SqlFunction(typeof(long), "MIDNIGHT_SECONDS", value);
-			}
-
-			static ISqlExpression Microsecond(ISqlExpression value)
-			{
-				return new SqlFunction(typeof(long), "MICROSECOND", value);
-			}
-
-			// Takes a expression that may be a LAG or LEAD function.
-			// If they are, the wrapper function needs to be applied within the LAG or LEAD function.
-			// Otherwise, the value can be wrapped in the wrapper function directly.
-			static ISqlExpression TransformLagAndLead(ISqlExpression iexpr, Func<ISqlExpression, ISqlExpression> wrapper)
-			{
-				if (iexpr is SqlExpression expr
-					&& (expr.Expr.StartsWith("LAG", StringComparison.OrdinalIgnoreCase)
-					|| expr.Expr.StartsWith("LEAD", StringComparison.OrdinalIgnoreCase)))
-				{
-					var newParams = new List<ISqlExpression>(expr.Parameters.Length);
-
-					var param = expr.Parameters.First();
-					// Wrap the parameter rather than the whole expression.
-					newParams.Add(wrapper(param));
-					newParams.AddRange(expr.Parameters.Skip(1));
-
-					return new SqlExpression(expr.SystemType, expr.Expr, expr.Precedence, expr.Flags, newParams.ToArray());
-				}
-
-				// Wrap the whole expression.
-				return wrapper(iexpr);
-			}
-
 			var part = builder.GetValue<Sql.DateParts>(0);
 			var startDate = builder.GetExpression(1);
 			var endDate = builder.GetExpression(2);
 
-			// If start or endDate are functions rather than values, they may need to be transformed.
-			var startDays = TransformLagAndLead(startDate, Days);
-			var endDays = TransformLagAndLead(endDate, Days);
-			var startMidnightSeconds = TransformLagAndLead(startDate, MidnightSeconds);
-			var endMidnightSeconds = TransformLagAndLead(endDate, MidnightSeconds);
+			var secondsExpr = builder.Mul<int>(builder.Sub<int>(
+					new SqlFunction(typeof(int), "Days", endDate),
+					new SqlFunction(typeof(int), "Days", startDate)),
+				new SqlValue(86400));
 
-			var secondsExpr = builder.Mul<long>(
-				builder.Sub<long>(endDays, startDays),
-				AsT(86400L));
+			var midnight = builder.Sub<int>(
+				new SqlFunction(typeof(int), "MIDNIGHT_SECONDS", endDate),
+				new SqlFunction(typeof(int), "MIDNIGHT_SECONDS", startDate));
 
-			var midnight = builder.Sub<long>(endMidnightSeconds, startMidnightSeconds);
-
-			var resultExpr = builder.Add<long>(secondsExpr, midnight);
+			var resultExpr = builder.Add<int>(secondsExpr, midnight);
 
 			switch (part)
 			{
-				case Sql.DateParts.Day: resultExpr = builder.Div<long>(resultExpr, AsT(86400L)); break;
-				case Sql.DateParts.Hour: resultExpr = builder.Div<long>(resultExpr, AsT(3600L)); break;
-				case Sql.DateParts.Minute: resultExpr = builder.Div<long>(resultExpr, AsT(60L)); break;
+				case Sql.DateParts.Day: resultExpr = builder.Div(resultExpr, 86400); break;
+				case Sql.DateParts.Hour: resultExpr = builder.Div(resultExpr, 3600); break;
+				case Sql.DateParts.Minute: resultExpr = builder.Div(resultExpr, 60); break;
 				case Sql.DateParts.Second: break;
 				case Sql.DateParts.Millisecond:
-					var startMicrosecond = TransformLagAndLead(startDate, Microsecond);
-					var endMicrosecond = TransformLagAndLead(endDate, Microsecond);
-					resultExpr = builder.Add<long>(
-						builder.Mul<long>(resultExpr, AsT(1000L)),
-						builder.Div<long>(
-							builder.Sub<long>(endMicrosecond, startMicrosecond),
-							AsT(1000L)));
+					resultExpr = builder.Add<int>(
+						builder.Mul(resultExpr, 1000),
+						builder.Div(
+							builder.Sub<int>(
+								new SqlFunction(typeof(int), "MICROSECOND", endDate),
+								new SqlFunction(typeof(int), "MICROSECOND", startDate)),
+							1000));
 					break;
 				default:
 					throw new ArgumentOutOfRangeException();
@@ -270,5 +221,125 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			builder.ResultExpression = resultExpr;
 		}
+
+		//Reverted to original version
+		//public void Build(Sql.ISqExtensionBuilder builder)
+		//{
+		//	// Generally, this is used to wrap literal numbers as longs and doubles.
+		//	// This is because the iSeries expects that literals are 32-bit integers.
+		//	// This causes overflows unless the values are specifically cast to larger types.
+		//	static SqlValue AsT<T>(T value)
+		//	{
+		//		return new SqlValue(new Common.DbDataType(typeof(T),DataType.Int64), value);
+		//	}
+
+		//	static ISqlExpression Long(long value)
+		//	{
+		//		return new SqlExpression($"BIGINT({value})");
+		//	}
+
+		//	static ISqlExpression Days(ISqlExpression value)
+		//	{
+		//		return new SqlFunction(typeof(long), "DAYS", value);
+		//	}
+
+		//	static ISqlExpression MidnightSeconds(ISqlExpression value)
+		//	{
+		//		return new SqlFunction(typeof(long), "MIDNIGHT_SECONDS", value);
+		//	}
+
+		//	static ISqlExpression Microsecond(ISqlExpression value)
+		//	{
+		//		return new SqlFunction(typeof(long), "MICROSECOND", value);
+		//	}
+
+		//	// Takes a expression that may be a LAG or LEAD function.
+		//	// If they are, the wrapper function needs to be applied within the LAG or LEAD function.
+		//	// Otherwise, the value can be wrapped in the wrapper function directly.
+		//	static ISqlExpression TransformLagAndLead(ISqlExpression iexpr, Func<ISqlExpression, ISqlExpression> wrapper)
+		//	{
+		//		if (iexpr is SqlExpression expr
+		//			&& (expr.Expr.StartsWith("LAG", StringComparison.OrdinalIgnoreCase)
+		//			|| expr.Expr.StartsWith("LEAD", StringComparison.OrdinalIgnoreCase)))
+		//		{
+		//			var newParams = new List<ISqlExpression>(expr.Parameters.Length);
+
+		//			var param = expr.Parameters.First();
+		//			// Wrap the parameter rather than the whole expression.
+		//			newParams.Add(wrapper(param));
+		//			newParams.AddRange(expr.Parameters.Skip(1));
+
+		//			return new SqlExpression(expr.SystemType, expr.Expr, expr.Precedence, expr.Flags, newParams.ToArray());
+		//		}
+
+		//		// Wrap the whole expression.
+		//		return wrapper(iexpr);
+		//	}
+
+		//	var part = builder.GetValue<Sql.DateParts>(0);
+		//	var startDate = builder.GetExpression(1);
+		//	var endDate = builder.GetExpression(2);
+
+		//	// If start or endDate are functions rather than values, they may need to be transformed.
+		//	//var startDays = TransformLagAndLead(startDate, Days);
+		//	//var endDays = TransformLagAndLead(endDate, Days);
+		//	//var startMidnightSeconds = TransformLagAndLead(startDate, MidnightSeconds);
+		//	//var endMidnightSeconds = TransformLagAndLead(endDate, MidnightSeconds);
+
+		//	var secondsExpr = 
+		//		builder.Mul<long>(
+		//			builder.Sub<long>(
+		//				TransformLagAndLead(endDate, Days), 
+		//				TransformLagAndLead(startDate, Days)),
+		//			Long(86400L));
+
+		//	var midnight = builder.Sub<long>(
+		//		TransformLagAndLead(endDate, MidnightSeconds),
+		//		TransformLagAndLead(endDate, MidnightSeconds));
+
+		//	var resultExpr = builder.Add<long>(secondsExpr, midnight);
+
+		//	builder.Div(resultExpr, 10);
+
+		//	builder.ResultExpression = part switch
+		//	{
+		//		Sql.DateParts.Day => builder.Div<long>(resultExpr, Long(86400L)),
+		//		Sql.DateParts.Hour => builder.Div<long>(resultExpr, Long(3600L)),
+		//		Sql.DateParts.Minute => builder.Div<long>(resultExpr, Long(60L)),
+		//		Sql.DateParts.Second => resultExpr,
+		//		Sql.DateParts.Millisecond => builder.Add<long>(
+		//				builder.Mul<long>(resultExpr, Long(1000L)),
+		//				builder.Div<long>(
+		//					builder.Sub<long>(
+		//						TransformLagAndLead(endDate, Microsecond),
+		//						TransformLagAndLead(startDate, Microsecond)),
+		//					Long(1000L))),
+		//		_ => throw new NotSupportedException($"Sql part {part} not supported for datediff.")
+		//	};
+
+
+		//	//switch (part)
+		//	//{
+		//	//	case Sql.DateParts.Day: resultExpr = builder.Div<long>(resultExpr, AsT(86400L)); break;
+		//	//	case Sql.DateParts.Hour: resultExpr = builder.Div<long>(resultExpr, AsT(3600L)); break;
+		//	//	case Sql.DateParts.Minute: resultExpr = builder.Div<long>(resultExpr, AsT(60L)); break;
+		//	//	case Sql.DateParts.Second: break;
+		//	//	case Sql.DateParts.Millisecond:
+		//	//		var startMicrosecond = TransformLagAndLead(startDate, Microsecond);
+		//	//		var endMicrosecond = TransformLagAndLead(endDate, Microsecond);
+		//	//		resultExpr = builder.Add<long>(
+		//	//			builder.Mul<long>(resultExpr, AsT(1000L)),
+		//	//			builder.Div<long>(
+		//	//				builder.Sub<long>(
+		//	//					TransformLagAndLead(endDate, Microsecond),
+		//	//					TransformLagAndLead(startDate, Microsecond)),
+		//	//				AsT(1000L)));
+		//	//		break;
+		//	//	default:
+		//	//		throw new ArgumentOutOfRangeException();
+		//	//}
+
+		//	//builder.ResultExpression = resultExpr;
+		//}
 	}
 }
