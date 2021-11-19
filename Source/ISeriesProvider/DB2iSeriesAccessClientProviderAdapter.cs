@@ -223,7 +223,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						var iDB2RowidType = loadType("iDB2Rowid", DataType.VarBinary);
 						var iDB2SmallIntType = loadType("iDB2SmallInt", DataType.Int16);
 						var iDB2TimeType = loadType("iDB2Time", DataType.Time);
-						var iDB2TimeStampType = loadType("iDB2TimeStamp", DataType.DateTime2);
+						var iDB2TimeStampType = loadType("iDB2TimeStamp", DataType.Timestamp);
 						var iDB2VarBinaryType = loadType("iDB2VarBinary", DataType.VarBinary);
 						var iDB2VarCharType = loadType("iDB2VarChar", DataType.VarChar);
 						var iDB2VarCharBitDataType = loadType("iDB2VarCharBitData", DataType.VarBinary);

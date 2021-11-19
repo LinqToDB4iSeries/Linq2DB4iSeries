@@ -5,6 +5,7 @@ using LinqToDB.Metadata;
 namespace LinqToDB.DataProvider.DB2iSeries
 {
 	using SqlQuery;
+	using System.Collections.Generic;
 	using System.Linq;
 
 	class DB2iSeriesMetadataReader : IMetadataReader
@@ -144,7 +145,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case Sql.DateParts.Hour: expStr = "{0} + ({1}) Hour"; break;
 				case Sql.DateParts.Minute: expStr = "{0} + ({1}) Minute"; break;
 				case Sql.DateParts.Second: expStr = "{0} + ({1}) Second"; break;
-				case Sql.DateParts.Millisecond: expStr = "{0} + (({1}) * 1000) Microsecond"; break;
+				case Sql.DateParts.Millisecond: expStr = "{0} + (({1}) * CAST(1000 AS BIGINT)) Microsecond"; break;
 				default:
 					throw new ArgumentOutOfRangeException();
 			}

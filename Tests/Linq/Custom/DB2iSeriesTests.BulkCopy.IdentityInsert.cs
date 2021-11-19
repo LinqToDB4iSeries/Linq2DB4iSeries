@@ -18,7 +18,7 @@ namespace Tests.DataProvider
 
 	[TestFixture]
 	[Order(10000)]
-	public partial class DB2iSeriesTests_BulkCopy_IdentityInsert : TestBase
+	public partial class DB2iSeriesTests : TestBase
 	{
 		[Table("KeepIdentityTest")]
 		public class TestTable1

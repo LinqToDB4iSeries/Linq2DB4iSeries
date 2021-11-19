@@ -9,6 +9,7 @@ using LinqToDB.Common;
 using LinqToDB.Data;
 using NUnit.Framework;
 using LinqToDB.Mapping;
+using LinqToDB.Tools.Comparers;
 
 #if NETFRAMEWORK
 using IBM.Data.DB2.iSeries;
@@ -60,7 +61,7 @@ namespace Tests.DataProvider
 			{
 				Assert.That(TestType<decimal?>(conn, "decfloat16DataType", DataType.Decimal, castTo: "DECIMAL(20, 10)"), Is.EqualTo(888.456m));
 				Assert.That(TestType<decimal?>(conn, "decfloat34DataType", DataType.Decimal, castTo: "DECIMAL(20, 10)"), Is.EqualTo(777.987m));
-				
+
 				Assert.That(TestType<long?>(conn, "bigintDataType", DataType.Int64), Is.EqualTo(1000000L));
 				Assert.That(TestType<int?>(conn, "intDataType", DataType.Int32), Is.EqualTo(444444));
 				Assert.That(TestType<short?>(conn, "smallintDataType", DataType.Int16), Is.EqualTo(100));
@@ -102,7 +103,7 @@ namespace Tests.DataProvider
 				Assert.That(conn.Execute<byte[]>("SELECT rowidDataType FROM AllTypes WHERE ID = 2").Length, Is.Not.EqualTo(0));
 
 				//XML not supported in ODBC driver
-				if (!context.ToUpper().Contains("ODBC"))
+				if (!TestProvNameDb2i.IsiSeriesODBC(context))
 				{
 					Assert.That(TestType<string>(conn, "xmlDataType", DataType.Xml, skipPass: true),
 						Is.EqualTo("<root><element strattr=\"strvalue\" intattr=\"12345\"/></root>"));
@@ -209,8 +210,9 @@ namespace Tests.DataProvider
 				Assert.That(
 					conn.ExecuteScalarParameter<DateTime>("p", "date", dateTime, DataType.Date), Is.EqualTo(dateTime));
 
-				//iSeries native provider cannot assign datetime parameter to date
-				if (!TestProvNameDb2i.IsiSeriesAccessClient(context))
+				//iSeries native provider and oledb provider cannot assign datetime parameter to date
+				if (!TestProvNameDb2i.IsiSeriesAccessClient(context) 
+					&& !TestProvNameDb2i.IsiSeriesOleDb(context))
 				{
 					Assert.That(
 					conn.ExecuteScalarParameter<DateTime>("p", "date", dateTime), Is.EqualTo(dateTime));
@@ -325,32 +327,37 @@ namespace Tests.DataProvider
 		[Test]
 		public void TestString([IncludeDataSources(TestProvNameDb2i.All)] string context)
 		{
+			string ExecuteScalarTest(DataConnection conn, string value, string castTo = null)
+			{
+				return  conn.ExecuteScalar<string>(value, castTo);
+			}
+
 			using (var conn = new DataConnection(context))
 			{
 				var asciiText = "123ab"; var quotedAsciiText = asciiText.AsQuoted();
 				var unicodeText = "αβγδε"; var quotedUnicodeText = unicodeText.AsQuoted();
 
-				Assert.That(conn.ExecuteScalar<string>(quotedAsciiText, "char(5)"), Is.EqualTo(asciiText));
-				Assert.That(conn.ExecuteScalar<string>(quotedAsciiText, "char(20)"), Is.EqualTo(asciiText));
-				Assert.That(conn.ExecuteScalar<string>("NULL", "char(5)"), Is.Null);
+				Assert.That(ExecuteScalarTest(conn, quotedAsciiText, "char(5)"), Is.EqualTo(asciiText));
+				Assert.That(ExecuteScalarTest(conn, quotedAsciiText, "char(20)"), Is.EqualTo(asciiText));
+				Assert.That(ExecuteScalarTest(conn, "NULL", "char(5)"), Is.Null);
 
-				Assert.That(conn.ExecuteScalar<string>(quotedAsciiText, "varchar(5)"), Is.EqualTo(asciiText));
-				Assert.That(conn.ExecuteScalar<string>(quotedAsciiText, "varchar(20)"), Is.EqualTo(asciiText));
-				Assert.That(conn.ExecuteScalar<string>("NULL", "varchar(5)"), Is.Null);
+				Assert.That(ExecuteScalarTest(conn, quotedAsciiText, "varchar(5)"), Is.EqualTo(asciiText));
+				Assert.That(ExecuteScalarTest(conn, quotedAsciiText, "varchar(20)"), Is.EqualTo(asciiText));
+				Assert.That(ExecuteScalarTest(conn, "NULL", "varchar(5)"), Is.Null);
 
-				Assert.That(conn.ExecuteScalar<string>(quotedAsciiText, "clob"), Is.EqualTo(asciiText));
-				Assert.That(conn.ExecuteScalar<string>("NULL", "clob"), Is.Null);
+				Assert.That(ExecuteScalarTest(conn, quotedAsciiText, "clob"), Is.EqualTo(asciiText));
+				Assert.That(ExecuteScalarTest(conn, "NULL", "clob"), Is.Null);
 
-				Assert.That(conn.ExecuteScalar<string>(quotedUnicodeText, "nchar(5)"), Is.EqualTo(unicodeText));
-				//Assert.That(conn.ExecuteScalar<string>(quotedUnicodeText, "nchar(20)"), Is.EqualTo(unicodeText));
-				Assert.That(conn.ExecuteScalar<string>("NULL", "nchar(5)"), Is.Null);
+				Assert.That(ExecuteScalarTest(conn, quotedUnicodeText, "nchar(5)"), Is.EqualTo(unicodeText));
+				//Assert.That(ExecuteScalarTest(conn, quotedUnicodeText, "nchar(20)"), Is.EqualTo(unicodeText));
+				Assert.That(ExecuteScalarTest(conn, "NULL", "nchar(5)"), Is.Null);
 
-				Assert.That(conn.ExecuteScalar<string>(quotedUnicodeText, "nvarchar(5)"), Is.EqualTo(unicodeText));
-				Assert.That(conn.ExecuteScalar<string>(quotedUnicodeText, "nvarchar(20)"), Is.EqualTo(unicodeText));
-				Assert.That(conn.ExecuteScalar<string>("NULL", "nvarchar(5)"), Is.Null);
+				Assert.That(ExecuteScalarTest(conn, quotedUnicodeText, "nvarchar(5)"), Is.EqualTo(unicodeText));
+				Assert.That(ExecuteScalarTest(conn, quotedUnicodeText, "nvarchar(20)"), Is.EqualTo(unicodeText));
+				Assert.That(ExecuteScalarTest(conn, "NULL", "nvarchar(5)"), Is.Null);
 
-				Assert.That(conn.ExecuteScalar<string>(quotedUnicodeText, "nclob"), Is.EqualTo(unicodeText));
-				Assert.That(conn.ExecuteScalar<string>("NULL", "nclob"), Is.Null);
+				Assert.That(ExecuteScalarTest(conn, quotedUnicodeText, "nclob"), Is.EqualTo(unicodeText));
+				Assert.That(ExecuteScalarTest(conn, "NULL", "nclob"), Is.Null);
 
 				Assert.That(
 					conn.ExecuteScalarParameter<string>(DataParameter.Char("p", asciiText), "char(5)"),
@@ -604,6 +611,176 @@ namespace Tests.DataProvider
 
 				Assert.AreEqual(1, list.Count);
 				Assert.AreEqual('Y', list[0].charDataType);
+			}
+		}
+
+		[Test]
+		public void TestGuid([IncludeDataSources(TestProvNameDb2i.All)] string context)
+		{
+			using (var conn = new DataConnection(context))
+			{
+				Assert.That(
+					conn.Execute<Guid>("SELECT Cast('6F9619FF-8B86-D011-B42D-00C04FC964FF' as varchar(38))  FROM SYSIBM.SYSDUMMY1"),
+					Is.EqualTo(new Guid("6F9619FF-8B86-D011-B42D-00C04FC964FF")));
+
+				Assert.That(
+					conn.Execute<Guid?>("SELECT Cast('6F9619FF-8B86-D011-B42D-00C04FC964FF' as varchar(38)) FROM SYSIBM.SYSDUMMY1"),
+					Is.EqualTo(new Guid("6F9619FF-8B86-D011-B42D-00C04FC964FF")));
+
+				var guid = TestData.Guid1;
+
+				if(TestProvNameDb2i.IsGAS(context))
+				{
+					Assert.That(conn.Execute<Guid>($"SELECT Cast({conn.GetParameterMarker("p")} as varchar(38)) FROM SYSIBM.SYSDUMMY1", DataParameter.Create("p", guid)), Is.EqualTo(guid));
+					Assert.That(conn.Execute<Guid>($"SELECT Cast({conn.GetParameterMarker("p")} as varchar(38)) FROM SYSIBM.SYSDUMMY1", new DataParameter { Name = "p", Value = guid }), Is.EqualTo(guid));
+				}
+				else
+				{
+					Assert.That(conn.Execute<Guid>($"SELECT Cast({conn.GetParameterMarker("p")} as char(16) for bit data) FROM SYSIBM.SYSDUMMY1", DataParameter.Create("p", guid)), Is.EqualTo(guid));
+					Assert.That(conn.Execute<Guid>($"SELECT Cast({conn.GetParameterMarker("p")} as char(16) for bit data) FROM SYSIBM.SYSDUMMY1", new DataParameter { Name = "p", Value = guid }), Is.EqualTo(guid));
+				}
+			}
+		}
+
+		[Table]
+		class TestTimeTypes
+		{
+			[Column]
+			public int Id { get; set; }
+
+			[Column(DataType = DataType.Date)]
+			public DateTime Date1 { get; set; }
+
+			[Column(DbType = "Date")]
+			public DateTime Date2 { get; set; }
+
+			[Column]
+			public TimeSpan Time { get; set; }
+
+			// Precision must be explicitly stated from anything other than the default of 6.
+			[Column(Precision = 0)]
+			public DateTime TimeStamp0 { get; set; }
+
+			[Column(Precision = 1)]
+			public DateTime TimeStamp1 { get; set; }
+
+			[Column(Precision = 2)]
+			public DateTime TimeStamp2 { get; set; }
+
+			[Column(Precision = 3)]
+			public DateTime TimeStamp3 { get; set; }
+
+			[Column(Precision = 4)]
+			public DateTime TimeStamp4 { get; set; }
+
+			[Column(Precision = 5)]
+			public DateTime TimeStamp5 { get; set; }
+
+			[Column(Precision = 6)]
+			public DateTime TimeStamp6 { get; set; }
+
+			[Column(Precision = 7)]
+			public DateTime TimeStamp7 { get; set; }
+
+			static TestTimeTypes()
+			{
+				Data = new[]
+				{
+					new TestTimeTypes() { Id = 1, Date1 = new DateTime(1234, 5, 6), Date2 = new DateTime(1234, 5, 7), Time = new TimeSpan(21, 2, 3) },
+					new TestTimeTypes() { Id = 2, Date1 = new DateTime(6543, 2, 1), Date2 = new DateTime(1234, 5, 8), Time = new TimeSpan(23, 2, 1) }
+				};
+
+				for (var i = 1; i <= Data.Length; i++)
+				{
+					var idx = i - 1;
+					Data[idx].TimeStamp0 = new DateTime(1000, 1, 10, 2, 20, 30 + i, 0);
+					Data[idx].TimeStamp1 = new DateTime(1000, 1, 10, 2, 20, 30, i * 100);
+					Data[idx].TimeStamp2 = new DateTime(1000, 1, 10, 2, 20, 30, i * 10);
+					Data[idx].TimeStamp3 = new DateTime(1000, 1, 10, 2, 20, 30, i);
+					Data[idx].TimeStamp4 = new DateTime(1000, 1, 10, 2, 20, 30, 1).AddTicks(1000 * i);
+					Data[idx].TimeStamp5 = new DateTime(1000, 1, 10, 2, 20, 30, 1).AddTicks(100 * i);
+					Data[idx].TimeStamp6 = new DateTime(1000, 1, 10, 2, 20, 30, 1).AddTicks(10 * i);
+					Data[idx].TimeStamp7 = new DateTime(1000, 1, 10, 2, 20, 30, 1).AddTicks(1 * i);
+				}
+			}
+
+			public static TestTimeTypes[] Data;
+
+			public static Func<TestTimeTypes, TestTimeTypes, bool> Comparer = ComparerBuilder.GetEqualsFunc<TestTimeTypes>();
+		}
+
+		[Test]
+		public void TestTimespanAndTimeValues([IncludeDataSources(false, TestProvNameDb2i.All)] string context, [Values] bool useParameters)
+		{
+			using (var db = GetDataContext(context))
+			using (var table = db.CreateLocalTable(TestTimeTypes.Data))
+			{
+				db.InlineParameters = !useParameters;
+
+				var record = table.Where(_ => _.Id == 1).Single();
+				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+
+				record = table.Where(_ => _.Date1 == TestTimeTypes.Data[0].Date1).Single();
+				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+
+				record = table.Where(_ => _.Date2 == TestTimeTypes.Data[0].Date2).Single();
+				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+
+				record = table.Where(_ => _.Time == TestTimeTypes.Data[0].Time).Single();
+				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+
+				record = table.Where(_ => _.TimeStamp0 == TestTimeTypes.Data[0].TimeStamp0).Single();
+				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+
+				record = table.Where(_ => _.TimeStamp1 == TestTimeTypes.Data[0].TimeStamp1).Single();
+				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+
+				record = table.Where(_ => _.TimeStamp2 == TestTimeTypes.Data[0].TimeStamp2).Single();
+				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+
+				record = table.Where(_ => _.TimeStamp3 == TestTimeTypes.Data[0].TimeStamp3).Single();
+				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+
+				record = table.Where(_ => _.TimeStamp4 == TestTimeTypes.Data[0].TimeStamp4).Single();
+				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+
+				record = table.Where(_ => _.TimeStamp5 == TestTimeTypes.Data[0].TimeStamp5).Single();
+				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+
+				record = table.Where(_ => _.TimeStamp6 == TestTimeTypes.Data[0].TimeStamp6).Single();
+				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+
+				// older versions of the iSeries OS do not support timespans with precision > 6.
+				if (TestProvNameDb2i.GetVersion(context) > LinqToDB.DataProvider.DB2iSeries.DB2iSeriesVersion.V7_2)
+				{
+					record = table.Where(_ => _.TimeStamp7 == TestTimeTypes.Data[0].TimeStamp7).Single();
+					Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+				}
+			}
+		}
+
+		[Table]
+		class TestParametersTable
+		{
+			[Column] public int Id { get; set; }
+			[Column] public string? Text { get; set; }
+		}
+
+		// https://github.com/linq2db/linq2db/issues/2091
+		[Test]
+		public void TestParametersUsed([IncludeDataSources(TestProvNameDb2i.All)] string context)
+		{
+			using (var db = new DataConnection(context))
+			using (var table = db.CreateLocalTable<TestParametersTable>())
+			{
+				var newText = new TestParametersTable() { Id = 12, Text = "Hallo Welt!" };
+				db.Insert(newText);
+
+				var text = "bla";
+				var query = from f in table where f.Text == text select f;
+				var result = query.ToArray();
+
+				Assert.True(db.LastQuery!.Contains(db.GetParameterMarker("")));
 			}
 		}
 	}

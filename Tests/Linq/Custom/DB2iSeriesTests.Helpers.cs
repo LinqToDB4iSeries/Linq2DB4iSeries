@@ -207,5 +207,24 @@ namespace Tests.DataProvider
 			TestNumeric<T?>(conn, expectedValue, dataType);
 			TestNumeric<T?>(conn, (T?)null, dataType);
 		}
+
+
+		[Sql.Expression("current server", ServerSideOnly = true)]
+		private static string DbName()
+		{
+			throw new InvalidOperationException();
+		}
+
+		[Sql.Expression("current schema", ServerSideOnly = true)]
+		private static string SchemaName()
+		{
+			throw new InvalidOperationException();
+		}
+
+		[Sql.Expression("current server", ServerSideOnly = true)]
+		private static string ServerName()
+		{
+			throw new InvalidOperationException();
+		}
 	}
 }

@@ -92,12 +92,6 @@ namespace Tests.DataProvider
 		};
 
 
-		private List<CharTestTable> StripNullChars(string context)
-		{
-			return CharTestData.Where(_ => _.NChar != '\0').ToList();
-		}
-
-
 		[Test]
 		public void StringTrimming([DataSources] string context)
 		{
@@ -107,10 +101,8 @@ namespace Tests.DataProvider
 
 				try
 				{
-					//Strip null chars - not supported in DB2i
-					var testData = StringTestData.Where(_ => !(_.NString ?? string.Empty).Contains("\0")).ToList();
+					var testData = StringTestData.ToList();
 
-					//foreach (var record in testData)
 					testData.ForEach(record =>
 					{
 						var query = db.GetTable<StringTestTable>().Value(_ => _.NString, record.NString);
@@ -129,12 +121,13 @@ namespace Tests.DataProvider
 					{
 						var (expected, actual) = x;
 						
-						Assert.AreEqual(expected.String?.TrimEnd(' '), actual.String);
+						// DB2i ignores null characters
+						Assert.AreEqual(expected.String?.TrimEnd(' ', '\0'), actual.String);
 
 						if (TestProvNameDb2i.IsiSeriesOleDb(context) && expected.NString is { } && expected.NString.StartsWith("test20")) //OleDb strips \u3000
 							Assert.AreEqual(expected.NString?.TrimEnd(), actual.NString);
 						else
-							Assert.AreEqual(expected.NString?.TrimEnd(' '), actual.NString);
+							Assert.AreEqual(expected.NString?.TrimEnd(' ', '\0'), actual.NString);
 					});
 				}
 				finally
@@ -143,8 +136,6 @@ namespace Tests.DataProvider
 				}
 			}
 		}
-
-
 
 		[Test]
 		public void CharTrimming([DataSources] string context)
@@ -176,7 +167,7 @@ namespace Tests.DataProvider
 						{
 							var (expected, actual) = x;
 
-							Assert.AreEqual(!TestProvNameDb2i.IsiSeriesDB2Connect(context) && expected.Char == ' '  ? '\0' : expected.Char, actual.Char);
+							Assert.AreEqual(TestProvNameDb2i.IsiSeriesOleDb(context) && expected.Char == ' '  ? '\0' : expected.Char, actual.Char);
 
 							if (TestProvNameDb2i.IsiSeriesOleDb(context) && expected.NChar == '\u3000') // OleDb strips \u3000
 								Assert.AreEqual('\0', actual.NChar);

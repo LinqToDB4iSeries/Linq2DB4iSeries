@@ -5,7 +5,7 @@ using LinqToDB;
 
 using NUnit.Framework;
 
-namespace Tests.Data
+namespace Tests.Custom
 {
 	using LinqToDB.Data;
 	using Model;

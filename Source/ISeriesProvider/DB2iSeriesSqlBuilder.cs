@@ -138,77 +138,28 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected override void BuildCreateTableCommand(SqlTable table)
 		{
-			string command;
-
 			if (table.TableOptions.IsTemporaryOptionSet())
 			{
-				switch (table.TableOptions & TableOptions.IsTemporaryOptionSet)
+				string command;
+				switch (table.TableOptions & TableOptions.IsGlobalTemporaryStructure)
 				{
-					case TableOptions.IsTemporary:
-					case TableOptions.IsTemporary | TableOptions.IsLocalTemporaryData:
-					case TableOptions.IsTemporary | TableOptions.IsLocalTemporaryStructure:
-					case TableOptions.IsTemporary | TableOptions.IsLocalTemporaryStructure | TableOptions.IsLocalTemporaryData:
-					case TableOptions.IsLocalTemporaryData:
-					case TableOptions.IsLocalTemporaryStructure:
-					case TableOptions.IsLocalTemporaryStructure | TableOptions.IsLocalTemporaryData:
-						command = "DECLARE GLOBAL TEMPORARY TABLE ";
-						break;
 					case TableOptions.IsGlobalTemporaryStructure:
-					case TableOptions.IsGlobalTemporaryStructure | TableOptions.IsLocalTemporaryData:
-						command = "CREATE GLOBAL TEMPORARY TABLE ";
+						command = "DECLARE GLOBAL TEMPORARY TABLE ";
 						break;
 					case var value:
 						throw new InvalidOperationException($"Incompatible table options '{value}'");
 				}
+				StringBuilder.Append(command);
 			}
 			else
 			{
-				command = "CREATE TABLE ";
-			}
-
-			StringBuilder.Append(command);
-		}
-
-		protected override void BuildStartCreateTableStatement(SqlCreateTableStatement createTable)
-		{
-			if (createTable.StatementHeader == null && createTable.Table!.TableOptions.HasCreateIfNotExists())
-			{
-				AppendIndent().AppendLine(@"BEGIN");
-
-				Indent++;
-
-				AppendIndent().AppendLine(@"DECLARE CONTINUE HANDLER FOR SQLSTATE '42710' BEGIN END;");
-				AppendIndent().AppendLine(@"EXECUTE IMMEDIATE '");
-
-				Indent++;
-			}
-
-			base.BuildStartCreateTableStatement(createTable);
-		}
-
-		protected override void BuildEndCreateTableStatement(SqlCreateTableStatement createTable)
-		{
-			base.BuildEndCreateTableStatement(createTable);
-
-			if (createTable.StatementHeader == null && createTable.Table!.TableOptions.HasCreateIfNotExists())
-			{
-				Indent--;
-
-				AppendIndent()
-					.AppendLine("';");
-
-				Indent--;
-
-				StringBuilder
-					.AppendLine("END");
+				base.BuildCreateTableCommand(table);
 			}
 		}
-
 		public override string GetTableSchemaName(SqlTable table)
 		{
-			return table.Schema == null && table.TableOptions.IsTemporaryOptionSet() ? "SESSION" : base.GetTableSchemaName(table);
+			return table.Schema == null && table.TableOptions.HasIsGlobalTemporaryStructure() ? "SESSION" : base.GetTableSchemaName(table);
 		}
-
 		#endregion
 
 		#region Similar to DB2 provider
@@ -330,7 +281,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		#endregion
 
 		#region iDB2 specific
-		
+
 		//OleDb provider needs spaces in specific places
 		protected override string Comma => Provider.ProviderType.IsOleDb() ? ", " : base.Comma;
 		
@@ -360,7 +311,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		//Use mapping schema and internal db datatype mapping information to get the appropriate dbType
 		protected override void BuildDataTypeFromDataType(SqlDataType type, bool forCreateTable)
 		{
-			var dbType = MappingSchema.GetDbDataType(type.SystemType, type.Type.DataType, type.Type.Length, type.Type.Precision, type.Type.Scale, forCreateTable, db2iSeriesSqlProviderFlags.SupportsNCharTypes);
+			var dbType = MappingSchema.GetDbDataType(type.SystemType, type.Type.DataType, type.Type.Length, type.Type.Precision, type.Type.Scale, false, db2iSeriesSqlProviderFlags.SupportsNCharTypes);
 
 			StringBuilder.Append(dbType.ToSqlString());
 		}
@@ -388,7 +339,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			//Null values need to be explicitly casted
 			if (expr is SqlValue value && value.Value == null)
 			{
-				var colType = MappingSchema.GetDbTypeForCast(new SqlDataType(value.ValueType)).ToSqlString();
+				var colType = MappingSchema.GetDbTypeForCast(this.DB2iSeriesSqlProviderFlags, new SqlDataType(value.ValueType)).ToSqlString();
 				expr = new SqlExpression(expr.SystemType, "Cast({0} as {1})", Precedence.Primary, expr, new SqlExpression(colType, Precedence.Primary));
 			}
 
@@ -400,7 +351,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			//Parameter markers need to be explicitly type casted in many cases in iDB2
 			if (expr is SqlParameter parameter && parameter.Name != null)
 			{
-				var typeToCast = MappingSchema.GetDbTypeForCast(new SqlDataType(parameter.Type));
+				var typeToCast = MappingSchema.GetDbTypeForCast(this.DB2iSeriesSqlProviderFlags, new SqlDataType(parameter.Type));
 
 				//No type found - ommit cast
 				if (typeToCast.DataType == DataType.Undefined)
@@ -421,7 +372,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 			if (expr is SqlValue value && value.Value == null)
 			{
-				var typeToCast = MappingSchema.GetDbTypeForCast(new SqlDataType(value.ValueType));
+				var typeToCast = MappingSchema.GetDbTypeForCast(this.DB2iSeriesSqlProviderFlags, new SqlDataType(value.ValueType));
 
 				//No type found - ommit cast
 				if (typeToCast.DataType == DataType.Undefined)
@@ -450,8 +401,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			//otherwise return variant datatype, to differentiate from undefined
 			var typeToCast = value switch
 			{
-				SqlParameter sqlParameter when sqlParameter.Name != null => MappingSchema.GetDbTypeForCast(dataType),
-				SqlValue _ => MappingSchema.GetDbTypeForCast(dataType),
+				SqlParameter sqlParameter when sqlParameter.Name != null => MappingSchema.GetDbTypeForCast(this.DB2iSeriesSqlProviderFlags, dataType),
+				SqlValue _ => MappingSchema.GetDbTypeForCast(this.DB2iSeriesSqlProviderFlags, dataType),
 				_ => new DbDataType(null, DataType.Variant)
 			};
 
@@ -506,7 +457,28 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					if (ep.Expr1 is SqlFunction function
 						&& function.Name == "Date"
 						&& ep.Expr2 is SqlParameter parameter)
+					{
 						parameter.Type = parameter.Type.WithDataType(DataType.Date);
+
+						if (Provider.ProviderType.IsOleDb())
+						{
+							parameter.ValueConverter = obj =>
+							{
+								if (obj == null) return null;
+
+								if (obj is DateTime dt)
+								{
+									return dt.ToString("yyyy-MM-dd");
+								}
+								else if (obj is DateTimeOffset dto)
+								{
+									return dto.ToString("yyyy-MM-dd");
+								}
+
+								return obj;
+							};
+						}
+					}
 
 					break;
 			}
@@ -534,6 +506,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			if (insertClause.WithIdentity)
 				BuildGetIdentity(insertClause);
+		}
+
+		//Use IF EXISTS syntax
+		protected override void BuildDropTableStatement(SqlDropTableStatement dropTable)
+		{
+			if (DB2iSeriesSqlProviderFlags.SupportsDropTableIfExists)
+				this.BuildDropTableStatementIfExists(dropTable);
+			else
+				base.BuildDropTableStatement(dropTable);
 		}
 
 		#endregion
