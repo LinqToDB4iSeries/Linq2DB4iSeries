@@ -13,7 +13,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public static readonly Expression<Func<IDataReader, int, string>> GetTrimmedStringExpression
 				= (r, i) => TrimString(r.GetString(i));
 
-		private static string TrimString(string value)
+		
+		public static string TrimString(string value)
 			=> value?.TrimEnd(' ');
 	}
 }

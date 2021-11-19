@@ -152,10 +152,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			//SetProviderField(typeof(long), adapter.iDB2BigIntType, adapter.GetiDB2BigIntReaderMethod, dataReaderType: adapter.DataReaderType);
 			//SetProviderField(typeof(byte[]), adapter.iDB2BinaryType, adapter.GetiDB2BinaryReaderMethod, dataReaderType: adapter.DataReaderType);
 			//SetProviderField(typeof(byte[]), adapter.iDB2BlobType, adapter.GetiDB2BlobReaderMethod, dataReaderType: adapter.DataReaderType);
-
-			//var charWrapper = GetRenderParseWrapper(adapter.iDB2CharType, nameof(object.ToString), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.TrimString));
-
-			//SetProviderField(typeof(string), adapter.iDB2CharType, adapter.GetiDB2CharReaderMethod, charWrapper, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(string), adapter.iDB2CharType, adapter.GetiDB2CharReaderMethod, getTrimmedStringWrapper, dataReaderType: adapter.DataReaderType);
 			//SetProviderField(typeof(byte[]), adapter.iDB2CharBitDataType, adapter.GetiDB2CharBitDataReaderMethod, dataReaderType: adapter.DataReaderType);
 			//SetProviderField(typeof(string), adapter.iDB2ClobType, adapter.GetiDB2ClobReaderMethod, dataReaderType: adapter.DataReaderType);
 			//SetProviderField(typeof(string), adapter.iDB2DataLinkType, adapter.GetiDB2DataLinkReaderMethod, dataReaderType: adapter.DataReaderType);
@@ -164,48 +161,21 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			//SetProviderField(typeof(decimal), adapter.iDB2DecFloat34Type, adapter.GetiDB2DecFloat34ReaderMethod, dataReaderType: adapter.DataReaderType);
 			//SetProviderField(typeof(decimal), adapter.iDB2DecimalType, adapter.GetiDB2DecimalReaderMethod, dataReaderType: adapter.DataReaderType);
 			//SetProviderField(typeof(double), adapter.iDB2DoubleType, adapter.GetiDB2DoubleReaderMethod, dataReaderType: adapter.DataReaderType);
-
-			//var graphicWrapper = GetRenderParseWrapper(adapter.iDB2GraphicType, nameof(object.ToString), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.TrimString));
-
-			//SetProviderField(typeof(string), adapter.iDB2GraphicType, adapter.GetiDB2GraphicReaderMethod, graphicWrapper, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(string), adapter.iDB2GraphicType, adapter.GetiDB2GraphicReaderMethod, getTrimmedStringWrapper, dataReaderType: adapter.DataReaderType);
 			//SetProviderField(typeof(int), adapter.iDB2IntegerType, adapter.GetiDB2IntegerReaderMethod, dataReaderType: adapter.DataReaderType);
 			//SetProviderField(typeof(decimal), adapter.iDB2NumericType, adapter.GetiDB2NumericReaderMethod, dataReaderType: adapter.DataReaderType);
 			//SetProviderField(typeof(float), adapter.iDB2RealType, adapter.GetiDB2RealReaderMethod, dataReaderType: adapter.DataReaderType);
 			//SetProviderField(typeof(byte[]), adapter.iDB2RowidType, adapter.GetiDB2RowidReaderMethod, dataReaderType: adapter.DataReaderType);
 			//SetProviderField(typeof(short), adapter.iDB2SmallIntType, adapter.GetiDB2SmallIntReaderMethod, dataReaderType: adapter.DataReaderType);
-
-			//var dateWrapper = GetPropertyWrapper(adapter.iDB2DateType, "Value");
-
-			//SetProviderField(typeof(DateTime), adapter.iDB2DateType, adapter.GetiDB2DateReaderMethod, dateWrapper, dataReaderType: adapter.DataReaderType);
-
-			//var timeWrapper = GetPropertyWrapper(adapter.iDB2TimeType, "Value");
-
-			//SetProviderField(typeof(DateTime), adapter.iDB2TimeType, adapter.GetiDB2TimeReaderMethod, timeWrapper, dataReaderType: adapter.DataReaderType);
-
-			////TODO: Test Timestamp from time
-			//SetProviderField(typeof(TimeSpan), adapter.iDB2TimeType, adapter.GetiDB2TimeReaderMethod, getTimeSpanFromTimeWrapper(adapter.iDB2TimeType), dataReaderType: adapter.DataReaderType);
-
+			//SetProviderField(typeof(DateTime), adapter.iDB2DateType, adapter.GetiDB2DateReaderMethod, getValue<DateTime>, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(DateTime), adapter.iDB2TimeType, adapter.GetiDB2TimeReaderMethod, getValue<DateTime>, dataReaderType: adapter.DataReaderType);
 			SetProviderField(typeof(DateTime), adapter.iDB2TimeStampType, adapter.GetiDB2TimeStampReaderMethod, getTimeStampWrapper(adapter.iDB2TimeStampType), dataReaderType: adapter.DataReaderType);
 			SetProviderField(typeof(DateTimeOffset), adapter.iDB2TimeStampType, adapter.GetiDB2TimeStampReaderMethod, getTimeStampWrapper(adapter.iDB2TimeStampType), dataReaderType: adapter.DataReaderType);
 			//SetProviderField(typeof(byte[]), adapter.iDB2VarBinaryType, adapter.GetiDB2VarBinaryReaderMethod, dataReaderType: adapter.DataReaderType);
-
-			//var varCharWrapper = GetRenderParseWrapper(adapter.iDB2VarCharType, nameof(object.ToString), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.TrimString));
-
-			//SetProviderField(typeof(string), adapter.iDB2VarCharType, adapter.GetiDB2VarCharReaderMethod, varCharWrapper, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(string), adapter.iDB2VarCharType, adapter.GetiDB2VarCharReaderMethod, getTrimmedStringWrapper, dataReaderType: adapter.DataReaderType);
 			//SetProviderField(typeof(byte[]), adapter.iDB2VarCharBitDataType, adapter.GetiDB2VarCharBitDataReaderMethod, dataReaderType: adapter.DataReaderType);
-
-			//var varGrphicWrapper = GetRenderParseWrapper(adapter.iDB2VarGraphicType, nameof(object.ToString), typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.TrimString));
-
-			//SetProviderField(typeof(string), adapter.iDB2VarGraphicType, adapter.GetiDB2VarGraphicReaderMethod, varGrphicWrapper, dataReaderType: adapter.DataReaderType);
+			//SetProviderField(typeof(string), adapter.iDB2VarGraphicType, adapter.GetiDB2VarGraphicReaderMethod, getTrimmedStringWrapper, dataReaderType: adapter.DataReaderType);
 			//SetProviderField(typeof(string), adapter.iDB2XmlType, adapter.GetiDB2XmlReaderMethod, dataReaderType: adapter.DataReaderType);
-
-			//static Delegate getTimeSpanFromTimeWrapper(Type iDB2TimeType)
-			//{
-			//	var parameter = Expression.Parameter(iDB2TimeType);
-			//	var value = Expression.Property(parameter, "Value");
-			//	var timeOfDay = Expression.Property(value, nameof(DateTime.TimeOfDay));
-			//	return Expression.Lambda(timeOfDay, parameter).Compile();
-			//}
 
 			static Delegate getTimeStampWrapper(Type iDB2TimeStampType)
 			{
@@ -213,16 +183,38 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				//It only works properly when parsing from string or using the picoseconds overload
 
 				//String render and parse variation
-				//return GetRenderParseWrapper(iDB2TimeStampType, "ToNativeFormat", typeof(DB2iSeriesSqlBuilder), nameof(DB2iSeriesSqlBuilder.ParseDateTime));
+				//return ExpressionTools
+				//	.FromMethodInvocation<string>(iDB2TimeStampType, "ToNativeFormat")
+				//	.Pipe(x => SqlDateTimeParser.ParseDateTime(x))
+				//	.Build()
+				//	.Compile();
 
 				//Calculation on inner DateTime and Picoseconds variations
-				var parameter = Expression.Parameter(iDB2TimeStampType);
-				var value = Expression.Property(parameter, "Value");
-				var picosecondValue = Expression.Property(parameter, "Picosecond");
-				Expression<Func<DateTime, long, DateTime>> f = (dt, p) => new DateTime(dt.Ticks - dt.Millisecond * 10000 + p / 100000);
-				var calc = Expression.Invoke(f, value, picosecondValue);
-				return Expression.Lambda(calc, parameter).Compile();
+				return ExpressionTools
+					.FromMemberAccess(iDB2TimeStampType, "Value", "PicoSecond",
+						(DateTime value, long picoSecond) => new DateTime(value.Ticks - value.Millisecond * 10000 + picoSecond / 100000))
+					.Build()
+					.Compile();
 			}
+
+			//static Delegate getTrimmedStringWrapper(Type iDB2Type)
+			//{
+			//	//Call to string on type and then call trim string on the result
+			//	return ExpressionTools
+			//		.FromMethodInvocation<string>(iDB2Type, "ToString")
+			//		.Pipe(ExpressionTools.TrimStringExpression)
+			//		.Build()
+			//		.Compile();
+			//}
+
+			//static Delegate getValue<T>(Type iDB2Type)
+			//{
+			//	//Call to string on type and then call trim string on the result
+			//	return ExpressionTools
+			//		.FromMemberAccess<T>(iDB2Type, "Value")
+			//		.Build()
+			//		.Compile();
+			//}
 		}
 #endif
 
@@ -259,7 +251,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			SqlProviderFlags.IsParameterOrderDependent = true;
 
-			var adapter = (OdbcProviderAdapter)Adapter.GetInstance();
+			//var adapter = (OdbcProviderAdapter)Adapter.GetInstance();
 		}
 
 		private void SetupOleDb()
@@ -273,32 +265,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetProviderField<IDataReader, DateTimeOffset, string>((r, i) => SqlDateTimeParser.ParseDateTime(r.GetString(i)));
 			SetProviderField<IDataReader, TimeSpan, string>((r, i) => SqlDateTimeParser.ParseTimeSpan(r.GetString(i)));
 		}
-
-		//private static Delegate GetPropertyWrapper(Type type, string propertyName)
-		//{
-		//	var param = Expression.Parameter(type);
-		//	var property = type.GetProperty(propertyName);
-		//	var expression = Expression.Property(param, property);
-		//	return Expression.Lambda(expression, param).Compile();
-		//}
-
-		//private static Delegate GetRenderParseWrapper(Type paramType, string renderMethodName, Type parserType, string parseMethodName)
-		//{
-		//	var param = Expression.Parameter(paramType);
-		//	var renderMethod = paramType.GetMethod(renderMethodName);
-		//	var renderCall = Expression.Call(param, renderMethod);
-		//	var parseMethod = parserType.GetMethod(parseMethodName);
-		//	var parseCall = Expression.Call(parseMethod, renderCall);
-		//	return Expression.Lambda(parseCall, param).Compile();
-		//}
-
-		//private static Delegate GetStaticMethodWrapper(Type paramType, Type staticType, string methodName)
-		//{
-		//	var param = Expression.Parameter(paramType);
-		//	var method = staticType.GetMethod(methodName);
-		//	var expression = Expression.Call(method, param);
-		//	return Expression.Lambda(expression, param).Compile();
-		//}
 
 		/// <summary>
 		/// This is identical to the base method except that it wraps the method call in a delagate.
@@ -335,6 +301,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			return true;
 		}
+
+		protected bool SetProviderField(Type toType, Type fieldType, string methodName, Func<Type, Delegate> wrapperFactory, bool throwException = true, Type dataReaderType = null)
+			=> SetProviderField(toType, fieldType, methodName, wrapperFactory(toType), throwException, dataReaderType);
 
 		public override TableOptions SupportedTableOptions
 		{
