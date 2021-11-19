@@ -94,6 +94,11 @@ namespace Tests
 				//Access client throws a different exception so it is excluded
 				case ("DataContextTests", "ProviderConnectionStringConstructorTest2"):
 					return contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_AccessClient));
+
+				//LAG returns numeric instead of timestamp prior to 7.4
+				case ("AnalyticTests", "Issue1799Test1"):
+				case ("AnalyticTests", "Issue1799Test2"):
+					return contexts.Intersect(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_74));
 			}
 
 			return contexts;
