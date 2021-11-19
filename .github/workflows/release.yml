@@ -17,9 +17,9 @@ jobs:
     - name: Set VERSION variable from tag
       run: echo "VERSION=${GITHUB_REF/refs\/tags\/v/}" >> $GITHUB_ENV
     - name: Build
-      run: dotnet build --configuration .\Source\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj Release /p:Version=${VERSION}
+      run: dotnet build --configuration Release .\Source\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj /p:Version=${VERSION}
     - name: Pack
-      run: dotnet pack --configuration .\Source\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj Release /p:Version=${VERSION} --no-build --output .
+      run: dotnet pack --configuration Release .\Source\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj /p:Version=${VERSION} --no-build --output .
     - name: Push
       run: dotnet nuget push linq2db4iSeries.${VERSION}.nupkg --source https://www.myget.org/F/nsarristest/api/v3/index.json --api-key ${NUGET_TOKEN}
       env:
