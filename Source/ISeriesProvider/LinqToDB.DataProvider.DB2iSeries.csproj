@@ -3,7 +3,7 @@
 
 	<PropertyGroup>
 		<PackageId>linq2db4iSeries</PackageId>
-		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+		<UpdateAssemblyInfo>false</UpdateAssemblyInfo>
 	</PropertyGroup>
 	
 	<PropertyGroup>
