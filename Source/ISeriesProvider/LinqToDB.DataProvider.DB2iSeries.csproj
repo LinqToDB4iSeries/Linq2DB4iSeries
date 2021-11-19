@@ -2,7 +2,6 @@
 	<Import Project="..\..\Build\linq2db.Source.props" />
 
 	<PropertyGroup>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<PackageId>linq2db4iSeries</PackageId>
 	</PropertyGroup>
 	
