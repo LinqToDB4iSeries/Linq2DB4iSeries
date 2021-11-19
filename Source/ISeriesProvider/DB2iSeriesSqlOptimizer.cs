@@ -54,50 +54,49 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return text;
 		}
 
-		//TODO: v3.6.0 linq2db changed query visitor
-		//public override SqlStatement Finalize(SqlStatement statement)
-		//{
-		//	static long getAbsoluteHashCode(object o) => (long)o.GetHashCode() + (long)int.MaxValue;
+		public override SqlStatement Finalize(SqlStatement statement)
+		{
+			static long getAbsoluteHashCode(object o) => (long)o.GetHashCode() + (long)int.MaxValue;
 
-		//	new QueryVisitor().Visit(statement, expr =>
-		//	{
-		//		switch (expr.ElementType)
-		//		{
-		//			case QueryElementType.SqlParameter:
-		//				{
-		//					var p = (SqlParameter)expr;
-		//					p.Name = SanitizeAliasOrParameterName(p.Name, $"P{getAbsoluteHashCode(p)}");
+			new QueryVisitor<object>(true, expr =>
+			{
+				switch (expr.ElementType)
+				{
+					case QueryElementType.SqlParameter:
+						{
+							var p = (SqlParameter)expr;
+							p.Name = SanitizeAliasOrParameterName(p.Name, $"P{getAbsoluteHashCode(p)}");
 
-		//					break;
-		//				}
-		//			case QueryElementType.TableSource:
-		//				{
-		//					var table = (SqlTableSource)expr;
-		//					table.Alias = SanitizeAliasOrParameterName(table.Alias, $"T{table.SourceID}");
-		//					break;
-		//				}
-		//			case QueryElementType.Column:
-		//				{
-		//					var column = (SqlColumn)expr;
-		//					column.Alias = SanitizeAliasOrParameterName(column.Alias, $"C{getAbsoluteHashCode(column)}");
-		//					break;
-		//				}
-		//		}
-		//	});
+							break;
+						}
+					case QueryElementType.TableSource:
+						{
+							var table = (SqlTableSource)expr;
+							table.Alias = SanitizeAliasOrParameterName(table.Alias, $"T{table.SourceID}");
+							break;
+						}
+					case QueryElementType.Column:
+						{
+							var column = (SqlColumn)expr;
+							column.Alias = SanitizeAliasOrParameterName(column.Alias, $"C{getAbsoluteHashCode(column)}");
+							break;
+						}
+				}
+			}).Visit(statement);
 
-		//	static void setQueryParameter(IQueryElement element)
-		//	{
-		//		if (element.ElementType == QueryElementType.SqlParameter)
-		//		{
-		//			((SqlParameter)element).IsQueryParameter = false;
-		//		}
-		//	}
+			static void setQueryParameter(IQueryElement element)
+			{
+				if (element.ElementType == QueryElementType.SqlParameter)
+				{
+					((SqlParameter)element).IsQueryParameter = false;
+				}
+			}
 
-		//	if (statement.SelectQuery != null)
-		//		(new QueryVisitor()).Visit(statement.SelectQuery.Select, setQueryParameter);
+			if (statement.SelectQuery != null)
+				new QueryVisitor<object>(true, setQueryParameter).Visit(statement.SelectQuery.Select);
 
-		//	return base.Finalize(statement);
-		//}
+			return base.Finalize(statement);
+		}
 
 		public override ISqlExpression ConvertExpressionImpl(ISqlExpression expression, ConvertVisitor<RunOptimizationContext> visitor)
 		{

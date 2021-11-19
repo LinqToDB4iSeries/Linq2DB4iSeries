@@ -14,8 +14,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="linq2db.Tools" Version="3.3.0" />
-		<PackageReference Update="linq2db.AspNet" Version="3.3.0" />
+		<PackageReference Include="linq2db.Tools" Version="3.6.0" />
+		<PackageReference Update="linq2db.AspNet" Version="3.6.0" />
 		<PackageReference Include="NUnit" Version="3.13.2" />
 		<PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
