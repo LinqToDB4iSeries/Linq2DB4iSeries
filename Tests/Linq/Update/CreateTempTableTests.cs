@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
 using LinqToDB;
 
 using NUnit.Framework;
@@ -27,8 +28,11 @@ namespace Tests.xUpdate
 
 				using (var tmp = db.CreateTempTable(
 					"TempTable",
-					db.Parent.Select(p => new IDTable { ID = p.ParentID })))
+					db.Parent.Select(p => new IDTable { ID = p.ParentID }),
+					tableOptions:TableOptions.CheckExistence))
 				{
+					var l = tmp.ToList();
+
 					var list =
 					(
 						from p in db.Parent
@@ -48,7 +52,8 @@ namespace Tests.xUpdate
 
 				using (var tmp = db.CreateTempTable(
 					"TempTable",
-					db.Parent.Select(p => new { ID = p.ParentID })))
+					db.Parent.Select(p => new { ID = p.ParentID }),
+					tableOptions:TableOptions.CheckExistence))
 				{
 					var list =
 					(
@@ -72,7 +77,8 @@ namespace Tests.xUpdate
 					db.Parent.Select(p => new { ID = p.ParentID }),
 					em => em
 						.Property(e => e.ID)
-							.IsPrimaryKey()))
+							.IsPrimaryKey(),
+					tableOptions:TableOptions.CheckExistence))
 				{
 					var list =
 					(
@@ -93,7 +99,8 @@ namespace Tests.xUpdate
 
 				using (var tmp = db.CreateTempTable(
 					"TempTable",
-					db.Parent.Select(p => new IDTable { ID = p.ParentID }).ToList()))
+					db.Parent.Select(p => new IDTable { ID = p.ParentID }).ToList(),
+					tableOptions:TableOptions.CheckExistence))
 				{
 					var list =
 					(
@@ -110,14 +117,12 @@ namespace Tests.xUpdate
 		{
 			using (var db = GetDataContext(context))
 			{
-				db.DropTable<int>("TempTable", throwExceptionIfNotExists: false);
+				await db.DropTableAsync<int>("TempTable", throwExceptionIfNotExists: false);
 
-#if !NET472
-				await
-#endif
-				using (var tmp = await db.CreateTempTableAsync(
+				await using (var tmp = await db.CreateTempTableAsync(
 					"TempTable",
-					db.Parent.Select(p => new IDTable { ID = p.ParentID })))
+					db.Parent.Select(p => new IDTable { ID = p.ParentID }),
+					tableOptions:TableOptions.CheckExistence))
 				{
 					var list =
 					(
@@ -136,12 +141,10 @@ namespace Tests.xUpdate
 			{
 				db.DropTable<int>("TempTable", throwExceptionIfNotExists: false);
 
-#if !NET472
-				await
-#endif
-				using (var tmp = await db.CreateTempTableAsync(
+				await using (var tmp = await db.CreateTempTableAsync(
 					"TempTable",
-					db.Parent.Select(p => new IDTable { ID = p.ParentID }).ToList()))
+					db.Parent.Select(p => new IDTable { ID = p.ParentID }).ToList(),
+					tableOptions:TableOptions.CheckExistence))
 				{
 					var list =
 					(
@@ -164,10 +167,7 @@ namespace Tests.xUpdate
 
 				try
 				{
-#if !NET472
-					await
-#endif
-					using (var tmp = await db.CreateTempTableAsync(
+					await using (var tmp = await db.CreateTempTableAsync(
 						"TempTable",
 						db.Parent.Select(p => new IDTable { ID = p.ParentID }).ToList(),
 						cancellationToken: cts.Token))
@@ -182,7 +182,7 @@ namespace Tests.xUpdate
 					Assert.Fail("Task should have been canceled but was not");
 				}
 				catch (OperationCanceledException) { }
-				
+
 
 				var tableExists = true;
 				try
@@ -207,10 +207,7 @@ namespace Tests.xUpdate
 
 				try
 				{
-#if !NET472
-					await
-#endif
-					using (var tmp = await db.CreateTempTableAsync(
+					await using (var tmp = await db.CreateTempTableAsync(
 						"TempTable",
 						db.Parent.Select(p => new IDTable { ID = p.ParentID }),
 						action: (table) =>
@@ -243,5 +240,46 @@ namespace Tests.xUpdate
 				Assert.AreEqual(false, tableExists);
 			}
 		}
+
+		[Test]
+		public void CreateTableSQLite([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		{
+			using var db = GetDataContext(context);
+
+			var data = new[] { new { ID = 1, Field = 2 } };
+
+			using (var tmp = db.CreateTempTable(data, tableName : "#TempTable"))
+			{
+				var list = tmp.ToList();
+
+				Assert.That(list, Is.EquivalentTo(data));
+			}
+		}
+
+		[Test]
+		public void CreateTable_NoDisposeError([DataSources(false)] string context)
+		{
+			using var db = new TestDataConnection(context);
+			db.DropTable<int>("TempTable", throwExceptionIfNotExists: false);
+
+			var tempTable = db.CreateTempTable<IDTable>("TempTable");
+			var table2 = db.GetTable<IDTable>().TableOptions(TableOptions.IsTemporary).TableName("TempTable");
+			table2.Drop();
+			tempTable.Dispose();
+		}
+
+#if !NETFRAMEWORK
+		[Test]
+		public async Task CreateTable_NoDisposeErrorAsync([DataSources(false)] string context)
+		{
+			using var db = new TestDataConnection(context);
+			await db.DropTableAsync<int>("TempTable", throwExceptionIfNotExists: false);
+
+			var tempTable = await db.CreateTempTableAsync<IDTable>("TempTable");
+			var table2 = db.GetTable<IDTable>().TableOptions(TableOptions.IsTemporary).TableName("TempTable");
+			await table2.DropAsync();
+			await tempTable.DisposeAsync();
+		}
+#endif
 	}
 }

@@ -38,9 +38,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return DB2iSeriesDbTypes.GetDbDataType(systemType, dataType, length, precision, scale, mappingSchema.IsGuidMappedAsString(), forceDefaultAttributes, supportsNCharTypes);
 		}
 
-		public static DbDataType GetDbTypeForCast(this MappingSchema mappingSchema, SqlDataType type)
+		public static DbDataType GetDbTypeForCast(this MappingSchema mappingSchema, DB2iSeriesSqlProviderFlags flags, SqlDataType type)
 		{
-			return DB2iSeriesDbTypes.GetDbTypeForCast(type, mappingSchema);
+			return DB2iSeriesDbTypes.GetDbTypeForCast(type, mappingSchema, flags);
 		}
 
 		public static IDbConnection GetProviderConnection(this DataConnection dataConnection)
@@ -91,9 +91,49 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						.Where(x => x != string.Empty)
 						.ToList();
 				}
+				else
+				{
+					string lib = dataConnection.GetDefaultLib();
+					if(lib != null)
+					{
+						return new string[] { lib };
+					}
+				}
 			}
 
 			return Enumerable.Empty<string>();
+		}
+
+		public static string GetDefaultLib(this DataConnection dataConnection)
+		{
+			var connection = GetProviderConnection(dataConnection);
+
+			if (dataConnection.DataProvider is DB2iSeriesDataProvider iSeriesDataProvider)
+			{
+				var defaultLibKey = iSeriesDataProvider.ProviderType switch
+				{
+#if NETFRAMEWORK
+					DB2iSeriesProviderType.AccessClient => "Default Collection",
+#endif
+					DB2iSeriesProviderType.Odbc => "DBQ",
+					DB2iSeriesProviderType.OleDb => "Default Collection",
+					DB2iSeriesProviderType.DB2 => "CurrentSchema",
+					_ => throw ExceptionHelper.InvalidAdoProvider(iSeriesDataProvider.ProviderType)
+				};
+
+				var csb = new DbConnectionStringBuilder() { ConnectionString = dataConnection.ConnectionString };
+
+				if (csb.TryGetValue(defaultLibKey, out var library))
+				{
+					string result = library.ToString().Trim();
+					if(!string.IsNullOrEmpty(result))
+					{
+						return result;
+					}
+				}
+			}
+
+			return null;
 		}
 
 		public static string GetDelimiter(this DataConnection dataConnection)

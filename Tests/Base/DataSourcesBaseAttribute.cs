@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,11 +9,11 @@ namespace Tests
 {
 	public abstract class DataSourcesBaseAttribute : NUnitAttribute, IParameterDataSource
 	{
-		public bool     IncludeLinqService { get; }
-		public string[] Providers          { get; }
+		public bool IncludeLinqService { get; }
+		public string[] Providers { get; }
 
-		public static bool NoLinqService   { get; set; }
-		
+		public static bool NoLinqService { get; set; }
+
 		protected DataSourcesBaseAttribute(bool includeLinqService, string[] providers)
 		{
 			IncludeLinqService = includeLinqService;
@@ -34,7 +33,7 @@ namespace Tests
 
 #if NETFRAMEWORK
 			if (!NoLinqService && IncludeLinqService)
-				providers.AddRange(providers.Select(p => p + ".LinqService"));
+				providers.AddRange(providers.Select(p => p + ".LinqService").ToList());
 #endif
 			return CustomizationSupport.Interceptor.InterceptTestDataSources(this, parameter.Method, providers);
 		}

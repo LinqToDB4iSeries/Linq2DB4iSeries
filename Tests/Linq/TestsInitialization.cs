@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Data.Common;
-using System.IO;
 using System.Reflection;
-
 using NUnit.Framework;
+
+#if !NET472
+using System.IO;
+#endif
 
 using Tests;
 
@@ -17,6 +19,10 @@ public partial class TestsInitialization
 	[OneTimeSetUp]
 	public void TestAssemblySetup()
 	{
+		// uncomment it to run tests with SeqentialAccess command behavior
+		//LinqToDB.Common.Configuration.OptimizeForSequentialAccess = true;
+		//DbCommandProcessorExtensions.Instance = new SequentialAccessCommandProcessor();
+
 		// netcoreapp2.1 adds DbProviderFactories support, but providers should be registered by application itself
 		// this code allows to load assembly using factory without adding explicit reference to project
 		RegisterSapHanaFactory();
@@ -45,7 +51,10 @@ public partial class TestsInitialization
 		// register test providers
 		TestNoopProvider.Init();
 		SQLiteMiniprofilerProvider.Init();
-		
+
+		// uncomment to run FEC for all tests and comment reset line in TestBase.OnAfterTest
+		//LinqToDB.Common.Compilation.SetExpressionCompiler(_ => FastExpressionCompiler.ExpressionCompiler.CompileFast(_, true));
+
 		//support for 3rd party provider integration
 		InitCustom();
 	}
@@ -64,7 +73,7 @@ public partial class TestsInitialization
 				// if you run tests from path with spaces - it will not help you
 				File.Copy(srcPath, targetPath, true);
 				var sapHanaAssembly = Assembly.LoadFrom(targetPath);
-				DbProviderFactories.RegisterFactory("Sap.Data.Hana", sapHanaAssembly.GetType("Sap.Data.Hana.HanaFactory"));
+				DbProviderFactories.RegisterFactory("Sap.Data.Hana", sapHanaAssembly.GetType("Sap.Data.Hana.HanaFactory")!);
 			}
 		}
 		catch { }
@@ -81,7 +90,7 @@ public partial class TestsInitialization
 			var pathx86 = @"c:\Program Files (x86)\Microsoft SQL Server Compact Edition\v4.0\Private\System.Data.SqlServerCe.dll";
 			var path = IntPtr.Size == 4 ? pathx86 : pathx64;
 			var assembly = Assembly.LoadFrom(path);
-			DbProviderFactories.RegisterFactory("System.Data.SqlServerCe.4.0", assembly.GetType("System.Data.SqlServerCe.SqlCeProviderFactory"));
+			DbProviderFactories.RegisterFactory("System.Data.SqlServerCe.4.0", assembly.GetType("System.Data.SqlServerCe.SqlCeProviderFactory")!);
 		}
 		catch { }
 #endif

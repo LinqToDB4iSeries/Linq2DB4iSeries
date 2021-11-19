@@ -10,7 +10,6 @@ using LinqToDB.Linq;
 using LinqToDB.Mapping;
 
 using NUnit.Framework;
-using Tests.Tools;
 
 #region ReSharper disable
 // ReSharper disable ConvertToConstant.Local
@@ -18,8 +17,8 @@ using Tests.Tools;
 
 namespace Tests.xUpdate
 {
-	using Model;
 	using System.Collections.Generic;
+	using Model;
 
 	[TestFixture]
 	[Order(10000)]
@@ -1196,7 +1195,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public async Task InsertOrReplace1Async([InsertOrUpdateDataSources] string context)
+		public async Task InsertOrReplace1Async([DataSources] string context)
 		{
 			ResetPersonIdentity(context);
 
@@ -1828,7 +1827,7 @@ namespace Tests.xUpdate
 		public void InsertOrReplaceByTableName([InsertOrUpdateDataSources] string context)
 		{
 			const string? schemaName = null;
-			var tableName  = "xxPatient" + TestUtils.GetNext().ToString();
+			var tableName  = "xxPatient" + (context.Contains("Firebird") ? TestUtils.GetNext().ToString() : string.Empty);
 
 			using (var db = GetDataContext(context))
 			{
@@ -1871,10 +1870,10 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public async Task InsertOrReplaceByTableNameAsync([InsertOrUpdateDataSources] string context)
+		public async Task InsertOrReplaceByTableNameAsync([DataSources] string context)
 		{
 			const string? schemaName = null;
-			var tableName  = "xxPatient" + TestUtils.GetNext().ToString();
+			var tableName  = "xxPatient" + (context.Contains("Firebird") ? TestUtils.GetNext().ToString() : string.Empty);
 
 			using (var db = GetDataContext(context))
 			{
@@ -1945,7 +1944,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void TestUpdateWithColumnFilter([InsertOrUpdateDataSources] string context, [Values] bool withMiddleName)
+		public void TestUpdateWithColumnFilter([DataSources] string context, [Values] bool withMiddleName)
 		{
 			ResetPersonIdentity(context);
 

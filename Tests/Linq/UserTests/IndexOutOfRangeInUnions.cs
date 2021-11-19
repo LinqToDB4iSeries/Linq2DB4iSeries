@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using LinqToDB;
 using NUnit.Framework;
 
@@ -34,7 +33,7 @@ namespace Tests.UserTests
 
 				Assert.DoesNotThrow(() => TestContext.WriteLine(query?.ToString()));
 
-				query.ToList();
+				query!.ToList();
 			}
 		}
 

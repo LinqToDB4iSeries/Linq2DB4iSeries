@@ -56,7 +56,7 @@ namespace Tests.DataProvider
 			[Column("FieldDecimal")]
 			public decimal? FieldDecimal;
 
-			[Column("FieldDate")]
+			[Column("FieldDate", DataType = DataType.Date)]
 			public DateTime? FieldDate;
 
 			[Column("FieldTime")]
@@ -340,7 +340,7 @@ namespace Tests.DataProvider
 
 		private static void AssertChar(char? expected, char? actual, string provider)
 		{
-			if (!TestProvNameDb2i.IsiSeriesDB2Connect(provider) && expected == ' ')
+			if (TestProvNameDb2i.IsiSeriesOleDb(provider) && expected == ' ')
 				expected = '\0';
 			
 			Assert.AreEqual(expected, actual);
@@ -348,10 +348,12 @@ namespace Tests.DataProvider
 
 		private static void AssertString(string? expected, string? actual, string provider)
 		{
-			if (TestProvNameDb2i.IsiSeriesOleDb(provider))
-				expected = expected?.TrimEnd(' ');
+			var exp = expected?.TrimEnd(' ');
 
-			Assert.AreEqual(expected, actual);
+			if (TestProvNameDb2i.IsiSeriesOleDb(provider) && (exp?.EndsWith("\0")).GetValueOrDefault())
+				exp = exp?.TrimEnd(' ', '\0');
+
+			Assert.AreEqual(exp, actual);
 		}
 
 		private static void AssertTime(TimeSpan? expected, TimeSpan? actual, string provider)

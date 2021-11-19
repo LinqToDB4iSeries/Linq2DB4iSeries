@@ -76,7 +76,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			
 			return version switch
 			{
-				var x when x >= new ServerVersion(7, 2, 9) => DB2iSeriesVersion.V7_3,
+				var x when x > new ServerVersion(7, 3, 11) => DB2iSeriesVersion.V7_4,
+				var x when x > new ServerVersion(7, 2, 9) => DB2iSeriesVersion.V7_3,
 				var x when x >= new ServerVersion(7, 2, 0) => DB2iSeriesVersion.V7_2,
 				_ => DB2iSeriesVersion.V7_1
 			};

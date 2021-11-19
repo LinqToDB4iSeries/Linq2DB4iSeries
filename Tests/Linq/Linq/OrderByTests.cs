@@ -2,7 +2,6 @@
 using System.Linq;
 
 using LinqToDB;
-using LinqToDB.Data;
 using LinqToDB.SqlQuery;
 using NUnit.Framework;
 
@@ -588,6 +587,45 @@ namespace Tests.Linq
 					.ToArray();
 
 				Assert.That(db.LastQuery, Does.Contain("ORDER BY"));
+			}
+		}
+
+		[Test]
+		public void OrderByInUnion([IncludeDataSources(TestProvName.AllSQLite, TestProvName.AllOracleManaged)] string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+
+				var query1 =
+					db.Child.OrderBy(c => c.ChildID).Concat(db.Child.OrderByDescending(c => c.ChildID));
+				var query2 =
+					db.Child.Concat(db.Child.OrderByDescending(c => c.ChildID));
+
+				var query3 = query1.OrderBy(_ => _.ChildID);
+
+				Assert.DoesNotThrow(() => query1.ToArray());
+				Assert.DoesNotThrow(() => query2.ToArray());
+				Assert.DoesNotThrow(() => query3.ToArray());
+			}
+		}
+
+		[Test]
+		public void OrderByContains([DataSources] string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var ids = new int[]{ 1, 3 };
+				db.Person.OrderBy(_ => ids.Contains(_.ID)).ToList();
+			}
+		}
+
+		[Test]
+		public void OrderByContainsSubquery([DataSources] string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var ids = new int[]{ 1, 3 };
+				db.Person.Select(_ => new { _.ID, _.LastName, flag = ids.Contains(_.ID) }).OrderBy(_ => _.flag).ToList();
 			}
 		}
 

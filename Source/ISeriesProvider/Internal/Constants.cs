@@ -10,6 +10,8 @@
 			public const string SupportsNamedParameters = "SupportsNamedParameters";
 			public const string SupportsMergeStatement = "SupportsMergeStatement";
 			public const string SupportsNCharTypes = "SupportsNCharTypes";
+			public const string SupportsDropTableIfExists = "SupportsDropTableIfExists";
+			public const string SupportsArbitraryTimeStampPrecision = "SupportsArbitraryTimeStampPrecision";
 		}
 
 		public static class DbTypes

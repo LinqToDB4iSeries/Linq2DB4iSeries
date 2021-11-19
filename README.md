@@ -56,7 +56,7 @@ For more info see: https://www.ibm.com/support/knowledgecenter/ssw_ibm_i_74/rzai
 
 - Access Client OleDb provider
 ```
-Provider=IBMDA400;Data Source=pub400.com;User Id={USER_ID};Password={PASSWORD};Default Collection={DEFAULT_LIBRARY};Convert Date Time To Char=FALSE;LIBRARY LIST={LIBRARY_LIST};Maximum Decimal Precision=63;Maximum Decimal Scale=63;Naming Convention=0
+Provider=IBMDA400;Data Source=pub400.com;User Id={USER_ID};Password={PASSWORD};Default Collection={DEFAULT_LIBRARY};Convert Date Time To Char=TRUE;LIBRARY LIST={LIBRARY_LIST};Maximum Decimal Precision=63;Maximum Decimal Scale=63;Naming Convention=0
 ```
 
 For more info see: https://www.ibm.com/support/pages/access-client-solutions-ole-db-custom-connection-properties

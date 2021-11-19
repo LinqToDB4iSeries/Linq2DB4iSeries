@@ -207,8 +207,8 @@ namespace Tests.Linq
 			{
 				var dd = GetNorthwindAsList(context);
 				Assert.AreEqual(
-					dd.DiscontinuedProduct.FirstOrDefault().ProductID,
-					db.DiscontinuedProduct.FirstOrDefault().ProductID);
+					dd.DiscontinuedProduct.FirstOrDefault()!.ProductID,
+					db.DiscontinuedProduct.FirstOrDefault()!.ProductID);
 			}
 		}
 
@@ -357,7 +357,7 @@ namespace Tests.Linq
 				var expected = db.Product.ToList().Select(x => x is Northwind.DiscontinuedProduct ? x : null).ToList();
 
 				Assert.That(result.Count,                    Is.GreaterThan(0));
-				Assert.That(expected.Count(),                Is.EqualTo(result.Count));
+				Assert.That(expected.Count,                  Is.EqualTo(result.Count));
 				Assert.That(result.Contains(null),           Is.True);
 				Assert.That(result.Select(x => x == null ? (int?)null : x.ProductID).Except(expected.Select(x => x == null ? (int?)null : x.ProductID)).Count(), Is.EqualTo(0));
 			}
@@ -408,8 +408,8 @@ namespace Tests.Linq
 
 		}
 
-		T FindById<T>(IQueryable<T> queryable, int id)
-			where T : IChildTest14
+		T? FindById<T>(IQueryable<T> queryable, int id)
+			where T : class, IChildTest14
 		{
 			return queryable.Where(x => x.ChildID == id).FirstOrDefault();
 		}

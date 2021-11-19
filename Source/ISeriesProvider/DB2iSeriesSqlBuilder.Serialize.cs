@@ -13,7 +13,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	{
 		private static void AppendConversion(StringBuilder stringBuilder, int value)
 		{
-			stringBuilder.Append("CHR(").Append(value).Append(")");
+			stringBuilder.Append("CHR(").Append(value).Append(')');
 		}
 
 		public static void ConvertStringToSql(StringBuilder stringBuilder, string value)
@@ -40,35 +40,56 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return sb.ToString();
 		}
 
-		public static void ConvertDateTimeToSql(StringBuilder stringBuilder, DataType datatype, DateTime value, bool quoted = true)
+		private static readonly string[] sqlDateTimeFormats = Enumerable.Range(0, 8)
+			.Select(x => x switch
+			{
+				0 => " HH:mm:ss",
+				_ => $" HH:mm:ss.{new string('f', x)}",
+			})
+			.Select(x => $"{{0:yyyy-MM-dd{x}}}")
+			.ToArray();
+
+		public static void ConvertDateTimeToSql(StringBuilder stringBuilder, DataType datatype, DateTime value, bool quoted = true, int? precision = null)
 		{
 			var format = datatype switch
 			{
 				DataType.Date => "{0:yyyy-MM-dd}",
 				DataType.Time => "{0:HH:mm:ss}",
-
-				_ => value.Millisecond == 0 ?
-						"{0:yyyy-MM-dd HH:mm:ss}" :
-						"{0:yyyy-MM-dd HH:mm:ss.fffffff}"
+				_ => GetSqlDateTimeFormat(value.Millisecond, precision)
 			};
 
-			if (quoted) stringBuilder.Append("'");
+			if (quoted) stringBuilder.Append('\'');
 			stringBuilder.AppendFormat(format, value);
-			if (quoted) stringBuilder.Append("'");
+			if (quoted) stringBuilder.Append('\'');
 		}
 
-		public static string ConvertDateTimeToSql(DataType datatype, DateTime value, bool quoted = true)
+		public static string ConvertDateTimeToSql(DataType datatype, DateTime value, bool quoted = true, int? precision = null)
 		{
 			var sb = new StringBuilder();
-			ConvertDateTimeToSql(sb, datatype, value, quoted);
+			ConvertDateTimeToSql(sb, datatype, value, quoted, precision);
 			return sb.ToString();
+		}
+
+		/// <summary>
+		/// The Ole Db provider requires DateTime strings to match the DB type's precision.
+		/// </summary>
+		private static string GetSqlDateTimeFormat(int value, int? precision)
+		{
+			if (value == 0 || precision == 0)
+				return sqlDateTimeFormats[0];
+			else if (precision == null)
+				return sqlDateTimeFormats[6];
+			else if (precision.Value <= sqlDateTimeFormats.Length)
+				return sqlDateTimeFormats[precision.Value];
+			else
+				return sqlDateTimeFormats.Last();
 		}
 
 		public static void ConvertTimeToSql(StringBuilder stringBuilder, TimeSpan time, bool quoted = true)
 		{
-			if (quoted) stringBuilder.Append("'");
+			if (quoted) stringBuilder.Append('\'');
 			stringBuilder.Append($"{time:hh\\:mm\\:ss}");
-			if (quoted) stringBuilder.Append("'");
+			if (quoted) stringBuilder.Append('\'');
 		}
 
 		public static string ConvertTimeToSql(TimeSpan time, bool quoted = true)
@@ -85,7 +106,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			foreach (var b in value)
 				stringBuilder.Append(b.ToString("X2"));
 
-			stringBuilder.Append("'");
+			stringBuilder.Append('\'');
 		}
 
 		public static string ConvertBinaryToSql(byte[] value)
@@ -111,7 +132,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			  .Append(s.Substring(16, 16))
 			  .Append("' AS ")
 			  .Append(Constants.DbTypes.Char16ForBitData)
-			  .Append(")");
+			  .Append(')');
 		}
 
 		public static string ConvertGuidToSql(Guid value)
@@ -135,7 +156,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			{
 				ccsid = name.Substring(ccsidIndex);
 				name = name.Substring(0, ccsidIndex);
-			}	
+			}
 
 			var stringBuilder = new StringBuilder();
 
@@ -155,34 +176,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			stringBuilder.Append(ccsid);
 
 			return stringBuilder.ToString();
-		}
-
-		public static DateTime ParseDateTime(string value)
-		{
-			if (DateTime.TryParse(value, out var res))
-				return res;
-
-			return DateTime.ParseExact(
-				value,
-				new[]
-				{
-					"yyyy-MM-dd",
-					"yyyy-MM-dd-HH.mm.ss",
-					"yyyy-MM-dd-HH.mm.ss.f",
-					"yyyy-MM-dd-HH.mm.ss.ff",
-					"yyyy-MM-dd-HH.mm.ss.fff",
-					"yyyy-MM-dd-HH.mm.ss.ffff",
-					"yyyy-MM-dd-HH.mm.ss.fffff",
-					"yyyy-MM-dd-HH.mm.ss.ffffff",
-					"yyyy-MM-dd-HH.mm.ss.fffffff",
-					"yyyy-MM-dd-HH.mm.ss.ffffffff",
-					"yyyy-MM-dd-HH.mm.ss.fffffffff",
-					"yyyy-MM-dd-HH.mm.ss.ffffffffff",
-					"yyyy-MM-dd-HH.mm.ss.fffffffffff",
-					"yyyy-MM-dd-HH.mm.ss.ffffffffffff",
-				},
-				CultureInfo.InvariantCulture,
-				DateTimeStyles.None);
 		}
 	}
 }

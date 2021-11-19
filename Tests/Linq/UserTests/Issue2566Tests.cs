@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using LinqToDB;
 using LinqToDB.Data;
 using LinqToDB.Mapping;
@@ -76,7 +75,6 @@ namespace Tests.UserTests
 			ms.SetConverter<string, AnredeAuswahlliste>(s => new AnredeAuswahlliste(s));
 			ms.SetConverter<AnredeAuswahlliste, DataParameter>(v => new DataParameter("", v.Value));
 
-			using (new AllowMultipleQuery())
 			using (var db = GetDataContext(context, ms))
 			using (var dataClasses = db.CreateLocalTable(items))
 			{
@@ -107,7 +105,6 @@ namespace Tests.UserTests
 			var builder = ms.GetFluentMappingBuilder();
 			builder.Entity<DataClass>().Property(e => e.Value).HasConversion(v => v!.Value, s => new AnredeAuswahlliste(s));
 
-			using (new AllowMultipleQuery())
 			using (var db = GetDataContext(context, ms))
 			using (var dataClasses = db.CreateLocalTable(items))
 			{
