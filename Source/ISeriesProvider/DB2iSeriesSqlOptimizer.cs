@@ -22,13 +22,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		protected static string[] DB2LikeCharactersToEscape = { "%", "_" };
 
 		public override string[] LikeCharactersToEscape => DB2LikeCharactersToEscape;
+		
 		public override SqlStatement TransformStatement(SqlStatement statement)
 		{
 			statement = SeparateDistinctFromPagination(statement, q => q.Select.SkipValue != null);
 			statement = ReplaceDistinctOrderByWithRowNumber(statement, q => q.Select.SkipValue != null);
 
 			if (!db2ISeriesSqlProviderFlags.SupportsOffsetClause)
-				statement = ReplaceTakeSkipWithRowNumber(statement, query => query.Select.SkipValue != null && SqlProviderFlags.GetIsSkipSupportedFlag(query.Select.TakeValue, query.Select.SkipValue), true);
+				//TODO: v3.6.0 linq2db changed this, check if ok
+				statement = ReplaceTakeSkipWithRowNumber(statement, false, false);
 
 			return statement.QueryType switch
 			{
@@ -52,54 +54,54 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return text;
 		}
 
-		public override SqlStatement Finalize(SqlStatement statement)
+		//TODO: v3.6.0 linq2db changed query visitor
+		//public override SqlStatement Finalize(SqlStatement statement)
+		//{
+		//	static long getAbsoluteHashCode(object o) => (long)o.GetHashCode() + (long)int.MaxValue;
+
+		//	new QueryVisitor().Visit(statement, expr =>
+		//	{
+		//		switch (expr.ElementType)
+		//		{
+		//			case QueryElementType.SqlParameter:
+		//				{
+		//					var p = (SqlParameter)expr;
+		//					p.Name = SanitizeAliasOrParameterName(p.Name, $"P{getAbsoluteHashCode(p)}");
+
+		//					break;
+		//				}
+		//			case QueryElementType.TableSource:
+		//				{
+		//					var table = (SqlTableSource)expr;
+		//					table.Alias = SanitizeAliasOrParameterName(table.Alias, $"T{table.SourceID}");
+		//					break;
+		//				}
+		//			case QueryElementType.Column:
+		//				{
+		//					var column = (SqlColumn)expr;
+		//					column.Alias = SanitizeAliasOrParameterName(column.Alias, $"C{getAbsoluteHashCode(column)}");
+		//					break;
+		//				}
+		//		}
+		//	});
+
+		//	static void setQueryParameter(IQueryElement element)
+		//	{
+		//		if (element.ElementType == QueryElementType.SqlParameter)
+		//		{
+		//			((SqlParameter)element).IsQueryParameter = false;
+		//		}
+		//	}
+
+		//	if (statement.SelectQuery != null)
+		//		(new QueryVisitor()).Visit(statement.SelectQuery.Select, setQueryParameter);
+
+		//	return base.Finalize(statement);
+		//}
+
+		public override ISqlExpression ConvertExpressionImpl(ISqlExpression expression, ConvertVisitor<RunOptimizationContext> visitor)
 		{
-			static long getAbsoluteHashCode(object o) => (long)o.GetHashCode() + (long)int.MaxValue;
-			
-			new QueryVisitor().Visit(statement, expr =>
-			{
-				switch (expr.ElementType)
-				{
-					case QueryElementType.SqlParameter:
-						{
-							var p = (SqlParameter)expr;
-							p.Name = SanitizeAliasOrParameterName(p.Name, $"P{getAbsoluteHashCode(p)}");
-
-							break;
-						}
-					case QueryElementType.TableSource:
-						{
-							var table = (SqlTableSource)expr;
-							table.Alias = SanitizeAliasOrParameterName(table.Alias, $"T{table.SourceID}");
-							break;
-						}
-					case QueryElementType.Column:
-						{
-							var column = (SqlColumn)expr;
-							column.Alias = SanitizeAliasOrParameterName(column.Alias, $"C{getAbsoluteHashCode(column)}");
-							break;
-						}
-				}
-			});
-
-			static void setQueryParameter(IQueryElement element)
-			{
-				if (element.ElementType == QueryElementType.SqlParameter)
-				{
-					((SqlParameter)element).IsQueryParameter = false;
-				}
-			}
-
-			if (statement.SelectQuery != null)
-				(new QueryVisitor()).Visit(statement.SelectQuery.Select, setQueryParameter);
-
-			return base.Finalize(statement);
-		}
-
-		public override ISqlExpression ConvertExpressionImpl(ISqlExpression expression, ConvertVisitor visitor,
-			EvaluationContext context)
-		{
-			expression = base.ConvertExpressionImpl(expression, visitor, context);
+			expression = base.ConvertExpressionImpl(expression, visitor);
 			if (expression is SqlBinaryExpression be)
 			{
 				switch (be.Operation)
@@ -279,12 +281,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 							_ => (SqlParameter)p2.Expr2
 						};
 
-						if(fieldType != null && param.Type.DataType == DataType.Undefined)
+						if(param.Type.DataType == DataType.Undefined)
 						{
-							param.Type = param.Type.WithDataType(fieldType.Value.DataType)
-								.WithScale(fieldType.Value.Scale)
-								.WithLength(fieldType.Value.Length)
-								.WithPrecision(fieldType.Value.Precision);
+							param.Type = param.Type.WithDataType(fieldType.DataType)
+								.WithScale(fieldType.Scale)
+								.WithLength(fieldType.Length)
+								.WithPrecision(fieldType.Precision);
 						}
 
 						conditions.Add(condition);

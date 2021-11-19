@@ -15,8 +15,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			this.db2ISeriesSqlProviderFlags = db2ISeriesSqlProviderFlags;
 		}
-
-		public override void BuildColumns(object item, Func<ColumnDescriptor, bool> skipConvert = null)
+		
+		//TODO: v3.6.0 check if default implenetation with castParameters works?
+		public override void BuildColumns(object item, Func<ColumnDescriptor, bool> skipConvert = null, bool castParameters = false, bool castAllRows = false)
 		{
 			skipConvert ??= (_ => false);
 

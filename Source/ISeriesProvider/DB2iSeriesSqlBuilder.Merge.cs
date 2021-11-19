@@ -22,29 +22,30 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					&& value.Value is null));
 		}
 
-		protected override bool MergeSourceValueTypeRequired(SqlValuesTable source, IReadOnlyList<ISqlExpression[]> rows, int row, int column)
-		{
-			if (row == -1)
-				return true;
+		//TODO: v3.6.0 This was removed from linq2db
+		//protected override bool MergeSourceValueTypeRequired(SqlValuesTable source, IReadOnlyList<ISqlExpression[]> rows, int row, int column)
+		//{
+		//	if (row == -1)
+		//		return true;
 
-			var expr = rows[row][column];
+		//	var expr = rows[row][column];
 
-			if (!MergeSourceValueTypeRequired(expr))
-				return false;
-			
-			//Base DB2 impl follows
+		//	if (!MergeSourceValueTypeRequired(expr))
+		//		return false;
 
-			// empty source (single row with all values == NULL)
-			if (row == -1)
-				return true;
+		//	//Base DB2 impl follows
 
-			// we add type hints to first row only
-			if (row != 0)
-				return false;
+		//	// empty source (single row with all values == NULL)
+		//	if (row == -1)
+		//		return true;
 
-			// add type hint only if column contains NULL in all rows
-			return rows.All(r => r[column] is SqlValue value && (value.Value == null
-				|| (value is INullable nullable && nullable.IsNull)));
-		}
+		//	// we add type hints to first row only
+		//	if (row != 0)
+		//		return false;
+
+		//	// add type hint only if column contains NULL in all rows
+		//	return rows.All(r => r[column] is SqlValue value && (value.Value == null
+		//		|| (value is INullable nullable && nullable.IsNull)));
+		//}
 	}
 }

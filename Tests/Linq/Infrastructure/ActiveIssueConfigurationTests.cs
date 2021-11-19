@@ -26,6 +26,7 @@ namespace Tests.Infrastructure
 			{
 				case TestProvName.NoopProvider:
 					return;
+				case TestProvName.Firebird4:
 				case TestProvName.Firebird3:
 				case ProviderName.Firebird:
 					Assert.Fail("This test should be available only for explicit run");
@@ -46,6 +47,7 @@ namespace Tests.Infrastructure
 			{
 				case TestProvName.NoopProvider:
 					return;
+				case TestProvName.Firebird4:
 				case TestProvName.Firebird3:
 				case ProviderName.Firebird:
 					Assert.Fail("This test should be available only for explicit run");
@@ -67,8 +69,8 @@ namespace Tests.Infrastructure
 			{
 				case ProviderName.Access:
 				case ProviderName.Access + ".LinqService":
-				case TestProvName.NoopProvider + ".LinqService":
 					return;
+				case TestProvName.NoopProvider + ".LinqService":
 				case TestProvName.NoopProvider:
 				case ProviderName.SQLiteClassic:
 				case ProviderName.SQLiteClassic + ".LinqService":
@@ -91,8 +93,8 @@ namespace Tests.Infrastructure
 				case ProviderName.Access + ".LinqService":
 				case ProviderName.SQLiteClassic:
 				case ProviderName.SQLiteClassic + ".LinqService":
-				case TestProvName.NoopProvider + ".LinqService":
 					return;
+				case TestProvName.NoopProvider + ".LinqService":
 				case TestProvName.NoopProvider:
 					Assert.Fail("This test should be available only for explicit run");
 					break;
