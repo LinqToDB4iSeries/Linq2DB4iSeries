@@ -82,8 +82,8 @@
 	
 	<ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' OR '$(TargetFramework)' == 'netcoreapp3.1' ">
 		<PackageReference Include="Microsoft.Data.SQLite" Version="3.1.9" />
-		<PackageReference Include="System.Data.Odbc" Version="4.7.0" />
-		<PackageReference Include="System.Data.OleDb" Version="4.7.1" />
+		<PackageReference Include="System.Data.Odbc" Version="6.0.0" />
+		<PackageReference Include="System.Data.OleDb" Version="6.0.0" />
 		<PackageReference Include="Npgsql" Version="4.1.5" />
 		<PackageReference Include="Oracle.ManagedDataAccess.Core" Version="3.21.1"/>
 		<PackageReference Include="MiniProfiler.Shared" Version="4.2.1" />

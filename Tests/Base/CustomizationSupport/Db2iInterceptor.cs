@@ -89,6 +89,8 @@ namespace Tests
 				case ("CreateTempTableTests", "CreateTableAsyncCanceled"):
 				case ("CreateTempTableTests", "CreateTableAsyncCanceled2"):
 				case ("CreateTempTableTests", "CreateTable_NoDisposeErrorAsync"):
+				case ("CreateTempTableTests", "CreateTempTableWithPrimaryKey"):
+				case ("CreateTempTableTests", "InsertIntoTempTableWithPrimaryKey"):
 					return Enumerable.Empty<string>();
 
 				//Access client throws a different exception so it is excluded
