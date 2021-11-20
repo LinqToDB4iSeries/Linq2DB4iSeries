@@ -42,7 +42,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						configuration,
 						Linq.Expressions.M(() => Sql.ConvertTo<String>.From(Guid.Empty)),
 						Linq.Expressions.N(() => Linq.Expressions.L<Guid, String>(
-							(Guid p) => Sql.Lower(Sql.Substring(Linq.Expressions.Hex(p), 7, 2)
+							(Guid p) => Sql.Upper(Sql.Substring(Linq.Expressions.Hex(p), 7, 2)
 												  + Sql.Substring(Linq.Expressions.Hex(p), 5, 2)
 												  + Sql.Substring(Linq.Expressions.Hex(p), 3, 2)
 												  + Sql.Substring(Linq.Expressions.Hex(p), 1, 2)

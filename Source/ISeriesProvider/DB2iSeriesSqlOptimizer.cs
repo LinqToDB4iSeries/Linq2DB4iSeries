@@ -11,7 +11,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	{
 		private readonly DB2iSeriesSqlProviderFlags db2ISeriesSqlProviderFlags;
 
-		public DB2iSeriesSqlOptimizer(SqlProviderFlags sqlProviderFlags, DB2iSeriesSqlProviderFlags db2iSeriesSqlProviderFlags) 
+		public DB2iSeriesSqlOptimizer(SqlProviderFlags sqlProviderFlags, DB2iSeriesSqlProviderFlags db2iSeriesSqlProviderFlags)
 			: base(sqlProviderFlags)
 		{
 			db2ISeriesSqlProviderFlags = db2iSeriesSqlProviderFlags;
@@ -22,14 +22,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		protected static string[] DB2LikeCharactersToEscape = { "%", "_" };
 
 		public override string[] LikeCharactersToEscape => DB2LikeCharactersToEscape;
-		
+
 		public override SqlStatement TransformStatement(SqlStatement statement)
 		{
 			statement = SeparateDistinctFromPagination(statement, q => q.Select.SkipValue != null);
 			statement = ReplaceDistinctOrderByWithRowNumber(statement, q => q.Select.SkipValue != null);
 
 			if (!db2ISeriesSqlProviderFlags.SupportsOffsetClause)
-				//TODO: v3.6.0 linq2db changed this, check if ok
 				statement = ReplaceTakeSkipWithRowNumber(statement, false, false);
 
 			return statement.QueryType switch
@@ -40,49 +39,35 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			};
 		}
 
-		private static string SanitizeAliasOrParameterName(string text, string alternative)
-		{
-			if (string.IsNullOrWhiteSpace(text))
-				return null;
-
-			if (text.Equals("_"))
-				return "underscore_";
-
-			if (!text.All(t => "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".Contains(t)))
-				return alternative;
-
-			return text;
-		}
-
 		public override SqlStatement Finalize(SqlStatement statement)
 		{
-			static long getAbsoluteHashCode(object o) => (long)o.GetHashCode() + (long)int.MaxValue;
+			static long getAbsoluteHashCode(object o) 
+				=> (long)o.GetHashCode() + (long)int.MaxValue;
 
-			new QueryVisitor<object>(true, expr =>
+			static string sanitizeAliasOrParameterName(string text, string alternative)
+				=> !string.IsNullOrWhiteSpace(text) && text.All(x => x.IsLatinLetterOrNumber()) ?
+					text : alternative;
+			
+			static void sanitizeNames(IQueryElement expr)
 			{
-				switch (expr.ElementType)
+				switch (expr)
 				{
-					case QueryElementType.SqlParameter:
-						{
-							var p = (SqlParameter)expr;
-							p.Name = SanitizeAliasOrParameterName(p.Name, $"P{getAbsoluteHashCode(p)}");
-
-							break;
-						}
-					case QueryElementType.TableSource:
-						{
-							var table = (SqlTableSource)expr;
-							table.Alias = SanitizeAliasOrParameterName(table.Alias, $"T{table.SourceID}");
-							break;
-						}
-					case QueryElementType.Column:
-						{
-							var column = (SqlColumn)expr;
-							column.Alias = SanitizeAliasOrParameterName(column.Alias, $"C{getAbsoluteHashCode(column)}");
-							break;
-						}
+					case SqlParameter p:
+						p.Name = sanitizeAliasOrParameterName(p.Name, $"P{getAbsoluteHashCode(p)}");
+						break;
+					case SqlTableSource table:
+						table.Alias = sanitizeAliasOrParameterName(table.Alias, $"T{getAbsoluteHashCode(table.SourceID)}");
+						break;
+					case SqlColumn column:
+						column.Alias = sanitizeAliasOrParameterName(column.Alias, $"C{getAbsoluteHashCode(column)}");
+						break;
+					case SqlCteTable ctetable:
+						//linq2db does not visit CteClause of SqlCteTable with a stack overflow possibility warning
+						//if left out this will not provide name sanitization in cte expressions
+						new QueryVisitor<object>(true, sanitizeNames).Visit(ctetable.Cte);
+						break;
 				}
-			}).Visit(statement);
+			}
 
 			static void setQueryParameter(IQueryElement element)
 			{
@@ -92,9 +77,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				}
 			}
 
-			if (statement.SelectQuery != null)
-				new QueryVisitor<object>(true, setQueryParameter).Visit(statement.SelectQuery.Select);
-
+			statement.VisitAll(sanitizeNames);
+			statement.SelectQuery?.VisitAll(setQueryParameter);
+			
 			return base.Finalize(statement);
 		}
 
@@ -106,11 +91,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				switch (be.Operation)
 				{
 					case "%":
-						if (true)
-						{
-							var expr1 = !be.Expr1.SystemType.IsIntegerType() ? new SqlFunction(typeof(int), "Int", be.Expr1) : be.Expr1;
-							return new SqlFunction(be.SystemType, "Mod", expr1, be.Expr2);
-						}
+						var expr1 = !be.Expr1.SystemType.IsIntegerType() ? new SqlFunction(typeof(int), "Int", be.Expr1) : be.Expr1;
+						return new SqlFunction(be.SystemType, "Mod", expr1, be.Expr2);
 					case "&":
 						return new SqlFunction(be.SystemType, "BitAnd", be.Expr1, be.Expr2);
 					case "|":
@@ -216,7 +198,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				bool buildNew = false;
 
 				// Tranform the conditions within a SqlSearchCondition
-				for(int i = 0; i < search.Conditions.Count; i++)
+				for (int i = 0; i < search.Conditions.Count; i++)
 				{
 					var condition = search.Conditions[i];
 
@@ -235,7 +217,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						var expr2 = predicate.Expr2;
 
 						// If expr1 is a SqlSearchCondition, wrap it in a case statement.
-						if(expr1.ElementType == QueryElementType.SearchCondition)
+						if (expr1.ElementType == QueryElementType.SearchCondition)
 						{
 							expr1 = new SqlFunction(typeof(bool), "CASE", new ISqlExpression[] {
 								expr1,
@@ -262,7 +244,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						// Set the flag to build a new SqlSearchCondition using the new conditions.
 						buildNew = true;
 					}
-					else if(condition.Predicate is SqlPredicate.ExprExpr p2
+					else if (condition.Predicate is SqlPredicate.ExprExpr p2
 						&& (p2.Expr1.ElementType == QueryElementType.SqlParameter
 						&& p2.Expr2.ElementType == QueryElementType.SqlField
 						|| p2.Expr1.ElementType == QueryElementType.SqlField
@@ -280,7 +262,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 							_ => (SqlParameter)p2.Expr2
 						};
 
-						if(param.Type.DataType == DataType.Undefined)
+						if (param.Type.DataType == DataType.Undefined)
 						{
 							param.Type = param.Type.WithDataType(fieldType.DataType)
 								.WithScale(fieldType.Scale)
@@ -297,7 +279,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					}
 				}
 
-				if(buildNew)
+				if (buildNew)
 				{
 					// We must return a new SqlSearchCondition.
 					// Modifying the existing one will break the library because the result is check for reference equality.

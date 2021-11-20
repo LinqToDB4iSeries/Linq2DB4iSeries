@@ -41,6 +41,11 @@ namespace Tests
 				case ("MergeTests", "TestParametersInListSourceProperty"):
 				//Tests active issue with DB2 family ordering NULL last by default - Not applicable
 				case ("MergeTests", "SortedMergeResultsIssue"):
+				//Tests are not applicable for Db2i (MERGE from/to CTE)
+				case ("MergeTests", "MergeFromCte"):
+				case ("MergeTests", "MergeIntoCte"):
+				case ("MergeTests", "MergeUsingCteJoin"):
+				case ("MergeTests", "MergeUsingCteWhere"):
 				//Too many cases in code - Copied to custom tests
 				case ("CharTypesTests", _):
 				//Too many changes and cases - Copied to custom tests
@@ -52,6 +57,7 @@ namespace Tests
 				case ("DataConnectionTests", "EnumExecuteScalarTest"):
 				//Case valid for DB2 but not for DB2i
 				case ("Issue792Tests", "TestWithTransactionThrowsFromProvider"):
+				case ("Issue3148Tests", "TestDefaultExpression_09"):
 				//Data not valid for DB2i
 				case ("Issue1287Tests", _):
 				case ("TableOptionsTests", "CheckExistenceTest"):
@@ -97,6 +103,10 @@ namespace Tests
 				case ("DataContextTests", "ProviderConnectionStringConstructorTest2"):
 					return contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_AccessClient));
 
+				//OleDb doesn't support inline comments so tags are not supported (fails with PREPARE STATEMENT error
+				case ("TagTests", _):
+					return contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_OleDb));
+
 				//LAG returns numeric instead of timestamp prior to 7.4
 				case ("AnalyticTests", "Issue1799Test1"):
 				case ("AnalyticTests", "Issue1799Test2"):
@@ -133,5 +143,9 @@ namespace Tests
 				$"ALTER TABLE KeepIdentityTest ALTER COLUMN ID RESTART WITH {keepIdentityLastValue + 1}",
 			};
 		}
+
+		public override bool IsCaseSensitiveComparison(string context) => true;
+		public override bool IsCaseSensitiveDB(string context) => true;
+		public override bool IsCollatedTableConfigured(string context) => false;
 	}
 }

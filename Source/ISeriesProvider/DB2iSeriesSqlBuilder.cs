@@ -160,6 +160,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			return table.Schema == null && table.TableOptions.HasIsGlobalTemporaryStructure() ? "SESSION" : base.GetTableSchemaName(table);
 		}
+
 		#endregion
 
 		#region Similar to DB2 provider
@@ -212,6 +213,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			{
 				var table = truncateTable.Table;
 
+				BuildTag(truncateTable);
 				AppendIndent();
 				StringBuilder.Append("TRUNCATE TABLE ");
 				BuildPhysicalTable(table, null);
@@ -419,7 +421,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				BuildExpression(value);
 				StringBuilder.Append(" AS ");
 				StringBuilder.Append(typeToCast.ToSqlString());
-				StringBuilder.Append(")");
+				StringBuilder.Append(')');
 			}
 
 		}
@@ -490,6 +492,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		//TODO: Add a test for this scenario with cte
 		protected override void BuildInsertQuery(SqlStatement statement, SqlInsertClause insertClause, bool addAlias)
 		{
+			BuildTag(statement);
 			BuildStep = Step.InsertClause; BuildInsertClause(statement, insertClause, addAlias);
 			BuildStep = Step.WithClause; BuildWithClause(statement.GetWithClause());
 			
@@ -515,6 +518,24 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				this.BuildDropTableStatementIfExists(dropTable);
 			else
 				base.BuildDropTableStatement(dropTable);
+		}
+
+		protected override StringBuilder BuildSqlComment(StringBuilder sb, SqlComment comment)
+		{
+			//OleDb provider fails with "Prepared statement S000001 in use" when using inline comments.
+			//This seems to affect later calls, it probably breaks the connection and connections are pooled.
+			if (!Provider.ProviderType.IsOleDb())
+				return base.BuildSqlComment(sb, comment);
+
+			return sb;
+		}
+
+		protected override void BuildMergeStatement(SqlMergeStatement merge)
+		{
+			if (!DB2iSeriesSqlProviderFlags.SupportsMergeStatement)
+				throw new LinqToDBException($"{Provider.Name} provider doesn't support SQL MERGE statement");
+
+			base.BuildMergeStatement(merge);
 		}
 
 		#endregion

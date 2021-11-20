@@ -18,6 +18,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return DB2iSeriesSqlBuilder.GetDbType(dbDataType.DbType, dbDataType.Length, dbDataType.Precision, dbDataType.Scale);
 		}
 
+		public static bool IsLatinLetterOrNumber(this char c)
+			=> (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'A');
+
 		public static SqlDataType GetTypeOrUnderlyingTypeDataType(this MappingSchema mappingSchema, Type type)
 		{
 			var sqlDataType = mappingSchema.GetDataType(type);
