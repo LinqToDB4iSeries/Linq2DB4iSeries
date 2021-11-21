@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using System.Data.Common;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
@@ -48,7 +49,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		};
 
 
-		public string GetDbTypeName(IDbDataParameter dbDataParameter) => adapter switch
+		public string GetDbTypeName(DbParameter dbDataParameter) => adapter switch
 		{
 #if NETFRAMEWORK
 			DB2iSeriesAccessClientProviderAdapter accessClientAdapter => accessClientAdapter.GetDbType(dbDataParameter).ToString(),
@@ -59,7 +60,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			_ => throw ExceptionHelper.InvalidProviderAdapter(adapter)
 		};
 
-		public void SetDbType(IDbDataParameter dbDataParameter, object value)
+		public void SetDbType(DbParameter dbDataParameter, object value)
 		{
 			if (adapter is OdbcProviderAdapter odbcAdapter
 					&& value is OdbcProviderAdapter.OdbcType odbcType)

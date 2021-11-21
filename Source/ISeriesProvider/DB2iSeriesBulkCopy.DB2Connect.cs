@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Data;
 using System.Linq;
+using System.Data.Common;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
@@ -11,7 +12,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	using LinqToDB;
 	using LinqToDB.Common;
 	using DB2BulkCopyOptions = DB2.DB2ProviderAdapter.DB2BulkCopyOptions;
-
+	
 	partial class DB2iSeriesBulkCopy : BasicBulkCopy
 	{
 		//Copied from DB2BulkCopy
@@ -20,7 +21,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		BulkCopyOptions options,
 		IEnumerable<T> source,
 		DataConnection dataConnection,
-		IDbConnection connection,
+		DbConnection connection,
 		DB2.DB2ProviderAdapter.BulkCopyAdapter bulkCopy,
 		Action<DataConnection, Func<string>, Func<int>> traceAction)
 		{

@@ -6,6 +6,7 @@ using LinqToDB.Common;
 using LinqToDB.Configuration;
 using LinqToDB.Data;
 using System.Collections.Concurrent;
+using System.Data.Common;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
@@ -100,7 +101,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		}
 
 		public static DataConnection CreateDataConnection(
-			IDbConnection connection, 
+			DbConnection connection, 
 			DB2iSeriesVersion version,
 			DB2iSeriesProviderType providerType,
 			bool mapGuidAsString)
@@ -109,7 +110,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		}
 
 		public static DataConnection CreateDataConnection(
-			IDbTransaction transaction,
+			DbTransaction transaction,
 			DB2iSeriesVersion version,
 			DB2iSeriesProviderType providerType,
 			bool mapGuidAsString)

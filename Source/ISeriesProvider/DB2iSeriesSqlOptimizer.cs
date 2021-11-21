@@ -30,7 +30,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			if (!db2ISeriesSqlProviderFlags.SupportsOffsetClause)
 				statement = ReplaceTakeSkipWithRowNumber(statement, false, false);
-
+				
 			return statement.QueryType switch
 			{
 				QueryType.Delete => GetAlternativeDelete((SqlDeleteStatement)statement),
@@ -76,7 +76,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					((SqlParameter)element).IsQueryParameter = false;
 				}
 			}
-
+			
 			statement.VisitAll(sanitizeNames);
 			statement.SelectQuery?.VisitAll(setQueryParameter);
 			

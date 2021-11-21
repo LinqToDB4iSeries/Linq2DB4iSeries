@@ -7,6 +7,14 @@
 
 - How to maintain the tests from upstream
 
-The test have been set up in a way that tests from upstream can be simply copied over. You have to copy only the source code files and not the project files. All source files can be safely copied over except TestsInitialization.cs in Linq tests (please check out the diff after copying over). Exclude only the Data and DataProvider folders from the Linq tests folder from upstream.
+The test have been set up in a way that tests from upstream can be simply copied over. 
 
-This project was setup to run all DB2 tests. But sometimes tests that target DB2 are not valid for DB2i. All customization is performed in Tests.Base\Db2iInterceptor.cs. You can intercept any test method there and return any valid DB2i providers for that specific test. If no providers are returned the test is ommited altogether. An DB2i specfic tests should be placed in the Tests\Custom folder.
+You need to:
+1. Only add Model, Base, Linq, FSharp, VisualBasic projects (omit Benchmarks, Playground and T4)
+2. Exclude CustomizationSupport.cs from Tests.Base\CustomizationSupport
+3. Exclude folders Data and DataProvider from Tests\Linq
+4. Exclude the Properties (AssemblyInfo) folders for all projects
+5. Maintain project files by hand after checking the diff.
+6. You need to make sure TestsInitialization.cs in Tests\Linq is made partial and "InitCustom();" is added at the end of TestAssemblySetup
+
+This project was setup to run all DB2 tests. But sometimes tests that target DB2 are not valid for DB2i. All customization is performed in Tests.Base\Db2iInterceptor.cs. You can intercept any test method there and return any valid DB2i providers for that specific test. If no providers are returned the test is ommited altogether. An DB2i specific tests should be placed in the Tests\Custom folder.

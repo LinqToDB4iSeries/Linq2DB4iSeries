@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
@@ -10,7 +11,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 {
 	internal static class ReaderExpressionTools
 	{
-		public static readonly Expression<Func<IDataReader, int, string>> GetTrimmedStringExpression
+		public static readonly Expression<Func<DbDataReader, int, string>> GetTrimmedStringExpression
 				= (r, i) => TrimString(r.GetString(i));
 
 		

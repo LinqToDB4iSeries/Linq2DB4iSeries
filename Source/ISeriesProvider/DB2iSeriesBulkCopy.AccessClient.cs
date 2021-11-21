@@ -8,7 +8,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	using Data;
 	using Tools;
 	using System.Diagnostics;
-	
+	using System.Data.Common;
+
 	partial class DB2iSeriesBulkCopy : BasicBulkCopy
 	{
 		private const int MAX_ACCESS_CLIENT_BATCH_SIZE = 10000;
@@ -65,7 +66,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				{
 					var i = 0;
 					bufferEmpty = false;
-					foreach (IDbDataParameter parameter in cmd.Parameters)
+					foreach (DbParameter parameter in cmd.Parameters)
 					{
 						dataConnection.DataProvider.SetParameter(
 							dataConnection, 

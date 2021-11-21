@@ -10,6 +10,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	using Mapping;
 	using SqlProvider;
 	using SqlQuery;
+	using System.Data.Common;
 
 	public partial class DB2iSeriesSqlBuilder : BasicSqlBuilder
 	{
@@ -301,7 +302,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		protected override bool OffsetFirst => DB2iSeriesSqlProviderFlags.SupportsOffsetClause;
 
 		//Used for printing parameter information in traces
-		protected override string GetProviderTypeName(IDbDataParameter parameter)
+		protected override string GetProviderTypeName(DbParameter parameter)
 		{
 			return Provider switch
 			{
