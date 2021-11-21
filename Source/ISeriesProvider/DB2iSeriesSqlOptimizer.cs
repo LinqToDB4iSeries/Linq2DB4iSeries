@@ -29,8 +29,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			statement = ReplaceDistinctOrderByWithRowNumber(statement, q => q.Select.SkipValue != null);
 
 			if (!db2ISeriesSqlProviderFlags.SupportsOffsetClause)
-				statement = ReplaceTakeSkipWithRowNumber(statement, false, false);
-				
+				statement = ReplaceTakeSkipWithRowNumber(SqlProviderFlags, statement,
+					static (SqlProviderFlags, query) => query.Select.SkipValue != null
+					&& SqlProviderFlags.GetIsSkipSupportedFlag(query.Select.TakeValue, query.Select.SkipValue), true);
+
 			return statement.QueryType switch
 			{
 				QueryType.Delete => GetAlternativeDelete((SqlDeleteStatement)statement),
@@ -69,16 +71,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				}
 			}
 
-			static void setQueryParameter(IQueryElement element)
-			{
-				if (element.ElementType == QueryElementType.SqlParameter)
-				{
-					((SqlParameter)element).IsQueryParameter = false;
-				}
-			}
-			
 			statement.VisitAll(sanitizeNames);
-			statement.SelectQuery?.VisitAll(setQueryParameter);
 			
 			return base.Finalize(statement);
 		}

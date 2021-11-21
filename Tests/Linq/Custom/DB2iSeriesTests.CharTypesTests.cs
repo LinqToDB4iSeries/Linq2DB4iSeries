@@ -121,13 +121,12 @@ namespace Tests.DataProvider
 					{
 						var (expected, actual) = x;
 						
-						// DB2i ignores null characters
-						Assert.AreEqual(expected.String?.TrimEnd(' ', '\0'), actual.String);
+						Assert.AreEqual(expected.String?.TrimEnd(' '), actual.String);
 
 						if (TestProvNameDb2i.IsiSeriesOleDb(context) && expected.NString is { } && expected.NString.StartsWith("test20")) //OleDb strips \u3000
 							Assert.AreEqual(expected.NString?.TrimEnd(), actual.NString);
 						else
-							Assert.AreEqual(expected.NString?.TrimEnd(' ', '\0'), actual.NString);
+							Assert.AreEqual(expected.NString?.TrimEnd(' '), actual.NString);
 					});
 				}
 				finally
@@ -168,7 +167,7 @@ namespace Tests.DataProvider
 							var (expected, actual) = x;
 
 							Assert.AreEqual(TestProvNameDb2i.IsiSeriesOleDb(context) && expected.Char == ' '  ? '\0' : expected.Char, actual.Char);
-
+							
 							if (TestProvNameDb2i.IsiSeriesOleDb(context) && expected.NChar == '\u3000') // OleDb strips \u3000
 								Assert.AreEqual('\0', actual.NChar);
 							else

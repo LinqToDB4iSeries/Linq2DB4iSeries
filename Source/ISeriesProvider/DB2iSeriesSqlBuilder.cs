@@ -448,47 +448,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return base.GetSelectedColumns(selectQuery);
 		}
 
-		//TODO: Test this scenario
-		protected override void BuildPredicate(ISqlPredicate predicate)
-		{
-			switch (predicate.ElementType)
-			{
-				case QueryElementType.ExprExprPredicate:
-
-					var ep = (SqlPredicate.ExprExpr)predicate;
-
-					if (ep.Expr1 is SqlFunction function
-						&& function.Name == "Date"
-						&& ep.Expr2 is SqlParameter parameter)
-					{
-						parameter.Type = parameter.Type.WithDataType(DataType.Date);
-
-						if (Provider.ProviderType.IsOleDb())
-						{
-							parameter.ValueConverter = obj =>
-							{
-								if (obj == null) return null;
-
-								if (obj is DateTime dt)
-								{
-									return dt.ToString("yyyy-MM-dd");
-								}
-								else if (obj is DateTimeOffset dto)
-								{
-									return dto.ToString("yyyy-MM-dd");
-								}
-
-								return obj;
-							};
-						}
-					}
-
-					break;
-			}
-
-			base.BuildPredicate(predicate);
-		}
-
 		//Same as BaseSqlBuilder - except reversed first two steps to comply with DB2i cte syntax
 		//TODO: Add a test for this scenario with cte
 		protected override void BuildInsertQuery(SqlStatement statement, SqlInsertClause insertClause, bool addAlias)
@@ -529,14 +488,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				return base.BuildSqlComment(sb, comment);
 
 			return sb;
-		}
-
-		protected override void BuildMergeStatement(SqlMergeStatement merge)
-		{
-			if (!DB2iSeriesSqlProviderFlags.SupportsMergeStatement)
-				throw new LinqToDBException($"{Provider.Name} provider doesn't support SQL MERGE statement");
-
-			base.BuildMergeStatement(merge);
 		}
 
 		#endregion
