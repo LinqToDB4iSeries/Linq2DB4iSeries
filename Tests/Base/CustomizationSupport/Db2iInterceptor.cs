@@ -97,6 +97,8 @@ namespace Tests
 				case ("CreateTempTableTests", "CreateTable_NoDisposeErrorAsync"):
 				case ("CreateTempTableTests", "CreateTempTableWithPrimaryKey"):
 				case ("CreateTempTableTests", "InsertIntoTempTableWithPrimaryKey"):
+				// GUIDs are serialized in lower case
+				case ("ConvertTests", "GuidToString"):
 					return Enumerable.Empty<string>();
 
 				//Access client throws a different exception so it is excluded
