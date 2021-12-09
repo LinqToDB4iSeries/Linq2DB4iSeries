@@ -788,9 +788,7 @@ namespace Tests.DataProvider
 		public void TestGuidToString([DataSources] string context)
 		{
 			// GUIDs are serialized in lower case.
-			var guid = IsCaseSensitiveDB(context) ? "FEBE3ECA-CB5F-40B2-AD39-2979D312AFCA" : "febe3eca-cb5f-40b2-ad39-2979d312afca";
-
-			guid = TestProvNameDb2i.IsGAS(context) ? guid.ToLower() : guid;
+			var guid = !IsCaseSensitiveDB(context) ? "FEBE3ECA-CB5F-40B2-AD39-2979D312AFCA" : "febe3eca-cb5f-40b2-ad39-2979d312afca";
 
 			using (var db = GetDataContext(context))
 			{
@@ -798,13 +796,6 @@ namespace Tests.DataProvider
 				var actual = from t in db.Types where Sql.ConvertTo<string>.From(t.GuidValue) == guid select t.GuidValue;
 
 				AreEqual(expected, actual);
-
-				if (TestProvNameDb2i.IsGAS(context))
-				{
-					var empty = from t in db.Types where Sql.ConvertTo<string>.From(t.GuidValue) == guid.ToUpper() select t.GuidValue;
-
-					Assert.IsEmpty(empty);
-				}
 			}
 		}
 	}
