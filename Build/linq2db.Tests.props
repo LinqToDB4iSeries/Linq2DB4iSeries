@@ -14,15 +14,15 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="linq2db.Tools" Version="3.3.0" />
-		<PackageReference Update="linq2db.AspNet" Version="3.3.0" />
-		<PackageReference Include="NUnit" Version="3.12.0" />
+		<PackageReference Include="linq2db.Tools" Version="3.6.0" />
+		<PackageReference Update="linq2db.AspNet" Version="3.6.0" />
+		<PackageReference Include="NUnit" Version="3.13.2" />
 		<PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
-		<PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
 		<PackageReference Include="FastExpressionCompiler" Version="3.0.4" />
 		<PackageReference Include="NodaTime" Version="3.0.5" />
-		
+		<PackageReference Include="FluentAssertions" Version="6.2.0" />
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'net472' ">
@@ -30,7 +30,7 @@
 		<Reference Include="System.ServiceModel" />
 		<Reference Include="System.Transactions" />
 
-		<PackageReference Include="System.Collections.Immutable" Version="1.7.1" />
+		<PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
 	</ItemGroup>
 
 </Project>

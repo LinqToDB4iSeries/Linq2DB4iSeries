@@ -160,6 +160,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			return table.Schema == null && table.TableOptions.HasIsGlobalTemporaryStructure() ? "SESSION" : base.GetTableSchemaName(table);
 		}
+
 		#endregion
 
 		#region Similar to DB2 provider
@@ -212,6 +213,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			{
 				var table = truncateTable.Table;
 
+				BuildTag(truncateTable);
 				AppendIndent();
 				StringBuilder.Append("TRUNCATE TABLE ");
 				BuildPhysicalTable(table, null);
@@ -419,7 +421,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				BuildExpression(value);
 				StringBuilder.Append(" AS ");
 				StringBuilder.Append(typeToCast.ToSqlString());
-				StringBuilder.Append(")");
+				StringBuilder.Append(')');
 			}
 
 		}
@@ -445,51 +447,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return base.GetSelectedColumns(selectQuery);
 		}
 
-		//TODO: Test this scenario
-		protected override void BuildPredicate(ISqlPredicate predicate)
-		{
-			switch (predicate.ElementType)
-			{
-				case QueryElementType.ExprExprPredicate:
-
-					var ep = (SqlPredicate.ExprExpr)predicate;
-
-					if (ep.Expr1 is SqlFunction function
-						&& function.Name == "Date"
-						&& ep.Expr2 is SqlParameter parameter)
-					{
-						parameter.Type = parameter.Type.WithDataType(DataType.Date);
-
-						if (Provider.ProviderType.IsOleDb())
-						{
-							parameter.ValueConverter = obj =>
-							{
-								if (obj == null) return null;
-
-								if (obj is DateTime dt)
-								{
-									return dt.ToString("yyyy-MM-dd");
-								}
-								else if (obj is DateTimeOffset dto)
-								{
-									return dto.ToString("yyyy-MM-dd");
-								}
-
-								return obj;
-							};
-						}
-					}
-
-					break;
-			}
-
-			base.BuildPredicate(predicate);
-		}
-
 		//Same as BaseSqlBuilder - except reversed first two steps to comply with DB2i cte syntax
 		//TODO: Add a test for this scenario with cte
 		protected override void BuildInsertQuery(SqlStatement statement, SqlInsertClause insertClause, bool addAlias)
 		{
+			BuildTag(statement);
 			BuildStep = Step.InsertClause; BuildInsertClause(statement, insertClause, addAlias);
 			BuildStep = Step.WithClause; BuildWithClause(statement.GetWithClause());
 			
@@ -515,6 +477,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				this.BuildDropTableStatementIfExists(dropTable);
 			else
 				base.BuildDropTableStatement(dropTable);
+		}
+
+		protected override StringBuilder BuildSqlComment(StringBuilder sb, SqlComment comment)
+		{
+			//OleDb provider fails with "Prepared statement S000001 in use" when using inline comments.
+			//This seems to affect later calls, it probably breaks the connection and connections are pooled.
+			if (!Provider.ProviderType.IsOleDb())
+				return base.BuildSqlComment(sb, comment);
+
+			return sb;
 		}
 
 		#endregion

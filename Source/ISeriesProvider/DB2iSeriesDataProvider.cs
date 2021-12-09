@@ -417,49 +417,74 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 				case DataType.DateTime2:
 				case DataType.DateTime:
-					dataType = dataType.WithDataType(DataType.DateTime);
+					
+					//Sanitize DataType based on provided DbType
+					dataType = dataType.WithDataType(dataType.DbType?.ToUpper() switch {
+						Constants.DbTypes.Date => DataType.Date,
+						Constants.DbTypes.Time => DataType.Time,
+						_ => DataType.DateTime
+					});
 
-					// iAccessClient fails when passing DateTime objects.
+					//Sanitize DbType based on DataType if DbType not provided
+					//if (dataType.DbType is null)
+					//{
+					//	dataType = dataType.WithDbType(dataType.DataType switch
+					//	{
+					//		DataType.Date => Constants.DbTypes.Date,
+					//		DataType.Time => Constants.DbTypes.Time,
+					//		_ => Constants.DbTypes.TimeStamp
+					//	});
+					//}
+					
+					// iAccessClient and OleDb fail when passing DateTime objects.
+					// ODbc works with precision up to 3
 					// Convert them to strings instead.
 					if (ProviderType.IsAccessClient() || ProviderType.IsOdbcOrOleDb())
 					{
 						value = value switch
 						{
-							DateTime dateTime => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(DataType.DateTime, dateTime, false, dataType.Precision),
-							DateTimeOffset dateTimeOffset => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(DataType.DateTime, dateTimeOffset.DateTime, false, dataType.Precision),
+							DateTime dateTime => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(dataType.DataType, dateTime, false, dataType.Precision),
+							DateTimeOffset dateTimeOffset => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(dataType.DataType, dateTimeOffset.DateTime, false, dataType.Precision),
 							_ => value
 						};
-					}
 
-					if(ProviderType.IsOdbcOrOleDb())
-					{
-						dataType = dataType
-							.WithDataType(DataType.VarChar)
-							.WithDbType(Constants.DbTypes.TimeStamp);
+
+						if (ProviderType.IsOdbcOrOleDb()
+							&& dataType.DataType == DataType.DateTime)
+						{
+							//Treat source data as string to be converted to datetime
+							//Otherwise odbc truncates precision to 3 and oledb fails with overflow
+							//Access client converts it accurately	
+							dataType = dataType
+								.WithDataType(DataType.VarChar);
+						}
 					}
 
 					break;
 				case DataType.Date:
+
+					//if (dataType.DbType != null)
+					//	dataType = dataType
+					//		.WithDbType(Constants.DbTypes.Date);
 
 					if (ProviderType.IsAccessClient() || ProviderType.IsOleDb())
 					{
 						//Date parameters will only accept iDb2Date or string representation of time
 						value = value switch
 						{
-							DateTime dateTime => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(DataType.Date, dateTime, false),
-							DateTimeOffset dateTimeOffset => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(DataType.Date, dateTimeOffset.DateTime, false),
+							DateTime dateTime => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(dataType.DataType, dateTime, false),
+							DateTimeOffset dateTimeOffset => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(dataType.DataType, dateTimeOffset.DateTime, false),
 							_ => value
 						};
 					}
 
-					if (ProviderType.IsOleDb())
-					{
-						dataType = dataType
-							.WithDataType(DataType.VarChar)
-							.WithDbType(Constants.DbTypes.TimeStamp);
-					}
 					break;
 				case DataType.Time:
+
+					//if (dataType.DbType != null)
+					//	dataType = dataType
+					//		.WithDbType(Constants.DbTypes.Time);
+
 					if (ProviderType.IsIBM())
 					{
 						//Time parameters will only accept iDb2Time/DB2Time or string representation of time
@@ -507,6 +532,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				DB2iSeriesProviderType.Odbc => dataType switch
 				{
 					DataType.Blob => OdbcType.VarBinary,
+					DataType.Date => OdbcType.Date,
+					DataType.Time => OdbcType.Time,
+					var x when
+					    x == DataType.DateTime
+					||  x == DataType.DateTime2 => OdbcType.DateTime,
 					_ => null
 				},
 				DB2iSeriesProviderType.OleDb => dataType switch

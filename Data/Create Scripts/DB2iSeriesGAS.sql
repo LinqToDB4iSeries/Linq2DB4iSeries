@@ -343,3 +343,14 @@ BEGIN
 	INSERT INTO AllTypes(char20DataType) VALUES('issue792');
 END
 GO
+
+DROP TABLE CollatedTable
+GO
+CREATE TABLE CollatedTable
+(
+	Id					INT NOT NULL,
+	CaseSensitive		NVARCHAR(20) NOT NULL,
+	CaseInsensitive		NVARCHAR(20) NOT NULL
+)
+GO
+
