@@ -280,6 +280,119 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 		}
 
+		protected override void BuildFromClause(SqlStatement statement, SelectQuery selectQuery)
+		{
+			if (selectQuery.From.Tables.Count == 0 || selectQuery.From.Tables[0].Alias == "$F")
+				return;
+
+			AppendIndent();
+
+			StringBuilder.Append("FROM").AppendLine();
+
+			Indent++;
+			AppendIndent();
+
+			var first = true;
+
+			foreach (var ts in selectQuery.From.Tables)
+			{
+				if (!first)
+				{
+					StringBuilder.AppendLine(Comma);
+					AppendIndent();
+				}
+
+				first = false;
+
+				var jn = ParenthesizeJoin(ts.Joins) ? ts.GetJoinNumber() : 0;
+
+				if (jn > 0)
+				{
+					jn--;
+					for (var i = 0; i < jn; i++)
+						StringBuilder.Append('(');
+				}
+
+				if (ts.SqlTableType == SqlTableType.Function)
+				{
+					StringBuilder.Append("TABLE(");
+					BuildTableName(ts, true, false);
+					StringBuilder.Append(") ");
+					BuildTableName(ts, false, true);
+				}
+				else
+				{
+					BuildTableName(ts, true, true);
+				}
+
+				foreach (var jt in ts.Joins)
+					BuildJoinTable(selectQuery, jt, ref jn);
+			}
+
+			Indent--;
+
+			StringBuilder.AppendLine();
+		}
+
+		void BuildJoinTable(SelectQuery selectQuery, SqlJoinedTable join, ref int joinCounter)
+		{
+			StringBuilder.AppendLine();
+			Indent++;
+			AppendIndent();
+
+			var condition = ConvertElement(join.Condition);
+			var buildOn = BuildJoinType(join.JoinType, condition);
+
+			if (IsNestedJoinParenthesisRequired && join.Table.Joins.Count != 0)
+				StringBuilder.Append('(');
+
+			BuildTableName(join.Table, true, true);
+
+			if (IsNestedJoinSupported && join.Table.Joins.Count != 0)
+			{
+				foreach (var jt in join.Table.Joins)
+					BuildJoinTable(selectQuery, jt, ref joinCounter);
+
+				if (IsNestedJoinParenthesisRequired && join.Table.Joins.Count != 0)
+					StringBuilder.Append(')');
+
+				if (buildOn)
+				{
+					StringBuilder.AppendLine();
+					AppendIndent();
+					StringBuilder.Append("ON ");
+				}
+			}
+			else if (buildOn)
+				StringBuilder.Append(" ON ");
+
+			if (WrapJoinCondition && condition.Conditions.Count > 0)
+				StringBuilder.Append('(');
+
+			if (buildOn)
+			{
+				if (condition.Conditions.Count != 0)
+					BuildSearchCondition(Precedence.Unknown, condition, wrapCondition: false);
+				else
+					StringBuilder.Append("1=1");
+			}
+
+			if (WrapJoinCondition && condition.Conditions.Count > 0)
+				StringBuilder.Append(')');
+
+			if (joinCounter > 0)
+			{
+				joinCounter--;
+				StringBuilder.Append(')');
+			}
+
+			if (!IsNestedJoinSupported)
+				foreach (var jt in join.Table.Joins)
+					BuildJoinTable(selectQuery, jt, ref joinCounter);
+
+			Indent--;
+		}
+
 		#endregion
 
 		#region iDB2 specific
@@ -487,6 +600,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				return base.BuildSqlComment(sb, comment);
 
 			return sb;
+		}
+
+		protected override void BuildFunction(SqlFunction func)
+		{
+			base.BuildFunction(func);
 		}
 
 		#endregion
