@@ -49,7 +49,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public DB2iSeriesMappingSchema(string configuration, params MappingSchema[] schemas) 
 			: base(configuration, schemas)
 		{
-			SetValueToSqlConverter(typeof(Guid), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertGuidToSql(sb, (Guid)v));
+			SetValueToSqlConverter(typeof(Guid), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertBinaryToSql(sb, ((Guid)v).ToByteArray()));
 		}
 	}
 

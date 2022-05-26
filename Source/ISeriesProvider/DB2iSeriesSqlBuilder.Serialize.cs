@@ -103,8 +103,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			stringBuilder.Append("BX'");
 
-			foreach (var b in value)
-				stringBuilder.Append(b.ToString("X2"));
+			//foreach (var b in value)
+			//	stringBuilder.Append(b.ToString("X2"));
+
+			stringBuilder.AppendByteArrayAsHexViaLookup32(value);
 
 			stringBuilder.Append('\'');
 		}
