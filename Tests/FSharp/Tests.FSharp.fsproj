@@ -18,6 +18,7 @@
 		<Compile Include="SelectTest.fs" />
 		<Compile Include="InsertTest.fs" />
 		<Compile Include="MappingSchema.fs" />
+		<Compile Include="Issue3357.fs" />
 	</ItemGroup>
 
 	<ItemGroup>

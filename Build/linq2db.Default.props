@@ -7,7 +7,7 @@
 		<RepositoryUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<AppDesignerFolder>Properties</AppDesignerFolder>
-		<LangVersion>9.0</LangVersion>
+		<LangVersion>10.0</LangVersion>
 		<Nullable>enable</Nullable>
 		<WarningLevel>4</WarningLevel>
 		<ErrorReport>prompt</ErrorReport>

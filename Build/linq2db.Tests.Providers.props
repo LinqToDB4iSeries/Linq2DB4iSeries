@@ -19,6 +19,7 @@
 		<PackageReference Include="System.Data.SQLite.Core" Version="1.0.113.1" />
 		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
 		<PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
+		<PackageReference Include="System.Linq.Dynamic.Core" Version="1.2.18" />
 		<ProjectReference Include="..\Base\Tests.Base.csproj" />
 
 		<None Include="..\..\Data\*">
