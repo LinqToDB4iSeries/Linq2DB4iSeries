@@ -99,6 +99,9 @@ namespace Tests
 				case ("CreateTempTableTests", "InsertIntoTempTableWithPrimaryKey"):
 				// GUIDs are serialized in lower case
 				case ("ConvertTests", "GuidToString"):
+				// Recursive CTE expression defined in test is not supported
+				case ("CteTests", "Issue3357_RecordClass_DB2"):
+				case ("CteTests", "Issue3357_RecordLikeClass_DB2"):
 					return Enumerable.Empty<string>();
 
 				//Access client throws a different exception so it is excluded

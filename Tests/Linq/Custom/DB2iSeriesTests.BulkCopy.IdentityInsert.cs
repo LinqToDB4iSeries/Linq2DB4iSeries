@@ -233,7 +233,7 @@ namespace Tests.DataProvider
 			{
 				var ex = Assert.CatchAsync(async () => await perform());
 				Assert.IsInstanceOf<LinqToDBException>(ex);
-				Assert.AreEqual("BulkCopyOptions.KeepIdentity = true is not supported by BulkCopyType.RowByRow mode", ex.Message);
+				Assert.AreEqual("BulkCopyOptions.KeepIdentity = true is not supported by BulkCopyType.RowByRow mode", ex!.Message);
 				return false;
 			}
 
@@ -241,7 +241,7 @@ namespace Tests.DataProvider
 			{
 				var ex = Assert.CatchAsync(async () => await perform());
 				//Assert.IsInstanceOf<LinqToDBException>(ex);
-				Assert.IsTrue(ex.Message.Contains("GENERATED ALWAYS"));
+				Assert.IsTrue(ex!.Message.Contains("GENERATED ALWAYS"));
 				return false;
 			}
 

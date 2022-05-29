@@ -16,3 +16,9 @@ The test have been set up in a way that tests from upstream can be simply copied
 - Tweaks to test SQL setup files in Data\Create Scripts\ might be needed
 
 This project was setup to run all DB2 tests. But sometimes tests that target DB2 are not valid for DB2i. All customization is performed in Tests\Base\CustomizationSupport\Db2iInterceptor.cs. You can intercept any test method there and return any valid DB2i providers for that specific test. If no providers are returned the test is ommited altogether. An DB2i specfic tests should be placed in the Tests\Linq\Custom folder.
+
+For all tests to run properly journaling needs to be enabled on the liblists used (replace text in curly brackets):
+
+CRTJRNRCV JRNRCV({JOURNAL RECEIVER NAME})
+CRTJRN JRN({JOURNAL NAME}) JRNRCV({JOURNAL RECEIVER NAME})
+STRJRNLIB LIB({LIBRARY NAME}) JRN({JOURNAL NAME})

@@ -7,6 +7,14 @@ namespace IBM.Data.Informix
 	
 }
 
+namespace FirebirdSql.Data.FirebirdClient
+{
+	public class FbConnection
+	{
+		public static void ClearPool(FbConnection _) { }
+	}
+}
+
 namespace Tests
 {
 	public class SapHanaTests
@@ -19,7 +27,7 @@ namespace Tests
 
 			}
 
-			internal IQueryable<FIT_CA_PARAM_TEST> CaParamTest(int v, object p1, string var1, object p2, object p3, object p4)
+			public IQueryable<FIT_CA_PARAM_TEST> CaParamTest(int v, object? p1, string? var1, object? p2, object? p3, object? p4)
 			{
 				throw new NotImplementedException();
 			}
