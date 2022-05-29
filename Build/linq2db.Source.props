@@ -28,7 +28,6 @@
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)'=='Release'">
-		<DebugType>pdbonly</DebugType>
 		<EmbedUntrackedSources>true</EmbedUntrackedSources>
 		<DebugSymbols>true</DebugSymbols>
 		<IncludeSymbols>true</IncludeSymbols>
