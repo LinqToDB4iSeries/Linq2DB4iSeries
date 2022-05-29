@@ -49,8 +49,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			static string sanitizeAliasOrParameterName(string text, string alternative)
 				=> !string.IsNullOrWhiteSpace(text) && text.All(x => x.IsLatinLetterOrNumber()) ?
 					text : alternative;
-			
-			static void sanitizeNames(IQueryElement expr)
+
+
+			HashSet<object> visitedExpressions = new();
+
+			void sanitizeNames(IQueryElement expr)
 			{
 				switch (expr)
 				{
@@ -65,8 +68,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						break;
 					case SqlCteTable ctetable:
 						//linq2db does not visit CteClause of SqlCteTable with a stack overflow possibility warning
-						//if left out this will not provide name sanitization in cte expressions
-						new QueryVisitor<object>(true, sanitizeNames).Visit(ctetable.Cte);
+						//this seems to trigger on recursive cte expressions, tracking visisted CteClauseExpressions to break recursiom
+						if (!visitedExpressions.Contains(ctetable.Cte))
+						{
+							visitedExpressions.Add(ctetable.Cte);
+							new QueryVisitor<object>(true, sanitizeNames).Visit(ctetable.Cte);
+						}
 						break;
 				}
 			}

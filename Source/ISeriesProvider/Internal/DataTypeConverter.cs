@@ -57,7 +57,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			if (value is IConvertible c)
 			{
 				var formatProvider = System.Globalization.CultureInfo.CurrentCulture;
-
+				
 				if (type == typeof(byte))
 				{
 					result = c.ToByte(formatProvider); return true;

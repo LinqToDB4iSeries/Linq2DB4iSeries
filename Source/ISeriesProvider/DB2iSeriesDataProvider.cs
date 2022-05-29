@@ -109,7 +109,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SqlProviderFlags.CanCombineParameters = false;
 			SqlProviderFlags.IsCommonTableExpressionsSupported = true;
 			SqlProviderFlags.IsUpdateFromSupported = false;
-			
+			//This feature is undocumented, it passes the tests on 7.5
+			//DB2 supports Comparison and Between, these don't work in iDB2
+			SqlProviderFlags.RowConstructorSupport = RowFeature.Equality | RowFeature.Update 
+													 | RowFeature.UpdateLiteral | RowFeature.Overlaps;
+
 			db2iSeriesSqlProviderFlags.SetCustomFlags(SqlProviderFlags);
 			mappingOptions.SetCustomFlags(SqlProviderFlags);
 
@@ -361,151 +365,154 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public override void SetParameter(DataConnection dataConnection, IDbDataParameter parameter, string name, DbDataType dataType, object value)
 		{
-			switch (dataType.DataType)
+			if (value is not DBNull && value is not null)
 			{
-				case DataType.Byte:
-				case DataType.SByte:
-				case DataType.Boolean:
-				case DataType.Int16:
-					dataType = dataType.WithDataType(DataType.Int16);
-					value = DataTypeConverter.TryConvertOrOriginal(value, dataType.DataType);
-					break;
-				case DataType.Int32:
-				case DataType.UInt16:
-					dataType = dataType.WithDataType(DataType.Int32);
-					value = DataTypeConverter.TryConvertOrOriginal(value, dataType.DataType);
-					break;
-				case DataType.Int64:
-				case DataType.UInt32:
-					dataType = dataType.WithDataType(DataType.Int64);
-					value = DataTypeConverter.TryConvertOrOriginal(value, dataType.DataType);
-					break;
-				case DataType.VarNumeric:
-				case DataType.Decimal:
-				case DataType.UInt64:
-					dataType = dataType.WithDataType(DataType.Decimal);
-					value = DataTypeConverter.TryConvertOrOriginal(value, dataType.DataType);
-					break;
-				case DataType.Single:
-				case DataType.Double:
-					value = DataTypeConverter.TryConvertOrOriginal(value, dataType.DataType);
-					break;
+				switch (dataType.DataType)
+				{
+					case DataType.Byte:
+					case DataType.SByte:
+					case DataType.Boolean:
+					case DataType.Int16:
+						dataType = dataType.WithDataType(DataType.Int16);
+						value = DataTypeConverter.TryConvertOrOriginal(value, dataType.DataType);
+						break;
+					case DataType.Int32:
+					case DataType.UInt16:
+						dataType = dataType.WithDataType(DataType.Int32);
+						value = DataTypeConverter.TryConvertOrOriginal(value, dataType.DataType);
+						break;
+					case DataType.Int64:
+					case DataType.UInt32:
+						dataType = dataType.WithDataType(DataType.Int64);
+						value = DataTypeConverter.TryConvertOrOriginal(value, dataType.DataType);
+						break;
+					case DataType.VarNumeric:
+					case DataType.Decimal:
+					case DataType.UInt64:
+						dataType = dataType.WithDataType(DataType.Decimal);
+						value = DataTypeConverter.TryConvertOrOriginal(value, dataType.DataType);
+						break;
+					case DataType.Single:
+					case DataType.Double:
+						value = DataTypeConverter.TryConvertOrOriginal(value, dataType.DataType);
+						break;
 
-				case DataType.Char:
-				case DataType.VarChar:
-				case DataType.NChar:
-				case DataType.NVarChar:
-				case DataType.Text:
-				case DataType.NText:
-					if (value is Guid textGuid) value = textGuid.ToString();
-					else if (value is bool textBool) value = ConvertTo<char>.From(textBool);
-					break;
+					case DataType.Char:
+					case DataType.VarChar:
+					case DataType.NChar:
+					case DataType.NVarChar:
+					case DataType.Text:
+					case DataType.NText:
+						if (value is Guid textGuid) value = textGuid.ToString();
+						else if (value is bool textBool) value = ConvertTo<char>.From(textBool);
+						break;
 
-				case DataType.Guid:
-					dataType = dataType.WithDataType(
-						mappingOptions.MapGuidAsString ? DataType.NVarChar : DataType.VarBinary);
+					case DataType.Guid:
+						dataType = dataType.WithDataType(
+							mappingOptions.MapGuidAsString ? DataType.NVarChar : DataType.VarBinary);
 
-					if (value is Guid guid)
-						value = mappingOptions.MapGuidAsString ?
-							(object)guid.ToString() : guid.ToByteArray();
+						if (value is Guid guid)
+							value = mappingOptions.MapGuidAsString ?
+								(object)guid.ToString() : guid.ToByteArray();
 
-					break;
-				case DataType.Binary:
-				case DataType.VarBinary:
-					if (value is Guid varBinaryGuid) value = varBinaryGuid.ToByteArray();
-					break;
+						break;
+					case DataType.Binary:
+					case DataType.VarBinary:
+						if (value is Guid varBinaryGuid) value = varBinaryGuid.ToByteArray();
+						break;
 
-				case DataType.DateTime2:
-				case DataType.DateTime:
-					
-					//Sanitize DataType based on provided DbType
-					dataType = dataType.WithDataType(dataType.DbType?.ToUpper() switch {
-						Constants.DbTypes.Date => DataType.Date,
-						Constants.DbTypes.Time => DataType.Time,
-						_ => DataType.DateTime
-					});
+					case DataType.DateTime2:
+					case DataType.DateTime:
 
-					//Sanitize DbType based on DataType if DbType not provided
-					//if (dataType.DbType is null)
-					//{
-					//	dataType = dataType.WithDbType(dataType.DataType switch
-					//	{
-					//		DataType.Date => Constants.DbTypes.Date,
-					//		DataType.Time => Constants.DbTypes.Time,
-					//		_ => Constants.DbTypes.TimeStamp
-					//	});
-					//}
-					
-					// iAccessClient and OleDb fail when passing DateTime objects.
-					// ODbc works with precision up to 3
-					// Convert them to strings instead.
-					if (ProviderType.IsAccessClient() || ProviderType.IsOdbcOrOleDb())
-					{
-						value = value switch
+						//Sanitize DataType based on provided DbType
+						dataType = dataType.WithDataType(dataType.DbType?.ToUpper() switch {
+							Constants.DbTypes.Date => DataType.Date,
+							Constants.DbTypes.Time => DataType.Time,
+							_ => DataType.DateTime
+						});
+
+						//Sanitize DbType based on DataType if DbType not provided
+						//if (dataType.DbType is null)
+						//{
+						//	dataType = dataType.WithDbType(dataType.DataType switch
+						//	{
+						//		DataType.Date => Constants.DbTypes.Date,
+						//		DataType.Time => Constants.DbTypes.Time,
+						//		_ => Constants.DbTypes.TimeStamp
+						//	});
+						//}
+
+						// iAccessClient and OleDb fail when passing DateTime objects.
+						// ODbc works with precision up to 3
+						// Convert them to strings instead.
+						if (ProviderType.IsAccessClient() || ProviderType.IsOdbcOrOleDb())
 						{
-							DateTime dateTime => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(dataType.DataType, dateTime, false, dataType.Precision),
-							DateTimeOffset dateTimeOffset => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(dataType.DataType, dateTimeOffset.DateTime, false, dataType.Precision),
-							_ => value
-						};
+							value = value switch
+							{
+								DateTime dateTime => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(dataType.DataType, dateTime, false, dataType.Precision),
+								DateTimeOffset dateTimeOffset => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(dataType.DataType, dateTimeOffset.DateTime, false, dataType.Precision),
+								_ => value
+							};
 
 
-						if (ProviderType.IsOdbcOrOleDb()
-							&& dataType.DataType == DataType.DateTime)
-						{
-							//Treat source data as string to be converted to datetime
-							//Otherwise odbc truncates precision to 3 and oledb fails with overflow
-							//Access client converts it accurately	
-							dataType = dataType
-								.WithDataType(DataType.VarChar);
+							if (ProviderType.IsOdbcOrOleDb()
+								&& dataType.DataType == DataType.DateTime)
+							{
+								//Treat source data as string to be converted to datetime
+								//Otherwise odbc truncates precision to 3 and oledb fails with overflow
+								//Access client converts it accurately	
+								dataType = dataType
+									.WithDataType(DataType.VarChar);
+							}
 						}
-					}
 
-					break;
-				case DataType.Date:
+						break;
+					case DataType.Date:
 
-					//if (dataType.DbType != null)
-					//	dataType = dataType
-					//		.WithDbType(Constants.DbTypes.Date);
+						//if (dataType.DbType != null)
+						//	dataType = dataType
+						//		.WithDbType(Constants.DbTypes.Date);
 
-					if (ProviderType.IsAccessClient() || ProviderType.IsOleDb())
-					{
-						//Date parameters will only accept iDb2Date or string representation of time
-						value = value switch
+						if (ProviderType.IsAccessClient() || ProviderType.IsOleDb())
 						{
-							DateTime dateTime => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(dataType.DataType, dateTime, false),
-							DateTimeOffset dateTimeOffset => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(dataType.DataType, dateTimeOffset.DateTime, false),
-							_ => value
-						};
-					}
+							//Date parameters will only accept iDb2Date or string representation of time
+							value = value switch
+							{
+								DateTime dateTime => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(dataType.DataType, dateTime, false),
+								DateTimeOffset dateTimeOffset => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(dataType.DataType, dateTimeOffset.DateTime, false),
+								_ => value
+							};
+						}
 
-					break;
-				case DataType.Time:
+						break;
+					case DataType.Time:
 
-					//if (dataType.DbType != null)
-					//	dataType = dataType
-					//		.WithDbType(Constants.DbTypes.Time);
+						//if (dataType.DbType != null)
+						//	dataType = dataType
+						//		.WithDbType(Constants.DbTypes.Time);
 
-					if (ProviderType.IsIBM())
-					{
-						//Time parameters will only accept iDb2Time/DB2Time or string representation of time
-						value = value switch
+						if (ProviderType.IsIBM())
 						{
-							TimeSpan timeSpan => DB2iSeriesSqlBuilder.ConvertTimeToSql(timeSpan, false),
-							DateTime dateTime => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(DataType.Time, dateTime, false),
-							DateTimeOffset dateTimeOffset => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(DataType.Time, dateTimeOffset.DateTime, false),
-							_ => value
-						};
-					}
-					else
-					{
-						value = value switch
+							//Time parameters will only accept iDb2Time/DB2Time or string representation of time
+							value = value switch
+							{
+								TimeSpan timeSpan => DB2iSeriesSqlBuilder.ConvertTimeToSql(timeSpan, false),
+								DateTime dateTime => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(DataType.Time, dateTime, false),
+								DateTimeOffset dateTimeOffset => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(DataType.Time, dateTimeOffset.DateTime, false),
+								_ => value
+							};
+						}
+						else
 						{
-							DateTime dateTime => dateTime.TimeOfDay,
-							DateTimeOffset dateTimeOffset => dateTimeOffset.TimeOfDay,
-							_ => value
-						};
-					}
-					break;
+							value = value switch
+							{
+								DateTime dateTime => dateTime.TimeOfDay,
+								DateTimeOffset dateTimeOffset => dateTimeOffset.TimeOfDay,
+								_ => value
+							};
+						}
+						break;
+				} 
 			}
 
 			var parameterMarker = db2iSeriesSqlProviderFlags.SupportsNamedParameters ? "@" + name : "?";
@@ -521,6 +528,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				DB2iSeriesProviderType.AccessClient => dataType switch
 				{
 					DataType.Blob => iDB2DbType.iDB2Blob,
+					DataType.DateTime2 => iDB2DbType.iDB2TimeStamp,
+					DataType.VarNumeric => iDB2DbType.iDB2Decimal,
 					_ => null
 				},
 #endif
@@ -534,6 +543,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					DataType.Blob => OdbcType.VarBinary,
 					DataType.Date => OdbcType.Date,
 					DataType.Time => OdbcType.Time,
+					DataType.Guid => OdbcType.VarBinary,
+					DataType.SByte => OdbcType.SmallInt,
+					DataType.UInt16 => OdbcType.Int,
+					DataType.UInt32 => OdbcType.BigInt,
+					DataType.UInt64 => OdbcType.Decimal,
+					DataType.VarNumeric => OdbcType.Decimal,
 					var x when
 					    x == DataType.DateTime
 					||  x == DataType.DateTime2 => OdbcType.DateTime,
@@ -555,6 +570,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					||	x == DataType.Boolean => OleDbType.SmallInt,
 					var x when
 						x == DataType.UInt64
+					||  x == DataType.VarNumeric
 					||	x == DataType.Decimal => OleDbType.Decimal,
 					var x when
 						x == DataType.DateTime

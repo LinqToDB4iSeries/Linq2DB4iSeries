@@ -3,6 +3,7 @@
 namespace LinqToDB.DataProvider.DB2iSeries
 {
 	using Data;
+	using LinqToDB.Common;
 	using Mapping;
 	using SqlQuery;
 
@@ -15,11 +16,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			this.db2ISeriesSqlProviderFlags = db2ISeriesSqlProviderFlags;
 		}
-		
+
+		private static Func<ColumnDescriptor, bool> defaultSkipConvert = (_ => false);
+
 		//TODO: v3.6.0 check if default implenetation with castParameters works?
-		public override void BuildColumns(object item, Func<ColumnDescriptor, bool> skipConvert = null, bool castParameters = false, bool castAllRows = false)
+		public override void BuildColumns(object item, Func<ColumnDescriptor, bool> skipConvert = null, bool castParameters = false, bool castAllRows = false, bool castFirstRowLiteralOnUnionAll = false, Func<ColumnDescriptor, bool> castLiteral = null)
 		{
-			skipConvert ??= (_ => false);
+			skipConvert ??= defaultSkipConvert;
 
 			for (var i = 0; i < Columns.Length; i++)
 			{
@@ -43,15 +46,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				{
 					StringBuilder.Append($"CAST(NULL AS {casttype})");
 				}
-				else if (!skipConvert(column) && !ValueConverter.TryConvert(StringBuilder, columnType, value))
+				else if (!skipConvert(column) && !MappingSchema.ValueToSqlConverter.TryConvert(StringBuilder, columnType, value))
 				{
-					var name = ParameterName == "?" ? ParameterName : ParameterName + ++ParameterIndex;
-
 					if (value is DataParameter parameter)
-					{
 						value = parameter.Value;
-					}
-
+					
 					var dataParameter = new DataParameter(ParameterName == "?" ? ParameterName : "p" + ParameterIndex, value, column.DataType);
 
 					Parameters.Add(dataParameter);
