@@ -269,7 +269,6 @@ namespace Tests.xUpdate
 			tempTable.Dispose();
 		}
 
-#if !NETFRAMEWORK
 		[Test]
 		public async Task CreateTable_NoDisposeErrorAsync([DataSources(false)] string context)
 		{
@@ -281,7 +280,6 @@ namespace Tests.xUpdate
 			await table2.DropAsync();
 			await tempTable.DisposeAsync();
 		}
-#endif
 
 		[Table]
 		public class TableWithPrimaryKey
@@ -301,8 +299,11 @@ namespace Tests.xUpdate
 		{
 			using var db = GetDataContext(context);
 
+			// table name set explicitly to avoid table name conflict with
+			// CreateTempTableWithPrimaryKey for Sybase (reproduced with full test-run only)
+			// looks like some test blocks session cleanup in Sybase
 			using var t = new[] { new TableWithPrimaryKey() { Key = 1 } }
-				.IntoTempTable(db, tableOptions: TableOptions.IsTemporary);
+				.IntoTempTable(db, tableName: "TableWithPrimaryKey2", tableOptions: TableOptions.IsTemporary);
 		}
 	}
 }

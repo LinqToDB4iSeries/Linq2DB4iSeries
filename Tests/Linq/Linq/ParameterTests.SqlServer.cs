@@ -6,11 +6,7 @@ using LinqToDB.Data;
 using LinqToDB.Mapping;
 using NUnit.Framework;
 
-#if NET472
-using Tests.FSharp.Models;
-#else
 using Tests.Model;
-#endif
 
 namespace Tests.Linq
 {
@@ -426,7 +422,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void SqlServerCustomNVarCharMaxOverflowParameterSize([IncludeDataSources(TestProvName.AllSqlServer2005Plus)] string context)
+		public void SqlServerCustomNVarCharMaxOverflowParameterSize([IncludeDataSources(TestProvName.AllSqlServer)] string context)
 		{
 			using (var db = GetDataConnection(context, new MappingSchema()))
 			{
@@ -452,7 +448,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void SqlServerCustomVarCharMaxOverflowParameterSize([IncludeDataSources(TestProvName.AllSqlServer2005Plus)] string context)
+		public void SqlServerCustomVarCharMaxOverflowParameterSize([IncludeDataSources(TestProvName.AllSqlServer)] string context)
 		{
 			using (var db = GetDataConnection(context, new MappingSchema()))
 			{
@@ -478,7 +474,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void SqlServerCustomVarBinaryMaxOverflowParameterSize([IncludeDataSources(TestProvName.AllSqlServer2005Plus)] string context)
+		public void SqlServerCustomVarBinaryMaxOverflowParameterSize([IncludeDataSources(TestProvName.AllSqlServer)] string context)
 		{
 			using (var db = GetDataConnection(context, new MappingSchema()))
 			{
@@ -642,11 +638,12 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void SqlServerCustomNVarCharMaxOverflowParameterSizeAsDataParameter([IncludeDataSources(TestProvName.AllSqlServer2005Plus)] string context)
+		public void SqlServerCustomNVarCharMaxOverflowParameterSizeAsDataParameter([IncludeDataSources(TestProvName.AllSqlServer)] string context)
 		{
 			using (var db = GetDataConnection(context, new MappingSchema()))
 			{
 				SetupCustomTypes(db.MappingSchema, true);
+
 				using (var table = db.CreateLocalTable<AllTypesCustomMaxLength>())
 				{
 					var value = new string('я', 5000);
@@ -668,7 +665,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void SqlServerCustomVarCharMaxOverflowParameterSizeAsDataParameter([IncludeDataSources(TestProvName.AllSqlServer2005Plus)] string context)
+		public void SqlServerCustomVarCharMaxOverflowParameterSizeAsDataParameter([IncludeDataSources(TestProvName.AllSqlServer)] string context)
 		{
 			using (var db = GetDataConnection(context, new MappingSchema()))
 			{
@@ -694,7 +691,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void SqlServerCustomVarBinaryMaxOverflowParameterSizeAsDataParameter([IncludeDataSources(TestProvName.AllSqlServer2005Plus)] string context)
+		public void SqlServerCustomVarBinaryMaxOverflowParameterSizeAsDataParameter([IncludeDataSources(TestProvName.AllSqlServer)] string context)
 		{
 			using (var db = GetDataConnection(context, new MappingSchema()))
 			{
@@ -725,25 +722,23 @@ namespace Tests.Linq
 		private void SetupCustomTypes(MappingSchema ms, bool asDataParameter = false)
 		{
 			ms.AddScalarType(typeof(VarBinary), DataType.VarBinary);
-			ms.AddScalarType(typeof(VarChar), DataType.VarChar);
-			ms.AddScalarType(typeof(NVarChar), DataType.NVarChar);
+			ms.AddScalarType(typeof(VarChar),   DataType.VarChar);
+			ms.AddScalarType(typeof(NVarChar),  DataType.NVarChar);
+
+			ms.SetConvertExpression<string, VarChar>  (v => new () { Value = v });
+			ms.SetConvertExpression<string, NVarChar> (v => new () { Value = v });
+			ms.SetConvertExpression<byte[], VarBinary>(v => new () { Value = v });
 
 			if (!asDataParameter)
 			{
-				ms.SetConvertExpression<string, VarChar>  (v => new VarChar()   { Value = v });
-				ms.SetConvertExpression<string, NVarChar> (v => new NVarChar()  { Value = v });
-				ms.SetConvertExpression<byte[], VarBinary>(v => new VarBinary() { Value = v });
-				ms.SetConvertExpression<VarChar?, string?>  (v => v == null ? null : v.Value);
-				ms.SetConvertExpression<NVarChar?, string?> (v => v == null ? null : v.Value);
+				ms.SetConvertExpression<VarChar?,   string?>(v => v == null ? null : v.Value);
+				ms.SetConvertExpression<NVarChar?,  string?>(v => v == null ? null : v.Value);
 				ms.SetConvertExpression<VarBinary?, byte[]?>(v => v == null ? null : v.Value);
 			}
 			else
 			{
-				ms.SetConvertExpression<string, VarChar>  (v => new VarChar()   { Value = v });
-				ms.SetConvertExpression<string, NVarChar> (v => new NVarChar()  { Value = v });
-				ms.SetConvertExpression<byte[], VarBinary>(v => new VarBinary() { Value = v });
-				ms.SetConvertExpression<VarChar?, DataParameter?>  (v => v == null ? null : DataParameter.VarChar(null, v.Value));
-				ms.SetConvertExpression<NVarChar?, DataParameter?> (v => v == null ? null : DataParameter.NVarChar(null, v.Value));
+				ms.SetConvertExpression<VarChar?,   DataParameter?>(v => v == null ? null : DataParameter.VarChar  (null, v.Value));
+				ms.SetConvertExpression<NVarChar?,  DataParameter?>(v => v == null ? null : DataParameter.NVarChar (null, v.Value));
 				ms.SetConvertExpression<VarBinary?, DataParameter?>(v => v == null ? null : DataParameter.VarBinary(null, v.Value));
 			}
 		}

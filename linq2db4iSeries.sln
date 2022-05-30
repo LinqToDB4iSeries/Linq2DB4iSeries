@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30204.135
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32112.339
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{B4CC1DAB-FF2D-4247-9A46-B7DE236981BB}"
 EndProject
@@ -22,10 +22,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests\Linq\Tests.c
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{84F173B5-E165-4BAC-8EDF-FC7DE0D863BA}"
 	ProjectSection(SolutionItems) = preProject
+		Build\BannedSymbols.txt = Build\BannedSymbols.txt
+		Directory.Packages.props = Directory.Packages.props
 		Build\linq2db.Default.props = Build\linq2db.Default.props
+		Build\linq2db.Providers.props = Build\linq2db.Providers.props
 		Build\linq2db.Source.props = Build\linq2db.Source.props
+		Build\linq2db.TestProjects.props = Build\linq2db.TestProjects.props
 		Build\linq2db.Tests.props = Build\linq2db.Tests.props
-		Build\linq2db.Tests.Providers.props = Build\linq2db.Tests.Providers.props
 	EndProjectSection
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Tests.FSharp", "Tests\FSharp\Tests.FSharp.fsproj", "{9139F4C6-BA73-48BB-8558-56DB69F491C9}"

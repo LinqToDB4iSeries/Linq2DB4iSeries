@@ -19,7 +19,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			BulkCopyOptions options,
 			IEnumerable<T> source,
 			DataConnection dataConnection,
-			IDbConnection connection,
+			DbConnection connection,
 			DB2iSeriesAccessClientProviderAdapter adapter,
 			Action<DataConnection, Func<string>, Func<int>> traceAction)
 		{
@@ -44,7 +44,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				cmd.CommandText = sql;
 				adapter.DeriveParameters(cmd);
 
-				var columnDataTypes = cmd.Parameters.Cast<IDbDataParameter>()
+				var columnDataTypes = cmd.Parameters.Cast<DbParameter>()
 					.Select(adapter.GetDbType)
 					.Select(adapter.GetDataType)
 					.ToList();

@@ -5,8 +5,8 @@ namespace LinqToDB.Configuration
 {
 	public static class LinqToDbConnectionOptionsBuilderExtensions
 	{
-		public static LinqToDbConnectionOptionsBuilder UseDB2iSeries(
-			this LinqToDbConnectionOptionsBuilder builder, 
+		public static LinqToDBConnectionOptionsBuilder UseDB2iSeries(
+			this LinqToDBConnectionOptionsBuilder builder, 
 			string connectionString,
 			Action<DB2iSeriesProviderConfigurationBuilder> configure = null)
 		{

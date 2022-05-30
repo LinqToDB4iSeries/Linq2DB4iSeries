@@ -17,11 +17,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			adapter = providerType switch
 			{
 #if NETFRAMEWORK
-				DB2iSeriesProviderType.AccessClient => DB2iSeriesAccessClientProviderAdapter.GetInstance(),
+				DB2iSeriesProviderType.AccessClient => DB2iSeriesAccessClientProviderAdapter.Instance,
 #endif
 				DB2iSeriesProviderType.Odbc => OdbcProviderAdapter.GetInstance(),
 				DB2iSeriesProviderType.OleDb => OleDbProviderAdapter.GetInstance(),
-				DB2iSeriesProviderType.DB2 => DB2.DB2ProviderAdapter.GetInstance(),
+				DB2iSeriesProviderType.DB2 => DB2.DB2ProviderAdapter.Instance,
 				_ => throw ExceptionHelper.InvalidAdoProvider(providerType)
 			};
 			this.ProviderType = providerType;

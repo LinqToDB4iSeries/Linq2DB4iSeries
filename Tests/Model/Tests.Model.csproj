@@ -6,4 +6,13 @@
 		<AssemblyName>linq2db.Model</AssemblyName>
 	</PropertyGroup>
 
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net472' ">
+		<Reference Include="System.ServiceModel" />
+		<PackageReference Include="System.Collections.Immutable" />
+		<PackageReference Include="linq2db.Remote.Wcf" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net472' ">
+		<PackageReference Include="linq2db.Remote.Grpc" />
+	</ItemGroup>
 </Project>

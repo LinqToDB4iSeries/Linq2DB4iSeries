@@ -14,11 +14,12 @@
 
 	<PropertyGroup>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-	  <PackageLicenseFile>MIT-LICENSE.txt</PackageLicenseFile>
+		<PackageLicenseFile>MIT-LICENSE.txt</PackageLicenseFile>
 		<PackageProjectUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries</PackageProjectUrl>
 		<PackageIcon>linq2db2i.png</PackageIcon>
 		<PackageTags>linq;linq2db;LinqToDB;ORM;database;DB;SQL;DB2;IBM;iSeries</PackageTags>
 		<AssemblyOriginatorKeyFile>..\..\Build\LinqToDB.DB2iSeries.snk</AssemblyOriginatorKeyFile>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -27,17 +28,25 @@
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)'=='Release'">
-		<DebugType>pdbonly</DebugType>
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
 		<DebugSymbols>true</DebugSymbols>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0">
+		<PackageReference Include="Microsoft.SourceLink.GitHub">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>
 	</ItemGroup>
+
+	<PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+		<ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(TF_BUILD)' == 'true'">
+		<ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+	</PropertyGroup>
 
 </Project>

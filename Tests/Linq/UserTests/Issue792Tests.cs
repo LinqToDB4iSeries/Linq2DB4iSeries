@@ -88,6 +88,7 @@ namespace Tests.UserTests
 			ProviderName.DB2,
 			ProviderName.Access,
 			TestProvName.AllMySql,
+			TestProvName.AllOracle,
 			TestProvName.AllSqlServer)]
 			string context)
 		{
@@ -134,7 +135,10 @@ namespace Tests.UserTests
 				}))!;
 
 				Assert.IsInstanceOf<InvalidOperationException>(ex);
-				Assert.IsTrue(ex.Message.Contains("requires the command to have a transaction"));
+				Assert.IsTrue(
+					ex.Message.Contains("requires the command to have a transaction")
+					|| ex.Message.Contains("команда имела транзакцию") //for those who accidentally installed a russian localization of Sql Server :)
+					);
 			}
 		}
 

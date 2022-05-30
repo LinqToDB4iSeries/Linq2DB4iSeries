@@ -152,6 +152,8 @@ namespace Tests.DataProvider
 			
 			using (var conn = new DataConnection(context))
 			{
+				TestSimple<decimal>(conn, 1m, DataType.VarNumeric);
+
 				TestSimple<sbyte>(conn, 1, DataType.SByte);
 				TestSimple<short>(conn, 1, DataType.Int16);
 				TestSimple<int>(conn, 1, DataType.Int32);
@@ -163,9 +165,11 @@ namespace Tests.DataProvider
 				TestSimple<float>(conn, 1, DataType.Single);
 				TestSimple<double>(conn, 1d, DataType.Double);
 				TestSimple<decimal>(conn, 1m, DataType.Decimal);
-				TestSimple<decimal>(conn, 1m, DataType.VarNumeric);
 				TestSimple<decimal>(conn, 1m, DataType.Money);
 				TestSimple<decimal>(conn, 1m, DataType.SmallMoney);
+				//OleDb default mapping for VarNumeric is not supported on this provider
+				if (!TestProvNameDb2i.IsiSeriesOleDb(context))
+					TestSimple<decimal>(conn, 1m, DataType.VarNumeric);
 
 				TestNumeric(conn, sbyte.MinValue, DataType.SByte);
 				TestNumeric(conn, sbyte.MaxValue, DataType.SByte);

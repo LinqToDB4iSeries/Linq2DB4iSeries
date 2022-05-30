@@ -29,9 +29,9 @@ namespace Tests.DataProvider
 		{
 			var throws = false;
 
-			string? serverName;
-			string? schemaName;
-			string? dbName;
+			string serverName;
+			string schemaName;
+			string dbName;
 
 			using (new DisableBaseline("Use instance name is SQL", false))
 			using (var db = GetDataContext(context, testLinqService: false))

@@ -11,6 +11,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	using SqlProvider;
 	using SqlQuery;
 	using System.Data.Common;
+	using System.Data.SqlTypes;
+	using System.Globalization;
 
 	public partial class DB2iSeriesSqlBuilder : BasicSqlBuilder
 	{
@@ -32,22 +34,21 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			internal set => db2iSeriesSqlProviderFlags = value;
 		}
 
+		protected override bool SupportsNullInColumn => false;
+
 		public DB2iSeriesSqlBuilder(
 			DB2iSeriesDataProvider provider,
 			MappingSchema mappingSchema,
 			ISqlOptimizer sqlOptimizer,
 			SqlProviderFlags sqlProviderFlags)
-			: this(mappingSchema, sqlOptimizer, sqlProviderFlags)
+			: base(provider, mappingSchema, sqlOptimizer, sqlProviderFlags)
 		{
 			Provider = provider;
 		}
 
-		// remote context
-		public DB2iSeriesSqlBuilder(
-			MappingSchema mappingSchema,
-			ISqlOptimizer sqlOptimizer,
-			SqlProviderFlags sqlProviderFlags)
-			: base(mappingSchema, sqlOptimizer, sqlProviderFlags)
+		//Follow Linq2DB pattern
+		DB2iSeriesSqlBuilder(BasicSqlBuilder parentBuilder) 
+			: base(parentBuilder)
 		{
 			
 		}
@@ -106,6 +107,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case ConvertType.NameToQueryField:
 				case ConvertType.NameToQueryFieldAlias:
 				case ConvertType.NameToQueryTable:
+				case ConvertType.NameToProcedure:
+				case ConvertType.NameToPackage:
+				case ConvertType.NameToSchema:
+				case ConvertType.NameToDatabase:
 				case ConvertType.NameToQueryTableAlias:
 					if (IdentifierQuoteMode != DB2iSeriesIdentifierQuoteMode.None)
 					{
@@ -114,7 +119,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 							return sb.Append(value);
 						}
 						if (IdentifierQuoteMode == DB2iSeriesIdentifierQuoteMode.Quote ||
-							value.StartsWith("_") ||
 							value.StartsWith("_") ||
 							value.Any(c => char.IsLower(c) || char.IsWhiteSpace(c)))
 							return sb.Append('"').Append(value).Append('"');
@@ -125,16 +129,50 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return base.Convert(sb, value, convertType);
 		}
 
-		public override StringBuilder BuildTableName(StringBuilder sb, string server, string database, string schema, string table, TableOptions tableOptions)
+		protected override string GetPhysicalTableName(ISqlTableSource table, string alias, bool ignoreTableExpression = false, string defaultDatabaseName = null)
 		{
-			if (database != null && database.Length == 0) database = null;
-			if (schema != null && schema.Length == 0) schema = null;
+			var name = base.GetPhysicalTableName(table, alias, ignoreTableExpression, defaultDatabaseName);
+
+			if (table.SqlTableType == SqlTableType.Function)
+				return $"TABLE({name})";
+
+			return name;
+		}
+
+		public override StringBuilder BuildObjectName(StringBuilder sb, SqlObjectName name, ConvertType objectType, bool escape, TableOptions tableOptions)
+		{
+			if (objectType == ConvertType.NameToProcedure && name.Database != null)
+				throw new LinqToDBException("DB2 LUW cannot address functions/procedures with database name specified.");
+
+			var schemaName = name.Schema;
+			if (schemaName == null && tableOptions.IsTemporaryOptionSet())
+				schemaName = "SESSION";
 
 			// "db..table" syntax not supported
-			if (database != null && schema == null)
-				throw new LinqToDBException($"{Provider.Name} requires schema name if database name provided.");
+			if (name.Database != null && schemaName == null)
+				throw new LinqToDBException("DB2 requires schema name if database name provided.");
 
-			return base.BuildTableName(sb, null, database, schema, table, tableOptions);
+			if (name.Database != null)
+			{
+				(escape ? Convert(sb, name.Database, ConvertType.NameToDatabase) : sb.Append(name.Database))
+					.Append('.');
+				if (schemaName == null)
+					sb.Append('.');
+			}
+
+			if (schemaName != null)
+			{
+				(escape ? Convert(sb, schemaName, ConvertType.NameToSchema) : sb.Append(schemaName))
+					.Append('.');
+			}
+
+			if (name.Package != null)
+			{
+				(escape ? Convert(sb, name.Package, ConvertType.NameToPackage) : sb.Append(name.Package))
+					.Append('.');
+			}
+
+			return escape ? Convert(sb, name.Name, objectType) : sb.Append(name.Name);
 		}
 
 		protected override void BuildCreateTableCommand(SqlTable table)
@@ -157,9 +195,20 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				base.BuildCreateTableCommand(table);
 			}
 		}
-		public override string GetTableSchemaName(SqlTable table)
+
+		protected override void BuildCreateTablePrimaryKey(SqlCreateTableStatement createTable, string pkName, IEnumerable<string> fieldNames)
 		{
-			return table.Schema == null && table.TableOptions.HasIsGlobalTemporaryStructure() ? "SESSION" : base.GetTableSchemaName(table);
+			// DB2 doesn't support constraints on temp tables
+			if (createTable.Table.TableOptions.IsTemporaryOptionSet())
+			{
+				var idx = StringBuilder.Length - 1;
+				while (idx >= 0 && StringBuilder[idx] != ',')
+					idx--;
+				StringBuilder.Length = idx == -1 ? 0 : idx;
+				return;
+			}
+
+			base.BuildCreateTablePrimaryKey(createTable, pkName, fieldNames);
 		}
 
 		#endregion
@@ -195,7 +244,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					var field = trun.Table!.IdentityFields[commandNumber - 1];
 
 					StringBuilder.Append("ALTER TABLE ");
-					ConvertTableName(StringBuilder, trun.Table.Server, trun.Table.Database, trun.Table.Schema, trun.Table.PhysicalName!, trun.Table.TableOptions);
+					BuildObjectName(StringBuilder, trun.Table.TableName, ConvertType.NameToQueryTable, true, trun.Table.TableOptions);
 					StringBuilder.Append(" ALTER ");
 					Convert(StringBuilder, field.PhysicalName, ConvertType.NameToQueryField);
 					StringBuilder.AppendLine(" RESTART WITH 1");
@@ -301,14 +350,20 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		//Offset clause support
 		protected override bool OffsetFirst => DB2iSeriesSqlProviderFlags.SupportsOffsetClause;
 
-		//Used for printing parameter information in traces
-		protected override string GetProviderTypeName(DbParameter parameter)
+		//Used for printing parameter information in traces - Decimal handling from DB2 provider
+		protected override string GetProviderTypeName(IDataContext dataContext, DbParameter parameter)
 		{
+			if (parameter.DbType == DbType.Decimal && parameter.Value is decimal decValue)
+			{
+				var d = new SqlDecimal(decValue);
+				return string.Format("({0}{1}{2})", d.Precision.ToString(CultureInfo.InvariantCulture), InlineComma, d.Scale.ToString(CultureInfo.InvariantCulture));
+			}
+
 			return Provider switch
 			{
-				DB2iSeriesDataProvider provider => provider.TryGetProviderParameterName(parameter, MappingSchema, out var name) ? name : null,
+				DB2iSeriesDataProvider provider => provider.TryGetProviderParameterName(dataContext, parameter, out var name) ? name : null,
 				_ => null
-			} ?? base.GetProviderTypeName(parameter);
+			} ?? base.GetProviderTypeName(dataContext, parameter);
 		}
 
 		//Use mapping schema and internal db datatype mapping information to get the appropriate dbType

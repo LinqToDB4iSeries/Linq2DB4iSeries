@@ -7,14 +7,18 @@
 
 - How to maintain the tests from upstream
 
-The test have been set up in a way that tests from upstream can be simply copied over. 
+The test have been set up in a way that tests from upstream can be simply copied over. You have to copy only the source code files and not the project files as follows:
 
-You need to:
-1. Only add Model, Base, Linq, FSharp, VisualBasic projects (omit Benchmarks, Playground and T4)
-2. Exclude CustomizationSupport.cs from Tests.Base\CustomizationSupport
-3. Exclude folders Data and DataProvider from Tests\Linq
-4. Exclude the Properties (AssemblyInfo) folders for all projects
-5. Maintain project files by hand after checking the diff.
-6. You need to make sure TestsInitialization.cs in Tests\Linq is made partial and "InitCustom();" is added at the end of TestAssemblySetup
+- Copy all code from Tests\Base except CustomizationSupport folder
+- Copy all code from Tests\Linq except Data, DataProvider and Microsoft folders. Undo customization changes to the TestsInitialization.cs (partial class and InitCustom() invocation)
+- Copy all code from Tets\FSharp and Tests\VisualBasic
+- Add or update dependencies in /Build/*.props files as neeeded
+- Tweaks to test SQL setup files in Data\Create Scripts\ might be needed
 
-This project was setup to run all DB2 tests. But sometimes tests that target DB2 are not valid for DB2i. All customization is performed in Tests.Base\Db2iInterceptor.cs. You can intercept any test method there and return any valid DB2i providers for that specific test. If no providers are returned the test is ommited altogether. An DB2i specific tests should be placed in the Tests\Custom folder.
+This project was setup to run all DB2 tests. But sometimes tests that target DB2 are not valid for DB2i. All customization is performed in Tests\Base\CustomizationSupport\Db2iInterceptor.cs. You can intercept any test method there and return any valid DB2i providers for that specific test. If no providers are returned the test is ommited altogether. An DB2i specfic tests should be placed in the Tests\Linq\Custom folder.
+
+For all tests to run properly journaling needs to be enabled on the liblists used (replace text in curly brackets):
+
+CRTJRNRCV JRNRCV({JOURNAL RECEIVER NAME})
+CRTJRN JRN({JOURNAL NAME}) JRNRCV({JOURNAL RECEIVER NAME})
+STRJRNLIB LIB({LIBRARY NAME}) JRN({JOURNAL NAME})

@@ -101,45 +101,23 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static void ConvertBinaryToSql(StringBuilder stringBuilder, byte[] value)
 		{
-			stringBuilder.Append("BX'");
-
-			foreach (var b in value)
-				stringBuilder.Append(b.ToString("X2"));
-
-			stringBuilder.Append('\'');
-		}
-
-		public static string ConvertBinaryToSql(byte[] value)
-		{
-			var sb = new StringBuilder();
-			ConvertBinaryToSql(sb, value);
-			return sb.ToString();
+			stringBuilder
+				.Append("BX'")
+				.AppendByteArrayAsHexViaLookup32(value)
+				.Append('\'');
 		}
 
 		public static void ConvertGuidToSql(StringBuilder stringBuilder, Guid value)
 		{
-			var s = value.ToString("N");
 			stringBuilder
-			  .Append("CAST(x'")
-			  .Append(s, 6, 2)
-			  .Append(s, 4, 2)
-			  .Append(s, 2, 2)
-			  .Append(s, 0, 2)
-			  .Append(s, 10, 2)
-			  .Append(s, 8, 2)
-			  .Append(s, 14, 2)
-			  .Append(s, 12, 2)
-			  .Append(s, 16, 16)
-			  .Append("' AS ")
+			  .Append("CAST(");
+
+			ConvertBinaryToSql(stringBuilder, value.ToByteArray());
+			
+			stringBuilder
+			  .Append(" AS ")
 			  .Append(Constants.DbTypes.Char16ForBitData)
 			  .Append(')');
-		}
-
-		public static string ConvertGuidToSql(Guid value)
-		{
-			var sb = new StringBuilder();
-			ConvertGuidToSql(sb, value);
-			return sb.ToString();
 		}
 
 		public static string GetDbType(string name, int? length, int? precision, int? scale)

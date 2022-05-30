@@ -72,7 +72,7 @@ Database={SERVER_NAME};User ID={USER_ID};Password={PASSWORD};Server={SERVER_NAME
 ### Provider Type
 Supported providers are:
 
-- Access Client native .net provider (.net 4.5 only)
+- Access Client native .net provider (.net framework >= 4.5 only)
 - Access Client ODBC provider
 - Access Client OleDb provider
 - DB2 provider (via DB2 Connect license)

@@ -30,8 +30,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				if (dataProvider.ProviderType.IsDB2()
 					&& dataProvider.Adapter.WrappedAdapter is DB2.DB2ProviderAdapter db2Adapter)
 				{
-					var connection = dataProvider.TryGetProviderConnection(dataConnection.Connection, dataConnection.MappingSchema);
-					if (connection != null)
+					if (dataProvider.TryGetProviderConnection(dataConnection, out var connection))
 						return ProviderSpecificCopyImpl_DB2(
 							table,
 							options,
@@ -45,8 +44,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				else if (dataProvider.ProviderType.IsAccessClient()
 					&& dataProvider.Adapter.WrappedAdapter is DB2iSeriesAccessClientProviderAdapter idb2Adapter)
 				{
-					var connection = dataProvider.TryGetProviderConnection(dataConnection.Connection, dataConnection.MappingSchema);
-					if (connection != null)
+					if (dataProvider.TryGetProviderConnection(dataConnection, out var connection))
 						// call the synchronous provider-specific implementation
 						return ProviderSpecificCopyImpl_AccessClient(
 							table,
@@ -69,8 +67,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				if (dataProvider.ProviderType.IsDB2()
 					&& dataProvider.Adapter.WrappedAdapter is DB2.DB2ProviderAdapter db2Adapter)
 				{
-					var connection = dataProvider.TryGetProviderConnection(dataConnection.Connection, dataConnection.MappingSchema);
-					if (connection != null)
+					if (dataProvider.TryGetProviderConnection(dataConnection, out var connection))
 						// call the synchronous provider-specific implementation as provider doesn't support async
 						return Task.FromResult(ProviderSpecificCopyImpl_DB2(
 							table,
@@ -85,8 +82,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				else if (dataProvider.ProviderType.IsAccessClient()
 					&& dataProvider.Adapter.WrappedAdapter is DB2iSeriesAccessClientProviderAdapter idb2Adapter)
 				{
-					var connection = dataProvider.TryGetProviderConnection(dataConnection.Connection, dataConnection.MappingSchema);
-					if (connection != null)
+					if (dataProvider.TryGetProviderConnection(dataConnection, out var connection))
 						// call the synchronous provider-specific implementation as provider doesn't support async
 						return Task.FromResult(ProviderSpecificCopyImpl_AccessClient(
 							table,
@@ -111,8 +107,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				if (dataProvider.ProviderType == DB2iSeriesProviderType.DB2
 					&& dataProvider.Adapter.WrappedAdapter is DB2.DB2ProviderAdapter adapter)
 				{
-					var connection = dataProvider.TryGetProviderConnection(dataConnection.Connection, dataConnection.MappingSchema);
-					if (connection != null)
+					if (dataProvider.TryGetProviderConnection(dataConnection, out var connection))
 					{
 						var enumerator = source.GetAsyncEnumerator(cancellationToken);
 						await using (enumerator.ConfigureAwait(Common.Configuration.ContinueOnCapturedContext))
