@@ -18,21 +18,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	{
 		public static DB2iSeriesIdentifierQuoteMode IdentifierQuoteMode = DB2iSeriesIdentifierQuoteMode.None;
 		
-		protected readonly DB2iSeriesDataProvider Provider;
-		private DB2iSeriesSqlProviderFlags db2iSeriesSqlProviderFlags;
-
-		//Set as internal set property because LinqService seeks for constructor with specific arguments
-		//If not set (e.g. built by LinqService via reflection, fallback to getting flags from CustomFlag collection
-		public DB2iSeriesSqlProviderFlags DB2iSeriesSqlProviderFlags
-		{
-			get
-			{
-				if (db2iSeriesSqlProviderFlags is null)
-					db2iSeriesSqlProviderFlags = new DB2iSeriesSqlProviderFlags(SqlProviderFlags);
-				return db2iSeriesSqlProviderFlags;
-			}
-			internal set => db2iSeriesSqlProviderFlags = value;
-		}
+		protected DB2iSeriesDataProvider Provider { get; set; }
+		
+		public DB2iSeriesSqlProviderFlags DB2iSeriesSqlProviderFlags { get; }
 
 		protected override bool SupportsNullInColumn => false;
 
@@ -40,25 +28,31 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			DB2iSeriesDataProvider provider,
 			MappingSchema mappingSchema,
 			ISqlOptimizer sqlOptimizer,
-			SqlProviderFlags sqlProviderFlags)
+			SqlProviderFlags sqlProviderFlags,
+			DB2iSeriesSqlProviderFlags db2iSeriesSqlProviderFlags)
 			: base(provider, mappingSchema, sqlOptimizer, sqlProviderFlags)
 		{
 			Provider = provider;
+			DB2iSeriesSqlProviderFlags = db2iSeriesSqlProviderFlags;
 		}
 
-		//Follow Linq2DB pattern
 		DB2iSeriesSqlBuilder(BasicSqlBuilder parentBuilder) 
 			: base(parentBuilder)
 		{
-			
+			if (parentBuilder is DB2iSeriesSqlBuilder dB2ISeriesSqlBuilder)
+			{
+				Provider = dB2ISeriesSqlBuilder.Provider;
+				DB2iSeriesSqlProviderFlags = dB2ISeriesSqlBuilder.DB2iSeriesSqlProviderFlags;
+			}
+			else
+			{
+				Provider = DataProvider as DB2iSeriesDataProvider;
+			}
 		}
 
 		protected override ISqlBuilder CreateSqlBuilder()
 		{
-			return new DB2iSeriesSqlBuilder(Provider, MappingSchema, SqlOptimizer, SqlProviderFlags)
-			{
-				DB2iSeriesSqlProviderFlags = this.DB2iSeriesSqlProviderFlags
-			};
+			return new DB2iSeriesSqlBuilder(this);
 		}
 
 		#region Same as DB2 provider
@@ -142,7 +136,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public override StringBuilder BuildObjectName(StringBuilder sb, SqlObjectName name, ConvertType objectType, bool escape, TableOptions tableOptions)
 		{
 			if (objectType == ConvertType.NameToProcedure && name.Database != null)
-				throw new LinqToDBException("DB2 LUW cannot address functions/procedures with database name specified.");
+				throw new LinqToDBException("DB2 for i cannot address functions/procedures with database name specified.");
 
 			var schemaName = name.Schema;
 			if (schemaName == null && tableOptions.IsTemporaryOptionSet())
@@ -150,7 +144,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			// "db..table" syntax not supported
 			if (name.Database != null && schemaName == null)
-				throw new LinqToDBException("DB2 requires schema name if database name provided.");
+				throw new LinqToDBException("DB2 for i requires schema name if database name provided.");
 
 			if (name.Database != null)
 			{
@@ -163,12 +157,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			if (schemaName != null)
 			{
 				(escape ? Convert(sb, schemaName, ConvertType.NameToSchema) : sb.Append(schemaName))
-					.Append('.');
-			}
-
-			if (name.Package != null)
-			{
-				(escape ? Convert(sb, name.Package, ConvertType.NameToPackage) : sb.Append(name.Package))
 					.Append('.');
 			}
 
@@ -259,7 +247,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		//Same as DB2 provider except it handles Truncate Support
 		protected override void BuildTruncateTableStatement(SqlTruncateTableStatement truncateTable)
 		{
-			if (db2iSeriesSqlProviderFlags.SupportsTruncateTable)
+			if (DB2iSeriesSqlProviderFlags.SupportsTruncateTable)
 			{
 				var table = truncateTable.Table;
 
@@ -369,7 +357,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		//Use mapping schema and internal db datatype mapping information to get the appropriate dbType
 		protected override void BuildDataTypeFromDataType(SqlDataType type, bool forCreateTable)
 		{
-			var dbType = MappingSchema.GetDbDataType(type.SystemType, type.Type.DataType, type.Type.Length, type.Type.Precision, type.Type.Scale, false, db2iSeriesSqlProviderFlags.SupportsNCharTypes);
+			var dbType = MappingSchema.GetDbDataType(type.SystemType, type.Type.DataType, type.Type.Length, type.Type.Precision, type.Type.Scale, false, DB2iSeriesSqlProviderFlags.SupportsNCharTypes);
 
 			StringBuilder.Append(dbType.ToSqlString());
 		}
@@ -507,7 +495,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		//TODO: Add a test for this scenario with cte
 		protected override void BuildInsertQuery(SqlStatement statement, SqlInsertClause insertClause, bool addAlias)
 		{
-			BuildTag(statement);
+			BuildStep = Step.Tag; BuildTag(statement);
 			BuildStep = Step.InsertClause; BuildInsertClause(statement, insertClause, addAlias);
 			BuildStep = Step.WithClause; BuildWithClause(statement.GetWithClause());
 			
@@ -520,10 +508,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				BuildStep = Step.HavingClause; BuildHavingClause(statement.SelectQuery);
 				BuildStep = Step.OrderByClause; BuildOrderByClause(statement.SelectQuery);
 				BuildStep = Step.OffsetLimit; BuildOffsetLimit(statement.SelectQuery);
+				BuildStep = Step.QueryExtensions; BuildQueryExtensions(statement);
 			}
 
 			if (insertClause.WithIdentity)
 				BuildGetIdentity(insertClause);
+			else
+			{
+				BuildStep = Step.Output;
+				BuildOutputSubclause(statement.GetOutputClause());
+			}
 		}
 
 		//Use IF EXISTS syntax

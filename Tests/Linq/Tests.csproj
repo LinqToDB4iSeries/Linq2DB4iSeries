@@ -66,4 +66,16 @@
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<Compile Remove="DataProvider\**" />
+		<EmbeddedResource Remove="DataProvider\**" />
+		<None Remove="DataProvider\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Remove="Data\MiniProfilerTests.cs" />
+	  <Compile Remove="Data\DataConnectionTests.cs" />
+	  <Compile Remove="Data\DataExtensionsTests.cs" />
+	</ItemGroup>
+
 </Project>

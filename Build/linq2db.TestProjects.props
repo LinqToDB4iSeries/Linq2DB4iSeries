@@ -29,6 +29,7 @@
 		<!--don't remove, it is used for T4 nugets build-->
 		<PackageReference Include="Humanizer.Core" />
 		<PackageReference Include="JetBrains.Annotations" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
 	</ItemGroup>
 
 	<ItemGroup Condition=" '$(TargetFramework)' == 'net472' ">

@@ -12,7 +12,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	{
 		#region DataProvider instances
 
-		private static readonly ConcurrentDictionary<string, DB2iSeriesDataProvider> dataProviders = new ConcurrentDictionary<string, DB2iSeriesDataProvider>();
+		private static readonly ConcurrentDictionary<string, DB2iSeriesDataProvider> dataProviders = new();
 
 		public static DB2iSeriesDataProvider GetDataProvider(string providerName)
 		{

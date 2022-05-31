@@ -32,8 +32,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static bool IsGuidMappedAsString(this MappingSchema mappingSchema)
 		{
-			return mappingSchema is DB2iSeriesMappingSchemaBase iseriesMappingSchema
-				&& iseriesMappingSchema.GuidMappedAsString;
+			return mappingSchema is DB2iSeriesGuidAsStringMappingSchema;
 		}
 
 		public static DbDataType GetDbDataType(this MappingSchema mappingSchema, Type systemType, DataType dataType, int? length, int? precision, int? scale, bool forceDefaultAttributes, bool supportsNCharTypes)

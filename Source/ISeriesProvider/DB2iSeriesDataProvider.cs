@@ -32,64 +32,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		private readonly DB2iSeriesMappingOptions mappingOptions;
 
 		/// <summary>
-		/// Build a DB2 iSeries data provider with default options. The name will be infered from options and will be one of the constants in the DB2iSeriesProviderName class
-		/// </summary>
-		public DB2iSeriesDataProvider() :
-			this(DB2iSeriesProviderOptions.Defaults.Instance)
-		{
-		}
-
-
-		/// <summary>
-		/// Build a provider for a spefic configuration. Please check the names available in the DB2iSeriesProviderName class
-		/// </summary>
-		/// <param name="name">The name of the configuration</param>
-		public DB2iSeriesDataProvider(string name)
-			: this(DB2iSeriesProviderName.GetProviderOptions(name))
-		{
-
-		}
-
-		/// <summary>
-		/// Build a DB2 iSeries data provider. The name will be infered from options and will be one of the constants in the DB2iSeriesProviderName class
-		/// </summary>
-		/// <param name="providerType">Undelying Ado.Net provider type</param>
-		/// <param name="version">iSeries version</param>
-		/// <param name="mappingOptions">Mapping specific options</param>
-		public DB2iSeriesDataProvider(
-			DB2iSeriesProviderType providerType = DB2iSeriesProviderOptions.Defaults.ProviderType,
-			DB2iSeriesVersion version = DB2iSeriesProviderOptions.Defaults.Version,
-			DB2iSeriesMappingOptions mappingOptions = null)
-			: this(DB2iSeriesProviderName.GetProviderName(version, providerType, mappingOptions ?? DB2iSeriesMappingOptions.Default))
-		{
-
-		}
-
-		/// <summary>
-		/// Build a DB2 iSeries data provider.
-		/// </summary>
-		/// <param name="name">Configuration name</param>
-		/// <param name="providerType">Undelying Ado.Net provider type</param>
-		/// <param name="version">iSeries version</param>
-		/// <param name="mappingOptions">Mapping specific options</param>
-		public DB2iSeriesDataProvider(
-			string name,
-			DB2iSeriesProviderType providerType = DB2iSeriesProviderOptions.Defaults.ProviderType,
-			DB2iSeriesVersion version = DB2iSeriesProviderOptions.Defaults.Version,
-			DB2iSeriesMappingOptions mappingOptions = null)
-			: this(new DB2iSeriesProviderOptions(name, providerType, version)
-			{
-				MapGuidAsString = mappingOptions?.MapGuidAsString ?? DB2iSeriesProviderOptions.Defaults.MapGuidAsString
-			})
-		{
-
-		}
-
-		/// <summary>
 		/// Build a DB2 iSeries data provider.
 		/// </summary>
 		/// <param name="providerOptions">The provider's construction options, see <see cref="DB2iSeriesProviderOptions"/></param>
-		public DB2iSeriesDataProvider(DB2iSeriesProviderOptions providerOptions)
+		internal protected DB2iSeriesDataProvider(DB2iSeriesProviderOptions providerOptions)
 			: base(
 				  providerOptions.ProviderName,
 				  GetMappingSchema(
@@ -324,10 +270,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public override ISqlBuilder CreateSqlBuilder(MappingSchema mappingSchema)
 		{
-			return new DB2iSeriesSqlBuilder(this, mappingSchema, GetSqlOptimizer(), SqlProviderFlags)
-			{
-				DB2iSeriesSqlProviderFlags = db2iSeriesSqlProviderFlags
-			};
+			return new DB2iSeriesSqlBuilder(this, mappingSchema, GetSqlOptimizer(), SqlProviderFlags, db2iSeriesSqlProviderFlags);
 		}
 
 		public override ISchemaProvider GetSchemaProvider()
@@ -352,7 +295,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			};
 
 			return mapGuidAsString
-				? (MappingSchema)new DB2iSeriesGuidAsStringMappingSchema(configuration, providerSchema)
+				? new DB2iSeriesGuidAsStringMappingSchema(configuration, providerSchema)
 				: new DB2iSeriesMappingSchema(configuration, providerSchema);
 		}
 

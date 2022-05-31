@@ -78,7 +78,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				}
 			}
 
-			statement.VisitAll(sanitizeNames);
+			//statement.VisitAll(sanitizeNames);
 			
 			return base.Finalize(statement);
 		}

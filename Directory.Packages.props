@@ -81,13 +81,13 @@
 	</ItemGroup>
 	
 	<!--linq2db source-->
-	<ItemGroup Condition=" '$(TargetFramework)' == 'net45' OR '$(TargetFramework)' == 'net46' ">
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net472' ">
 		<!--downgrade-->
 		<PackageVersion Include="Microsoft.Extensions.DependencyInjection"              Version="1.1.1"         />
 		<PackageVersion Include="Microsoft.Extensions.Logging.Abstractions"             Version="1.1.2"         />
 	</ItemGroup>
 	
-	<ItemGroup Condition=" '$(TargetFramework)' != 'net45' AND '$(TargetFramework)' != 'net46' ">
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net472' ">
 		<!--main version-->
 		<PackageVersion Include="Microsoft.Extensions.DependencyInjection"              Version="6.0.0"         />
 		<PackageVersion Include="Microsoft.Extensions.Logging.Abstractions"             Version="6.0.1"         />

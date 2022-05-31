@@ -7,11 +7,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	using SqlQuery;
 	using System.Data.Linq;
 
-	public abstract class DB2iSeriesMappingSchemaBase : MappingSchema
+	sealed class DB2iSeriesMappingSchemaBase : LockedMappingSchema
 	{
-		public bool GuidMappedAsString { get; protected set; } = false;
-		
-		protected DB2iSeriesMappingSchemaBase(string configuration, params MappingSchema[] schemas) : base(configuration, schemas)
+		public static DB2iSeriesMappingSchemaBase Instance { get; } = new();
+
+		DB2iSeriesMappingSchemaBase() 
+			: base(DB2iSeriesProviderName.DB2)
 		{
 			ColumnNameComparer = StringComparer.OrdinalIgnoreCase;
 
@@ -23,52 +24,31 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetValueToSqlConverter(typeof(Binary), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertBinaryToSql(sb, ((Binary)v).ToArray()));
 			SetValueToSqlConverter(typeof(TimeSpan), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertTimeToSql(sb, (TimeSpan)v));
 			SetValueToSqlConverter(typeof(DateTime), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(sb, dt.Type.DataType, (DateTime)v, precision: dt.Type.Precision));
-
+			
 			// set reader conversions from literals
 			SetConverter<string, DateTime>(SqlDateTimeParser.ParseDateTime);
 
-			AddMetadataReader(new DB2iSeriesMetadataReader(configuration));
+			AddMetadataReader(new DB2iSeriesMetadataReader(DB2iSeriesProviderName.DB2));
 #if NETFRAMEWORK
 			AddMetadataReader(new DB2iSeriesAttributeReader());
 #endif
 		}
 	}
 
-	public class DB2iSeriesMappingSchema : DB2iSeriesMappingSchemaBase
+	sealed class DB2iSeriesMappingSchema : LockedMappingSchema
 	{
-		public DB2iSeriesMappingSchema()
-			: this(DB2iSeriesProviderName.DB2)
-		{
-		}
-
-		public DB2iSeriesMappingSchema(params MappingSchema[] schemas) 
-			: this(DB2iSeriesProviderName.DB2, schemas)
-		{
-		}
-
-		public DB2iSeriesMappingSchema(string configuration, params MappingSchema[] schemas) 
-			: base(configuration, schemas)
+		public DB2iSeriesMappingSchema(string configuration, MappingSchema providerSchema) 
+			: base(configuration, providerSchema, DB2iSeriesMappingSchemaBase.Instance)
 		{
 			SetValueToSqlConverter(typeof(Guid), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertGuidToSql(sb, (Guid)v));
 		}
 	}
 
-	public class DB2iSeriesGuidAsStringMappingSchema : DB2iSeriesMappingSchemaBase
+	sealed class DB2iSeriesGuidAsStringMappingSchema : LockedMappingSchema
 	{
-		public DB2iSeriesGuidAsStringMappingSchema()
-			: this(DB2iSeriesProviderName.DB2_GAS)
+		public DB2iSeriesGuidAsStringMappingSchema(string configuration, MappingSchema providerSchema) 
+			: base(configuration, providerSchema, DB2iSeriesMappingSchemaBase.Instance)
 		{
-		}
-
-		public DB2iSeriesGuidAsStringMappingSchema(params MappingSchema[] schemas) 
-			: this(DB2iSeriesProviderName.DB2_GAS, schemas)
-		{
-		}
-
-		public DB2iSeriesGuidAsStringMappingSchema(string configuration, params MappingSchema[] schemas) 
-			: base(configuration, schemas)
-		{
-			GuidMappedAsString = true;
 		}
 	}
 }

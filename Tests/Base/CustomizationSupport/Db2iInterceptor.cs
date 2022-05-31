@@ -18,8 +18,6 @@ namespace Tests
 
 		public override IEnumerable<string> InterceptTestDataSources(DataSourcesBaseAttribute dataSourcesAttribute, IMethodInfo testMethod, IEnumerable<string> contexts)
 		{
-			var test = ExtractMethod(testMethod);
-
 			//Filter out specific tests
 			switch (ExtractMethod(testMethod))
 			{
@@ -53,8 +51,10 @@ namespace Tests
 				case ("MergeTests", "TestMergeTypes"):
 				case ("MergeTests", "TestDB2NullsInSource"):
 				case ("Issue681Tests", "TestTableFQN"):
+					return Enumerable.Empty<string>();
 				//Query incorrect for DB2i - Copied to custom tests
 				case ("DataConnectionTests", "EnumExecuteScalarTest"):
+					return Enumerable.Empty<string>();
 				//Case valid for DB2 but not for DB2i
 				case ("Issue792Tests", "TestWithTransactionThrowsFromProvider"):
 				case ("Issue3148Tests", "TestDefaultExpression_09"):
