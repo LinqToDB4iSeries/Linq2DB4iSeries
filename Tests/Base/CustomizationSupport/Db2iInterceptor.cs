@@ -105,6 +105,8 @@ namespace Tests
 				//UpdateRow / UpdateRowLiteral not supported
 				case ("SqlRowTests", "UpdateRowLiteral"):
 				case ("SqlRowTests", "UpdateRowSelect"):
+				// Test case uses alias name assertion from generated sql, name sanitization breaks test assertion - Copied to custom tests
+				case ("TableIDTests", "TableTest"):
 					return Enumerable.Empty<string>();
 
 				//Access client throws a different exception so it is excluded
