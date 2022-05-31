@@ -2,8 +2,6 @@
 
 This is a provider for Linq2DB to allow access to DB2 running on an IBM iSeries (AS/400) server.
 
-It has been tested on iSeries v7.3 and 7.4 with IBM i Access Client Solutions 1.1.0.24 and DB2 Data Provider v11.1.4FP5
-
 ## Installation
 
 Installing the Linq2Db4iSeries NuGetPackage will automatically install the Linq2Db package.
@@ -75,7 +73,7 @@ Supported providers are:
 - Access Client native .net provider (.net framework >= 4.5 only)
 - Access Client ODBC provider
 - Access Client OleDb provider
-- DB2 provider (via DB2 Connect license)
+- DB2 provider (via DB2 Connect license - only tested up to version 3.3.0 - please report any issues)
 
 ### Minimum DB2 Version
 The provider can create SQL compatible with V7.1 and above.  
@@ -88,7 +86,7 @@ To have the provider support these features this new syntax add MinVer="7.2" or 
 ### GUIDs
 DB2 doesn't have a GUID type.  By default GUIDs will be stored as CHAR(16) FOR BIT DATA.  This works and is probably the most efficient however it is unreadable when queried directly.
 
-Setting MapGuidAsString="true" (or setting the parameter true in the constructor) will save the GUID in clear text. The underlying column should be set to VARCHAR(38) data type.
+Using a "*GAS" provider will save the GUID in clear text. The underlying column should be set to VARCHAR(38) data type.
 
 
 ## Caveats
@@ -96,15 +94,7 @@ Setting MapGuidAsString="true" (or setting the parameter true in the constructor
 1. The SchemaProvider implementation only returns details of the objects within the library list configured in the connection string even if the iSeries configuration for the user has other default Libraries specified
 2. Any objects created using this provider (e.g. as the result of a Create table statement) will be created in the Library in the Default Collection connection string parameter.  If this is not specifed then it wil be created in the default library for the user account.
 3. Transactions can only be used if journalling is set up on the table (file).  If the iSeries schema is created with a CREATE SCHEMA command then this will be set by default however if the schema is created using the iSeries commands then you will need to either add journalling to the table explicitly OR create a journal receiver called QSQJRN in the Library to have journalling automatically applied to each table.
+4. Linq2db remote context and scaffolding features are not currently supported.
 
 See https://github.com/LinqToDB4iSeries/Linq2DB4iSeries/wiki for further information.
-
-## Breaking changes from v2.x to v3.x
-1. DataProvider construction has been refactored. You now build a dataprovider either by:
-- using one of the fixed names,
-- providing the ADO provider type, server version and mapping options,
-- providing the ADO provider type, sql provider flags and mapping options,
-- using the new autodetector and a connection string
-
-2. Default naming convention is now SQL, please adjust your connection strings
 
