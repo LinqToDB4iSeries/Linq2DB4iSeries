@@ -16,6 +16,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	using static DataProvider.OleDbProviderAdapter;
 	using static DataProvider.OdbcProviderAdapter;
 	using static DataProvider.DB2.DB2ProviderAdapter;
+	using System.Data.Common;
 #if NETFRAMEWORK
 	using static DB2iSeriesAccessClientProviderAdapter;
 #endif
@@ -31,64 +32,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		private readonly DB2iSeriesMappingOptions mappingOptions;
 
 		/// <summary>
-		/// Build a DB2 iSeries data provider with default options. The name will be infered from options and will be one of the constants in the DB2iSeriesProviderName class
-		/// </summary>
-		public DB2iSeriesDataProvider() : 
-			this(DB2iSeriesProviderOptions.Defaults.Instance)
-		{
-		}
-
-
-		/// <summary>
-		/// Build a provider for a spefic configuration. Please check the names available in the DB2iSeriesProviderName class
-		/// </summary>
-		/// <param name="name">The name of the configuration</param>
-		public DB2iSeriesDataProvider(string name)
-			:this(DB2iSeriesProviderName.GetProviderOptions(name))
-		{
-			
-		}
-
-		/// <summary>
-		/// Build a DB2 iSeries data provider. The name will be infered from options and will be one of the constants in the DB2iSeriesProviderName class
-		/// </summary>
-		/// <param name="providerType">Undelying Ado.Net provider type</param>
-		/// <param name="version">iSeries version</param>
-		/// <param name="mappingOptions">Mapping specific options</param>
-		public DB2iSeriesDataProvider(
-			DB2iSeriesProviderType providerType = DB2iSeriesProviderOptions.Defaults.ProviderType,
-			DB2iSeriesVersion version = DB2iSeriesProviderOptions.Defaults.Version,
-			DB2iSeriesMappingOptions mappingOptions = null)
-			: this(DB2iSeriesProviderName.GetProviderName(version, providerType, mappingOptions ?? DB2iSeriesMappingOptions.Default))
-		{
-
-		}
-
-		/// <summary>
-		/// Build a DB2 iSeries data provider.
-		/// </summary>
-		/// <param name="name">Configuration name</param>
-		/// <param name="providerType">Undelying Ado.Net provider type</param>
-		/// <param name="version">iSeries version</param>
-		/// <param name="mappingOptions">Mapping specific options</param>
-		public DB2iSeriesDataProvider(
-			string name,
-			DB2iSeriesProviderType providerType = DB2iSeriesProviderOptions.Defaults.ProviderType,
-			DB2iSeriesVersion version = DB2iSeriesProviderOptions.Defaults.Version,
-			DB2iSeriesMappingOptions mappingOptions = null)
-			: this(new DB2iSeriesProviderOptions(name, providerType, version)
-			{
-				MapGuidAsString = mappingOptions?.MapGuidAsString ?? DB2iSeriesProviderOptions.Defaults.MapGuidAsString
-			})
-		{
-
-		}
-
-		/// <summary>
 		/// Build a DB2 iSeries data provider.
 		/// </summary>
 		/// <param name="providerOptions">The provider's construction options, see <see cref="DB2iSeriesProviderOptions"/></param>
-		public DB2iSeriesDataProvider(DB2iSeriesProviderOptions providerOptions)
+		internal protected DB2iSeriesDataProvider(DB2iSeriesProviderOptions providerOptions)
 			: base(
 				  providerOptions.ProviderName,
 				  GetMappingSchema(
@@ -100,7 +47,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			this.db2iSeriesSqlProviderFlags = new DB2iSeriesSqlProviderFlags(providerOptions);
 			this.mappingOptions = new DB2iSeriesMappingOptions(providerOptions);
 			this.ProviderType = providerOptions.ProviderType;
-			
+
 			DB2iSeriesLoadExpressions.SetupExpressions(providerOptions.ProviderName, mappingOptions.MapGuidAsString);
 
 			SqlProviderFlags.AcceptsTakeAsParameter = false;
@@ -110,9 +57,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SqlProviderFlags.IsCommonTableExpressionsSupported = true;
 			SqlProviderFlags.IsUpdateFromSupported = false;
 			//This feature is undocumented, it passes the tests on 7.5
-			//DB2 supports Comparison and Between, these don't work in iDB2
-			SqlProviderFlags.RowConstructorSupport = RowFeature.Equality | RowFeature.Update 
-													 | RowFeature.UpdateLiteral | RowFeature.Overlaps;
+			//DB2 supports Comparison, Between, Update, UpateLiteral these don't work in iDB2
+			SqlProviderFlags.RowConstructorSupport = RowFeature.Equality | RowFeature.Overlaps;
 
 			db2iSeriesSqlProviderFlags.SetCustomFlags(SqlProviderFlags);
 			mappingOptions.SetCustomFlags(SqlProviderFlags);
@@ -139,7 +85,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 #endif
 			else if (ProviderType.IsDB2())
 				SetupDB2Connect();
-			
+
 		}
 
 #if NETFRAMEWORK
@@ -265,9 +211,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			var adapter = (OleDbProviderAdapter)Adapter.GetInstance();
 
 			//Custom mapping from CHAR converted dates and times. Converting datetimes to char needed in connection string.
-			SetProviderField<IDataReader, DateTime, string>((r, i) => SqlDateTimeParser.ParseDateTime(r.GetString(i)));
-			SetProviderField<IDataReader, DateTimeOffset, string>((r, i) => SqlDateTimeParser.ParseDateTime(r.GetString(i)));
-			SetProviderField<IDataReader, TimeSpan, string>((r, i) => SqlDateTimeParser.ParseTimeSpan(r.GetString(i)));
+			SetProviderField<DbDataReader, DateTime, string>((r, i) => SqlDateTimeParser.ParseDateTime(r.GetString(i)));
+			SetProviderField<DbDataReader, DateTimeOffset, string>((r, i) => SqlDateTimeParser.ParseDateTime(r.GetString(i)));
+			SetProviderField<DbDataReader, TimeSpan, string>((r, i) => SqlDateTimeParser.ParseTimeSpan(r.GetString(i)));
 		}
 
 		/// <summary>
@@ -313,7 +259,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			get
 			{
-				if(this.db2iSeriesSqlProviderFlags.SupportsDropTableIfExists)
+				if (this.db2iSeriesSqlProviderFlags.SupportsDropTableIfExists)
 				{
 					return TableOptions.IsGlobalTemporaryStructure | TableOptions.DropIfExists;
 				}
@@ -324,10 +270,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public override ISqlBuilder CreateSqlBuilder(MappingSchema mappingSchema)
 		{
-			return new DB2iSeriesSqlBuilder(this, mappingSchema, GetSqlOptimizer(), SqlProviderFlags)
-			{
-				DB2iSeriesSqlProviderFlags = db2iSeriesSqlProviderFlags
-			};
+			return new DB2iSeriesSqlBuilder(this, mappingSchema, GetSqlOptimizer(), SqlProviderFlags, db2iSeriesSqlProviderFlags);
 		}
 
 		public override ISchemaProvider GetSchemaProvider()
@@ -340,30 +283,23 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return sqlOptimizer;
 		}
 
-		public override void InitCommand(DataConnection dataConnection, CommandType commandType, string commandText, DataParameter[] parameters, bool withParameters)
-		{
-			dataConnection.DisposeCommand();
-
-			base.InitCommand(dataConnection, commandType, commandText, parameters, withParameters);
-		}
-
 		private static MappingSchema GetMappingSchema(string configuration, DB2iSeriesProviderType providerType, bool mapGuidAsString)
 		{
 			var providerSchema = providerType switch
 			{
 #if NETFRAMEWORK
-				DB2iSeriesProviderType.AccessClient => DB2iSeriesAccessClientProviderAdapter.GetInstance().MappingSchema,
+				DB2iSeriesProviderType.AccessClient => DB2iSeriesAccessClientProviderAdapter.Instance.MappingSchema,
 #endif
-				DB2iSeriesProviderType.DB2 => DB2.DB2ProviderAdapter.GetInstance().MappingSchema,
+				DB2iSeriesProviderType.DB2 => DB2.DB2ProviderAdapter.Instance.MappingSchema,
 				_ => new MappingSchema()
 			};
 
 			return mapGuidAsString
-				? (MappingSchema)new DB2iSeriesGuidAsStringMappingSchema(configuration, providerSchema)
+				? new DB2iSeriesGuidAsStringMappingSchema(configuration, providerSchema)
 				: new DB2iSeriesMappingSchema(configuration, providerSchema);
 		}
 
-		public override void SetParameter(DataConnection dataConnection, IDbDataParameter parameter, string name, DbDataType dataType, object value)
+		public override void SetParameter(DataConnection dataConnection, DbParameter parameter, string name, DbDataType dataType, object value)
 		{
 			if (value is not DBNull && value is not null)
 			{
@@ -421,38 +357,39 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						if (value is Guid varBinaryGuid) value = varBinaryGuid.ToByteArray();
 						break;
 
-					case DataType.DateTime2:
-					case DataType.DateTime:
+				case DataType.DateTime2:
+				case DataType.DateTime:
 
-						//Sanitize DataType based on provided DbType
-						dataType = dataType.WithDataType(dataType.DbType?.ToUpper() switch {
-							Constants.DbTypes.Date => DataType.Date,
-							Constants.DbTypes.Time => DataType.Time,
-							_ => DataType.DateTime
-						});
+					//Sanitize DataType based on provided DbType
+					dataType = dataType.WithDataType(dataType.DbType?.ToUpper() switch
+					{
+						Constants.DbTypes.Date => DataType.Date,
+						Constants.DbTypes.Time => DataType.Time,
+						_ => DataType.DateTime
+					});
 
-						//Sanitize DbType based on DataType if DbType not provided
-						//if (dataType.DbType is null)
-						//{
-						//	dataType = dataType.WithDbType(dataType.DataType switch
-						//	{
-						//		DataType.Date => Constants.DbTypes.Date,
-						//		DataType.Time => Constants.DbTypes.Time,
-						//		_ => Constants.DbTypes.TimeStamp
-						//	});
-						//}
+					//Sanitize DbType based on DataType if DbType not provided
+					//if (dataType.DbType is null)
+					//{
+					//	dataType = dataType.WithDbType(dataType.DataType switch
+					//	{
+					//		DataType.Date => Constants.DbTypes.Date,
+					//		DataType.Time => Constants.DbTypes.Time,
+					//		_ => Constants.DbTypes.TimeStamp
+					//	});
+					//}
 
-						// iAccessClient and OleDb fail when passing DateTime objects.
-						// ODbc works with precision up to 3
-						// Convert them to strings instead.
-						if (ProviderType.IsAccessClient() || ProviderType.IsOdbcOrOleDb())
+					// iAccessClient and OleDb fail when passing DateTime objects.
+					// ODbc works with precision up to 3
+					// Convert them to strings instead.
+					if (ProviderType.IsAccessClient() || ProviderType.IsOdbcOrOleDb())
+					{
+						value = value switch
 						{
-							value = value switch
-							{
-								DateTime dateTime => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(dataType.DataType, dateTime, false, dataType.Precision),
-								DateTimeOffset dateTimeOffset => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(dataType.DataType, dateTimeOffset.DateTime, false, dataType.Precision),
-								_ => value
-							};
+							DateTime dateTime => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(dataType.DataType, dateTime, false, dataType.Precision),
+							DateTimeOffset dateTimeOffset => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(dataType.DataType, dateTimeOffset.DateTime, false, dataType.Precision),
+							_ => value
+						};
 
 
 							if (ProviderType.IsOdbcOrOleDb()
@@ -550,8 +487,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					DataType.UInt64 => OdbcType.Decimal,
 					DataType.VarNumeric => OdbcType.Decimal,
 					var x when
-					    x == DataType.DateTime
-					||  x == DataType.DateTime2 => OdbcType.DateTime,
+						x == DataType.DateTime
+					|| x == DataType.DateTime2 => OdbcType.DateTime,
 					_ => null
 				},
 				DB2iSeriesProviderType.OleDb => dataType switch
@@ -566,22 +503,22 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					DataType.UInt32 => OleDbType.BigInt,
 					var x when
 						x == DataType.Byte
-					||	x == DataType.SByte
-					||	x == DataType.Boolean => OleDbType.SmallInt,
+					|| x == DataType.SByte
+					|| x == DataType.Boolean => OleDbType.SmallInt,
 					var x when
 						x == DataType.UInt64
 					||  x == DataType.VarNumeric
 					||	x == DataType.Decimal => OleDbType.Decimal,
 					var x when
 						x == DataType.DateTime
-					||	x == DataType.DateTime2 => OleDbType.DBTimeStamp,
+					|| x == DataType.DateTime2 => OleDbType.DBTimeStamp,
 					_ => null
 				},
 				_ => throw ExceptionHelper.InvalidAdoProvider(ProviderType)
 			};
 		}
 
-		private void SetParameterDbType(DataType dataType, IDbDataParameter parameter)
+		private void SetParameterDbType(DataType dataType, DbParameter parameter)
 		{
 			if (ProviderType.IsOdbc())
 			{
@@ -610,13 +547,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 		}
 
-		protected override void SetParameterType(DataConnection dataConnection, IDbDataParameter parameter, DbDataType dataType)
+		protected override void SetParameterType(DataConnection dataConnection, DbParameter parameter, DbDataType dataType)
 		{
 			var type = GetParameterProviderType(dataType.DataType);
-
+			
 			if (type != null)
 			{
-				var param = TryGetProviderParameter(parameter, dataConnection.MappingSchema);
+				var param = TryGetProviderParameter(dataConnection, parameter);
 				if (param != null)
 				{
 					Adapter.SetDbType(param, type);
@@ -629,9 +566,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			base.SetParameterType(dataConnection, parameter, dataType);
 		}
 
-		public bool TryGetProviderParameterName(IDbDataParameter parameter, MappingSchema mappingSchema, out string name)
+		public bool TryGetProviderParameterName(IDataContext context, DbParameter parameter, out string name)
 		{
-			var param = TryGetProviderParameter(parameter, MappingSchema);
+			var param = TryGetProviderParameter(context, parameter);
 			if (param != null)
 			{
 				name = Adapter.GetDbTypeName(param);
@@ -642,9 +579,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return false;
 		}
 
-		public bool TryGetProviderConnection(IDbConnection connection, MappingSchema mappingSchema, out IDbConnection providerConnection)
+		public bool TryGetProviderConnection(DataConnection dataConnection, out DbConnection providerConnection)
 		{
-			providerConnection = TryGetProviderConnection(connection, mappingSchema);
+			providerConnection = TryGetProviderConnection(dataConnection, dataConnection.Connection);
 			return providerConnection != null;
 		}
 
@@ -663,12 +600,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return base.NormalizeTypeName(typeName);
 		}
 
-		public override Expression GetReaderExpression(IDataReader reader, int idx, Expression readerExpression, Type toType)
+		public override Expression GetReaderExpression(DbDataReader reader, int idx, Expression readerExpression, Type toType)
 		{
 			//Wrap OdbcDataReader to avoid exceptions on XML columns
 			if (ProviderType.IsOdbc())
 			{
-				reader = reader is System.Data.Common.DbDataReader odbcDataReader
+				reader = reader is DbDataReader odbcDataReader
 					&& reader.GetType().Name == "OdbcDataReader" ?
 				new OdbcDataReaderWrapper(odbcDataReader) : reader;
 			}
@@ -677,7 +614,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return e;
 		}
 
-		public override bool? IsDBNullAllowed(IDataReader reader, int idx)
+		public override bool? IsDBNullAllowed(DbDataReader reader, int idx)
 		{
 			//Always return true on ODBC to avoid exceptions on XML columns
 			if (ProviderType.IsOdbc())

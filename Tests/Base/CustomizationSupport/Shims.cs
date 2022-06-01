@@ -1,19 +1,52 @@
 ﻿using System;
+using System.Data;
+using System.Data.Common;
 using System.Linq;
 
 namespace IBM.Data.Informix
 {
 	public class IfxTimeSpan { }
-	
 }
 
-namespace FirebirdSql.Data.FirebirdClient
+namespace System.Runtime.CompilerServices
 {
-	public class FbConnection
+	public static class IsExternalInit { }
+}
+
+
+namespace JetBrains.Annotations
+{
+	[AttributeUsage(AttributeTargets.Parameter)]
+	public sealed class NoEnumerationAttribute : Attribute
 	{
-		public static void ClearPool(FbConnection _) { }
+		
 	}
 }
+
+#if NETFRAMEWORK
+namespace System.Diagnostics.CodeAnalysis
+{
+	[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.ReturnValue, Inherited = false)]
+	public sealed class MaybeNullAttribute : Attribute
+	{
+	}
+
+	[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, Inherited = false)]
+	public sealed class AllowNullAttribute : Attribute
+	{
+	}
+
+	public sealed class NotNullIfNotNullAttribute : Attribute
+	{
+		public string ParameterName { get; }
+		
+		public NotNullIfNotNullAttribute(string parameterName)
+		{
+			ParameterName = parameterName;
+		}
+	}
+}
+#endif
 
 namespace Tests
 {
@@ -33,4 +66,5 @@ namespace Tests
 			}
 		}
 	}
+
 }

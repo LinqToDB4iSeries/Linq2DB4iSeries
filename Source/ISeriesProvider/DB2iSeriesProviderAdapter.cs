@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using System.Data.Common;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
@@ -16,11 +17,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			adapter = providerType switch
 			{
 #if NETFRAMEWORK
-				DB2iSeriesProviderType.AccessClient => DB2iSeriesAccessClientProviderAdapter.GetInstance(),
+				DB2iSeriesProviderType.AccessClient => DB2iSeriesAccessClientProviderAdapter.Instance,
 #endif
 				DB2iSeriesProviderType.Odbc => OdbcProviderAdapter.GetInstance(),
 				DB2iSeriesProviderType.OleDb => OleDbProviderAdapter.GetInstance(),
-				DB2iSeriesProviderType.DB2 => DB2.DB2ProviderAdapter.GetInstance(),
+				DB2iSeriesProviderType.DB2 => DB2.DB2ProviderAdapter.Instance,
 				_ => throw ExceptionHelper.InvalidAdoProvider(providerType)
 			};
 			this.ProviderType = providerType;
@@ -48,7 +49,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		};
 
 
-		public string GetDbTypeName(IDbDataParameter dbDataParameter) => adapter switch
+		public string GetDbTypeName(DbParameter dbDataParameter) => adapter switch
 		{
 #if NETFRAMEWORK
 			DB2iSeriesAccessClientProviderAdapter accessClientAdapter => accessClientAdapter.GetDbType(dbDataParameter).ToString(),
@@ -59,7 +60,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			_ => throw ExceptionHelper.InvalidProviderAdapter(adapter)
 		};
 
-		public void SetDbType(IDbDataParameter dbDataParameter, object value)
+		public void SetDbType(DbParameter dbDataParameter, object value)
 		{
 			if (adapter is OdbcProviderAdapter odbcAdapter
 					&& value is OdbcProviderAdapter.OdbcType odbcType)

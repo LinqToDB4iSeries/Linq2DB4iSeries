@@ -32,8 +32,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static bool IsGuidMappedAsString(this MappingSchema mappingSchema)
 		{
-			return mappingSchema is DB2iSeriesMappingSchemaBase iseriesMappingSchema
-				&& iseriesMappingSchema.GuidMappedAsString;
+			return mappingSchema is DB2iSeriesGuidAsStringMappingSchema;
 		}
 
 		public static DbDataType GetDbDataType(this MappingSchema mappingSchema, Type systemType, DataType dataType, int? length, int? precision, int? scale, bool forceDefaultAttributes, bool supportsNCharTypes)
@@ -48,15 +47,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static IDbConnection GetProviderConnection(this DataConnection dataConnection)
 		{
-			if (!(dataConnection.DataProvider is DB2iSeriesDataProvider iSeriesDataProvider))
+			if (dataConnection.DataProvider is not DB2iSeriesDataProvider iSeriesDataProvider)
 				throw ExceptionHelper.InvalidProvider(dataConnection.DataProvider);
 
-			var connection = iSeriesDataProvider.TryGetProviderConnection(dataConnection.Connection, dataConnection.MappingSchema);
+			if (iSeriesDataProvider.TryGetProviderConnection(dataConnection, out var connection))
+				return connection;
 
-			if (connection == null)
-				throw ExceptionHelper.InvalidDbConnectionType(dataConnection.Connection);
-
-			return connection;
+			throw ExceptionHelper.InvalidDbConnectionType(dataConnection.Connection);
 		}
 
 		public static BulkCopyType GetEffectiveType(this BulkCopyType bulkCopyType)

@@ -19,7 +19,7 @@ namespace Tests.Linq
 	{
 		public static string[] CteSupportedProviders = new[]
 		{
-			TestProvName.AllSqlServer2008Plus,
+			TestProvName.AllSqlServer,
 			TestProvName.AllFirebird,
 			TestProvName.AllPostgreSQL,
 			ProviderName.DB2,
@@ -560,7 +560,7 @@ namespace Tests.Linq
 
 		// MariaDB support expected in v10.6 : https://jira.mariadb.org/browse/MDEV-18511
 		[Test]
-		public void TestDelete([CteContextSource(TestProvName.AllFirebird, ProviderName.DB2, TestProvName.MariaDB)] string context)
+		public void TestDelete([CteContextSource(TestProvName.AllFirebird, ProviderName.DB2, TestProvName.AllMariaDB)] string context)
 		{
 			using (var db  = GetDataContext(context))
 			using (var tmp = db.CreateLocalTable("CteChild",
@@ -582,7 +582,7 @@ namespace Tests.Linq
 		[ActiveIssue(Configuration = TestProvName.AllOracle, Details = "Oracle needs special syntax for CTE + UPDATE")]
 		[Test]
 		public void TestUpdate(
-			[CteContextSource(TestProvName.AllFirebird, ProviderName.DB2, TestProvName.AllOracle, TestProvName.MariaDB)]
+			[CteContextSource(TestProvName.AllFirebird, ProviderName.DB2, TestProvName.AllOracle, TestProvName.AllMariaDB)]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -1195,7 +1195,7 @@ namespace Tests.Linq
 			ProviderName.DB2 // joins (SQL0345N  The fullselect of the recursive common table expression "cte" must be the UNION of two or more fullselects and cannot include column functions, GROUP BY clause, HAVING clause, ORDER BY clause, or an explicit join including an ON clause.)
 			)] string context)
 		{
-			if (context.Contains(ProviderName.SQLite))
+			if (context.IsAnyOf(TestProvName.AllSQLite))
 			{
 				using var dc = (TestDataConnection)GetDataContext(context.Replace(".LinqService", string.Empty));
 				if (TestUtils.GetSqliteVersion(dc) < new Version(3, 34))

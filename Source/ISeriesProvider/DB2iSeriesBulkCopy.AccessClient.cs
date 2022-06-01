@@ -8,7 +8,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	using Data;
 	using Tools;
 	using System.Diagnostics;
-	
+	using System.Data.Common;
+
 	partial class DB2iSeriesBulkCopy : BasicBulkCopy
 	{
 		private const int MAX_ACCESS_CLIENT_BATCH_SIZE = 10000;
@@ -18,7 +19,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			BulkCopyOptions options,
 			IEnumerable<T> source,
 			DataConnection dataConnection,
-			IDbConnection connection,
+			DbConnection connection,
 			DB2iSeriesAccessClientProviderAdapter adapter,
 			Action<DataConnection, Func<string>, Func<int>> traceAction)
 		{
@@ -43,7 +44,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				cmd.CommandText = sql;
 				adapter.DeriveParameters(cmd);
 
-				var columnDataTypes = cmd.Parameters.Cast<IDbDataParameter>()
+				var columnDataTypes = cmd.Parameters.Cast<DbParameter>()
 					.Select(adapter.GetDbType)
 					.Select(adapter.GetDataType)
 					.ToList();
@@ -65,7 +66,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				{
 					var i = 0;
 					bufferEmpty = false;
-					foreach (IDbDataParameter parameter in cmd.Parameters)
+					foreach (DbParameter parameter in cmd.Parameters)
 					{
 						dataConnection.DataProvider.SetParameter(
 							dataConnection, 

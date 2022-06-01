@@ -779,7 +779,7 @@ namespace Tests.DataProvider
 			{
 				var newText = new TestParametersTable() { Id = 12, Text = "Hallo Welt!" };
 				db.Insert(newText);
-
+				
 				var text = "bla";
 				var query = from f in table where f.Text == text select f;
 				var result = query.ToArray();

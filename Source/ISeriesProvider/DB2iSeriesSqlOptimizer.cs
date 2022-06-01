@@ -61,7 +61,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						p.Name = sanitizeAliasOrParameterName(p.Name, $"P{getAbsoluteHashCode(p)}");
 						break;
 					case SqlTableSource table:
-						table.Alias = sanitizeAliasOrParameterName(table.Alias, $"T{getAbsoluteHashCode(table.SourceID)}");
+						table.Alias = sanitizeAliasOrParameterName(table.Alias, $"t{table.SourceID}");
 						break;
 					case SqlColumn column:
 						column.Alias = sanitizeAliasOrParameterName(column.Alias, $"C{getAbsoluteHashCode(column)}");

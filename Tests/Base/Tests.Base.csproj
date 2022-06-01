@@ -8,23 +8,31 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Model\Tests.Model.csproj" />
+
+		<PackageReference Include="NUnit" />
+		<PackageReference Include="MiniProfiler.Shared" />
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'net472' ">
-		<None Update="SqlServerTypes\x64\msvcr120.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="SqlServerTypes\x64\SqlServerSpatial140.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="SqlServerTypes\x86\msvcr120.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="SqlServerTypes\x86\SqlServerSpatial140.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
+		<Reference Include="Microsoft.CSharp" />
+		<Reference Include="System.ServiceModel" />
 
-		<PackageReference Include="Microsoft.SqlServer.Types" Version="10.50.1600.1" />
-
+		<PackageReference Include="System.Text.Json" />
 	</ItemGroup>
+
+	<ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.1' ">
+		<!--netcoreapp31 needed due to very old transient depndency from oracle 2.19 provider-->
+		<PackageReference Include="System.Text.Json" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net472' ">
+		<PackageReference Include="protobuf-net.Grpc.AspNetCore" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Update="TestProviders\TestNoopProvider.cs">
+			<SubType>Source</SubType>
+		</Compile>
+	</ItemGroup>
+
 </Project>

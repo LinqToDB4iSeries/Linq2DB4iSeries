@@ -3,12 +3,12 @@
 	<Import Project="linq2db.Default.props" />
 
 	<PropertyGroup>
-		<TargetFrameworks>net472;netcoreapp3.1</TargetFrameworks>
+		<TargetFrameworks>netcoreapp3.1;net472</TargetFrameworks>
 		<Configurations>Debug;Release;</Configurations>
-		<NoWarn>$(NoWarn);CS0649;CS0429</NoWarn>
+		<DefineConstants>$(DefineConstants)</DefineConstants>
+		<DefineConstants Condition="$(X86) != ''">$(DefineConstants);X86</DefineConstants>
+		
 		<AssemblyOriginatorKeyFile>..\..\Build\linq2db.snk</AssemblyOriginatorKeyFile>
-		<GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
-		<GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -16,23 +16,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="linq2db.Tools" Version="3.7.0" />
-		<PackageReference Update="linq2db.AspNet" Version="3.7.0" />
-		<PackageReference Include="NUnit" Version="3.13.2" />
-		<PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
-		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-		<PackageReference Include="FastExpressionCompiler" Version="3.3.2" />
-		<PackageReference Include="NodaTime" Version="3.0.5" />
-		<PackageReference Include="FluentAssertions" Version="6.2.0" />
+		<PackageReference Include="linq2db.Tools" />
+		<PackageReference Include="linq2db.AspNet" />
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'net472' ">
 		<Reference Include="System.Data.Linq" />
-		<Reference Include="System.ServiceModel" />
-		<Reference Include="System.Transactions" />
-
-		<PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
 	</ItemGroup>
 
 </Project>

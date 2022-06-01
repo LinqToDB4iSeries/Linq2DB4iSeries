@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Data;
-using LinqToDB.Common;
 using LinqToDB.Configuration;
 using LinqToDB.Data;
 using System.Collections.Concurrent;
+using System.Data.Common;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
@@ -13,7 +12,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	{
 		#region DataProvider instances
 
-		private static readonly ConcurrentDictionary<string, DB2iSeriesDataProvider> dataProviders = new ConcurrentDictionary<string, DB2iSeriesDataProvider>();
+		private static readonly ConcurrentDictionary<string, DB2iSeriesDataProvider> dataProviders = new();
 
 		public static DB2iSeriesDataProvider GetDataProvider(string providerName)
 		{
@@ -64,7 +63,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			DataConnection.AddProviderDetector(ProviderDetector);
 		}
 
-		private static IDataProvider ProviderDetector(IConnectionStringSettings css, string connectionString)
+		public static IDataProvider ProviderDetector(IConnectionStringSettings css, string connectionString)
 		{
 			if (!css.IsGlobal
 				&& (DB2iSeriesProviderName.AllNames.Contains(css.Name)
@@ -100,7 +99,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		}
 
 		public static DataConnection CreateDataConnection(
-			IDbConnection connection, 
+			DbConnection connection, 
 			DB2iSeriesVersion version,
 			DB2iSeriesProviderType providerType,
 			bool mapGuidAsString)
@@ -109,7 +108,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		}
 
 		public static DataConnection CreateDataConnection(
-			IDbTransaction transaction,
+			DbTransaction transaction,
 			DB2iSeriesVersion version,
 			DB2iSeriesProviderType providerType,
 			bool mapGuidAsString)
@@ -121,39 +120,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		#region BulkCopy
 
+		/// <summary>
+		/// Default bulk copy mode, used for DB2i by <see cref="DataConnectionExtensions.BulkCopy{T}(DataConnection, IEnumerable{T})"/>
+		/// methods, if mode is not specified explicitly.
+		/// Default value: <see cref="BulkCopyType.MultipleRows"/>.
+		/// </summary>
 		public static BulkCopyType DefaultBulkCopyType = BulkCopyType.MultipleRows;
-
-		[Obsolete("Please use the BulkCopy extension methods within DataConnectionExtensions")]
-		public static BulkCopyRowsCopied MultipleRowsCopy<T>(DataConnection dataConnection,
-			IEnumerable<T> source,
-			int maxBatchSize = 1000,
-			Action<BulkCopyRowsCopied> rowsCopiedCallback = null) where T : class
-		{
-			return dataConnection.BulkCopy(new BulkCopyOptions
-			{
-				BulkCopyType = BulkCopyType.MultipleRows,
-				MaxBatchSize = maxBatchSize,
-				RowsCopiedCallback = rowsCopiedCallback
-			}, source);
-		}
-
-		[Obsolete("Please use the BulkCopy extension methods within DataConnectionExtensions")]
-		public static BulkCopyRowsCopied ProviderSpecificBulkCopy<T>(DataConnection dataConnection,
-			IEnumerable<T> source,
-			int bulkCopyTimeout = 0,
-			bool keepIdentity = false,
-			int notifyAfter = 0,
-			Action<BulkCopyRowsCopied> rowsCopiedCallback = null) where T : class
-		{
-			return dataConnection.BulkCopy(new BulkCopyOptions
-			{
-				BulkCopyType = BulkCopyType.ProviderSpecific,
-				BulkCopyTimeout = bulkCopyTimeout,
-				KeepIdentity = keepIdentity,
-				NotifyAfter = notifyAfter,
-				RowsCopiedCallback = rowsCopiedCallback
-			}, source);
-		}
 
 		#endregion
 	}

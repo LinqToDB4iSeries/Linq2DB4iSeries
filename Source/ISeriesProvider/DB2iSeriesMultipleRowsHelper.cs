@@ -19,7 +19,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		private static Func<ColumnDescriptor, bool> defaultSkipConvert = (_ => false);
 
-		//TODO: v3.6.0 check if default implenetation with castParameters works?
 		public override void BuildColumns(object item, Func<ColumnDescriptor, bool> skipConvert = null, bool castParameters = false, bool castAllRows = false, bool castFirstRowLiteralOnUnionAll = false, Func<ColumnDescriptor, bool> castLiteral = null)
 		{
 			skipConvert ??= defaultSkipConvert;
@@ -27,7 +26,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			for (var i = 0; i < Columns.Length; i++)
 			{
 				var column = Columns[i];
-				var value = column.GetValue(item);
+				var value = column.GetProviderValue(item);
 				var columnType = ColumnTypes[i];
 
 				if (column.DbType != null)

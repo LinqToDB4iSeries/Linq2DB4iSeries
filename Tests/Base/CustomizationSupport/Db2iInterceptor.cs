@@ -18,8 +18,6 @@ namespace Tests
 
 		public override IEnumerable<string> InterceptTestDataSources(DataSourcesBaseAttribute dataSourcesAttribute, IMethodInfo testMethod, IEnumerable<string> contexts)
 		{
-			var test = ExtractMethod(testMethod);
-
 			//Filter out specific tests
 			switch (ExtractMethod(testMethod))
 			{
@@ -53,8 +51,10 @@ namespace Tests
 				case ("MergeTests", "TestMergeTypes"):
 				case ("MergeTests", "TestDB2NullsInSource"):
 				case ("Issue681Tests", "TestTableFQN"):
+					return Enumerable.Empty<string>();
 				//Query incorrect for DB2i - Copied to custom tests
 				case ("DataConnectionTests", "EnumExecuteScalarTest"):
+					return Enumerable.Empty<string>();
 				//Case valid for DB2 but not for DB2i
 				case ("Issue792Tests", "TestWithTransactionThrowsFromProvider"):
 				case ("Issue3148Tests", "TestDefaultExpression_09"):
@@ -102,14 +102,23 @@ namespace Tests
 				// Recursive CTE expression defined in test is not supported
 				case ("CteTests", "Issue3357_RecordClass_DB2"):
 				case ("CteTests", "Issue3357_RecordLikeClass_DB2"):
+				//UpdateRow / UpdateRowLiteral not supported
+				case ("SqlRowTests", "UpdateRowLiteral"):
+				case ("SqlRowTests", "UpdateRowSelect"):
+				// Test case uses alias name assertion from generated sql, name sanitization breaks test assertion - Copied to custom tests
+				case ("TableIDTests", "TableTest"):
 					return Enumerable.Empty<string>();
 
 				//Access client throws a different exception so it is excluded
 				case ("DataContextTests", "ProviderConnectionStringConstructorTest2"):
 					return contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_AccessClient));
 
-				//OleDb doesn't support inline comments so tags are not supported (fails with PREPARE STATEMENT error
+				//OleDb doesn't support inline comments so tags are not supported (fails with PREPARE STATEMENT error)
 				case ("TagTests", _):
+				//OleDb doesn't support inline comments so test that perform comment assertions are not supported
+				case ("QueryNameTests", "TableTest"):
+				case ("QueryNameTests", "FromTest"):
+				case ("QueryNameTests", "MainInlineTest"):
 					return contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_OleDb));
 
 				//LAG returns numeric instead of timestamp prior to 7.4

@@ -101,11 +101,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static void ConvertBinaryToSql(StringBuilder stringBuilder, byte[] value)
 		{
-			stringBuilder.Append("BX'");
-
-			stringBuilder.AppendByteArrayAsHexViaLookup32(value);
-
-			stringBuilder.Append('\'');
+			stringBuilder
+				.Append("BX'")
+				.AppendByteArrayAsHexViaLookup32(value)
+				.Append('\'');
 		}
 
 		public static void ConvertGuidToSql(StringBuilder stringBuilder, Guid value)

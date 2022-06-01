@@ -3,6 +3,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 {
 	using System;
 	using System.Data;
+	using System.Data.Common;
 	using System.Linq.Expressions;
 	using LinqToDB.Data;
 	using LinqToDB.DataProvider;
@@ -15,100 +16,89 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public const string ProviderFactoryName = "IBM.Data.DB2.iSeries";
 		public const string ClientNamespace = "IBM.Data.DB2.iSeries";
 
-		private static readonly object _syncRoot = new object();
-		private static DB2iSeriesAccessClientProviderAdapter _instance;
-
-		private DB2iSeriesAccessClientProviderAdapter(
-			Type connectionType,
-			Type dataReaderType,
-			Type parameterType,
-			Type commandType,
-			Type transactionType,
-
-			Type iDB2BigIntType,
-			Type iDB2BinaryType,
-			Type iDB2BlobType,
-			Type iDB2CharType,
-			Type iDB2CharBitDataType,
-			Type iDB2ClobType,
-			Type iDB2DataLinkType,
-			Type iDB2DateType,
-			Type iDB2DbClobType,
-			Type iDB2DecFloat16Type,
-			Type iDB2DecFloat34Type,
-			Type iDB2DecimalType,
-			Type iDB2DoubleType,
-			Type iDB2GraphicType,
-			Type iDB2IntegerType,
-			Type iDB2NumericType,
-			Type iDB2RealType,
-			Type iDB2RowidType,
-			Type iDB2SmallIntType,
-			Type iDB2TimeType,
-			Type iDB2TimeStampType,
-			Type iDB2VarBinaryType,
-			Type iDB2VarCharType,
-			Type iDB2VarCharBitDataType,
-			Type iDB2VarGraphicType,
-			Type iDB2XmlType,
-
-			MappingSchema mappingSchema,
-
-			Action<IDbDataParameter, iDB2DbType> dbTypeSetter,
-			Func<IDbDataParameter, iDB2DbType> dbTypeGetter,
-
-			Func<string, iDB2Connection> connectionCreator,
-			Func<IDbConnection, string> libraryListGetter,
-			Func<IDbConnection, iDB2NamingConvention> namingGetter,
-
-
-			Action<IDbCommand> deriveParameters,
-			Action<IDbCommand> addBatch)
+		private DB2iSeriesAccessClientProviderAdapter()
 		{
-			ConnectionType = connectionType;
-			DataReaderType = dataReaderType;
-			ParameterType = parameterType;
-			CommandType = commandType;
-			TransactionType = transactionType;
+			var assembly = Common.Tools.TryLoadAssembly(AssemblyName, ProviderFactoryName);
+			if (assembly == null)
+				throw new InvalidOperationException($"Cannot load assembly {AssemblyName}");
 
-			this.iDB2BigIntType = iDB2BigIntType;
-			this.iDB2BinaryType = iDB2BinaryType;
-			this.iDB2BlobType = iDB2BlobType;
-			this.iDB2CharType = iDB2CharType;
-			this.iDB2CharBitDataType = iDB2CharBitDataType;
-			this.iDB2ClobType = iDB2ClobType;
-			this.iDB2DataLinkType = iDB2DataLinkType;
-			this.iDB2DateType = iDB2DateType;
-			this.iDB2DbClobType = iDB2DbClobType;
-			this.iDB2DecFloat16Type = iDB2DecFloat16Type;
-			this.iDB2DecFloat34Type = iDB2DecFloat34Type;
-			this.iDB2DecimalType = iDB2DecimalType;
-			this.iDB2DoubleType = iDB2DoubleType;
-			this.iDB2GraphicType = iDB2GraphicType;
-			this.iDB2IntegerType = iDB2IntegerType;
-			this.iDB2NumericType = iDB2NumericType;
-			this.iDB2RealType = iDB2RealType;
-			this.iDB2RowidType = iDB2RowidType;
-			this.iDB2SmallIntType = iDB2SmallIntType;
-			this.iDB2TimeType = iDB2TimeType;
-			this.iDB2TimeStampType = iDB2TimeStampType;
-			this.iDB2VarBinaryType = iDB2VarBinaryType;
-			this.iDB2VarCharType = iDB2VarCharType;
-			this.iDB2VarCharBitDataType = iDB2VarCharBitDataType;
-			this.iDB2VarGraphicType = iDB2VarGraphicType;
-			this.iDB2XmlType = iDB2XmlType;
+			ConnectionType = assembly.GetType($"{ClientNamespace}.iDB2Connection", true);
+			ParameterType = assembly.GetType($"{ClientNamespace}.iDB2Parameter", true);
+			DataReaderType = assembly.GetType($"{ClientNamespace}.iDB2DataReader", true);
+			TransactionType = assembly.GetType($"{ClientNamespace}.iDB2Transaction", true);
+			CommandType = assembly.GetType($"{ClientNamespace}.iDB2Command", true);
+			
+			var dbType = assembly.GetType($"{ClientNamespace}.iDB2DbType", true);
 
-			MappingSchema = mappingSchema;
+			MappingSchema = new MappingSchema();
 
-			SetDbType = dbTypeSetter;
-			GetDbType = dbTypeGetter;
+			iDB2BigIntType = loadType("iDB2BigInt", DataType.Int64);
+			iDB2BinaryType = loadType("iDB2Binary", DataType.Binary);
+			iDB2BlobType = loadType("iDB2Blob", DataType.Blob);
+			iDB2CharType = loadType("iDB2Char", DataType.Char);
+			iDB2CharBitDataType = loadType("iDB2CharBitData", DataType.Binary);
+			iDB2ClobType = loadType("iDB2Clob", DataType.Text);
+			iDB2DataLinkType = loadType("iDB2DataLink", DataType.NText);
+			iDB2DateType = loadType("iDB2Date", DataType.Date);
+			iDB2DbClobType = loadType("iDB2DbClob", DataType.NText);
+			iDB2DecFloat16Type = loadType("iDB2DecFloat16", DataType.Decimal);
+			iDB2DecFloat34Type = loadType("iDB2DecFloat34", DataType.Decimal);
+			iDB2DecimalType = loadType("iDB2Decimal", DataType.Decimal);
+			iDB2DoubleType = loadType("iDB2Double", DataType.Double);
+			iDB2GraphicType = loadType("iDB2Graphic", DataType.NChar);
+			iDB2IntegerType = loadType("iDB2Integer", DataType.Int32);
+			iDB2NumericType = loadType("iDB2Numeric", DataType.Decimal);
+			iDB2RealType = loadType("iDB2Real", DataType.Single);
+			iDB2RowidType = loadType("iDB2Rowid", DataType.VarBinary);
+			iDB2SmallIntType = loadType("iDB2SmallInt", DataType.Int16);
+			iDB2TimeType = loadType("iDB2Time", DataType.Time);
+			iDB2TimeStampType = loadType("iDB2TimeStamp", DataType.Timestamp);
+			iDB2VarBinaryType = loadType("iDB2VarBinary", DataType.VarBinary);
+			iDB2VarCharType = loadType("iDB2VarChar", DataType.VarChar);
+			iDB2VarCharBitDataType = loadType("iDB2VarCharBitData", DataType.VarBinary);
+			iDB2VarGraphicType = loadType("iDB2VarGraphic", DataType.NVarChar);
+			iDB2XmlType = loadType("iDB2Xml", DataType.Xml);
 
-			CreateConnection = connectionCreator;
-			GetLibraryList = libraryListGetter;
-			GetNamingConvention = namingGetter;
+			var typeMapper = new TypeMapper();
 
-			DeriveParameters = deriveParameters;
-			AddBatch = addBatch;
+			typeMapper.RegisterTypeWrapper<iDB2Connection>(ConnectionType);
+			typeMapper.RegisterTypeWrapper<iDB2Parameter>(ParameterType);
+			typeMapper.RegisterTypeWrapper<iDB2DbType>(dbType);
+
+			typeMapper.FinalizeMappings();
+
+			var dbTypeBuilder = typeMapper.Type<iDB2Parameter>().Member(p => p.iDB2DbType);
+			SetDbType = dbTypeBuilder.BuildSetter<IDbDataParameter>();
+			GetDbType = dbTypeBuilder.BuildGetter<IDbDataParameter>();
+
+			
+			CreateConnection = typeMapper.BuildWrappedFactory((string connectionString) => new iDB2Connection(connectionString));
+			GetLibraryList = typeMapper.BuildFunc<DbConnection, string>(typeMapper.MapLambda((iDB2Connection conn) => conn.LibraryList));
+			GetNamingConvention = typeMapper.BuildFunc<DbConnection, iDB2NamingConvention>(typeMapper.MapLambda((iDB2Connection conn) => conn.Naming));
+
+			DeriveParameters = buildActionInvoker(CommandType, "DeriveParameters");
+			AddBatch = buildActionInvoker(CommandType, "AddBatch");
+
+			DataConnection.WriteTraceLine(assembly.FullName, nameof(DB2iSeriesAccessClientProviderAdapter), System.Diagnostics.TraceLevel.Info);
+
+			static Action<DbCommand> buildActionInvoker(Type type, string methodName)
+			{
+				var method = type.GetMethod(methodName);
+				var cmdParameter = Expression.Parameter(typeof(DbCommand), "cmd");
+				var expression = Expression.Call(Expression.Convert(cmdParameter, type), method);
+				var lambda = Expression.Lambda<Action<DbCommand>>(expression, cmdParameter);
+				return lambda.Compile();
+			}
+
+			Type loadType(string typeName, DataType dataType)
+			{
+				var type = assembly.GetType($"{ClientNamespace}.{typeName}", true);
+
+				var getNullValue = Expression.Lambda<Func<object>>(Expression.Convert(ExpressionHelper.Field(type, "Null"), typeof(object))).Compile();
+				MappingSchema.AddScalarType(type, getNullValue(), true, dataType);
+
+				return type;
+			}
 		}
 
 		public Type ConnectionType { get; }
@@ -173,146 +163,20 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public string GetiDB2VarGraphicReaderMethod => "GetiDB2VarGraphic";
 		public string GetiDB2XmlReaderMethod => "GetiDB2Xml";
 
-		public Action<IDbDataParameter, iDB2DbType> SetDbType { get; }
-		public Func<IDbDataParameter, iDB2DbType> GetDbType { get; }
+		public Action<DbParameter, iDB2DbType> SetDbType { get; }
+		public Func<DbParameter, iDB2DbType> GetDbType { get; }
 
 		public Func<string, iDB2Connection> CreateConnection { get; }
 
-		public Func<IDbConnection, string> GetLibraryList { get; }
-		public Func<IDbConnection, iDB2NamingConvention> GetNamingConvention { get; }
+		public Func<DbConnection, string> GetLibraryList { get; }
+		public Func<DbConnection, iDB2NamingConvention> GetNamingConvention { get; }
 
-		public Action<IDbCommand> DeriveParameters;
-		public Action<IDbCommand> AddBatch;
+		public Action<DbCommand> DeriveParameters;
+		public Action<DbCommand> AddBatch;
 
-		public static DB2iSeriesAccessClientProviderAdapter GetInstance()
-		{
-			if (_instance == null)
-				lock (_syncRoot)
-					if (_instance == null)
-					{
-						var assembly = Common.Tools.TryLoadAssembly(AssemblyName, ProviderFactoryName);
-						if (assembly == null)
-							throw new InvalidOperationException($"Cannot load assembly {AssemblyName}");
-
-						var connectionType = assembly.GetType($"{ClientNamespace}.iDB2Connection", true);
-						var parameterType = assembly.GetType($"{ClientNamespace}.iDB2Parameter", true);
-						var dataReaderType = assembly.GetType($"{ClientNamespace}.iDB2DataReader", true);
-						var transactionType = assembly.GetType($"{ClientNamespace}.iDB2Transaction", true);
-						var commandType = assembly.GetType($"{ClientNamespace}.iDB2Command", true);
-						var dbType = assembly.GetType($"{ClientNamespace}.iDB2DbType", true);
-
-						var mappingSchema = new MappingSchema();
-
-						var iDB2BigIntType = loadType("iDB2BigInt", DataType.Int64);
-						var iDB2BinaryType = loadType("iDB2Binary", DataType.Binary);
-						var iDB2BlobType = loadType("iDB2Blob", DataType.Blob);
-						var iDB2CharType = loadType("iDB2Char", DataType.Char);
-						var iDB2CharBitDataType = loadType("iDB2CharBitData", DataType.Binary);
-						var iDB2ClobType = loadType("iDB2Clob", DataType.Text);
-						var iDB2DataLinkType = loadType("iDB2DataLink", DataType.NText);
-						var iDB2DateType = loadType("iDB2Date", DataType.Date);
-						var iDB2DbClobType = loadType("iDB2DbClob", DataType.NText);
-						var iDB2DecFloat16Type = loadType("iDB2DecFloat16", DataType.Decimal);
-						var iDB2DecFloat34Type = loadType("iDB2DecFloat34", DataType.Decimal);
-						var iDB2DecimalType = loadType("iDB2Decimal", DataType.Decimal);
-						var iDB2DoubleType = loadType("iDB2Double", DataType.Double);
-						var iDB2GraphicType = loadType("iDB2Graphic", DataType.NChar);
-						var iDB2IntegerType = loadType("iDB2Integer", DataType.Int32);
-						var iDB2NumericType = loadType("iDB2Numeric", DataType.Decimal);
-						var iDB2RealType = loadType("iDB2Real", DataType.Single);
-						var iDB2RowidType = loadType("iDB2Rowid", DataType.VarBinary);
-						var iDB2SmallIntType = loadType("iDB2SmallInt", DataType.Int16);
-						var iDB2TimeType = loadType("iDB2Time", DataType.Time);
-						var iDB2TimeStampType = loadType("iDB2TimeStamp", DataType.Timestamp);
-						var iDB2VarBinaryType = loadType("iDB2VarBinary", DataType.VarBinary);
-						var iDB2VarCharType = loadType("iDB2VarChar", DataType.VarChar);
-						var iDB2VarCharBitDataType = loadType("iDB2VarCharBitData", DataType.VarBinary);
-						var iDB2VarGraphicType = loadType("iDB2VarGraphic", DataType.NVarChar);
-						var iDB2XmlType = loadType("iDB2Xml", DataType.Xml);
-
-						var typeMapper = new TypeMapper();
-
-						typeMapper.RegisterTypeWrapper<iDB2Connection>(connectionType);
-						typeMapper.RegisterTypeWrapper<iDB2Parameter>(parameterType);
-						typeMapper.RegisterTypeWrapper<iDB2DbType>(dbType);
-
-						typeMapper.FinalizeMappings();
-
-						var dbTypeBuilder = typeMapper.Type<iDB2Parameter>().Member(p => p.iDB2DbType);
-						var typeSetter = dbTypeBuilder.BuildSetter<IDbDataParameter>();
-						var typeGetter = dbTypeBuilder.BuildGetter<IDbDataParameter>();
-
-						_instance = new DB2iSeriesAccessClientProviderAdapter(
-							connectionType,
-							dataReaderType,
-							parameterType,
-							commandType,
-							transactionType,
-
-							iDB2BigIntType,
-							iDB2BinaryType,
-							iDB2BlobType,
-							iDB2CharType,
-							iDB2CharBitDataType,
-							iDB2ClobType,
-							iDB2DataLinkType,
-							iDB2DateType,
-							iDB2DbClobType,
-							iDB2DecFloat16Type,
-							iDB2DecFloat34Type,
-							iDB2DecimalType,
-							iDB2DoubleType,
-							iDB2GraphicType,
-							iDB2IntegerType,
-							iDB2NumericType,
-							iDB2RealType,
-							iDB2RowidType,
-							iDB2SmallIntType,
-							iDB2TimeType,
-							iDB2TimeStampType,
-							iDB2VarBinaryType,
-							iDB2VarCharType,
-							iDB2VarCharBitDataType,
-							iDB2VarGraphicType,
-							iDB2XmlType,
-
-							mappingSchema,
-
-							typeSetter,
-							typeGetter,
-							typeMapper.BuildWrappedFactory((string connectionString) => new iDB2Connection(connectionString)),
-							typeMapper.BuildFunc<IDbConnection, string>(typeMapper.MapLambda((iDB2Connection conn) => conn.LibraryList)),
-							typeMapper.BuildFunc<IDbConnection, iDB2NamingConvention>(typeMapper.MapLambda((iDB2Connection conn) => conn.Naming)),
-
-							buildActionInvoker(commandType, "DeriveParameters"),
-							buildActionInvoker(commandType, "AddBatch")
-						);
-
-						DataConnection.WriteTraceLine(assembly.FullName, nameof(DB2iSeriesAccessClientProviderAdapter), System.Diagnostics.TraceLevel.Info);
-
-						static Action<IDbCommand> buildActionInvoker(Type type, string methodName)
-						{
-							var method = type.GetMethod(methodName);
-							var cmdParameter = Expression.Parameter(typeof(IDbCommand), "cmd");
-							var expression = Expression.Call(Expression.Convert(cmdParameter, type), method);
-							var lambda = Expression.Lambda<Action<IDbCommand>>(expression, cmdParameter);
-							return lambda.Compile();
-						}
-
-						Type loadType(string typeName, DataType dataType)
-						{
-							var type = assembly.GetType($"{ClientNamespace}.{typeName}", true);
-
-							var getNullValue = Expression.Lambda<Func<object>>(Expression.Convert(ExpressionHelper.Field(type, "Null"), typeof(object))).Compile();
-							mappingSchema.AddScalarType(type, getNullValue(), true, dataType);
-
-							return type;
-						}
-					}
-
-			return _instance;
-		}
-
+		private static Lazy<DB2iSeriesAccessClientProviderAdapter> lazyInstance = new(() => new());
+		public static DB2iSeriesAccessClientProviderAdapter Instance => lazyInstance.Value;
+		
 		public DataType GetDataType(iDB2DbType dbType)
 		{
 			return dbType switch
@@ -360,7 +224,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				// [1]: get LibraryList
 				(Expression<Func<iDB2Connection, string>>)((iDB2Connection this_) => this_.LibraryList),
 				// [2]: CreateCommand
-				(Expression<Func<iDB2Connection, IDbCommand>>)((iDB2Connection this_) => this_.CreateCommand()),
+				(Expression<Func<iDB2Connection, DbCommand>>)((iDB2Connection this_) => this_.CreateCommand()),
 				// [3]: Open
 				(Expression<Action<iDB2Connection>>)((iDB2Connection this_) => this_.Open()),
 				// [4]: Dispose
@@ -378,7 +242,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			public string ServerVersion => ((Func<iDB2Connection, string>)CompiledWrappers[0])(this);
 			public string LibraryList => ((Func<iDB2Connection, string>)CompiledWrappers[1])(this);
 
-			public IDbCommand CreateCommand() => ((Func<iDB2Connection, IDbCommand>)CompiledWrappers[2])(this);
+			public DbCommand CreateCommand() => ((Func<iDB2Connection, DbCommand>)CompiledWrappers[2])(this);
 			public void Open() => ((Action<iDB2Connection>)CompiledWrappers[3])(this);
 			public void Dispose() => ((Action<iDB2Connection>)CompiledWrappers[4])(this);
 			public iDB2NamingConvention Naming => ((Func<iDB2Connection, iDB2NamingConvention>)CompiledWrappers[5])(this);

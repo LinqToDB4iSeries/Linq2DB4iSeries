@@ -18,7 +18,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			this.provider = provider;
 		}
 
-		protected override DataType GetDataType(string dataType, string columnType, long? length, int? prec, int? scale)
+		protected override DataType GetDataType(string dataType, string columnType, int? length, int? prec, int? scale)
 		{
 			return dataType switch
 			{
@@ -73,7 +73,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				where Table_Schema in({dataConnection.GetQuotedLibList()})
 				 ";
 
-			ColumnInfo drf(IDataReader dr)
+			ColumnInfo drf(DbDataReader dr)
 			{
 				var ci = new ColumnInfo
 				{
@@ -85,7 +85,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					Ordinal = Converter.ChangeTypeTo<int>(dr["Ordinal_Position"]),
 					TableID = dataConnection.Connection.Database + "." + Convert.ToString(dr["Table_Schema"]).TrimEnd() + "." + Convert.ToString(dr["Table_Name"]).TrimEnd(),
 				};
-				SetColumnParameters(ci, Convert.ToInt64(dr["Length"]), Convert.ToInt32(dr["Numeric_Scale"]));
+				SetColumnParameters(ci, Convert.ToInt32(dr["Length"]), Convert.ToInt32(dr["Numeric_Scale"]));
 				return ci;
 			}
 
@@ -114,7 +114,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			  ";
 
 			//And {GetSchemaFilter("col.TBCREATOR")}
-			ForeignKeyInfo drf(IDataReader dr) => new ForeignKeyInfo
+			ForeignKeyInfo drf(DbDataReader dr) => new ForeignKeyInfo
 			{
 				Name = dr["Constraint_Name"].ToString().TrimEnd(),
 				Ordinal = Converter.ChangeTypeTo<int>(dr["Ordinal_Position"]),
@@ -142,7 +142,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			  Order By cst.table_SCHEMA, cst.table_NAME, col.Ordinal_position
 			  ";
 
-			PrimaryKeyInfo drf(IDataReader dr) => new PrimaryKeyInfo
+			PrimaryKeyInfo drf(DbDataReader dr) => new PrimaryKeyInfo
 			{
 				ColumnName = Convert.ToString(dr["Column_Name"]).TrimEnd(),
 				Ordinal = Converter.ChangeTypeTo<int>(dr["Ordinal_position"]),
@@ -173,7 +173,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			//And {GetSchemaFilter("col.TBCREATOR")}
 			var defaultSchema = dataConnection.Execute<string>("select current_schema from sysibm.sysdummy1");
 
-			ProcedureInfo drf(IDataReader dr)
+			ProcedureInfo drf(DbDataReader dr)
 			{
 				return new ProcedureInfo
 				{
@@ -211,14 +211,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			  ";
 
 			//And {GetSchemaFilter("col.TBCREATOR")}
-			ProcedureParameterInfo drf(IDataReader dr)
+			ProcedureParameterInfo drf(DbDataReader dr)
 			{
 				return new ProcedureParameterInfo
 				{
 					DataType = Convert.ToString(dr["DATA_TYPE"]),
 					IsIn = dr["Parameter_Mode"].ToString().Contains("IN"),
 					IsOut = dr["Parameter_Mode"].ToString().Contains("OUT"),
-					Length = Converter.ChangeTypeTo<long?>(dr["CHARACTER_MAXIMUM_LENGTH"]),
+					Length = Converter.ChangeTypeTo<int?>(dr["CHARACTER_MAXIMUM_LENGTH"]),
 					Ordinal = Converter.ChangeTypeTo<int>(dr["Ordinal_position"]),
 					ParameterName = Convert.ToString(dr["Parameter_Name"]).TrimEnd(),
 					Precision = Converter.ChangeTypeTo<int?>(dr["Numeric_Precision"]),
@@ -248,7 +248,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			if (provider.ProviderType.IsOdbc())
 			{
-				DataTypesSchema = ((DbConnection)dataConnection.Connection).GetSchema("DataTypes");
+				DataTypesSchema = dataConnection.Connection.GetSchema("DataTypes");
 
 				return DataTypesSchema.AsEnumerable()
 					.Select(t => new DataTypeInfo
@@ -263,7 +263,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 			else if (provider.ProviderType.IsDB2())
 			{
-				DataTypesSchema = ((DbConnection)dataConnection.Connection).GetSchema("DataTypes");
+				DataTypesSchema = dataConnection.Connection.GetSchema("DataTypes");
 
 				return DataTypesSchema.AsEnumerable()
 					.Select(t => new DataTypeInfo
@@ -275,7 +275,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					.Union(
 					new[]
 					{
-					new DataTypeInfo { TypeName = "CHARACTER", CreateParameters = "LENGTH", DataType = "System.String" }
+					new DataTypeInfo { TypeName = "CHARACTER", CreateParameters = "LENGTH", DataType = "System.String", ProviderDbType = 12 }
 					})
 					.ToList();
 			}
@@ -301,7 +301,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			var defaultSchema = dataConnection.Execute<string>("select current_schema from sysibm.sysdummy1");
 			
-			TableInfo drf(IDataReader dr) => new TableInfo
+			TableInfo drf(DbDataReader dr) => new TableInfo
 			{
 				CatalogName = dr["Catalog_Name"].ToString().TrimEnd(),
 				Description = dr["Table_Text"].ToString().TrimEnd(),
@@ -334,14 +334,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		#region Helpers
 
-		private static void SetColumnParameters(ColumnInfo ci, long? size, int? scale)
+		private static void SetColumnParameters(ColumnInfo ci, int? size, int? scale)
 		{
 			switch (ci.DataType)
 			{
 				case "DECIMAL":
 				case "NUMERIC":
 					if ((size ?? 0) > 0)
-						ci.Precision = (int?)size.Value;
+						ci.Precision = size.Value;
 					
 					if ((scale ?? 0) > 0)
 						ci.Scale = scale;

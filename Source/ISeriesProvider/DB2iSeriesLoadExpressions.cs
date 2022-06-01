@@ -14,7 +14,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				Linq.Expressions.MapMember(
 					configuration,
 					Linq.Expressions.M(() => Sql.Space(0)).MemberInfo,
-					Linq.Expressions.N(() => Linq.Expressions.L<int?, string>(p0 => Sql.Convert(Sql.VarChar(1000), Linq.Expressions.Replicate(" ", p0)))));
+					Linq.Expressions.N(() => Linq.Expressions.L<int?, string>(p0 => Linq.Expressions.VarChar(Linq.Expressions.Replicate(" ", p0), 1000))));
 				Linq.Expressions.MapMember(
 					configuration,
 					Linq.Expressions.M(() => Sql.Stuff("", 0, 0, "")).MemberInfo,

@@ -21,10 +21,10 @@
 	</ItemGroup>
 
 	<ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'net472' ">
-		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="6.0.0" />
+		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="linq2db" Version="3.7.0" />
+	  <PackageReference Include="linq2db" />
 	</ItemGroup>
 </Project>
