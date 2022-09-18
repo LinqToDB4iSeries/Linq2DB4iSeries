@@ -7,6 +7,7 @@ using System.Data;
 namespace LinqToDB.DataProvider.DB2iSeries
 {
 	using Common;
+	using LinqToDB.Data;
 	using Mapping;
 	using SqlProvider;
 	using SqlQuery;
@@ -79,22 +80,22 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			else
 				base.BuildInsertOrUpdateQuery(insertOrUpdate);
 		}
-
+		
 		public override StringBuilder Convert(StringBuilder sb, string value, ConvertType convertType)
 		{
 			switch (convertType)
 			{
 				case ConvertType.NameToQueryParameter:
 					return DB2iSeriesSqlProviderFlags.SupportsNamedParameters
-						? sb.Append('@').Append(value) : sb.Append('?');
+						? sb.Append(NamedQueryParameterMarkerPrefix).Append(value) : sb.Append(UnnamedParameterMarker);
 
 				case ConvertType.NameToCommandParameter:
 				case ConvertType.NameToSprocParameter:
 					return DB2iSeriesSqlProviderFlags.SupportsNamedParameters
-						? sb.Append(':').Append(value) : sb.Append('?');
+						? sb.Append(NamedStoredProcedureParameterMarkerPrefix).Append(value) : sb.Append(UnnamedParameterMarker);
 					
 				case ConvertType.SprocParameterToName:
-					return value.Length > 0 && value[0] == ':'
+					return value.Length > 0 && value[0] == NamedStoredProcedureParameterMarkerPrefix[0]
 							? sb.Append(value.Substring(1))
 							: sb.Append(value);
 
@@ -537,6 +538,18 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				return base.BuildSqlComment(sb, comment);
 
 			return sb;
+		}
+
+		protected override void BuildFunction(SqlFunction func)
+		{
+			base.BuildFunction(func);
+		}
+
+		public string BuildStoredProcedureCall(string procedureName, IEnumerable<DataParameter> parameters)
+		{
+			var callParameters = string.Join(", " , parameters.Select(p => ConvertInline(p.Name, ConvertType.NameToSprocParameter)));
+
+			return $"CALL {procedureName}({callParameters})";
 		}
 
 		#endregion

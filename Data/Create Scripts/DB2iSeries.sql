@@ -352,3 +352,20 @@ CREATE TABLE CollatedTable
 	CaseInsensitive		NVARCHAR(20) NOT NULL
 )
 GO
+
+DROP PROCEDURE ExecuteProcInt2Parameters
+GO
+CREATE PROCEDURE ExecuteProcInt2Parameters (
+                IN input INTEGER,
+                OUT output1 INTEGER,
+                OUT output2 INTEGER
+            )
+        RESULT SETS 1
+        LANGUAGE SQL
+BEGIN
+    SET output1 = input + 1;
+    SET output2 = input + 2;
+    UPDATE Person
+        SET FirstName = 'John'
+        WHERE FirstName = 'John';
+END

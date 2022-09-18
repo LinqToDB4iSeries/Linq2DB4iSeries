@@ -50,17 +50,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					if (value is DataParameter parameter)
 						value = parameter.Value;
 					
-					var dataParameter = new DataParameter(ParameterName == "?" ? ParameterName : "p" + ParameterIndex, value, column.DataType);
+					var dataParameter = new DataParameter("p" + ParameterIndex, value, column.DataType);
 
 					Parameters.Add(dataParameter);
 
-					var parameterMarker = dataParameter.Name == "?" || string.IsNullOrEmpty(dataParameter.Name) ?
-						"?" : $"@{dataParameter.Name}";
+					var parameterMarker = SqlBuilder.ConvertInline(dataParameter.Name, SqlProvider.ConvertType.NameToQueryParameter);
 
 					var nameWithCast = casttype is null ?
 						parameterMarker :
 						$"CAST({parameterMarker} AS {casttype})";
-
+					
 					StringBuilder.Append(nameWithCast);
 				}
 

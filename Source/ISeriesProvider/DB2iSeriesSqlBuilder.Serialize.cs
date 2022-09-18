@@ -1,4 +1,5 @@
 ﻿using LinqToDB.Common;
+using LinqToDB.Data;
 using LinqToDB.SqlQuery;
 using System;
 using System.Collections.Generic;
@@ -11,6 +12,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 {
 	public partial class DB2iSeriesSqlBuilder
 	{
+		public static string UnnamedParameterMarker { get; } = "?";
+		public static string NamedQueryParameterMarkerPrefix { get; } = "@";
+		public static string NamedStoredProcedureParameterMarkerPrefix { get; } = ":";
+
 		private static void AppendConversion(StringBuilder stringBuilder, int value)
 		{
 			stringBuilder.Append("CHR(").Append(value).Append(')');
@@ -125,7 +130,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			if (name is null)
 				return null;
 
-			if (name.Contains("("))
+			if (name.Contains('('))
 				return name;
 
 			var ccsid = string.Empty;

@@ -180,7 +180,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			if (dbTypeInfo.ForBitData)
 			{
-				var name = dbTypeInfo.Name.Contains("(") ?
+				var name = dbTypeInfo.Name.Contains('(') ?
 					dbTypeInfo.Name : $"{dbTypeInfo.Name}({length}) FOR BIT DATA";
 
 				return new DbDataType(systemType, dbTypeInfo.DataType, name);

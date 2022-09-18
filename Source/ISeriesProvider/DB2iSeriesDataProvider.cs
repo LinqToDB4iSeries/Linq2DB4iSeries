@@ -216,6 +216,21 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetProviderField<DbDataReader, TimeSpan, string>((r, i) => SqlDateTimeParser.ParseTimeSpan(r.GetString(i)));
 		}
 
+		public override DbCommand InitCommand(DataConnection dataConnection, DbCommand command, CommandType commandType, string commandText, DataParameter[] parameters, bool withParameters)
+		{
+			//Handle ODBC stored procedure when only proc name is provided
+			if (ProviderType == DB2iSeriesProviderType.Odbc
+				&& commandType == CommandType.StoredProcedure
+				&& !commandText.Contains(' ') //single word - presumed proc name
+			)
+			{
+				var builder = this.CreateDB2iSeriesSqlBuilder(this.MappingSchema);
+				commandText = $"{{{builder.BuildStoredProcedureCall(commandText, parameters)}}}";
+			}
+
+			return base.InitCommand(dataConnection, command, commandType, commandText, parameters, withParameters);
+		}
+
 		/// <summary>
 		/// This is identical to the base method except that it wraps the method call in a delagate.
 		/// </summary>
@@ -269,6 +284,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		}
 
 		public override ISqlBuilder CreateSqlBuilder(MappingSchema mappingSchema)
+		{
+			return CreateDB2iSeriesSqlBuilder(mappingSchema);
+		}
+
+		private DB2iSeriesSqlBuilder CreateDB2iSeriesSqlBuilder(MappingSchema mappingSchema)
 		{
 			return new DB2iSeriesSqlBuilder(this, mappingSchema, GetSqlOptimizer(), SqlProviderFlags, db2iSeriesSqlProviderFlags);
 		}
@@ -452,9 +472,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				} 
 			}
 
-			var parameterMarker = db2iSeriesSqlProviderFlags.SupportsNamedParameters ? "@" + name : "?";
+			//var parameterName = name.StartsWith(DB2iSeriesSqlBuilder.NamedQueryParameterMarkerPrefix) ? name : DB2iSeriesSqlBuilder.NamedQueryParameterMarkerPrefix + name;
 
-			base.SetParameter(dataConnection, parameter, parameterMarker, dataType, value);
+			base.SetParameter(dataConnection, parameter, name, dataType, value);
 		}
 
 		private object GetParameterProviderType(DataType dataType)
