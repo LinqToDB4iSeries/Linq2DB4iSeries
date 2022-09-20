@@ -356,7 +356,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		}
 
 		//Use mapping schema and internal db datatype mapping information to get the appropriate dbType
-		protected override void BuildDataTypeFromDataType(SqlDataType type, bool forCreateTable)
+		protected override void BuildDataTypeFromDataType(SqlDataType type, bool forCreateTable, bool canBeNull)
 		{
 			var dbType = MappingSchema.GetDbDataType(type.SystemType, type.Type.DataType, type.Type.Length, type.Type.Precision, type.Type.Scale, false, DB2iSeriesSqlProviderFlags.SupportsNCharTypes);
 
@@ -540,14 +540,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return sb;
 		}
 
-		protected override void BuildFunction(SqlFunction func)
-		{
-			base.BuildFunction(func);
-		}
-
 		public string BuildStoredProcedureCall(string procedureName, IEnumerable<DataParameter> parameters)
 		{
-			var callParameters = string.Join(", " , parameters.Select(p => ConvertInline(p.Name, ConvertType.NameToSprocParameter)));
+			var callParameters = string.Join(InlineComma , parameters.Select(p => ConvertInline(p.Name, ConvertType.NameToSprocParameter)));
 
 			return $"CALL {procedureName}({callParameters})";
 		}

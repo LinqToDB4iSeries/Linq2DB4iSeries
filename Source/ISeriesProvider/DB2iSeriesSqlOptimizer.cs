@@ -3,6 +3,7 @@
 namespace LinqToDB.DataProvider.DB2iSeries
 {
 	using LinqToDB.Extensions;
+	using LinqToDB.Mapping;
 	using LinqToDB.SqlQuery;
 	using SqlProvider;
 	using System.Collections.Generic;
@@ -40,8 +41,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				_ => statement,
 			};
 		}
-
-		public override SqlStatement Finalize(SqlStatement statement)
+		
+		public override SqlStatement Finalize(MappingSchema mappingSchema, SqlStatement statement)
 		{
 			static long getAbsoluteHashCode(object o) 
 				=> (long)o.GetHashCode() + (long)int.MaxValue;
@@ -80,7 +81,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			statement.VisitAll(sanitizeNames);
 			
-			return base.Finalize(statement);
+			return base.Finalize(mappingSchema, statement);
 		}
 
 		public override ISqlExpression ConvertExpressionImpl(ISqlExpression expression, ConvertVisitor<RunOptimizationContext> visitor)

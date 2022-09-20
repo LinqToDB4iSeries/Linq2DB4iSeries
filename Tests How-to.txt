@@ -10,8 +10,9 @@
 The test have been set up in a way that tests from upstream can be simply copied over. You have to copy only the source code files and not the project files as follows:
 
 - Copy all code from Tests\Base except CustomizationSupport folder
-- Copy all code from Tests\Linq except Data, DataProvider and Microsoft folders. Undo customization changes to the TestsInitialization.cs (partial class and InitCustom() invocation)
-- Copy all code from Tets\FSharp and Tests\VisualBasic
+- Copy all code from Tests\Linq. Undo customization changes to the TestsInitialization.cs (partial class and InitCustom() invocation)
+- Copy all code from Tests\FSharp and Tests\VisualBasic
+- Coopy all code from Source\Shared into Tests\Shared
 - Add or update dependencies in /Build/*.props files as neeeded
 - Tweaks to test SQL setup files in Data\Create Scripts\ might be needed
 

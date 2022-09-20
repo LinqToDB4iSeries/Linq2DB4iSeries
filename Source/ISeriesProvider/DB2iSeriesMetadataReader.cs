@@ -5,11 +5,22 @@ using LinqToDB.Metadata;
 namespace LinqToDB.DataProvider.DB2iSeries
 {
 	using SqlQuery;
+	using System.Collections.Concurrent;
 	using System.Collections.Generic;
 	using System.Linq;
 
+	static class EmptyArray<T>
+	{
+#if NET45
+		public static readonly T[] Value = new T[0];
+#else
+		public static readonly T[] Value = Array.Empty<T>();
+#endif
+	}
+
 	class DB2iSeriesMetadataReader : IMetadataReader
 	{
+		private static ConcurrentDictionary<KeyValuePair<MemberInfo, Type>, object> expressionAttributecache = new();
 		private readonly string providerName;
 
 		public DB2iSeriesMetadataReader(string providerName)
@@ -21,71 +32,95 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			if (typeof(Sql.ExpressionAttribute).IsAssignableFrom(typeof(T)))
 			{
-				switch (memberInfo.Name)
+				var key = new KeyValuePair<MemberInfo, Type>(memberInfo, typeof(T));
+				if (!expressionAttributecache.TryGetValue(key, out var attributes))
 				{
-					case "CharIndex":
-						return GetFunction<T>(() => new Sql.FunctionAttribute("Locate"));
+					attributes = GetExpressionAttributes<T>(type, memberInfo, inherit);
 
-					case "Trim":
-						if (memberInfo.ToString().EndsWith("(Char[])", StringComparison.CurrentCultureIgnoreCase))
-						{
-							return GetExpression<T>(() => new Sql.ExpressionAttribute(providerName, "Strip({0}, B, {1})"));
-						}
-						break;
-					case "TrimLeft":
-						if (memberInfo.ToString().EndsWith("(Char[])", StringComparison.CurrentCultureIgnoreCase) ||
-							memberInfo.ToString().EndsWith("System.Nullable`1[System.Char])", StringComparison.CurrentCultureIgnoreCase))
-						{
-							return GetExpression<T>(() => new Sql.ExpressionAttribute(providerName, "Strip({0}, L, {1})"));
-						}
-						break;
-					case "TrimRight":
-						if (memberInfo.ToString().EndsWith("(Char[])", StringComparison.CurrentCultureIgnoreCase) ||
-							memberInfo.ToString().EndsWith("System.Nullable`1[System.Char])", StringComparison.CurrentCultureIgnoreCase))
-						{
-							return GetExpression<T>(() => new Sql.ExpressionAttribute(providerName, "Strip({0}, T, {1})"));
-						}
-						break;
-					case "Truncate":
-						if (type == typeof(LinqExtensions)) //Do not handle TRUNCATE TABLE statement
-							break;
-
-						return typeof(T) == typeof(Sql.ExtensionAttribute) ?
-							new[] { (T)(object)new Sql.ExtensionAttribute(providerName, "Truncate({0}, 0)") } :
-							new[] { (T)(object)new Sql.ExpressionAttribute(providerName, "Truncate({0}, 0)") };
-
-					case "DateAdd":
-						return GetExtension<T>(() => new Sql.ExtensionAttribute(providerName, "") { ServerSideOnly = false, PreferServerSide = false, BuilderType = typeof(DateAddBuilderDB2i) });
-					case "DatePart":
-						return GetExtension<T>(() => new Sql.ExtensionAttribute(providerName, "") { ServerSideOnly = false, PreferServerSide = false, BuilderType = typeof(DatePartBuilderDB2i) });
-					case "DateDiff":
-						return GetExtension<T>(() => new Sql.ExtensionAttribute(providerName, "") { BuilderType = typeof(DateDiffBuilderDB2i) });
-					case "TinyInt":
-						return GetExpression<T>(() => new Sql.ExpressionAttribute(providerName, "SmallInt") { ServerSideOnly = true });
-					case "Substring":
-						return GetFunction<T>(() => new Sql.FunctionAttribute(providerName, "Substr") { PreferServerSide = true });
-					case "Atan2":
-						return GetFunction<T>(() => new Sql.FunctionAttribute(providerName, "Atan2", 1, 0));
-					case "Log" when memberInfo is MethodInfo logMethod:
-						if (logMethod.GetParameters().Length == 1)
-							return GetFunction<T>(() => new Sql.FunctionAttribute(providerName, "Ln"));
-						break;
-					case "Log10":
-						return GetFunction<T>(() => new Sql.FunctionAttribute(providerName, "Log10"));
-					case "DefaultNChar":
-					case "DefaultNVarChar":
-					case "NChar":
-					case "NVarChar":
-						return GetFunction<T>(() => new Sql.FunctionAttribute(providerName, "Graphic") { ServerSideOnly = true });
-					case "Replicate":
-						return GetFunction<T>(() => new Sql.FunctionAttribute(providerName, "Repeat"));
-					case "StringAggregate" when memberInfo is MethodInfo stringAggregateMethod:
-						var firstParameter = stringAggregateMethod.GetParameters().Any(x => x.Name == "selector") ? "selector" : "source";
-						return GetExtension<T>(() => new Sql.ExtensionAttribute(providerName, "LISTAGG({" + firstParameter + "}, {separator}){_}{aggregation_ordering?}") { IsAggregate = true, ChainPrecedence = 10 });
+					expressionAttributecache.TryAdd(key, attributes);
 				}
+
+				return attributes as T[];
+				
+				//return expressionAttributecache.GetOrAdd(new KeyValuePair<MemberInfo, Type>(memberInfo, typeof(T)), _ => GetExpressionAttributes<T>(type, memberInfo, inherit).Cast<Sql.ExpressionAttribute>().ToArray())
+				//	.Cast<T>().ToArray();
 			}
 
-			return new T[] { };
+			return EmptyArray<T>.Value;
+		}
+
+		private T[] GetExpressionAttributes<T>(Type type, MemberInfo memberInfo, bool inherit = true)
+		{
+			switch (memberInfo.Name)
+			{
+				case "ZeroPad":
+					return GetExpression<T>(() => new Sql.ExpressionAttribute(providerName, "Lpad({0}, {1}, '0')"));
+				case "CharIndex":
+					return GetFunction<T>(() => new Sql.FunctionAttribute("Locate"));
+
+				case "Trim":
+					if (memberInfo.ToString().EndsWith("(Char[])", StringComparison.InvariantCultureIgnoreCase))
+					{
+						return GetExpression<T>(() => new Sql.ExpressionAttribute(providerName, "Strip({0}, B, {1})"));
+					}
+					break;
+				case "TrimLeft":
+				case "TrimStart":
+					//if (memberInfo.ToString().EndsWith("(Char[])", StringComparison.InvariantCultureIgnoreCase) ||
+						//memberInfo.ToString().EndsWith("System.Nullable`1[System.Char])", StringComparison.InvariantCultureIgnoreCase))
+					{
+						return typeof(T) == typeof(Sql.ExtensionAttribute) ?
+							GetExtension<T>(() => new Sql.ExtensionAttribute(providerName, "Strip({0}, L, {1})")) :
+							GetExpression<T>(() => new Sql.ExpressionAttribute(providerName, "Strip({0}, L, {1})"));
+					}
+					break;
+				case "TrimRight":
+				case "TrimEnd":
+					if (memberInfo.ToString().EndsWith("(Char[])", StringComparison.InvariantCultureIgnoreCase) ||
+						memberInfo.ToString().EndsWith("System.Nullable`1[System.Char])", StringComparison.InvariantCultureIgnoreCase))
+					{
+						return GetExpression<T>(() => new Sql.ExpressionAttribute(providerName, "Strip({0}, T, {1})"));
+					}
+					break;
+				case "Truncate":
+					if (type == typeof(LinqExtensions)) //Do not handle TRUNCATE TABLE statement
+						break;
+
+					return typeof(T) == typeof(Sql.ExtensionAttribute) ?
+						new[] { (T)(object)new Sql.ExtensionAttribute(providerName, "Truncate({0}, 0)") } :
+						new[] { (T)(object)new Sql.ExpressionAttribute(providerName, "Truncate({0}, 0)") };
+
+				case "DateAdd":
+					return GetExtension<T>(() => new Sql.ExtensionAttribute(providerName, "") { ServerSideOnly = false, PreferServerSide = false, BuilderType = typeof(DateAddBuilderDB2i) });
+				case "DatePart":
+					return GetExtension<T>(() => new Sql.ExtensionAttribute(providerName, "") { ServerSideOnly = false, PreferServerSide = false, BuilderType = typeof(DatePartBuilderDB2i) });
+				case "DateDiff":
+					return GetExtension<T>(() => new Sql.ExtensionAttribute(providerName, "") { BuilderType = typeof(DateDiffBuilderDB2i) });
+				case "TinyInt":
+					return GetExpression<T>(() => new Sql.ExpressionAttribute(providerName, "SmallInt") { ServerSideOnly = true });
+				case "Substring":
+					return GetFunction<T>(() => new Sql.FunctionAttribute(providerName, "Substr") { PreferServerSide = true });
+				case "Atan2":
+					return GetFunction<T>(() => new Sql.FunctionAttribute(providerName, "Atan2", 1, 0));
+				case "Log" when memberInfo is MethodInfo logMethod:
+					if (logMethod.GetParameters().Length == 1)
+						return GetFunction<T>(() => new Sql.FunctionAttribute(providerName, "Ln"));
+					break;
+				case "Log10":
+					return GetFunction<T>(() => new Sql.FunctionAttribute(providerName, "Log10"));
+				case "DefaultNChar":
+				case "DefaultNVarChar":
+				case "NChar":
+				case "NVarChar":
+					return GetFunction<T>(() => new Sql.FunctionAttribute(providerName, "Graphic") { ServerSideOnly = true });
+				case "Replicate":
+					return GetFunction<T>(() => new Sql.FunctionAttribute(providerName, "Repeat"));
+				case "StringAggregate" when memberInfo is MethodInfo stringAggregateMethod:
+					var firstParameter = stringAggregateMethod.GetParameters().Any(x => x.Name == "selector") ? "selector" : "source";
+					return GetExtension<T>(() => new Sql.ExtensionAttribute(providerName, "LISTAGG({" + firstParameter + "}, {separator}){_}{aggregation_ordering?}") { IsAggregate = true, ChainPrecedence = 10 });
+			}
+
+			return EmptyArray<T>.Value;
 		}
 
 		private T[] GetExpression<T>(Func<Sql.ExpressionAttribute> build)
@@ -93,7 +128,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			if (typeof(T) == typeof(Sql.ExpressionAttribute))
 				return new[] { (T)(object)build() };
 			else
-				return new T[] { };
+				return EmptyArray<T>.Value;
 		}
 
 		private T[] GetExtension<T>(Func<Sql.ExpressionAttribute> build)
@@ -101,7 +136,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			if (typeof(T) == typeof(Sql.ExpressionAttribute) || typeof(T) == typeof(Sql.ExtensionAttribute))
 				return new[] { (T)(object)build() };
 			else
-				return new T[] { };
+				return EmptyArray<T>.Value;
 		}
 
 		private T[] GetFunction<T>(Func<Sql.ExpressionAttribute> build)
@@ -109,7 +144,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			if (typeof(T) == typeof(Sql.ExpressionAttribute) || typeof(T) == typeof(Sql.FunctionAttribute))
 				return new[] { (T)(object)build() };
 			else
-				return new T[] { };
+				return EmptyArray<T>.Value;
 		}
 
 		public MemberInfo[] GetDynamicColumns(Type type)

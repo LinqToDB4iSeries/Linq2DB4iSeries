@@ -7,11 +7,11 @@
 	-->
 	<ItemGroup>
 		<!--as stated in issue 1 -  packages in this item group shouldn't be duplicated in other groups-->
-		<PackageVersion Include="linq2db"												Version="4.0.1"         />
-		<PackageVersion Include="linq2db.Tools"											Version="4.0.1"         />
-		<PackageVersion Include="linq2db.AspNet"										Version="4.0.1"         />
-		<PackageVersion Include="linq2db.Remote.Grpc"									Version="4.0.1"         />
-		<PackageVersion Include="linq2db.Remote.Wcf"									Version="4.0.1"         />
+		<PackageVersion Include="linq2db"												Version="4.2.0"         />
+		<PackageVersion Include="linq2db.Tools"											Version="4.2.0"         />
+		<PackageVersion Include="linq2db.AspNet"										Version="4.2.0"         />
+		<PackageVersion Include="linq2db.Remote.Grpc"									Version="4.2.0"         />
+		<PackageVersion Include="linq2db.Remote.Wcf"									Version="4.2.0"         />
 		<PackageVersion Include="JetBrains.Annotations"									Version="2022.1.0"      />
 		<!--generic packages for source projects-->
 		<PackageVersion Include="System.Data.DataSetExtensions"                         Version="4.5.0"         />
@@ -51,7 +51,7 @@
 		<!--tests support-->
 		<PackageVersion Include="NUnit"                                                 Version="3.13.3"        />
 		<PackageVersion Include="NUnit3TestAdapter"                                     Version="4.2.1"         />
-		<PackageVersion Include="Microsoft.NET.Test.Sdk"                                Version="17.2.0"        />
+		<PackageVersion Include="Microsoft.NET.Test.Sdk"                                Version="17.3.1"        />
 		<PackageVersion Include="FluentAssertions"                                      Version="6.7.0"         />
 		<PackageVersion Include="BenchmarkDotNet"                                       Version="0.13.1"        />
 		<PackageVersion Include="JetBrains.Profiler.Api"                                Version="1.1.8"         />
