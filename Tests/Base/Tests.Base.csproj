@@ -10,7 +10,6 @@
 		<ProjectReference Include="..\Model\Tests.Model.csproj" />
 
 		<PackageReference Include="NUnit" />
-		<PackageReference Include="NUnit3TestAdapter" />
 		<PackageReference Include="MiniProfiler.Shared" />
 	</ItemGroup>
 

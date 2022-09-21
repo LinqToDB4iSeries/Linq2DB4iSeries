@@ -3,6 +3,7 @@ using System.Text;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
+	using LinqToDB.Common;
 	using Mapping;
 	using SqlQuery;
 	using System.Data.Linq;

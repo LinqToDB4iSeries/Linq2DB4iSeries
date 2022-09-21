@@ -111,6 +111,8 @@ namespace Tests
 
 				//Access client throws a different exception so it is excluded
 				case ("DataContextTests", "ProviderConnectionStringConstructorTest2"):
+				case ("TraceTests", "TraceInfoErrorsAreReportedForInvalidConnectionString"):
+				case ("TraceTests", "TraceInfoErrorsAreReportedForInvalidConnectionStringAsync"):
 					return contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_AccessClient));
 
 				//OleDb doesn't support inline comments so tags are not supported (fails with PREPARE STATEMENT error)

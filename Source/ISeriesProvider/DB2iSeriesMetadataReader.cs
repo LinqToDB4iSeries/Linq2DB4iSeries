@@ -5,6 +5,7 @@ using LinqToDB.Metadata;
 namespace LinqToDB.DataProvider.DB2iSeries
 {
 	using SqlQuery;
+	using System.CodeDom;
 	using System.Collections.Concurrent;
 	using System.Collections.Generic;
 	using System.Linq;
@@ -41,9 +42,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				}
 
 				return attributes as T[];
-				
-				//return expressionAttributecache.GetOrAdd(new KeyValuePair<MemberInfo, Type>(memberInfo, typeof(T)), _ => GetExpressionAttributes<T>(type, memberInfo, inherit).Cast<Sql.ExpressionAttribute>().ToArray())
-				//	.Cast<T>().ToArray();
 			}
 
 			return EmptyArray<T>.Value;
@@ -57,31 +55,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					return GetExpression<T>(() => new Sql.ExpressionAttribute(providerName, "Lpad({0}, {1}, '0')"));
 				case "CharIndex":
 					return GetFunction<T>(() => new Sql.FunctionAttribute("Locate"));
-
-				case "Trim":
-					if (memberInfo.ToString().EndsWith("(Char[])", StringComparison.InvariantCultureIgnoreCase))
-					{
-						return GetExpression<T>(() => new Sql.ExpressionAttribute(providerName, "Strip({0}, B, {1})"));
-					}
-					break;
 				case "TrimLeft":
-				case "TrimStart":
-					//if (memberInfo.ToString().EndsWith("(Char[])", StringComparison.InvariantCultureIgnoreCase) ||
-						//memberInfo.ToString().EndsWith("System.Nullable`1[System.Char])", StringComparison.InvariantCultureIgnoreCase))
-					{
-						return typeof(T) == typeof(Sql.ExtensionAttribute) ?
-							GetExtension<T>(() => new Sql.ExtensionAttribute(providerName, "Strip({0}, L, {1})")) :
-							GetExpression<T>(() => new Sql.ExpressionAttribute(providerName, "Strip({0}, L, {1})"));
-					}
-					break;
 				case "TrimRight":
-				case "TrimEnd":
-					if (memberInfo.ToString().EndsWith("(Char[])", StringComparison.InvariantCultureIgnoreCase) ||
-						memberInfo.ToString().EndsWith("System.Nullable`1[System.Char])", StringComparison.InvariantCultureIgnoreCase))
-					{
-						return GetExpression<T>(() => new Sql.ExpressionAttribute(providerName, "Strip({0}, T, {1})"));
-					}
-					break;
+					return GetExtension<T>(() => new Sql.ExtensionAttribute(providerName, "") { ServerSideOnly = false, PreferServerSide = false, BuilderType = typeof(TrimBuilderDB2i) });
 				case "Truncate":
 					if (type == typeof(LinqExtensions)) //Do not handle TRUNCATE TABLE statement
 						break;
@@ -118,6 +94,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case "StringAggregate" when memberInfo is MethodInfo stringAggregateMethod:
 					var firstParameter = stringAggregateMethod.GetParameters().Any(x => x.Name == "selector") ? "selector" : "source";
 					return GetExtension<T>(() => new Sql.ExtensionAttribute(providerName, "LISTAGG({" + firstParameter + "}, {separator}){_}{aggregation_ordering?}") { IsAggregate = true, ChainPrecedence = 10 });
+				//case "Decimal":
+				//	break;
 			}
 
 			return EmptyArray<T>.Value;
@@ -255,6 +233,54 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 
 			builder.ResultExpression = resultExpr;
+		}
+	}
+
+	public class TrimBuilderDB2i : Sql.IExtensionCallBuilder
+	{
+		public void Build(Sql.ISqExtensionBuilder builder)
+		{
+			var text = builder.GetExpression(0);
+			var charExpression = builder.GetExpression(1);
+
+			char[] chars;
+			if (builder.Member is not MethodInfo methodInfo)
+				throw new InvalidOperationException("Member is not a trim method.");
+
+			var charParameter = methodInfo.GetParameters().Last();
+
+			if (charParameter.ParameterType == typeof(char[]))
+			{
+				chars = builder.GetValue<char[]>(1).Distinct().ToArray();
+			}
+			else if (charParameter.ParameterType == typeof(char?[]))
+			{
+				chars = builder.GetValue<char?[]>(1).Where(x => x.HasValue).Select(x => x.Value).Distinct().ToArray();
+			}
+			else if (charParameter.ParameterType == typeof(char))
+			{
+				chars = new[] { builder.GetValue<char>(1) };
+			}
+			else if (charParameter.ParameterType == typeof(char?))
+			{
+				chars = new[] { builder.GetValue<char?>(1) ?? ' ' };
+			}
+			else
+				throw new InvalidOperationException("Argument is not char[] or char?[]");
+
+			var direction = builder.Member.Name switch
+			{
+				nameof(Linq.Expressions.TrimLeft) => 'L',
+				nameof(Linq.Expressions.TrimRight) => 'T',
+				_ => 'B',
+			};
+
+			var sqlExpression =
+				chars.Length == 0 ?
+				$"Strip({{0}}, {direction})" :
+				chars.Skip(1).Aggregate($"Strip({{0}}, {direction}, '{chars[0]}')", (acc, cur) => $"Strip({acc}, {direction} , '{cur}')");
+
+			builder.ResultExpression = new SqlExpression(sqlExpression, text);
 		}
 	}
 }
