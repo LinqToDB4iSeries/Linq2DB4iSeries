@@ -53,8 +53,4 @@
 		<PackageReference Include="Microsoft.AspNetCore.OData" />
 	</ItemGroup>
 
-	<ItemGroup Condition="'$(Language)'=='C#'">
-		<Compile Include="../Shared/ThrowHelper.cs" LinkBase="Compatibility" />
-	</ItemGroup>
-
 </Project>

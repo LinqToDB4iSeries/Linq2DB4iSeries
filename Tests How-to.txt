@@ -9,12 +9,16 @@
 
 The test have been set up in a way that tests from upstream can be simply copied over. You have to copy only the source code files and not the project files as follows:
 
-- Copy all code from Tests\Base except CustomizationSupport folder
-- Copy all code from Tests\Linq. Undo customization changes to the TestsInitialization.cs (partial class and InitCustom() invocation)
-- Copy all code from Tests\FSharp and Tests\VisualBasic
-- Coopy all code from Source\Shared into Tests\Shared
+- Copy all code (e.g. exlude \bin, \obj and .csproj file) from :
+	Tests\Base (except CustomizationSupport folder)
+	Tests\Linq (apply customization changes to the TestsInitialization.cs make class partial and InitCustom() invocation in Initialize())
+	Tests\FSharp 
+	Tests\VisualBasic
+	Tests\Model
+
 - Add or update dependencies in /Build/*.props files as neeeded
 - Tweaks to test SQL setup files in Data\Create Scripts\ might be needed
+
 
 This project was setup to run all DB2 tests. But sometimes tests that target DB2 are not valid for DB2i. All customization is performed in Tests\Base\CustomizationSupport\Db2iInterceptor.cs. You can intercept any test method there and return any valid DB2i providers for that specific test. If no providers are returned the test is ommited altogether. An DB2i specfic tests should be placed in the Tests\Linq\Custom folder.
 
