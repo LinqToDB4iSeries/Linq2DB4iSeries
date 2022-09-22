@@ -3,6 +3,7 @@
 namespace LinqToDB.DataProvider.DB2iSeries
 {
 	using LinqToDB.Extensions;
+	using LinqToDB.Mapping;
 	using LinqToDB.SqlQuery;
 	using SqlProvider;
 	using System.Collections.Generic;
@@ -40,8 +41,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				_ => statement,
 			};
 		}
-
-		public override SqlStatement Finalize(SqlStatement statement)
+		
+		public override SqlStatement Finalize(MappingSchema mappingSchema, SqlStatement statement)
 		{
 			static long getAbsoluteHashCode(object o) 
 				=> (long)o.GetHashCode() + (long)int.MaxValue;
@@ -80,7 +81,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			statement.VisitAll(sanitizeNames);
 			
-			return base.Finalize(statement);
+			return base.Finalize(mappingSchema, statement);
 		}
 
 		public override ISqlExpression ConvertExpressionImpl(ISqlExpression expression, ConvertVisitor<RunOptimizationContext> visitor)
@@ -110,6 +111,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					case "EXISTS":
 						return AlternativeExists(func);
 					case "Convert":
+						//Conversion to bool
 						if (func.SystemType.ToUnderlying() == typeof(bool))
 						{
 							var ex = AlternativeConvertToBoolean(func, 1);
@@ -118,6 +120,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 								return ex;
 							}
 						}
+						//Conversion when target type is expressed as SqlDataType
 						if (func.Parameters[0] is SqlDataType sqlType)
 						{
 							var type = sqlType.Type;
@@ -142,6 +145,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 								return new SqlFunction(func.SystemType, type.DataType.ToString(), func.Parameters[1]);
 							}
 						}
+						//Conversion when target type is expressed as pseudofunction e.g. Decimal(10)
 						if (func.Parameters[0] is SqlFunction f)
 						{
 							//Conversion is setup with the datatype as the left operand. Character datatypes are presented as 
@@ -155,8 +159,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 							return new SqlFunction(func.SystemType, f.Name, func.Parameters[1], f.Parameters[0], f.Parameters[1]);
 						}
-						var e = (SqlExpression)func.Parameters[0];
-						return new SqlFunction(func.SystemType, e.Expr, func.Parameters[1]);
+						//Conversion when target type is expressed as string
+						if (func.Parameters[0] is SqlExpression e)
+							return new SqlFunction(func.SystemType, e.Expr, func.Parameters[1]);
+						break;
+					//Transform all datatype conversions to datatype functions
 					case "Millisecond":
 						return Div(new SqlFunction(func.SystemType, "Microsecond", func.Parameters), 1000);
 					case "SmallDateTime":
@@ -188,6 +195,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					case "NChar":
 					case "NVarChar":
 						return new SqlFunction(func.SystemType, "Graphic", func.Parameters);
+					//SqlValue parameter check to distinguish between Decimal datatype pseudofunction and actual conversion function
+					case "Decimal" when func.Parameters.Length == 1 && func.Parameters[0] is not SqlValue:
+						return new SqlFunction(func.SystemType, "Decimal", func.Parameters[0], new SqlValue(DB2iSeriesDbTypes.DbDecimal.DefaultPrecision), new SqlValue(DB2iSeriesDbTypes.DbDecimal.DefaultScale));
 				}
 			}
 			// Transform SqlSearchCondition

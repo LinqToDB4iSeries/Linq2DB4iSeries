@@ -11,12 +11,13 @@ namespace Tests.Linq
 	using LinqToDB.Configuration;
 	using LinqToDB.Data;
 	using Model;
+	using Tools;
 
 	[TestFixture]
 	public class DataContextTests : TestBase
 	{
 		[Test]
-		public void TestContext([IncludeDataSources(TestProvName.AllSqlServer2008Plus, TestProvName.AllSapHana)] string context)
+		public void TestContext([IncludeDataSources(TestProvName.AllSqlServer2008Plus, TestProvName.AllSapHana, TestProvName.AllClickHouse)] string context)
 		{
 			using (var ctx = new DataContext(context))
 			{
@@ -44,7 +45,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void TestContextToString([IncludeDataSources(TestProvName.AllSqlServer2008Plus, TestProvName.AllSapHana)] string context)
+		public void TestContextToString([IncludeDataSources(TestProvName.AllSqlServer2008Plus, TestProvName.AllSapHana, TestProvName.AllClickHouse)] string context)
 		{
 			using (var ctx = new DataContext(context))
 			{
@@ -59,7 +60,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void Issue210([IncludeDataSources(TestProvName.AllSqlServer2008Plus)] string context)
+		public void Issue210([IncludeDataSources(TestProvName.AllSqlServer2008Plus, TestProvName.AllClickHouse)] string context)
 		{
 			using (var ctx = new DataContext(context))
 			{
@@ -74,7 +75,7 @@ namespace Tests.Linq
 		{
 			using (var db = (TestDataConnection)GetDataContext(context))
 			{
-				Assert.Throws(typeof(LinqToDBException), () => new DataContext("BAD", db.ConnectionString!));
+				Assert.Throws<LinqToDBException>(() => new DataContext("BAD", db.ConnectionString!));
 			}
 
 		}
@@ -84,7 +85,7 @@ namespace Tests.Linq
 			using (var db = (TestDataConnection)GetDataContext(context))
 			using (var db1 = new DataContext(db.DataProvider.Name, "BAD"))
 			{
-				Assert.Throws(typeof(ArgumentException), () => db1.GetTable<Child>().ToList());
+				NUnitAssert.ThrowsAny(() => db1.GetTable<Child>().ToList(), typeof(ArgumentException), typeof(InvalidOperationException));
 			}
 		}
 
@@ -106,7 +107,7 @@ namespace Tests.Linq
 
 		// sdanyliv: Disabled other providers for performance purposes
 		[Test]
-		public void LoopTest([IncludeDataSources(false, TestProvName.AllSqlServer)] string context)
+		public void LoopTest([IncludeDataSources(false, TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = new DataContext(context))
 				for (int i = 0; i < 1000; i++)
@@ -117,7 +118,7 @@ namespace Tests.Linq
 
 		// sdanyliv: Disabled other providers for performance purposes
 		[Test]
-		public async Task LoopTestAsync([IncludeDataSources(false, TestProvName.AllSqlServer)] string context)
+		public async Task LoopTestAsync([IncludeDataSources(false, TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = new DataContext(context))
 				for (int i = 0; i < 1000; i++)
@@ -128,7 +129,7 @@ namespace Tests.Linq
 
 		// sdanyliv: Disabled other providers for performance purposes
 		[Test]
-		public void LoopTestMultipleContexts([IncludeDataSources(false, TestProvName.AllSqlServer)] string context)
+		public void LoopTestMultipleContexts([IncludeDataSources(false, TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
 			for (int i = 0; i < 1000; i++)
 			{
@@ -141,7 +142,7 @@ namespace Tests.Linq
 
 		// sdanyliv: Disabled other providers for performance purposes
 		[Test]
-		public async Task LoopTestMultipleContextsAsync([IncludeDataSources(false, TestProvName.AllSqlServer)] string context)
+		public async Task LoopTestMultipleContextsAsync([IncludeDataSources(false, TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
 			for (int i = 0; i < 1000; i++)
 			{
@@ -168,7 +169,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void CommandTimeoutTests([IncludeDataSources(false, TestProvName.AllSqlServer)] string context)
+		public void CommandTimeoutTests([IncludeDataSources(false, TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = new TestDataContext(context))
 			{

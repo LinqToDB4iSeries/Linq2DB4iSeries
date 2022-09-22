@@ -472,8 +472,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				} 
 			}
 
-			//var parameterName = name.StartsWith(DB2iSeriesSqlBuilder.NamedQueryParameterMarkerPrefix) ? name : DB2iSeriesSqlBuilder.NamedQueryParameterMarkerPrefix + name;
-
 			base.SetParameter(dataConnection, parameter, name, dataType, value);
 		}
 

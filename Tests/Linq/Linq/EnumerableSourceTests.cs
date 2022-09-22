@@ -15,8 +15,10 @@ namespace Tests.Linq
 	{
 		[Test]
 		public void ApplyJoinArray(
-			[IncludeDataSources(TestProvName.AllSqlServer2008Plus, TestProvName.AllPostgreSQL93Plus,
-				TestProvName.AllOracle12)]
+			[IncludeDataSources(
+				TestProvName.AllSqlServer2008Plus,
+				TestProvName.AllPostgreSQL93Plus,
+				TestProvName.AllOracle12Plus)]
 			string context, [Values(1, 2)] int iteration)
 		{
 			var doe = "Doe";
@@ -236,7 +238,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void InnerJoinArray6Postgres([IncludeDataSources(TestProvName.AllPostgreSQL9)] string context, [Values(1, 2)] int iteration)
+		public void InnerJoinArray6Postgres([IncludeDataSources(TestProvName.AllPostgreSQL9, TestProvName.AllClickHouse)] string context, [Values(1, 2)] int iteration)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -264,8 +266,10 @@ namespace Tests.Linq
 
 		[Test]
 		public void ApplyJoinAnonymousClassArray(
-			[IncludeDataSources(TestProvName.AllSqlServer2008Plus, TestProvName.AllPostgreSQL93Plus,
-				TestProvName.AllOracle12)]
+			[IncludeDataSources(
+				TestProvName.AllSqlServer2008Plus,
+				TestProvName.AllPostgreSQL93Plus,
+				TestProvName.AllOracle12Plus)]
 			string context, [Values(1, 2)] int iteration)
 		{
 			using (var db = GetDataContext(context))
@@ -300,9 +304,50 @@ namespace Tests.Linq
 		}
 
 		[Test]
+		public void ApplyJoinAnonymousClassArray2(
+			[IncludeDataSources(
+				TestProvName.AllSqlServer2008Plus,
+				TestProvName.AllPostgreSQL93Plus,
+				TestProvName.AllOracle12Plus)]
+			string context, [Values(1, 2)] int iteration)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var cacheMiss = Query<Person>.CacheMissCount;
+
+				var q =
+					from p in db.Person
+					from n in (new[]
+					{
+						new { ID = 1, Name = "Janet", Sub = p.LastName },
+						new { ID = 1, Name = "Doe", Sub   = p.LastName },
+					}).Where(n => p.LastName == n.Name)
+					select n.Name;
+
+				var result = q.ToList();
+
+				if (iteration > 1)
+					Query<Person>.CacheMissCount.Should().Be(cacheMiss);
+
+				var expected =
+					from p in Person
+					from n in (new[]
+					{
+						new { ID = 1, Name = "Janet", Sub = p.LastName },
+						new { ID = 1, Name = "Doe", Sub   = p.LastName },
+					}).Where(n => p.LastName == n.Name)
+					select n.Name;
+
+				AreEqual(expected, result);
+			}
+		}
+
+		[Test]
 		public void ApplyJoinClassArray(
-			[IncludeDataSources(TestProvName.AllSqlServer2008Plus, TestProvName.AllPostgreSQL93Plus,
-				TestProvName.AllOracle12)]
+			[IncludeDataSources(
+				TestProvName.AllSqlServer2008Plus,
+				TestProvName.AllPostgreSQL93Plus,
+				TestProvName.AllOracle12Plus)]
 			string context, [Values(1, 2)] int iteration)
 		{
 			using (var db = GetDataContext(context))
@@ -512,7 +557,7 @@ namespace Tests.Linq
 					select n;
 
 
-				var result = query.ToArray();
+				var result = query.OrderBy(x => x.ID).ToArray();
 
 				result.Should().HaveCount(2);
 
@@ -587,8 +632,12 @@ namespace Tests.Linq
 					where t == null
 					select r;
 
-				table.Insert(queryToInsert).Should().Be(2);
-				table.Insert(queryToInsert).Should().Be(0);
+				var cnt = table.Insert(queryToInsert);
+				if (!context.IsAnyOf(TestProvName.AllClickHouse))
+					Assert.AreEqual(2, cnt);
+				cnt = table.Insert(queryToInsert);
+				if (!context.IsAnyOf(TestProvName.AllClickHouse))
+					Assert.AreEqual(0, cnt);
 
 				if (iteration > 1)
 					Query<TableToInsert>.CacheMissCount.Should().Be(cacheMiss);
@@ -599,6 +648,7 @@ namespace Tests.Linq
 		public void UpdateTest(
 			[DataSources(
 				TestProvName.AllAccess,
+				TestProvName.AllClickHouse,
 				ProviderName.DB2,
 				TestProvName.AllSybase,
 				ProviderName.SqlCe,
@@ -639,7 +689,7 @@ namespace Tests.Linq
 
 		[Test]
 		public void DeleteTest(
-			[DataSources(TestProvName.AllAccess, TestProvName.AllSybase, TestProvName.AllSybase, TestProvName.AllInformix)] string context,
+			[DataSources(TestProvName.AllAccess, TestProvName.AllSybase, TestProvName.AllSybase, TestProvName.AllInformix, TestProvName.AllClickHouse)] string context,
 			[Values(1, 2)] int iteration)
 		{
 			var records = new TableToInsert[]
@@ -698,7 +748,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void EmptyValues([DataSources(TestProvName.AllAccess, ProviderName.DB2, TestProvName.AllSybase, TestProvName.AllSybase, TestProvName.AllInformix)] string context, [Values(1, 2)] int iteration)
+		public void EmptyValues([DataSources(TestProvName.AllClickHouse, TestProvName.AllAccess, ProviderName.DB2, TestProvName.AllSybase, TestProvName.AllSybase, TestProvName.AllInformix)] string context, [Values(1, 2)] int iteration)
 		{
 			var records = Array.Empty<TableToInsert>();
 
@@ -721,7 +771,7 @@ namespace Tests.Linq
 
 
 		[Test]
-		public void SubQuery([DataSources(TestProvName.AllAccess, ProviderName.DB2, TestProvName.AllSybase, TestProvName.AllSybase, TestProvName.AllInformix)] string context, [Values(1, 2)] int iteration)
+		public void SubQuery([DataSources(TestProvName.AllClickHouse, TestProvName.AllAccess, ProviderName.DB2, TestProvName.AllSybase, TestProvName.AllSybase, TestProvName.AllInformix)] string context, [Values(1, 2)] int iteration)
 		{
 			var records = new TableToInsert[]
 			{
@@ -749,7 +799,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void EmptySubQuery([DataSources(TestProvName.AllAccess, ProviderName.DB2, TestProvName.AllSybase, TestProvName.AllSybase, TestProvName.AllInformix)] string context, [Values(1, 2)] int iteration)
+		public void EmptySubQuery([DataSources(TestProvName.AllClickHouse, TestProvName.AllAccess, ProviderName.DB2, TestProvName.AllSybase, TestProvName.AllSybase, TestProvName.AllInformix)] string context, [Values(1, 2)] int iteration)
 		{
 			var records = Array.Empty<TableToInsert>();
 
@@ -773,9 +823,14 @@ namespace Tests.Linq
 
 		[Test]
 		public void StringSubQuery(
-			[DataSources(TestProvName.AllAccess, ProviderName.DB2, TestProvName.AllSybase,
+			[DataSources(
+				TestProvName.AllAccess,
+				TestProvName.AllClickHouse,
+				ProviderName.DB2,
+				TestProvName.AllSybase,
 				ProviderName.SQLiteMS,
-				TestProvName.AllSybase, TestProvName.AllInformix)]
+				TestProvName.AllSybase,
+				TestProvName.AllInformix)]
 			string context, [Values(1, 2)] int iteration)
 		{
 			string searchStr = "john";
@@ -813,7 +868,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void StaticEnumerable([DataSources(TestProvName.AllAccess, ProviderName.DB2, TestProvName.AllSybase, TestProvName.AllSybase, TestProvName.AllInformix)] string context)
+		public void StaticEnumerable([DataSources(TestProvName.AllClickHouse, TestProvName.AllAccess, ProviderName.DB2, TestProvName.AllSybase, TestProvName.AllSybase, TestProvName.AllInformix)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{

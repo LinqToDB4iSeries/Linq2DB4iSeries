@@ -19,7 +19,7 @@ namespace JetBrains.Annotations
 	[AttributeUsage(AttributeTargets.Parameter)]
 	public sealed class NoEnumerationAttribute : Attribute
 	{
-		
+
 	}
 }
 
@@ -33,6 +33,11 @@ namespace System.Diagnostics.CodeAnalysis
 
 	[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, Inherited = false)]
 	public sealed class AllowNullAttribute : Attribute
+	{
+	}
+
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    public sealed class DoesNotReturnAttribute : Attribute
 	{
 	}
 

@@ -225,7 +225,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				DataType.UInt64 =>
 					GetDbDataType(dbTypeInfo, systemType, null, 29, 0, forceDefaultAttributes, supportsNCharTypes),
 
-				//When defaults request get a the default Decimal type, 
+				//When defaults requested get the default Decimal type, 
 				//else set defaults to Decimal(60,30) to fit any value
 				DataType.Decimal =>
 					forceDefaultAttributes ?
