@@ -7,11 +7,11 @@
 
 - How to maintain the tests from upstream
 
-The test have been set up in a way that tests from upstream can be simply copied over. You have to copy only the source code files and not the project files as follows:
+The tests have been set up in a way that tests from upstream can be simply copied over. You have to copy only the source code files and not the project files as follows:
 
 - Copy all code (e.g. exlude \bin, \obj and .csproj file) from :
 	Tests\Base (except CustomizationSupport folder)
-	Tests\Linq (apply customization changes to the TestsInitialization.cs make class partial and InitCustom() invocation in Initialize())
+	Tests\Linq
 	Tests\FSharp 
 	Tests\VisualBasic
 	Tests\Model

@@ -12,6 +12,7 @@
 			public const string SupportsNCharTypes = "SupportsNCharTypes";
 			public const string SupportsDropTableIfExists = "SupportsDropTableIfExists";
 			public const string SupportsArbitraryTimeStampPrecision = "SupportsArbitraryTimeStampPrecision";
+			public const string SupportsTrimCharacters = "SupportsTrimCharacters";
 		}
 
 		public static class DbTypes

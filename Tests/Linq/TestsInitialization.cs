@@ -11,7 +11,7 @@ using Tests;
 /// 2. This class implements test assembly setup/teardown methods.
 /// </summary>
 [SetUpFixture]
-public partial class TestsInitialization
+public class TestsInitialization
 {
 	[OneTimeSetUp]
 	public void TestAssemblySetup()
@@ -55,7 +55,9 @@ public partial class TestsInitialization
 
 		// uncomment to run FEC for all tests and comment reset line in TestBase.OnAfterTest
 		//LinqToDB.Common.Compilation.SetExpressionCompiler(_ => FastExpressionCompiler.ExpressionCompiler.CompileFast(_, true));
-		InitCustom();
+
+		//custom initialization logic
+		CustomizationSupport.Init();
 	}
 
 	// workaround for

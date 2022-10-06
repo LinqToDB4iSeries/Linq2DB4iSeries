@@ -1,6 +1,5 @@
 ﻿namespace LinqToDB.DataProvider.DB2iSeries
 {
-	using LinqToDB.Tools;
 	using SqlProvider;
 
 	public class DB2iSeriesSqlProviderFlags
@@ -12,7 +11,8 @@
 			bool supportsMergeStatement,
 			bool supportsNCharTypes,
 			bool supportsDropTableIfExists,
-			bool supportsArbitraryTimeStampPrecision)
+			bool supportsArbitraryTimeStampPrecision,
+			bool suppotsTrimCharacters)
 		{
 			SupportsOffsetClause = supportsOffsetClause;
 			SupportsTruncateTable = supportsTruncateTable;
@@ -21,6 +21,7 @@
 			SupportsNCharTypes = supportsNCharTypes;
 			SupportsDropTableIfExists = supportsDropTableIfExists;
 			SupportsArbitraryTimeStampPrecision = supportsArbitraryTimeStampPrecision;
+			SupportsTrimCharacters = suppotsTrimCharacters;
 		}
 
 		public DB2iSeriesSqlProviderFlags(SqlProviderFlags sqlProviderFlags)
@@ -31,7 +32,8 @@
 				 supportsMergeStatement: sqlProviderFlags.CustomFlags.Contains(Constants.ProviderFlags.SupportsMergeStatement),
 				 supportsNCharTypes: sqlProviderFlags.CustomFlags.Contains(Constants.ProviderFlags.SupportsNCharTypes),
 				 supportsDropTableIfExists: sqlProviderFlags.CustomFlags.Contains(Constants.ProviderFlags.SupportsDropTableIfExists),
-				 supportsArbitraryTimeStampPrecision: sqlProviderFlags.CustomFlags.Contains(Constants.ProviderFlags.SupportsArbitraryTimeStampPrecision))
+				 supportsArbitraryTimeStampPrecision: sqlProviderFlags.CustomFlags.Contains(Constants.ProviderFlags.SupportsArbitraryTimeStampPrecision),
+				 suppotsTrimCharacters: sqlProviderFlags.CustomFlags.Contains(Constants.ProviderFlags.SupportsTrimCharacters))
 		{
 
 		}
@@ -44,7 +46,8 @@
 				 supportsMergeStatement: options.SupportsMergeStatement,
 				 supportsNCharTypes: options.SupportsNCharTypes,
 				 supportsDropTableIfExists: options.SupportsDropIfExists,
-				 supportsArbitraryTimeStampPrecision: options.SupportsArbitraryTimeStampPrecision)
+				 supportsArbitraryTimeStampPrecision: options.SupportsArbitraryTimeStampPrecision,
+				 suppotsTrimCharacters: options.SupportsTrimCharacters)
 		{
 
 		}
@@ -59,7 +62,8 @@
 				 supportsMergeStatement: version >= DB2iSeriesVersion.V7_1,
 				 supportsNCharTypes: version >= DB2iSeriesVersion.V7_1,
 				 supportsDropTableIfExists: version >= DB2iSeriesVersion.V7_4,
-				 supportsArbitraryTimeStampPrecision: version >= DB2iSeriesVersion.V7_2
+				 supportsArbitraryTimeStampPrecision: version >= DB2iSeriesVersion.V7_2,
+				 suppotsTrimCharacters: version >= DB2iSeriesVersion.V7_2
 				 )
 		{
 
@@ -72,6 +76,7 @@
 		public bool SupportsNCharTypes { get; }
 		public bool SupportsDropTableIfExists { get; }
 		public bool SupportsArbitraryTimeStampPrecision { get; }
+		public bool SupportsTrimCharacters { get; }
 
 		public void SetCustomFlags(SqlProviderFlags sqlProviderFlags)
 		{
@@ -82,6 +87,7 @@
 			sqlProviderFlags.SetFlag(Constants.ProviderFlags.SupportsNCharTypes, SupportsNCharTypes);
 			sqlProviderFlags.SetFlag(Constants.ProviderFlags.SupportsDropTableIfExists, SupportsDropTableIfExists);
 			sqlProviderFlags.SetFlag(Constants.ProviderFlags.SupportsArbitraryTimeStampPrecision, SupportsArbitraryTimeStampPrecision);
+			sqlProviderFlags.SetFlag(Constants.ProviderFlags.SupportsTrimCharacters, SupportsTrimCharacters);
 		}
 	}
 }

@@ -4,6 +4,8 @@ using LinqToDB.Metadata;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
+	using LinqToDB.DataProvider.DB2;
+	using LinqToDB.SqlProvider;
 	using SqlQuery;
 	using System.CodeDom;
 	using System.Collections.Concurrent;
@@ -94,8 +96,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case "StringAggregate" when memberInfo is MethodInfo stringAggregateMethod:
 					var firstParameter = stringAggregateMethod.GetParameters().Any(x => x.Name == "selector") ? "selector" : "source";
 					return GetExtension<T>(() => new Sql.ExtensionAttribute(providerName, "LISTAGG({" + firstParameter + "}, {separator}){_}{aggregation_ordering?}") { IsAggregate = true, ChainPrecedence = 10 });
-				//case "Decimal":
-				//	break;
+					//case "Decimal":
+					//	break;
 			}
 
 			return EmptyArray<T>.Value;
@@ -240,7 +242,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	{
 		public void Build(Sql.ISqExtensionBuilder builder)
 		{
-			var text = builder.GetExpression(0);
+			var stringExpression = builder.GetExpression(0);
 			var charExpression = builder.GetExpression(1);
 
 			char[] chars;
@@ -270,17 +272,29 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			var direction = builder.Member.Name switch
 			{
-				nameof(Linq.Expressions.TrimLeft) => 'L',
-				nameof(Linq.Expressions.TrimRight) => 'T',
-				_ => 'B',
+				nameof(Linq.Expressions.TrimLeft) => "LTRIM",
+				nameof(Linq.Expressions.TrimRight) => "RTRIM",
+				_ => "TRIM",
 			};
 
-			var sqlExpression =
-				chars.Length == 0 ?
-				$"Strip({{0}}, {direction})" :
-				chars.Skip(1).Aggregate($"Strip({{0}}, {direction}, '{chars[0]}')", (acc, cur) => $"Strip({acc}, {direction} , '{cur}')");
+			if (chars == null || chars.Length == 0)
+			{
+				builder.ResultExpression = new SqlFunction(
+					typeof(string),
+					direction,
+					stringExpression);
+				return;
+			}
 
-			builder.ResultExpression = new SqlExpression(sqlExpression, text);
+			if (!builder.DataContext.SqlProviderFlags.CustomFlags.Contains(Constants.ProviderFlags.SupportsTrimCharacters))
+				throw new LinqToDBException("TrimLeft/TrimRight with multiple characters not supported on i series version 7.1");
+
+			builder.ResultExpression = new SqlExpression(
+				typeof(string),
+				direction + "({0}, {1})",
+				Precedence.Primary,
+				stringExpression,
+				new SqlExpression(typeof(string), "{0}", new SqlValue(new string(chars))));
 		}
 	}
 }

@@ -26,6 +26,7 @@
 			SupportsNCharTypes = version >= DB2iSeriesVersion.V7_1;
 			SupportsDropIfExists = version >= DB2iSeriesVersion.V7_4;
 			SupportsArbitraryTimeStampPrecision = version >= DB2iSeriesVersion.V7_2;
+			SupportsTrimCharacters = version >= DB2iSeriesVersion.V7_2;
 		}
 
 		public DB2iSeriesProviderOptions()
@@ -46,6 +47,7 @@
 		public bool SupportsNCharTypes { get; set; }
 		public bool SupportsDropIfExists { get; set; }
 		public bool SupportsArbitraryTimeStampPrecision { get; set; }
+		public bool SupportsTrimCharacters { get; set; }
 		public bool MapGuidAsString { get; set; }
 	}
 }
