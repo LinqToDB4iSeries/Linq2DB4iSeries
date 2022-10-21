@@ -137,9 +137,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		}
 
 		public static string GetDelimiter(this DataConnection dataConnection)
-			=> Constants.SQL.Delimiter(dataConnection.GetNamingConvetion());
+			=> Constants.SQL.Delimiter(dataConnection.GetNamingConvention());
 
-		public static DB2iSeriesNamingConvention GetNamingConvetion(this DataConnection dataConnection)
+		public static DB2iSeriesNamingConvention GetNamingConvention(this DataConnection dataConnection)
 		{
 			if (dataConnection.DataProvider is DB2iSeriesDataProvider iSeriesDataProvider
 				&& iSeriesDataProvider.ProviderType != DB2iSeriesProviderType.DB2)
