@@ -1,4 +1,7 @@
 ﻿<Project>
+	<!--<PropertyGroup>
+		<CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+	</PropertyGroup>-->
 	<!--
 	Known issues:
 	
@@ -7,17 +10,17 @@
 	-->
 	<ItemGroup>
 		<!--as stated in issue 1 -  packages in this item group shouldn't be duplicated in other groups-->
-		<PackageVersion Include="linq2db"												Version="4.3.0"         />
-		<PackageVersion Include="linq2db.Tools"											Version="4.3.0"         />
-		<PackageVersion Include="linq2db.AspNet"										Version="4.3.0"         />
-		<PackageVersion Include="linq2db.Remote.Grpc"									Version="4.3.0"         />
-		<PackageVersion Include="linq2db.Remote.Wcf"									Version="4.3.0"         />
+		<PackageVersion Include="linq2db"												Version="4.4.1"         />
+		<PackageVersion Include="linq2db.Tools"											Version="4.4.1"         />
+		<PackageVersion Include="linq2db.AspNet"										Version="4.4.1"         />
+		<PackageVersion Include="linq2db.Remote.Grpc"									Version="4.4.1"         />
+		<PackageVersion Include="linq2db.Remote.Wcf"									Version="4.4.1"         />
 		<PackageVersion Include="JetBrains.Annotations"									Version="2022.1.0"      />
 		<!--generic packages for source projects-->
 		<!--generic packages for source projects-->
 		<PackageVersion Include="System.Data.DataSetExtensions"                         Version="4.5.0"         />
 		<PackageVersion Include="Microsoft.CSharp"                                      Version="4.7.0"         />
-		<PackageVersion Include="Microsoft.Bcl.AsyncInterfaces"                         Version="6.0.0"         />
+		<PackageVersion Include="Microsoft.Bcl.AsyncInterfaces"                         Version="7.0.0"         />
 		<PackageVersion Include="System.ComponentModel.Annotations"                     Version="5.0.0"         />
 		<!--build support-->
 		<PackageVersion Include="Microsoft.CodeAnalysis.BannedApiAnalyzers"             Version="3.3.3"         />
@@ -47,7 +50,7 @@
 		<PackageVersion Include="Net.IBM.Data.Db2"                                      Version="6.0.0.200"     />
 		<PackageVersion Include="Net.IBM.Data.Db2-lnx"                                  Version="6.0.0.200"     />
 		<PackageVersion Include="Net.IBM.Data.Db2-osx"                                  Version="6.0.0.200"     />
-		<PackageVersion Include="Npgsql"                                                Version="7.0.0-preview.7" />
+		<PackageVersion Include="Npgsql"                                                Version="7.0.1" />
 		<PackageVersion Include="ClickHouse.Client"                                     Version="5.0.4"         />
 		<PackageVersion Include="Octonica.ClickHouseClient"                             Version="2.2.9"         />
 		<PackageVersion Include="Microsoft.Data.Sqlite"                                 Version="6.0.8"         />
@@ -97,7 +100,7 @@
 	<ItemGroup>
 		<!--main version-->
 		<PackageVersion Include="Microsoft.Extensions.DependencyInjection"              Version="6.0.0"         />
-		<PackageVersion Include="Microsoft.Extensions.Logging.Abstractions"             Version="6.0.1"         />
+		<PackageVersion Include="Microsoft.Extensions.Logging.Abstractions"             Version="7.0.0"         />
 	</ItemGroup>
 	
 	<!--test dependencies-->
