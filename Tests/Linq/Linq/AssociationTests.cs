@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -653,6 +654,112 @@ namespace Tests.Linq
 			}
 		}
 
+		sealed class ParentContainer
+		{
+			public Parent? Value;
+
+			public void SetValue(Parent? value)
+			{
+				Value = value;
+			}
+		}
+
+		[Table("Child")]
+		[UsedImplicitly]
+		sealed class AssociationSetterExpressionTestClass
+		{
+			[Column] public int ParentID;
+			[Column] public int ChildID;
+
+			ParentContainer _parent = new ParentContainer();
+
+			[Association(ThisKey = "ParentID", OtherKey = "ParentID", CanBeNull = false, Storage = "_parent", AssociationSetterExpressionMethod = nameof(SetParentValue))]
+			public Parent? Parent
+			{
+				get => _parent.Value;
+				set => throw new InvalidOperationException();
+			}
+
+			[Association(ThisKey = "Parent2ID", OtherKey = "ParentID", CanBeNull = false)]
+			public Parent? Parent2 { get; set; }
+
+			public static Expression<Action<ParentContainer, Parent>> SetParentValue()
+			{
+				return static (ParentContainer container, Parent value) => container.SetValue(value);
+			}
+		}
+
+		[Test]
+		public void AssociationSetterExpressionTest([DataSources] string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var value = db.GetTable<AssociationSetterExpressionTestClass>().LoadWith(x => x.Parent).First();
+
+				Assert.That(value.Parent, Is.Not.Null);
+			}
+		}
+
+		// at the moment it must be generic because linq2db will infer entity type from generic arguments
+		sealed class ChildrenContainer<T> : IEnumerable<T> where T : Child
+		{
+			public List<T>? Value;
+
+			public IEnumerator<T> GetEnumerator()
+			{
+				return ((IEnumerable<T>)Value!).GetEnumerator();
+			}
+
+			public void SetValue(IEnumerable<T> value)
+			{
+				Value = value.ToList();
+			}
+
+			IEnumerator IEnumerable.GetEnumerator()
+			{
+				return ((IEnumerable)Value!).GetEnumerator();
+			}
+		}
+
+		[Table("Parent")]
+		[UsedImplicitly]
+		sealed class Issue3975TestClass
+		{
+			[Column] public int ParentID;
+
+			ChildrenContainer<Child> _children = new();
+
+			[Association(ThisKey = "ParentID", OtherKey = "ParentID", Storage = "_children", AssociationSetterExpressionMethod = nameof(SetChildrenValue))]
+			public ChildrenContainer<Child> Children
+			{
+				get => _children;
+				set => throw new InvalidOperationException();
+			}
+
+			public static Expression<Action<ChildrenContainer<Child>, IEnumerable<Child>>> SetChildrenValue()
+			{
+				return static (ChildrenContainer<Child> container, IEnumerable<Child> value) => container.SetValue(value);
+			}
+		}
+
+		[Test]
+		public void Issue3975Test([DataSources] string context)
+		{				
+			using (var db = GetDataContext(context))
+			{
+				// we want to make sure the conversion is not possible because we want to bypass
+				// that conversion if the setter value parameter type (IEnumerable<Child> in this case)
+				// does not match the member type (ChildrenContainer<Child> in this case)
+				Assert.Throws<LinqToDB.Common.LinqToDBConvertException>(() =>
+					db.MappingSchema.ChangeType(new List<Child>(0), typeof(ChildrenContainer<Child>)),
+					"List<Child> should not be convertible to ChildrenContainer<Child>");
+
+				var value = db.GetTable<Issue3975TestClass>().LoadWith(x => x.Children).First();
+
+				Assert.That(value.Children.Value, Is.Not.Null);
+			}
+		}
+		
 		[Test]
 		public void TestGenericAssociation1([DataSources(TestProvName.AllAccess, TestProvName.AllSQLite)] string context)
 		{
@@ -679,10 +786,11 @@ namespace Tests.Linq
 			var ids = new[] { 1, 5 };
 
 			var ms = new MappingSchema();
-			var mb = ms.GetFluentMappingBuilder();
+			var mb = new FluentMappingBuilder(ms);
 
 			mb.Entity<Top>()
-				.Association( t => t.MiddleRuntime, (t, m) => t.ParentID == m!.ParentID && m.ChildID > 1 );
+				.Association( t => t.MiddleRuntime, (t, m) => t.ParentID == m!.ParentID && m.ChildID > 1 )
+				.Build();
 
 			using (var db = GetDataContext(context, ms))
 			{
@@ -705,10 +813,11 @@ namespace Tests.Linq
 			var ids = new[] { 1, 5 };
 
 			var ms = new MappingSchema();
-			var mb = ms.GetFluentMappingBuilder();
+			var mb = new FluentMappingBuilder(ms);
 
 			mb.Entity<Top>()
-				.Association( t => t.MiddlesRuntime, (t, m) => t.ParentID == m.ParentID && m.ChildID > 1 );
+				.Association( t => t.MiddlesRuntime, (t, m) => t.ParentID == m.ParentID && m.ChildID > 1 )
+				.Build();
 
 			using (var db = GetDataContext(context, ms))
 			{
@@ -909,10 +1018,117 @@ namespace Tests.Linq
 		[Test]
 		public void AssociationExpressionMethod([DataSources] string context)
 		{
-			using (var db = GetDataContext(context))
+			using var db = GetDataContext(context);
+			var _ = db.Parent.Select(p => p.ChildPredicate()).ToList();
+		}
+
+		[Table]
+		sealed class NotNullParent
+		{
+			[Column] public int ID { get; set; }
+
+			[Association(ExpressionPredicate = nameof(ChildPredicate), CanBeNull = false)]
+			public NotNullChild  ChildInner { get; set; } = null!;
+
+			[Association(ExpressionPredicate = nameof(ChildPredicate), CanBeNull = true)]
+			public NotNullChild? ChildOuter { get; set; }
+
+			static Expression<Func<NotNullParent, NotNullChild, bool>> ChildPredicate => (p, c) => p.ID == c.ParentID;
+
+			public static readonly NotNullParent[] Data = new[]
 			{
-				var _ = db.Parent.Select(p => p.ChildPredicate()).ToList();
-			}
+				new NotNullParent { ID = 1 },
+				new NotNullParent { ID = 2 },
+			};
+		}
+
+		[Table]
+		sealed class NotNullChild
+		{
+			[Column] public int ParentID { get; set; }
+
+			public static readonly NotNullChild[] Data = new[]
+			{
+				new NotNullChild { ParentID = 1 },
+			};
+		}
+
+		[Test]
+		public void AssociationExpressionNotNull([DataSources] string context)
+		{
+			using var db     = GetDataContext(context);
+			using var parent = db.CreateLocalTable(NotNullParent.Data);
+			using var child  = db.CreateLocalTable(NotNullChild.Data);
+
+			var query = parent.Select(p => new { ParentID = (int?)p.ChildInner.ParentID });
+
+			var result = query.ToArray();
+
+			Assert.AreEqual(1, result.Length);
+			Assert.AreEqual(1, result[0].ParentID);
+		}
+
+		[Test]
+		public void AssociationExpressionNull([DataSources] string context)
+		{
+			using var db     = GetDataContext(context);
+			using var parent = db.CreateLocalTable(NotNullParent.Data);
+			using var child  = db.CreateLocalTable(NotNullChild.Data);
+
+			var query = parent.OrderBy(_ => _.ID).Select(p => new { ParentID = (int?)p.ChildOuter!.ParentID });
+
+			var result = query.ToArray();
+
+			Assert.AreEqual(2, result.Length);
+			Assert.AreEqual(1, result[0].ParentID);
+			Assert.IsNull(result[1].ParentID);
+		}
+
+		[Test]
+		public void AssociationExpressionNotNullCount([DataSources] string context)
+		{
+			var parentData = new[]
+			{
+				new NotNullParent { ID = 1 },
+				new NotNullParent { ID = 2 },
+			};
+
+			var childData = new[]
+			{
+				new NotNullChild { ParentID = 1 },
+			};
+
+			using var db     = GetDataContext(context);
+			using var parent = db.CreateLocalTable(parentData);
+			using var child  = db.CreateLocalTable(childData);
+
+			var query = parent.Select(p => p.ChildInner.ParentID);
+
+			Assert.AreEqual(1, query.Count());
+		}
+
+		[Test]
+		public void AssociationExpressionNullCount([DataSources] string context)
+		{
+			var parentData = new[]
+			{
+				new NotNullParent { ID = 1 },
+				new NotNullParent { ID = 2 },
+			};
+
+			var childData = new[]
+			{
+				new NotNullChild { ParentID = 1 },
+			};
+
+			using var db     = GetDataContext(context);
+			using var parent = db.CreateLocalTable(parentData);
+			using var child  = db.CreateLocalTable(childData);
+
+			var query = parent.Select(p => p.ChildOuter!.ParentID);
+
+			Assert.AreEqual(2, query.Count());
+			Assert.AreEqual(1, query.GetTableSource().Joins.Count);
 		}
 
 		[Test]
@@ -1074,11 +1290,12 @@ namespace Tests.Linq
 		public void Issue1711Test1([DataSources(TestProvName.AllAccess, TestProvName.AllClickHouse)] string context)
 		{
 			var ms = new MappingSchema();
-			ms.GetFluentMappingBuilder()
+			new FluentMappingBuilder(ms)
 				.Entity<Entity1711>()
 				.HasTableName("Entity1711")
 				.HasPrimaryKey(x => Sql.Property<long>(x, "Id"))
-				.Association(x => Sql.Property<IQueryable<Relationship1711>>(x, "relationship"), e => e.Id, r => r.EntityId); ;
+				.Association(x => Sql.Property<IQueryable<Relationship1711>>(x, "relationship"), e => e.Id, r => r.EntityId)
+				.Build();
 
 			using (var db = GetDataContext(context, ms))
 			using (var entity = db.CreateLocalTable<Entity1711>())
@@ -1094,12 +1311,13 @@ namespace Tests.Linq
 		public void Issue1711Test2([DataSources(TestProvName.AllAccess, TestProvName.AllClickHouse)] string context)
 		{
 			var ms = new MappingSchema();
-			ms.GetFluentMappingBuilder()
+			new FluentMappingBuilder(ms)
 				.Entity<Entity1711>()
 				.HasTableName("Entity1711")
 				.HasPrimaryKey(x => Sql.Property<long>(x, "Id"))
 				.Association(x => Sql.Property<IQueryable<Relationship1711>>(x, "relationship"), (e, db) => db.GetTable<Relationship1711>()
-						.Where(r => r.Deleted == false && r.EntityId == e.Id));
+						.Where(r => r.Deleted == false && r.EntityId == e.Id))
+				.Build();
 
 			using (var db = GetDataContext(context, ms))
 			using (var entity = db.CreateLocalTable<Entity1711>())

@@ -9,10 +9,10 @@
 	<ItemGroup>
 		<PackageReference Include="Npgsql" />
 		<PackageReference Include="System.Data.SQLite.Core" />
-		<PackageReference Include="MySql.Data" Aliases="MySqlData" />
-		<PackageReference Include="MySqlConnector" Aliases="MySqlConnector" />
+		<!--<PackageReference Include="MySql.Data" Aliases="MySqlData" />-->
+		<!--<PackageReference Include="MySqlConnector" Aliases="MySqlConnector" />-->
 		<PackageReference Include="FirebirdSql.Data.FirebirdClient" />
-		<PackageReference Include="AdoNetCore.AseClient" />
+		<!--<PackageReference Include="AdoNetCore.AseClient" />-->
 		<PackageReference Include="System.Data.SqlClient" />
 		<PackageReference Include="Microsoft.Data.SqlClient" />
 		<PackageReference Include="Microsoft.Data.SQLite" />
@@ -20,7 +20,7 @@
 
 	<ItemGroup Condition=" '$(TargetFramework)' == 'net472' ">
 		<PackageReference Include="Oracle.ManagedDataAccess" />
-		<PackageReference Include="Microsoft.SqlServer.Types" />
+		<!--<PackageReference Include="Microsoft.SqlServer.Types" />-->
 
 		<!--<Reference Include="IBM.Data.Informix">
 			<HintPath>$(MSBuildThisFileDirectory)\..\Redist\IBM\IBM.Data.Informix.dll</HintPath>

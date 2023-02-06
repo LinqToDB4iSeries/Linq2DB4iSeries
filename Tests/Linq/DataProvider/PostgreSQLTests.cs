@@ -597,7 +597,7 @@ namespace Tests.DataProvider
 		{
 			using (var db = GetDataConnection(context))
 			{
-				var table = new LinqToDB.SqlQuery.SqlTable(db.MappingSchema, typeof(PostgreSQLSpecific.SequenceTest1));
+				var table = LinqToDB.SqlQuery.SqlTable.Create<PostgreSQLSpecific.SequenceTest1>(db);
 				Assert.That(table.SequenceAttributes, Is.Not.Null);
 				Assert.That(table.SequenceAttributes!.Length, Is.EqualTo(1));
 
@@ -611,7 +611,7 @@ namespace Tests.DataProvider
 		{
 			using (var db = GetDataConnection(context))
 			{
-				var table = new LinqToDB.SqlQuery.SqlTable(db.MappingSchema, typeof(PostgreSQLSpecific.SequenceTest2));
+				var table = LinqToDB.SqlQuery.SqlTable.Create<PostgreSQLSpecific.SequenceTest2>(db);
 				Assert.That(table.SequenceAttributes.IsNullOrEmpty());
 
 				db.Insert(new PostgreSQLSpecific.SequenceTest2 { Value = "SeqValue" });
@@ -1322,11 +1322,12 @@ namespace Tests.DataProvider
 		[Test]
 		public void TestParametersFunction([IncludeDataSources(TestProvName.AllPostgreSQL)] string context)
 		{
-			using (var db = GetDataContext(context))
-			{
-				db.MappingSchema.SetConvertExpression<object[], TestPgFunctions.TestParametersResult>(
-					tuple => new TestPgFunctions.TestParametersResult() { param2 = (int?)tuple[0], param3 = (int?)tuple[1] });
+			var ms = new MappingSchema();
+			ms.SetConvertExpression<object[], TestPgFunctions.TestParametersResult>(
+				tuple => new TestPgFunctions.TestParametersResult() { param2 = (int?)tuple[0], param3 = (int?)tuple[1] });
 
+			using (var db = GetDataContext(context, ms))
+			{
 				var result = db.Select(() => TestPgFunctions.TestParameters(1, 2));
 
 				Assert.IsNotNull(result);
@@ -2193,9 +2194,10 @@ namespace Tests.DataProvider
 		{
 			var ms = new MappingSchema();
 
-			ms.GetFluentMappingBuilder()
+			new FluentMappingBuilder(ms)
 				.Entity<DataTypeBinaryMapping>()
-					.Property(p => p.Binary).HasDataType(DataType.Binary).IsNullable(false);
+					.Property(p => p.Binary).HasDataType(DataType.Binary).IsNullable(false)
+				.Build();
 
 			using (var db = (DataConnection)GetDataContext(context, ms))
 			using (db.CreateLocalTable<DataTypeBinaryMapping>())

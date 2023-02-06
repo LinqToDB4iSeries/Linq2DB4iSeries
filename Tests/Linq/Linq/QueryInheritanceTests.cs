@@ -21,14 +21,14 @@ namespace Tests.Linq
 		static IEnumerable<T> QueryTable<T>(IDataContext dataContext)
 		{
 			var query = new SqlSelectStatement();
-			var table = new SqlTable(typeof(T));
+			var table = SqlTable.Create<T>(dataContext);
 			var tableSource = new SqlTableSource(table, "t");
 			query.SelectQuery.From.Tables.Add(tableSource);
 
 			var connection = (DataConnection) dataContext;
 
-			var sqlBuilder = connection.DataProvider.CreateSqlBuilder(connection.MappingSchema);
-			var sb = new StringBuilder();
+			var sqlBuilder = connection.DataProvider.CreateSqlBuilder(connection.MappingSchema, connection.Options);
+			var sb         = new StringBuilder();
 			sqlBuilder.BuildSql(0, query, sb, new OptimizationContext(new EvaluationContext(), new AliasesContext(), false));
 
 			return connection.Query<T>(sb.ToString());

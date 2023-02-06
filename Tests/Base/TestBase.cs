@@ -405,6 +405,60 @@ namespace Tests
 			return _serverContainer.Prepare(ms, interceptor, suppressSequentialAccess, str);
 		}
 
+		protected ITestDataContext GetDataContext(string configuration, Func<DataOptions,DataOptions> dbOptionsBuilder)
+		{
+			if (!configuration.EndsWith(LinqServiceSuffix))
+			{
+				return GetDataConnection(configuration, dbOptionsBuilder);
+			}
+
+			throw new NotImplementedException();
+
+			/*var str = configuration.Substring(0, configuration.Length - LinqServiceSuffix.Length);
+			return _serverContainer.Prepare(ms, interceptor, suppressSequentialAccess, str);*/
+		}
+
+		protected TestDataConnection GetDataConnection(string configuration, Func<DataOptions,DataOptions> dbOptionsBuilder)
+		{
+			if (configuration.EndsWith(LinqServiceSuffix))
+			{
+				throw new InvalidOperationException($"Call {nameof(GetDataContext)} for remote context creation");
+			}
+
+			Debug.WriteLine(configuration, "Provider ");
+
+			var options = new DataOptions().UseConfigurationString(configuration);
+
+			if (configuration.IsAnyOf(TestProvName.AllSqlServerSequentialAccess))
+			{
+				//if (!suppressSequentialAccess)
+				options = options.UseInterceptor(SequentialAccessCommandInterceptor.Instance);
+
+				options = options.UseMappingSchema(options.ConnectionOptions.MappingSchema == null ? _sequentialAccessSchema : MappingSchema.CombineSchemas(options.ConnectionOptions.MappingSchema, _sequentialAccessSchema));
+			}
+			else
+			if (configuration.IsAnyOf(TestProvName.AllMariaDB))
+				options = options.UseMappingSchema(options.ConnectionOptions.MappingSchema == null ? _mariaDBSchema : MappingSchema.CombineSchemas(options.ConnectionOptions.MappingSchema, _mariaDBSchema));
+
+			options = dbOptionsBuilder(options);
+
+			var res = new TestDataConnection(options);
+
+			/*
+			// add extra mapping schema to not share mappers with other sql2017/2019 providers
+			// use same schema to use cache within test provider scope
+			if (configuration.IsAnyOf(TestProvName.AllSqlServerSequentialAccess))
+			{
+				if (!suppressSequentialAccess)
+					res.AddInterceptor(SequentialAccessCommandInterceptor.Instance);
+
+				res.AddMappingSchema(_sequentialAccessSchema);
+			}
+			*/
+
+			return res;
+		}
+
 		protected TestDataConnection GetDataConnection(
 			string         configuration,
 			MappingSchema? ms                       = null,
@@ -419,47 +473,49 @@ namespace Tests
 
 			Debug.WriteLine(configuration, "Provider ");
 
-			var res = new TestDataConnection(configuration);
+			var options = new DataOptions().UseConfiguration(configuration);
+
 			if (ms != null)
-				res.AddMappingSchema(ms);
+				options = options.UseMappingSchema(ms);
 
 			// add extra mapping schema to not share mappers with other sql2017/2019 providers
 			// use same schema to use cache within test provider scope
 			if (configuration.IsAnyOf(TestProvName.AllSqlServerSequentialAccess))
 			{
 				if (!suppressSequentialAccess)
-					res.AddInterceptor(SequentialAccessCommandInterceptor.Instance);
+					options = options.UseInterceptor(SequentialAccessCommandInterceptor.Instance);
 
-				res.AddMappingSchema(_sequentialAccessSchema);
+				options = options.UseMappingSchema(ms == null ? _sequentialAccessSchema : MappingSchema.CombineSchemas(ms, _sequentialAccessSchema));
 			}
-			//else if (configuration == TestProvName.SqlServer2019FastExpressionCompiler)
-			//	res.AddMappingSchema(_fecSchema);
+			else if (configuration.IsAnyOf(TestProvName.AllMariaDB))
+				options = options.UseMappingSchema(ms == null ? _mariaDBSchema : MappingSchema.CombineSchemas(ms, _mariaDBSchema));
 
 			if (interceptor != null)
-				res.AddInterceptor(interceptor);
+				options = options.UseInterceptor(interceptor);
 
 			if (retryPolicy != null)
-				res.RetryPolicy = retryPolicy;
+				options = options.UseRetryPolicy(retryPolicy);
 
-			return res;
+			return new TestDataConnection(options);
 		}
 
-		protected TestDataConnection GetDataConnection(LinqToDBConnectionOptions options)
+		protected TestDataConnection GetDataConnection(DataOptions options)
 		{
-			if (options.ConfigurationString?.EndsWith(".LinqService") == true)
-			{
+			if (options.ConnectionOptions.ConfigurationString?.EndsWith(".LinqService") == true)
 				throw new InvalidOperationException($"Call {nameof(GetDataContext)} for remote context creation");
-			}
 
-			Debug.WriteLine(options.ConfigurationString, "Provider ");
+			if (options.ConnectionOptions.ConfigurationString?.IsAnyOf(TestProvName.AllMariaDB) == true)
+				options = options.UseMappingSchema(options.ConnectionOptions.MappingSchema == null ? _mariaDBSchema : MappingSchema.CombineSchemas(options.ConnectionOptions.MappingSchema, _mariaDBSchema));
+
+			Debug.WriteLine(options.ConnectionOptions.ConfigurationString, "Provider ");
 
 			var res = new TestDataConnection(options);
 
 			return res;
 		}
 
-		private static readonly MappingSchema _sequentialAccessSchema = new ();
-		private static readonly MappingSchema _fecSchema = new ();
+		private  static readonly MappingSchema _sequentialAccessSchema = new ("SequentialAccess");
+		internal static readonly MappingSchema _mariaDBSchema          = new (ProviderName.MariaDB);
 
 		protected static char GetParameterToken(string context)
 		{

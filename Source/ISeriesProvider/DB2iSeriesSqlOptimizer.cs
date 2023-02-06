@@ -11,11 +11,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	class DB2iSeriesSqlOptimizer : BasicSqlOptimizer
 	{
 		private readonly DB2iSeriesSqlProviderFlags db2ISeriesSqlProviderFlags;
+		private readonly DataOptions dataOptions;
 
-		public DB2iSeriesSqlOptimizer(SqlProviderFlags sqlProviderFlags, DB2iSeriesSqlProviderFlags db2iSeriesSqlProviderFlags)
+		public DB2iSeriesSqlOptimizer(SqlProviderFlags sqlProviderFlags, DB2iSeriesSqlProviderFlags db2iSeriesSqlProviderFlags, DataOptions dataOptions)
 			: base(sqlProviderFlags)
 		{
 			db2ISeriesSqlProviderFlags = db2iSeriesSqlProviderFlags;
+			this.dataOptions = dataOptions;
 		}
 
 		public override bool CanCompareSearchConditions => true;
@@ -24,7 +26,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public override string[] LikeCharactersToEscape => DB2LikeCharactersToEscape;
 
-		public override SqlStatement TransformStatement(SqlStatement statement)
+		public override SqlStatement TransformStatement(SqlStatement statement, DataOptions dataOptions)
 		{
 			statement = SeparateDistinctFromPagination(statement, q => q.Select.SkipValue != null);
 			statement = ReplaceDistinctOrderByWithRowNumber(statement, q => q.Select.SkipValue != null);
@@ -36,15 +38,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			return statement.QueryType switch
 			{
-				QueryType.Delete => GetAlternativeDelete((SqlDeleteStatement)statement),
-				QueryType.Update => GetAlternativeUpdate((SqlUpdateStatement)statement),
+				QueryType.Delete => GetAlternativeDelete((SqlDeleteStatement)statement, dataOptions),
+				QueryType.Update => GetAlternativeUpdate((SqlUpdateStatement)statement, dataOptions),
 				_ => statement,
 			};
 		}
-		
-		public override SqlStatement Finalize(MappingSchema mappingSchema, SqlStatement statement)
+
+		public override SqlStatement Finalize(MappingSchema mappingSchema, SqlStatement statement, DataOptions dataOptions)
 		{
-			static long getAbsoluteHashCode(object o) 
+			static long getAbsoluteHashCode(object o)
 				=> (long)o.GetHashCode() + (long)int.MaxValue;
 
 			static string sanitizeAliasOrParameterName(string text, string alternative)
@@ -80,10 +82,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 
 			statement.VisitAll(sanitizeNames);
-			
-			return base.Finalize(mappingSchema, statement);
-		}
 
+			return base.Finalize(mappingSchema, statement, dataOptions);
+		}
 		public override ISqlExpression ConvertExpressionImpl(ISqlExpression expression, ConvertVisitor<RunOptimizationContext> visitor)
 		{
 			expression = base.ConvertExpressionImpl(expression, visitor);
@@ -114,7 +115,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						//Conversion to bool
 						if (func.SystemType.ToUnderlying() == typeof(bool))
 						{
-							var ex = AlternativeConvertToBoolean(func, 1);
+							var ex = AlternativeConvertToBoolean(func, dataOptions, 1);
 							if (ex != null)
 							{
 								return ex;

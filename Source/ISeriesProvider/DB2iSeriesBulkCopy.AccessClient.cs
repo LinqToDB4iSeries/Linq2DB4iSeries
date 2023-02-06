@@ -16,18 +16,19 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		private BulkCopyRowsCopied ProviderSpecificCopyImpl_AccessClient<T>(
 			ITable<T> table,
-			BulkCopyOptions options,
+			DataOptions dataOptions,
 			IEnumerable<T> source,
 			DataConnection dataConnection,
 			DbConnection connection,
 			DB2iSeriesAccessClientProviderAdapter adapter,
 			Action<DataConnection, Func<string>, Func<int>> traceAction)
 		{
+			var options = dataOptions.BulkCopyOptions;
 			var descriptor = dataConnection.MappingSchema.GetEntityDescriptor(typeof(T));
 			var columns = descriptor.Columns.Where(c => !c.SkipOnInsert || options.KeepIdentity == true && c.IsIdentity).ToList();
 			var rd = new BulkCopyReader<T>(dataConnection, columns, source);
 			var rc = new BulkCopyRowsCopied();
-			var sqlBuilder = dataConnection.DataProvider.CreateSqlBuilder(dataConnection.MappingSchema);
+			var sqlBuilder = dataConnection.DataProvider.CreateSqlBuilder(dataConnection.MappingSchema, dataOptions);
 			var tableName = GetTableName(sqlBuilder, options, table);
 
 			var columnNames = columns.Select(x => x.ColumnName);
@@ -51,7 +52,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 				//*LOB and XML types not supported, fallback to multiple rows
 				if (columnDataTypes.Any(x => x.In(DataType.Blob, DataType.Text, DataType.NText, DataType.Xml)))
-					return MultipleRowsCopy(table, options, source);
+					return MultipleRowsCopy(table, dataOptions, source);
 
 				var columnDbDataTypes = columns
 					.Select((x,i) => x
@@ -83,7 +84,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					//In case columns can't be mapped fall back to multiple rows
 					catch
 					{
-						return MultipleRowsCopy(table, options, source);
+						return MultipleRowsCopy(table, dataOptions, source);
 					}
 
 					count++;

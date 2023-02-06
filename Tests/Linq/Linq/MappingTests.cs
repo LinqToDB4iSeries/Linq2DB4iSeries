@@ -477,64 +477,6 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test, ActiveIssue(1592)]
-		public void Issue1592CallbackWithDefaultMappingSchema([DataSources] string context)
-		{
-			bool result = false;
-
-			MappingSchema.Default.EntityDescriptorCreatedCallback = (ms, ed) =>
-			{
-				result = true;
-			};
-
-			using (var db = GetDataContext(context))
-			{
-				db.GetTable<Person>().FirstOrDefault();
-
-				Assert.IsTrue(result);
-			}
-		}
-
-		[ActiveIssue(1592)]
-		[Test]
-		public void Issue1592CallbackWithContextProperty([DataSources] string context)
-		{
-			bool result = false;
-
-			using (var db = GetDataContext(context))
-			{
-				db.MappingSchema.EntityDescriptorCreatedCallback = (ms, ed) =>
-				{
-					result = true;
-				};
-
-				db.GetTable<Person>().FirstOrDefault();
-
-				Assert.IsTrue(result);
-			}
-		}
-
-		[Test, ActiveIssue(1592)]
-		public void Issue1592CallbackWithContextConstructor([DataSources] string context)
-		{
-			bool result = false;
-
-			var mappingSchema = new MappingSchema
-			{
-				EntityDescriptorCreatedCallback = (ms, ed) =>
-				{
-					result = true;
-				}
-			};
-
-			using (var db = GetDataContext(context, mappingSchema))
-			{
-				db.GetTable<Person>().FirstOrDefault();
-
-				Assert.IsTrue(result);
-			}
-		}
-
 #region Records
 
 		public record Record(int Id, string Value, string BaseValue) : RecordBase(Id, BaseValue);
@@ -578,10 +520,12 @@ namespace Tests.Linq
 		public void TestRecordMapping([IncludeDataSources(true, TestProvName.AllSQLite, TestProvName.AllClickHouse)] string context)
 		{
 			var ms = new MappingSchema();
-			ms.GetFluentMappingBuilder().Entity<Record>()
-				.Property(p => p.Id).IsPrimaryKey()
-				.Property(p => p.Value)
-				.Property(p => p.BaseValue);
+			new FluentMappingBuilder(ms)
+				.Entity<Record>()
+					.Property(p => p.Id).IsPrimaryKey()
+					.Property(p => p.Value)
+					.Property(p => p.BaseValue)
+				.Build();
 
 			using (var db = GetDataContext(context, ms))
 			using (var table = db.CreateLocalTable<Record>())
@@ -615,10 +559,12 @@ namespace Tests.Linq
 		public void TestRecordLikeMapping([IncludeDataSources(true, TestProvName.AllSQLite, TestProvName.AllClickHouse)] string context)
 		{
 			var ms = new MappingSchema();
-			ms.GetFluentMappingBuilder().Entity<RecordLike>()
-				.Property(p => p.Id).IsPrimaryKey()
-				.Property(p => p.Value)
-				.Property(p => p.BaseValue);
+			new FluentMappingBuilder(ms)
+				.Entity<RecordLike>()
+					.Property(p => p.Id).IsPrimaryKey()
+					.Property(p => p.Value)
+					.Property(p => p.BaseValue)
+				.Build();
 
 			using (var db = GetDataContext(context, ms))
 			using (var table = db.CreateLocalTable<RecordLike>())
@@ -652,9 +598,11 @@ namespace Tests.Linq
 		public void TestInitOnly([IncludeDataSources(true, TestProvName.AllSQLite, TestProvName.AllClickHouse)] string context)
 		{
 			var ms = new MappingSchema();
-			ms.GetFluentMappingBuilder().Entity<WithInitOnly>()
-				.Property(p => p.Id).IsPrimaryKey()
-				.Property(p => p.Value);
+			new FluentMappingBuilder(ms)
+				.Entity<WithInitOnly>()
+					.Property(p => p.Id).IsPrimaryKey()
+					.Property(p => p.Value)
+				.Build();
 
 			using (var db = GetDataContext(context, ms))
 			using (var table = db.CreateLocalTable<WithInitOnly>())

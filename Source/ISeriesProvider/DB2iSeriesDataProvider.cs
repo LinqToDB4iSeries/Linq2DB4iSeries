@@ -25,7 +25,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	{
 		public DB2iSeriesProviderType ProviderType { get; }
 
-		private readonly DB2iSeriesSqlOptimizer sqlOptimizer;
 		private readonly DB2iSeriesSchemaProvider schemaProvider;
 		private readonly DB2iSeriesBulkCopy bulkCopy;
 		private readonly DB2iSeriesSqlProviderFlags db2iSeriesSqlProviderFlags;
@@ -71,7 +70,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetCharField(Constants.DbTypes.NVarChar, ReaderExpressionTools.GetTrimmedStringExpression);
 			SetCharField(Constants.DbTypes.VarGraphic, ReaderExpressionTools.GetTrimmedStringExpression);
 
-			sqlOptimizer = new DB2iSeriesSqlOptimizer(SqlProviderFlags, db2iSeriesSqlProviderFlags);
 			schemaProvider = new DB2iSeriesSchemaProvider(this);
 			bulkCopy = new DB2iSeriesBulkCopy(this, db2iSeriesSqlProviderFlags);
 
@@ -215,7 +213,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetProviderField<DbDataReader, DateTimeOffset, string>((r, i) => SqlDateTimeParser.ParseDateTime(r.GetString(i)));
 			SetProviderField<DbDataReader, TimeSpan, string>((r, i) => SqlDateTimeParser.ParseTimeSpan(r.GetString(i)));
 		}
-
+		
 		public override DbCommand InitCommand(DataConnection dataConnection, DbCommand command, CommandType commandType, string commandText, DataParameter[] parameters, bool withParameters)
 		{
 			//Handle ODBC stored procedure when only proc name is provided
@@ -224,7 +222,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				&& !commandText.Contains(' ') //single word - presumed proc name
 			)
 			{
-				var builder = this.CreateDB2iSeriesSqlBuilder(this.MappingSchema);
+				var builder = this.CreateDB2iSeriesSqlBuilder(this.MappingSchema, dataConnection.Options);
 				commandText = $"{{{builder.BuildStoredProcedureCall(commandText, parameters)}}}";
 			}
 
@@ -283,14 +281,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 		}
 
-		public override ISqlBuilder CreateSqlBuilder(MappingSchema mappingSchema)
+		public override ISqlBuilder CreateSqlBuilder(MappingSchema mappingSchema, DataOptions dataOptions)
 		{
-			return CreateDB2iSeriesSqlBuilder(mappingSchema);
+			return CreateDB2iSeriesSqlBuilder(mappingSchema, dataOptions);
 		}
 
-		private DB2iSeriesSqlBuilder CreateDB2iSeriesSqlBuilder(MappingSchema mappingSchema)
+		private DB2iSeriesSqlBuilder CreateDB2iSeriesSqlBuilder(MappingSchema mappingSchema, DataOptions dataOptions)
 		{
-			return new DB2iSeriesSqlBuilder(this, mappingSchema, GetSqlOptimizer(), SqlProviderFlags, db2iSeriesSqlProviderFlags);
+			return new DB2iSeriesSqlBuilder(this, mappingSchema, dataOptions, GetSqlOptimizer(dataOptions), SqlProviderFlags, db2iSeriesSqlProviderFlags);
 		}
 
 		public override ISchemaProvider GetSchemaProvider()
@@ -298,9 +296,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return schemaProvider;
 		}
 
-		public override ISqlOptimizer GetSqlOptimizer()
+		public override ISqlOptimizer GetSqlOptimizer(DataOptions dataOptions)
 		{
-			return sqlOptimizer;
+			return new DB2iSeriesSqlOptimizer(SqlProviderFlags, db2iSeriesSqlProviderFlags, dataOptions); 
 		}
 
 		private static MappingSchema GetMappingSchema(string configuration, DB2iSeriesProviderType providerType, bool mapGuidAsString)
@@ -631,32 +629,33 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			var e = base.GetReaderExpression(reader, idx, readerExpression, toType);
 			return e;
 		}
-
-		public override bool? IsDBNullAllowed(DbDataReader reader, int idx)
+		
+		public override bool? IsDBNullAllowed(DataOptions dataOptions, DbDataReader reader, int idx)
 		{
 			//Always return true on ODBC to avoid exceptions on XML columns
 			if (ProviderType.IsOdbc())
 				return true;
 
-			return base.IsDBNullAllowed(reader, idx);
+			return base.IsDBNullAllowed(dataOptions, reader, idx);
 		}
 
 		#region BulkCopy
 
-		public override BulkCopyRowsCopied BulkCopy<T>(ITable<T> table, BulkCopyOptions options, IEnumerable<T> source)
+		
+		public override BulkCopyRowsCopied BulkCopy<T>(DataOptions options, ITable<T> table, IEnumerable<T> source)
 		{
-			return bulkCopy.BulkCopy(options.BulkCopyType.GetEffectiveType(), table, options, source);
+			return bulkCopy.BulkCopy(options.BulkCopyOptions.BulkCopyType.GetEffectiveType(), table, options, source);
 		}
 
-		public override Task<BulkCopyRowsCopied> BulkCopyAsync<T>(ITable<T> table, BulkCopyOptions options, IEnumerable<T> source, CancellationToken cancellationToken)
+		public override Task<BulkCopyRowsCopied> BulkCopyAsync<T>(DataOptions options, ITable<T> table, IEnumerable<T> source, CancellationToken cancellationToken)
 		{
-			return bulkCopy.BulkCopyAsync(options.BulkCopyType.GetEffectiveType(), table, options, source, cancellationToken);
+			return bulkCopy.BulkCopyAsync(options.BulkCopyOptions.BulkCopyType.GetEffectiveType(), table, options, source, cancellationToken);
 		}
 
 #if NATIVE_ASYNC
-		public override Task<BulkCopyRowsCopied> BulkCopyAsync<T>(ITable<T> table, BulkCopyOptions options, IAsyncEnumerable<T> source, CancellationToken cancellationToken)
+		public override Task<BulkCopyRowsCopied> BulkCopyAsync<T>(DataOptions options, ITable<T> table, IAsyncEnumerable<T> source, CancellationToken cancellationToken)
 		{
-			return bulkCopy.BulkCopyAsync(options.BulkCopyType.GetEffectiveType(), table, options, source, cancellationToken);
+			return bulkCopy.BulkCopyAsync(options.BulkCopyOptions.BulkCopyType.GetEffectiveType(), table, options, source, cancellationToken);
 		}
 #endif
 		#endregion

@@ -63,26 +63,33 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			DataConnection.AddProviderDetector(ProviderDetector);
 		}
 
-		public static IDataProvider ProviderDetector(IConnectionStringSettings css, string connectionString)
+		public static IDataProvider ProviderDetector(ConnectionOptions connectionOptions)
 		{
-			if (!css.IsGlobal
-				&& (DB2iSeriesProviderName.AllNames.Contains(css.Name)
-					|| css.ProviderName.StartsWith(DB2iSeriesProviderName.DB2)
+			if (DB2iSeriesProviderName.AllNames.Contains(connectionOptions.ConfigurationString)
+					|| connectionOptions.ProviderName.StartsWith(DB2iSeriesProviderName.DB2)
 #if NETFRAMEWORK
-					|| css.ProviderName == DB2iSeriesAccessClientProviderAdapter.AssemblyName
+					|| connectionOptions.ProviderName == DB2iSeriesAccessClientProviderAdapter.AssemblyName
 #endif
-					))
+					)
 			{
-				if (TryGetDataProvider(css.Name, out var dataProvider))
+				if (TryGetDataProvider(connectionOptions.ConfigurationString, out var dataProvider))
 					return dataProvider;
 
 				if (AutoDetectProvider)
 
-					return providerDetector.AutoDetectDataProvider(
-								string.IsNullOrWhiteSpace(connectionString) ? css.ConnectionString : connectionString);
+					return providerDetector.AutoDetectDataProvider(connectionOptions.ConnectionString);
 			}
 
 			return null;
+		}
+
+		public static IDataProvider ProviderDetector(IConnectionStringSettings css, string connectionString)
+		{
+			return ProviderDetector(new ConnectionOptions
+			{
+				ConfigurationString = css.Name,
+				ConnectionString = !string.IsNullOrEmpty(css.ConnectionString) ? css.ConnectionString : connectionString,
+			});
 		}
 
 		#endregion
