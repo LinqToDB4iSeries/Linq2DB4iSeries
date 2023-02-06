@@ -9,6 +9,7 @@
 		<DefineConstants Condition="$(X86) != ''">$(DefineConstants);X86</DefineConstants>
 		
 		<AssemblyOriginatorKeyFile>..\..\Build\linq2db.snk</AssemblyOriginatorKeyFile>
+		<SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
 	</PropertyGroup>
 
 	<ItemGroup>

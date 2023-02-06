@@ -53,9 +53,7 @@ namespace Tests.Common
 			}
 
 			public IDisposable BeginScope<TState>(TState state)
-#if !NETFRAMEWORK
 				where TState : notnull
-#endif
 				=> new Disposable();
 
 			private sealed class Disposable : IDisposable
