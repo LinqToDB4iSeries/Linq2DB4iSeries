@@ -107,6 +107,8 @@ namespace Tests
 				case ("SqlRowTests", "UpdateRowSelect"):
 				// Test case uses alias name assertion from generated sql, name sanitization breaks test assertion - Copied to custom tests
 				case ("TableIDTests", "TableTest"):
+				// Test case uses guid conversion with custom conversion expression
+				case ("ConvertExpressionTests", "Issue3791Test"):
 					return Enumerable.Empty<string>();
 
 				//Access client throws a different exception so it is excluded
