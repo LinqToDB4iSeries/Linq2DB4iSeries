@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Data;
 using System.Linq;
 using System.Data.Common;
@@ -18,19 +16,18 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		//Copied from DB2BulkCopy
 		private static BulkCopyRowsCopied ProviderSpecificCopyImpl_DB2<T>(
 		ITable<T> table,
-		DataOptions dataOptions,
+		BulkCopyOptions options,
 		IEnumerable<T> source,
 		DataConnection dataConnection,
 		DbConnection connection,
 		DB2.DB2ProviderAdapter.BulkCopyAdapter bulkCopy,
 		Action<DataConnection, Func<string>, Func<int>> traceAction)
 		{
-			var options = dataOptions.BulkCopyOptions;
-			var descriptor = dataConnection.MappingSchema.GetEntityDescriptor(typeof(T));
+			var descriptor = table.DataContext.MappingSchema.GetEntityDescriptor(typeof(T), dataConnection.Options.ConnectionOptions.OnEntityDescriptorCreated);
 			var columns = descriptor.Columns.Where(c => !c.SkipOnInsert || options.KeepIdentity == true && c.IsIdentity).ToList();
 			var rd = new BulkCopyReader<T>(dataConnection, columns, source);
 			var rc = new BulkCopyRowsCopied();
-			var sqlBuilder = dataConnection.DataProvider.CreateSqlBuilder(dataConnection.MappingSchema, dataOptions);
+			var sqlBuilder = dataConnection.DataProvider.CreateSqlBuilder(table.DataContext.MappingSchema, dataConnection.Options);
 			var tableName = GetTableName(sqlBuilder, options, table);
 
 			var bcOptions = DB2BulkCopyOptions.Default;
@@ -47,7 +44,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				{
 					bc.NotifyAfter = notifyAfter;
 
-					bc.DB2RowsCopied += (sender, args) =>
+					bc.DB2RowsCopied += (_, args) =>
 					{
 						rc.RowsCopied = args.RowsCopied;
 						options.RowsCopiedCallback(rc);

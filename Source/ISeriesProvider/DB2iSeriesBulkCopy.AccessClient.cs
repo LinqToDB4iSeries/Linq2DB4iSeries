@@ -28,7 +28,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			var columns = descriptor.Columns.Where(c => !c.SkipOnInsert || options.KeepIdentity == true && c.IsIdentity).ToList();
 			var rd = new BulkCopyReader<T>(dataConnection, columns, source);
 			var rc = new BulkCopyRowsCopied();
-			var sqlBuilder = dataConnection.DataProvider.CreateSqlBuilder(dataConnection.MappingSchema, dataOptions);
+			var sqlBuilder = dataConnection.DataProvider.CreateSqlBuilder(table.DataContext.MappingSchema, dataOptions);
 			var tableName = GetTableName(sqlBuilder, options, table);
 
 			var columnNames = columns.Select(x => x.ColumnName);

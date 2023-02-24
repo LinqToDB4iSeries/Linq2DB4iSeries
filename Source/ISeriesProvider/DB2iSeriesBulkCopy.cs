@@ -11,6 +11,17 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	{
 		const int MAX_ALLOWABLE_MULTIPLE_ROWS_BATCH_SIZE = 100;
 
+		/// <remarks>
+		/// Settings based on https://www.ibm.com/docs/en/i/7.3?topic=reference-sql-limits
+		/// We subtract 1 here to be safe since some ADO providers use parameter for command itself.
+		/// </remarks>
+		protected override int MaxParameters => 1999;
+		/// <remarks>
+		/// Setting based on https://www.ibm.com/docs/en/i/7.3?topic=reference-sql-limits
+		/// Max is actually 2MIB, but we keep a lower number here to avoid the cost of huge statements.
+		/// </remarks>
+		protected override int MaxSqlLength => 327670;
+
 		private readonly DB2iSeriesDataProvider dataProvider;
 		private readonly DB2iSeriesSqlProviderFlags dB2ISeriesSqlProviderFlags;
 
@@ -33,7 +44,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					if (dataProvider.TryGetProviderConnection(dataConnection, out var connection))
 						return ProviderSpecificCopyImpl_DB2(
 							table,
-							options,
+							options.BulkCopyOptions,
 							source,
 							dataConnection,
 							connection,
@@ -71,7 +82,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						// call the synchronous provider-specific implementation as provider doesn't support async
 						return Task.FromResult(ProviderSpecificCopyImpl_DB2(
 							table,
-							options,
+							options.BulkCopyOptions,
 							source,
 							dataConnection,
 							connection,
@@ -115,7 +126,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 							// call the synchronous provider-specific implementation as provider doesn't support async
 							return ProviderSpecificCopyImpl_DB2(
 								table,
-								options,
+								options.BulkCopyOptions,
 								AsyncToSyncEnumerable(enumerator),
 								dataConnection,
 								connection,
