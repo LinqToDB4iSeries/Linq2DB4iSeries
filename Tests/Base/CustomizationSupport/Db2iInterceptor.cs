@@ -97,6 +97,7 @@ namespace Tests
 				case ("CreateTempTableTests", "CreateTable_NoDisposeErrorAsync"):
 				case ("CreateTempTableTests", "CreateTempTableWithPrimaryKey"):
 				case ("CreateTempTableTests", "InsertIntoTempTableWithPrimaryKey"):
+				case ("CreateTempTableTests", "CreateTableEnumerableWithNameAndDescriptionAsyncTest"):
 				// GUIDs are serialized in lower case
 				case ("ConvertTests", "GuidToString"):
 				// Recursive CTE expression defined in test is not supported
@@ -109,6 +110,8 @@ namespace Tests
 				case ("TableIDTests", "TableTest"):
 				// Test case uses guid conversion with custom conversion expression
 				case ("ConvertExpressionTests", "Issue3791Test"):
+				//Ignore custom extension tests 
+				case ("SqlExtensionTests", _):
 					return Enumerable.Empty<string>();
 
 				//Access client throws a different exception so it is excluded

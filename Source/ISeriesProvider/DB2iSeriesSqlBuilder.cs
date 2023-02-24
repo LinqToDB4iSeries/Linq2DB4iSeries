@@ -28,10 +28,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public DB2iSeriesSqlBuilder(
 			DB2iSeriesDataProvider provider,
 			MappingSchema mappingSchema,
+			DataOptions options,
 			ISqlOptimizer sqlOptimizer,
 			SqlProviderFlags sqlProviderFlags,
 			DB2iSeriesSqlProviderFlags db2iSeriesSqlProviderFlags)
-			: base(provider, mappingSchema, sqlOptimizer, sqlProviderFlags)
+			: base(provider, mappingSchema, options, sqlOptimizer, sqlProviderFlags)
 		{
 			Provider = provider;
 			DB2iSeriesSqlProviderFlags = db2iSeriesSqlProviderFlags;
@@ -487,7 +488,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			//TODO: Test this scenario with AlternativeGetSelectedColumns
 			if (NeedSkip(selectQuery.Select.TakeValue, selectQuery.Select.SkipValue) && !selectQuery.OrderBy.IsEmpty)
-				return AlternativeGetSelectedColumns(selectQuery, () => base.GetSelectedColumns(selectQuery));
+				return AlternativeGetSelectedColumns(selectQuery, base.GetSelectedColumns(selectQuery));
 
 			return base.GetSelectedColumns(selectQuery);
 		}

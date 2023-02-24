@@ -8,10 +8,10 @@ namespace IBM.Data.Informix
 	public class IfxTimeSpan { }
 }
 
-namespace System.Runtime.CompilerServices
-{
-	public static class IsExternalInit { }
-}
+//namespace System.Runtime.CompilerServices
+//{
+//	public static class IsExternalInit { }
+//}
 
 
 namespace JetBrains.Annotations
@@ -41,15 +41,15 @@ namespace System.Diagnostics.CodeAnalysis
 	{
 	}
 
-	public sealed class NotNullIfNotNullAttribute : Attribute
-	{
-		public string ParameterName { get; }
+	//public sealed class NotNullIfNotNullAttribute : Attribute
+	//{
+	//	public string ParameterName { get; }
 		
-		public NotNullIfNotNullAttribute(string parameterName)
-		{
-			ParameterName = parameterName;
-		}
-	}
+	//	public NotNullIfNotNullAttribute(string parameterName)
+	//	{
+	//		ParameterName = parameterName;
+	//	}
+	//}
 }
 #endif
 

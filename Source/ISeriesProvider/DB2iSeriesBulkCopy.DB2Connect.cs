@@ -18,18 +18,19 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		//Copied from DB2BulkCopy
 		private static BulkCopyRowsCopied ProviderSpecificCopyImpl_DB2<T>(
 		ITable<T> table,
-		BulkCopyOptions options,
+		DataOptions dataOptions,
 		IEnumerable<T> source,
 		DataConnection dataConnection,
 		DbConnection connection,
 		DB2.DB2ProviderAdapter.BulkCopyAdapter bulkCopy,
 		Action<DataConnection, Func<string>, Func<int>> traceAction)
 		{
+			var options = dataOptions.BulkCopyOptions;
 			var descriptor = dataConnection.MappingSchema.GetEntityDescriptor(typeof(T));
 			var columns = descriptor.Columns.Where(c => !c.SkipOnInsert || options.KeepIdentity == true && c.IsIdentity).ToList();
 			var rd = new BulkCopyReader<T>(dataConnection, columns, source);
 			var rc = new BulkCopyRowsCopied();
-			var sqlBuilder = dataConnection.DataProvider.CreateSqlBuilder(dataConnection.MappingSchema);
+			var sqlBuilder = dataConnection.DataProvider.CreateSqlBuilder(dataConnection.MappingSchema, dataOptions);
 			var tableName = GetTableName(sqlBuilder, options, table);
 
 			var bcOptions = DB2BulkCopyOptions.Default;

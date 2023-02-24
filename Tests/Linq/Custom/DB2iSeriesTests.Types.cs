@@ -710,7 +710,21 @@ namespace Tests.DataProvider
 
 			public static TestTimeTypes[] Data;
 
-			public static Func<TestTimeTypes, TestTimeTypes, bool> Comparer = ComparerBuilder.GetEqualsFunc<TestTimeTypes>();
+			public static void AssertEqual(TestTimeTypes actual, TestTimeTypes expected)
+			{
+				Assert.AreEqual(expected.Date1, actual.Date1);
+				Assert.AreEqual(expected.Date2, actual.Date2);
+				Assert.AreEqual(expected.Time, actual.Time);
+				Assert.AreEqual(expected.Id, actual.Id);
+				Assert.AreEqual(expected.TimeStamp0, actual.TimeStamp0);
+				Assert.AreEqual(expected.TimeStamp1, actual.TimeStamp1);
+				Assert.AreEqual(expected.TimeStamp2, actual.TimeStamp2);
+				Assert.AreEqual(expected.TimeStamp3, actual.TimeStamp3);
+				Assert.AreEqual(expected.TimeStamp4, actual.TimeStamp4);
+				Assert.AreEqual(expected.TimeStamp5, actual.TimeStamp5);
+				Assert.AreEqual(expected.TimeStamp6, actual.TimeStamp6);
+				Assert.AreEqual(expected.TimeStamp7, actual.TimeStamp7);
+			}
 		}
 
 		[Test]
@@ -721,44 +735,46 @@ namespace Tests.DataProvider
 			{
 				db.InlineParameters = !useParameters;
 
+				var data = TestTimeTypes.Data[0];
+
 				var record = table.Where(_ => _.Id == 1).Single();
-				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+				TestTimeTypes.AssertEqual(record, data);
 
-				record = table.Where(_ => _.Date1 == TestTimeTypes.Data[0].Date1).Single();
-				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+				record = table.Where(_ => _.Date1 == data.Date1).Single();
+				TestTimeTypes.AssertEqual(record, data);
 
-				record = table.Where(_ => _.Date2 == TestTimeTypes.Data[0].Date2).Single();
-				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+				record = table.Where(_ => _.Date2 == data.Date2).Single();
+				TestTimeTypes.AssertEqual(record, data);
 
-				record = table.Where(_ => _.Time == TestTimeTypes.Data[0].Time).Single();
-				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+				record = table.Where(_ => _.Time == data.Time).Single();
+				TestTimeTypes.AssertEqual(record, data);
 
-				record = table.Where(_ => _.TimeStamp0 == TestTimeTypes.Data[0].TimeStamp0).Single();
-				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+				record = table.Where(_ => _.TimeStamp0 == data.TimeStamp0).Single();
+				TestTimeTypes.AssertEqual(record, data);
 
-				record = table.Where(_ => _.TimeStamp1 == TestTimeTypes.Data[0].TimeStamp1).Single();
-				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+				record = table.Where(_ => _.TimeStamp1 == data.TimeStamp1).Single();
+				TestTimeTypes.AssertEqual(record, data	);
 
-				record = table.Where(_ => _.TimeStamp2 == TestTimeTypes.Data[0].TimeStamp2).Single();
-				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+				record = table.Where(_ => _.TimeStamp2 == data.TimeStamp2).Single();
+				TestTimeTypes.AssertEqual(record, data);
 
-				record = table.Where(_ => _.TimeStamp3 == TestTimeTypes.Data[0].TimeStamp3).Single();
-				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+				record = table.Where(_ => _.TimeStamp3 == data.TimeStamp3).Single();
+				TestTimeTypes.AssertEqual(record, data);
 
-				record = table.Where(_ => _.TimeStamp4 == TestTimeTypes.Data[0].TimeStamp4).Single();
-				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+				record = table.Where(_ => _.TimeStamp4 == data.TimeStamp4).Single();
+				TestTimeTypes.AssertEqual(record, data);
 
-				record = table.Where(_ => _.TimeStamp5 == TestTimeTypes.Data[0].TimeStamp5).Single();
-				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+				record = table.Where(_ => _.TimeStamp5 == data.TimeStamp5).Single();
+				TestTimeTypes.AssertEqual(record, data);
 
-				record = table.Where(_ => _.TimeStamp6 == TestTimeTypes.Data[0].TimeStamp6).Single();
-				Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+				record = table.Where(_ => _.TimeStamp6 == data.TimeStamp6).Single();
+				TestTimeTypes.AssertEqual(record, data);
 
 				// older versions of the iSeries OS do not support timespans with precision > 6.
 				if (TestProvNameDb2i.GetVersion(context) > LinqToDB.DataProvider.DB2iSeries.DB2iSeriesVersion.V7_2)
 				{
-					record = table.Where(_ => _.TimeStamp7 == TestTimeTypes.Data[0].TimeStamp7).Single();
-					Assert.True(TestTimeTypes.Comparer(record, TestTimeTypes.Data[0]));
+					record = table.Where(_ => _.TimeStamp7 == data.TimeStamp7).Single();
+					TestTimeTypes.AssertEqual(record, data);
 				}
 			}
 		}
