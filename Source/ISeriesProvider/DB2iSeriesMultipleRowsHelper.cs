@@ -6,7 +6,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	using Mapping;
 	using SqlQuery;
 
-	class DB2iSeriesMultipleRowsHelper<T> : MultipleRowsHelper<T>
+	internal class DB2iSeriesMultipleRowsHelper<T> : MultipleRowsHelper<T>
 	{
 		private readonly DB2iSeriesSqlProviderFlags db2ISeriesSqlProviderFlags;
 		

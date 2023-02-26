@@ -112,6 +112,9 @@ namespace Tests
 				case ("ConvertExpressionTests", "Issue3791Test"):
 				//Ignore custom extension tests 
 				case ("SqlExtensionTests", _):
+				//Test cases invalid for DB2i
+				case ("InSubqueryTests", "InTest"):
+				case ("InSubqueryTests", "InNullTest"):
 					return Enumerable.Empty<string>();
 
 				//Access client throws a different exception so it is excluded

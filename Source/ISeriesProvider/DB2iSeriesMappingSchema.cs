@@ -7,8 +7,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	using Mapping;
 	using SqlQuery;
 	using System.Data.Linq;
+	using static DB2iSeriesSqlBuilder;
 
-	sealed class DB2iSeriesMappingSchemaBase : LockedMappingSchema
+	internal sealed class DB2iSeriesMappingSchemaBase : LockedMappingSchema
 	{
 		public static DB2iSeriesMappingSchemaBase Instance { get; } = new();
 
@@ -19,15 +20,22 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			SetDataType(typeof(string), new SqlDataType(DataType.NVarChar, typeof(string), 255));
 
-			SetValueToSqlConverter(typeof(string), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertStringToSql(sb, v.ToString()));
-			SetValueToSqlConverter(typeof(char), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertCharToSql(sb, (char)v));
-			SetValueToSqlConverter(typeof(byte[]), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertBinaryToSql(sb, (byte[])v));
-			SetValueToSqlConverter(typeof(Binary), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertBinaryToSql(sb, ((Binary)v).ToArray()));
-			SetValueToSqlConverter(typeof(TimeSpan), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertTimeToSql(sb, (TimeSpan)v));
-			SetValueToSqlConverter(typeof(DateTime), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertDateTimeToSql(sb, dt.Type.DataType, (DateTime)v, precision: dt.Type.Precision));
+			SetValueToSqlConverter(typeof(string), (sb, _, v) => ConvertStringToSql(sb, v.ToString()));
+			SetValueToSqlConverter(typeof(char), (sb, _, v) => ConvertCharToSql(sb, (char)v));
+			SetValueToSqlConverter(typeof(byte[]), (sb, _, v) => ConvertBinaryToSql(sb, (byte[])v));
+			SetValueToSqlConverter(typeof(Binary), (sb, _, v) => ConvertBinaryToSql(sb, ((Binary)v).ToArray()));
+			SetValueToSqlConverter(typeof(TimeSpan), (sb, _, v) => ConvertTimeToSql(sb, (TimeSpan)v));
+			SetValueToSqlConverter(typeof(DateTime), (sb, dt, v) => ConvertDateTimeToSql(sb, dt.Type.DataType, (DateTime)v, precision: dt.Type.Precision));
+
 			
+
 			// set reader conversions from literals
 			SetConverter<string, DateTime>(SqlDateTimeParser.ParseDateTime);
+
+#if NET6_0_OR_GREATER
+			SetValueToSqlConverter(typeof(DateOnly), (sb, _, _, v) => ConvertDateOnlyToSql(sb, (DateOnly)v));
+			SetConverter<string, DateOnly>(ParseDateOnly);
+#endif
 
 			AddMetadataReader(new DB2iSeriesMetadataReader(DB2iSeriesProviderName.DB2));
 		}
@@ -38,7 +46,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public DB2iSeriesMappingSchema(string configuration, MappingSchema providerSchema) 
 			: base(configuration, providerSchema, DB2iSeriesMappingSchemaBase.Instance)
 		{
-			SetValueToSqlConverter(typeof(Guid), (sb, dt, v) => DB2iSeriesSqlBuilder.ConvertGuidToSql(sb, (Guid)v));
+			SetValueToSqlConverter(typeof(Guid), (sb, _, _, v) => DB2iSeriesSqlBuilder.ConvertGuidToSql(sb, (Guid)v));
 		}
 	}
 

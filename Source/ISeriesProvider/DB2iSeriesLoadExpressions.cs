@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
-	static class DB2iSeriesLoadExpressions
+	internal static class DB2iSeriesLoadExpressions
 	{
 		static readonly ConcurrentDictionary<string, object> configurations = new();
 

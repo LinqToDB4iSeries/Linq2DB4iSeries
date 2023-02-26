@@ -84,6 +84,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			=> adapter;
 
 		public static DB2iSeriesProviderAdapter GetInstance(DB2iSeriesProviderType providerType)
-			=> new DB2iSeriesProviderAdapter(providerType);
+			=> new(providerType);
 	}
 }

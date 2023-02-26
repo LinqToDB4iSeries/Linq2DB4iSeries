@@ -9,7 +9,7 @@ using System.Data.Common;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
-	public class DB2iSeriesSchemaProvider : SchemaProviderBase
+	internal class DB2iSeriesSchemaProvider : SchemaProviderBase
 	{
 		private readonly DB2iSeriesDataProvider provider;
 

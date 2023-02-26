@@ -10,8 +10,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	using LinqToDB;
 	using LinqToDB.Common;
 	using DB2BulkCopyOptions = DB2.DB2ProviderAdapter.DB2BulkCopyOptions;
-	
-	partial class DB2iSeriesBulkCopy : BasicBulkCopy
+
+	internal partial class DB2iSeriesBulkCopy : BasicBulkCopy
 	{
 		//Copied from DB2BulkCopy
 		private static BulkCopyRowsCopied ProviderSpecificCopyImpl_DB2<T>(

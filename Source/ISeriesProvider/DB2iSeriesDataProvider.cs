@@ -55,6 +55,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SqlProviderFlags.CanCombineParameters = false;
 			SqlProviderFlags.IsCommonTableExpressionsSupported = true;
 			SqlProviderFlags.IsUpdateFromSupported = false;
+			SqlProviderFlags.IsExistsPreferableForContains = true;
 			//This feature is undocumented, it passes the tests on 7.5
 			//DB2 supports Comparison, Between, Update, UpateLiteral these don't work in iDB2
 			SqlProviderFlags.RowConstructorSupport = RowFeature.Equality | RowFeature.Overlaps;
@@ -93,38 +94,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			var adapter = (DB2iSeriesAccessClientProviderAdapter)Adapter.GetInstance();
 
-			//The original implementation had erronously toType and providerType reversed so the following mapping effectivily did nothing
-			//Leaving commented for reference in case something needs to be readded
-			//In case these are readded they override the generic char trimmings setup with SetCharField
-
-			//SetProviderField(typeof(long), adapter.iDB2BigIntType, adapter.GetiDB2BigIntReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(byte[]), adapter.iDB2BinaryType, adapter.GetiDB2BinaryReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(byte[]), adapter.iDB2BlobType, adapter.GetiDB2BlobReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(string), adapter.iDB2CharType, adapter.GetiDB2CharReaderMethod, getTrimmedStringWrapper, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(byte[]), adapter.iDB2CharBitDataType, adapter.GetiDB2CharBitDataReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(string), adapter.iDB2ClobType, adapter.GetiDB2ClobReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(string), adapter.iDB2DataLinkType, adapter.GetiDB2DataLinkReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(string), adapter.iDB2DbClobType, adapter.GetiDB2DbClobReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(decimal), adapter.iDB2DecFloat16Type, adapter.GetiDB2DecFloat16ReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(decimal), adapter.iDB2DecFloat34Type, adapter.GetiDB2DecFloat34ReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(decimal), adapter.iDB2DecimalType, adapter.GetiDB2DecimalReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(double), adapter.iDB2DoubleType, adapter.GetiDB2DoubleReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(string), adapter.iDB2GraphicType, adapter.GetiDB2GraphicReaderMethod, getTrimmedStringWrapper, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(int), adapter.iDB2IntegerType, adapter.GetiDB2IntegerReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(decimal), adapter.iDB2NumericType, adapter.GetiDB2NumericReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(float), adapter.iDB2RealType, adapter.GetiDB2RealReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(byte[]), adapter.iDB2RowidType, adapter.GetiDB2RowidReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(short), adapter.iDB2SmallIntType, adapter.GetiDB2SmallIntReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(DateTime), adapter.iDB2DateType, adapter.GetiDB2DateReaderMethod, getValue<DateTime>, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(DateTime), adapter.iDB2TimeType, adapter.GetiDB2TimeReaderMethod, getValue<DateTime>, dataReaderType: adapter.DataReaderType);
 			SetProviderField(typeof(DateTime), adapter.iDB2TimeStampType, adapter.GetiDB2TimeStampReaderMethod, getTimeStampWrapper(adapter.iDB2TimeStampType), dataReaderType: adapter.DataReaderType);
 			SetProviderField(typeof(DateTimeOffset), adapter.iDB2TimeStampType, adapter.GetiDB2TimeStampReaderMethod, getTimeStampWrapper(adapter.iDB2TimeStampType), dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(byte[]), adapter.iDB2VarBinaryType, adapter.GetiDB2VarBinaryReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(string), adapter.iDB2VarCharType, adapter.GetiDB2VarCharReaderMethod, getTrimmedStringWrapper, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(byte[]), adapter.iDB2VarCharBitDataType, adapter.GetiDB2VarCharBitDataReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(string), adapter.iDB2VarGraphicType, adapter.GetiDB2VarGraphicReaderMethod, getTrimmedStringWrapper, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(string), adapter.iDB2XmlType, adapter.GetiDB2XmlReaderMethod, dataReaderType: adapter.DataReaderType);
-
+			
 			static Delegate getTimeStampWrapper(Type iDB2TimeStampType)
 			{
 				//Warning: iDB2TimeStampt produces wrong value for picoseconds when created from DateTime or the milliseconds overload
@@ -169,37 +141,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		private void SetupDB2Connect()
 		{
 			SqlProviderFlags.IsParameterOrderDependent = false;
-
-			var adapter = (DB2.DB2ProviderAdapter)Adapter.GetInstance();
-
-			//The original implementation had erronously toType and providerType reversed so the following mapping effectivily did nothing
-			//Leaving commented for reference in case something needs to be readded
-			//In case these are readded they override the generic char trimmings setup with SetCharField
-
-			//SetProviderField(typeof(long), adapter.DB2Int64Type, adapter.GetDB2Int64ReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(int), adapter.DB2Int32Type, adapter.GetDB2Int32ReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(short), adapter.DB2Int16Type, adapter.GetDB2Int16ReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(decimal), adapter.DB2DecimalType, adapter.GetDB2DecimalReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(decimal), adapter.DB2DecimalFloatType, adapter.GetDB2DecimalFloatReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(float), adapter.DB2RealType, adapter.GetDB2RealReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(float), adapter.DB2Real370Type, adapter.GetDB2Real370ReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(double), adapter.DB2DoubleType, adapter.GetDB2DoubleReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(string), adapter.DB2StringType, adapter.GetDB2StringReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(string), adapter.DB2ClobType, adapter.GetDB2ClobReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(byte[]), adapter.DB2BinaryType, adapter.GetDB2BinaryReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(byte[]), adapter.DB2BlobType, adapter.GetDB2BlobReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(DateTime), adapter.DB2DateType, adapter.GetDB2DateReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(TimeSpan), adapter.DB2TimeType, adapter.GetDB2TimeReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(DateTime), adapter.DB2TimeStampType, adapter.GetDB2TimeStampReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(string), adapter.DB2XmlType, adapter.GetDB2XmlReaderMethod, dataReaderType: adapter.DataReaderType);
-			//SetProviderField(typeof(byte[]), adapter.DB2RowIdType, adapter.GetDB2RowIdReaderMethod, dataReaderType: adapter.DataReaderType);
 		}
 
 		private void SetupOdbc()
 		{
 			SqlProviderFlags.IsParameterOrderDependent = true;
-
-			//var adapter = (OdbcProviderAdapter)Adapter.GetInstance();
 		}
 
 		private void SetupOleDb()
@@ -424,6 +370,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						break;
 					case DataType.Date:
 
+#if NET6_0_OR_GREATER
+						if (value is DateOnly d)
+							value = d.ToDateTime(TimeOnly.MinValue);
+#endif
 						//if (dataType.DbType != null)
 						//	dataType = dataType
 						//		.WithDbType(Constants.DbTypes.Date);
@@ -652,7 +602,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return bulkCopy.BulkCopyAsync(options.BulkCopyOptions.BulkCopyType.GetEffectiveType(), table, options, source, cancellationToken);
 		}
 
-#if NATIVE_ASYNC
+#if NET472_OR_GREATER
 		public override Task<BulkCopyRowsCopied> BulkCopyAsync<T>(DataOptions options, ITable<T> table, IAsyncEnumerable<T> source, CancellationToken cancellationToken)
 		{
 			return bulkCopy.BulkCopyAsync(options.BulkCopyOptions.BulkCopyType.GetEffectiveType(), table, options, source, cancellationToken);

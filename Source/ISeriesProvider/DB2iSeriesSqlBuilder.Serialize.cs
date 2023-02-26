@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
-	public partial class DB2iSeriesSqlBuilder
+	internal partial class DB2iSeriesSqlBuilder
 	{
 		public static string UnnamedParameterMarker { get; } = "?";
 		public static string NamedQueryParameterMarkerPrefix { get; } = "@";
@@ -67,6 +67,27 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			stringBuilder.AppendFormat(format, value);
 			if (quoted) stringBuilder.Append('\'');
 		}
+
+#if NET6_0_OR_GREATER
+		public static void ConvertDateOnlyToSql(StringBuilder stringBuilder, DateOnly value, bool quoted = true)
+		{
+			if (quoted) stringBuilder.Append('\'');
+			stringBuilder.AppendFormat("{0:yyyy-MM-dd}", value);
+			if (quoted) stringBuilder.Append('\'');
+		}
+
+		public static DateOnly ParseDateOnly(string value)
+		{
+			if (DateOnly.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var res))
+				return res;
+
+			return DateOnly.ParseExact(
+				value,
+				"yyyy-MM-dd",
+				CultureInfo.InvariantCulture,
+				DateTimeStyles.None);
+		}
+#endif
 
 		public static string ConvertDateTimeToSql(DataType datatype, DateTime value, bool quoted = true, int? precision = null)
 		{

@@ -5,7 +5,7 @@ using LinqToDB.SqlQuery;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
-	public partial class DB2iSeriesSqlBuilder
+	internal partial class DB2iSeriesSqlBuilder
 	{
 		protected override void BuildMergeStatement(SqlMergeStatement merge)
 		{

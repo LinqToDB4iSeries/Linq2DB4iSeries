@@ -8,6 +8,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 {
 	using Common;
 	using LinqToDB.Data;
+	using LinqToDB.DataProvider.DB2;
 	using Mapping;
 	using SqlProvider;
 	using SqlQuery;
@@ -15,10 +16,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	using System.Data.SqlTypes;
 	using System.Globalization;
 
-	public partial class DB2iSeriesSqlBuilder : BasicSqlBuilder
+	internal partial class	DB2iSeriesSqlBuilder : BasicSqlBuilder<DB2iSeriesOptions>
 	{
-		public static DB2iSeriesIdentifierQuoteMode IdentifierQuoteMode = DB2iSeriesIdentifierQuoteMode.None;
-		
+		[Obsolete("Use DB2Options.Default.IdentifierQuoteMode instead.")]
+		public static DB2iSeriesIdentifierQuoteMode IdentifierQuoteMode
+		{
+			get => DB2iSeriesOptions.Default.IdentifierQuoteMode;
+			set => DB2iSeriesOptions.Default = DB2iSeriesOptions.Default with { IdentifierQuoteMode = value };
+		}
+
 		protected DB2iSeriesDataProvider Provider { get; set; }
 		
 		public DB2iSeriesSqlProviderFlags DB2iSeriesSqlProviderFlags { get; }
@@ -108,13 +114,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case ConvertType.NameToSchema:
 				case ConvertType.NameToDatabase:
 				case ConvertType.NameToQueryTableAlias:
-					if (IdentifierQuoteMode != DB2iSeriesIdentifierQuoteMode.None)
+					if (ProviderOptions.IdentifierQuoteMode != DB2iSeriesIdentifierQuoteMode.None)
 					{
 						if (value.Length > 0 && value[0] == '"')
 						{
 							return sb.Append(value);
 						}
-						if (IdentifierQuoteMode == DB2iSeriesIdentifierQuoteMode.Quote ||
+						if (ProviderOptions.IdentifierQuoteMode == DB2iSeriesIdentifierQuoteMode.Quote ||
 							value.StartsWith("_") ||
 							value.Any(c => char.IsLower(c) || char.IsWhiteSpace(c)))
 							return sb.Append('"').Append(value).Append('"');

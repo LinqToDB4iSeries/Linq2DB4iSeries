@@ -57,7 +57,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		}
 
 		public static BulkCopyType GetEffectiveType(this BulkCopyType bulkCopyType)
-			=> bulkCopyType == BulkCopyType.Default ? DB2iSeriesTools.DefaultBulkCopyType : bulkCopyType;
+			=> bulkCopyType == BulkCopyType.Default ? DB2iSeriesOptions.Default.BulkCopyType : bulkCopyType;
 
 		public static string GetQuotedLibList(this DataConnection dataConnection)
 			=> "'" + string.Join("','", dataConnection.GetLibList()) + "'";
@@ -158,7 +158,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 				if (csb.TryGetValue(namingConventionKey, out var namingConvention))
 				{
-					if (!(namingConvention is string namingConventionString))
+					if (namingConvention is not string namingConventionString)
 						namingConventionString = ((int)namingConvention).ToString();
 
 					return namingConventionString == "1" ? DB2iSeriesNamingConvention.System : DB2iSeriesNamingConvention.Sql;
