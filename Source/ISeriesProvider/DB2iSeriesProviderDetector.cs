@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
-	public class DB2iSeriesProviderDetector
+	internal class DB2iSeriesProviderDetector
 	{
 		private readonly bool mapGuidAsString;
 
@@ -33,7 +33,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 		}
 
-		private DB2iSeriesProviderType GetProviderType(string connectionString)
+		private static DB2iSeriesProviderType GetProviderType(string connectionString)
 		{
 			var csb = new DbConnectionStringBuilder()
 			{
@@ -56,7 +56,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		private ServerVersion GetServerVersion(string connectionString, DB2iSeriesProviderType providerType)
 		{
-			using (var conn = (DbConnection)DB2iSeriesTools.GetDataProvider(DB2iSeriesVersion.V7_1, providerType, DB2iSeriesMappingOptions.Default).CreateConnection(connectionString))
+			using (var conn = DB2iSeriesTools.GetDataProvider(DB2iSeriesVersion.V7_1, providerType, DB2iSeriesMappingOptions.Default).CreateConnection(connectionString))
 			{
 				conn.Open();
 

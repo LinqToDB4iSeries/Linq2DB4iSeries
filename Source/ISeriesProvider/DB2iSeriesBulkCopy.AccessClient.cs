@@ -10,7 +10,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	using System.Diagnostics;
 	using System.Data.Common;
 
-	partial class DB2iSeriesBulkCopy : BasicBulkCopy
+	internal partial class DB2iSeriesBulkCopy : BasicBulkCopy
 	{
 		private const int MAX_ACCESS_CLIENT_BATCH_SIZE = 10000;
 

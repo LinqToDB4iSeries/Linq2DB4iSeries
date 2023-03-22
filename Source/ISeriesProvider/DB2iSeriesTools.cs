@@ -5,6 +5,7 @@ using LinqToDB.Configuration;
 using LinqToDB.Data;
 using System.Collections.Concurrent;
 using System.Data.Common;
+using LinqToDB.DataProvider.DB2;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
@@ -16,13 +17,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static DB2iSeriesDataProvider GetDataProvider(string providerName)
 		{
-			if (!dataProviders.TryGetValue(providerName, out var dataProvider))
-			{
-				dataProvider = BuildDataProvider(providerName);
-				dataProviders.TryAdd(providerName, dataProvider);
-			}
-
-			return dataProvider;
+			return dataProviders.GetOrAdd(providerName, 
+				p => new DB2iSeriesDataProvider(DB2iSeriesProviderName.GetProviderOptions(p)));
 		}
 
 		public static bool TryGetDataProvider(string providerName, out DB2iSeriesDataProvider dataProvider)
@@ -37,11 +33,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return true;
 		}
 
-		private static DB2iSeriesDataProvider BuildDataProvider(string providerName)
-		{
-			return new DB2iSeriesDataProvider(DB2iSeriesProviderName.GetProviderOptions(providerName));
-		}
-
 		public static DB2iSeriesDataProvider GetDataProvider(
 			DB2iSeriesVersion version,
 			DB2iSeriesProviderType providerType,
@@ -54,7 +45,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		#region AutoDetection
 
-		private readonly static DB2iSeriesProviderDetector providerDetector = new DB2iSeriesProviderDetector();
+		private readonly static DB2iSeriesProviderDetector providerDetector = new();
 
 		public static bool AutoDetectProvider { get; set; } = true;
 
@@ -81,15 +72,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 
 			return null;
-		}
-
-		public static IDataProvider ProviderDetector(IConnectionStringSettings css, string connectionString)
-		{
-			return ProviderDetector(new ConnectionOptions
-			{
-				ConfigurationString = css.Name,
-				ConnectionString = !string.IsNullOrEmpty(css.ConnectionString) ? css.ConnectionString : connectionString,
-			});
 		}
 
 		#endregion
@@ -132,7 +114,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		/// methods, if mode is not specified explicitly.
 		/// Default value: <see cref="BulkCopyType.MultipleRows"/>.
 		/// </summary>
-		public static BulkCopyType DefaultBulkCopyType = BulkCopyType.MultipleRows;
+		[Obsolete("Use DBiSeries2Options.Default.BulkCopyType instead.")]
+		public static BulkCopyType DefaultBulkCopyType
+		{
+			get => DB2iSeriesOptions.Default.BulkCopyType;
+			set => DB2iSeriesOptions.Default = DB2iSeriesOptions.Default with { BulkCopyType = value };
+		}
 
 		#endregion
 	}

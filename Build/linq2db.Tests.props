@@ -3,7 +3,7 @@
 	<Import Project="linq2db.Default.props" />
 
 	<PropertyGroup>
-		<TargetFrameworks>netcoreapp3.1;net472</TargetFrameworks>
+		<TargetFrameworks>net6.0;net472</TargetFrameworks>
 		<Configurations>Debug;Release;</Configurations>
 		<DefineConstants>$(DefineConstants)</DefineConstants>
 		<DefineConstants Condition="$(X86) != ''">$(DefineConstants);X86</DefineConstants>

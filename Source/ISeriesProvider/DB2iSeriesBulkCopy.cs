@@ -7,7 +7,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 {
 	using Data;
 		
-	partial class DB2iSeriesBulkCopy : BasicBulkCopy
+	internal partial class DB2iSeriesBulkCopy : BasicBulkCopy
 	{
 		const int MAX_ALLOWABLE_MULTIPLE_ROWS_BATCH_SIZE = 100;
 
@@ -110,7 +110,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return MultipleRowsCopyAsync(table, options, source, cancellationToken);
 		}
 
-#if NATIVE_ASYNC
+#if NET472_OR_GREATER
 		protected override async Task<BulkCopyRowsCopied> ProviderSpecificCopyAsync<T>(ITable<T> table, DataOptions options, IAsyncEnumerable<T> source, CancellationToken cancellationToken)
 		{
 			if (table.DataContext is DataConnection dataConnection)
@@ -165,7 +165,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return MultipleRowsCopy2Async(new DB2iSeriesMultipleRowsHelper<T>(table, options, dB2ISeriesSqlProviderFlags) { BatchSize = GetMultipleRowsMaxBatchSize(options) }, source, " FROM " + Constants.SQL.DummyTableName(), cancellationToken);
 		}
 
-#if NATIVE_ASYNC
+#if NET472_OR_GREATER
 		protected override Task<BulkCopyRowsCopied> MultipleRowsCopyAsync<T>(ITable<T> table, DataOptions options, IAsyncEnumerable<T> source, CancellationToken cancellationToken)
 		{
 			return MultipleRowsCopy2Async(new DB2iSeriesMultipleRowsHelper<T>(table, options, dB2ISeriesSqlProviderFlags) { BatchSize = GetMultipleRowsMaxBatchSize(options) }, source, " FROM " + Constants.SQL.DummyTableName(), cancellationToken);

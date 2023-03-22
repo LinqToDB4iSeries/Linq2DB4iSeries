@@ -2,7 +2,7 @@
 {
 	using SqlProvider;
 
-	public class DB2iSeriesSqlProviderFlags
+	internal class DB2iSeriesSqlProviderFlags
 	{
 		public DB2iSeriesSqlProviderFlags(
 			bool supportsOffsetClause,

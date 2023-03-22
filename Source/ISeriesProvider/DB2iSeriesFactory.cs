@@ -4,7 +4,7 @@ using LinqToDB.Configuration;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
-	public class DB2iSeriesFactory : IDataProviderFactory
+	internal class DB2iSeriesFactory : IDataProviderFactory
 	{
 		public IDataProvider GetDataProvider(IEnumerable<NamedValue> attributes)
 		{

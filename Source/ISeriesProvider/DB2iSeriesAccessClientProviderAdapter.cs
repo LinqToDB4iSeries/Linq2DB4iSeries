@@ -10,7 +10,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	using LinqToDB.Expressions;
 	using LinqToDB.Mapping;
 
-	public class DB2iSeriesAccessClientProviderAdapter : IDynamicProviderAdapter
+	internal class DB2iSeriesAccessClientProviderAdapter : IDynamicProviderAdapter
 	{
 		public const string AssemblyName = "IBM.Data.DB2.iSeries";
 		public const string ProviderFactoryName = "IBM.Data.DB2.iSeries";

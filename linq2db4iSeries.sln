@@ -3,7 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.32112.339
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{B4CC1DAB-FF2D-4247-9A46-B7DE236981BB}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{B4CC1DAB-FF2D-4247-9A46-B7DE236981BB}"
+	ProjectSection(SolutionItems) = preProject
+		Tests\DataProviders.json = Tests\DataProviders.json
+		Tests\UserDataProviders.json = Tests\UserDataProviders.json
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".doc", ".doc", "{751CE0BA-690F-42BF-94C7-C8276F8A84CF}"
 	ProjectSection(SolutionItems) = preProject
@@ -34,6 +38,8 @@ EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Tests.FSharp", "Tests\FSharp\Tests.FSharp.fsproj", "{9139F4C6-BA73-48BB-8558-56DB69F491C9}"
 EndProject
 Project("{778DAE3C-4631-46EA-AA77-85C1314464D9}") = "Tests.VisualBasic", "Tests\VisualBasic\Tests.VisualBasic.vbproj", "{7F6CD65E-BBB6-4C92-8F5F-CFADDD69BCC9}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{71142D09-3C31-447A-A8F7-215A7F4DF5B9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -148,6 +154,7 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{3E19DA8D-056C-4F05-B976-698498311FC2} = {71142D09-3C31-447A-A8F7-215A7F4DF5B9}
 		{D938B88E-CD22-4FF4-989E-A84B414DFEAE} = {B4CC1DAB-FF2D-4247-9A46-B7DE236981BB}
 		{06EB7055-1B80-4D28-ABA3-64226076E1DE} = {B4CC1DAB-FF2D-4247-9A46-B7DE236981BB}
 		{0C570479-D628-47BF-BC2B-3EFE244CDA67} = {B4CC1DAB-FF2D-4247-9A46-B7DE236981BB}
