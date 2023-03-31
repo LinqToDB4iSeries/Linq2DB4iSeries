@@ -8,14 +8,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
 	{
 		public IDataProvider GetDataProvider(IEnumerable<NamedValue> attributes)
 		{
-			var versionText = attributes.FirstOrDefault(_ => _.Name == "version");
+			var versionText = attributes.FirstOrDefault(_ => _.Name == "version")?.Value ?? "";
 
-			var version = versionText.Value switch
+			var version = versionText switch
 			{
 				var x when x.StartsWith("7.4.") || x == "7.4" || x == "7_4" => DB2iSeriesVersion.V7_4,
 				var x when x.StartsWith("7.3.") || x == "7.3" || x == "7_3" => DB2iSeriesVersion.V7_3,
 				var x when x.StartsWith("7.2.") || x == "7.2" || x == "7_2" => DB2iSeriesVersion.V7_2,
-				_ => DB2iSeriesVersion.V7_1
+				_ => DB2iSeriesProviderOptions.Defaults.Version
 			};
 
 			var providerType = attributes.FirstOrDefault(_ => _.Name == "assemblyName")?.Value switch
