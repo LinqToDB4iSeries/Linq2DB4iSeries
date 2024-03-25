@@ -17,7 +17,6 @@
 	<ItemGroup Condition=" '$(TargetFramework)' != 'net45' AND '$(TargetFramework)' != 'net472' ">
 		<Compile Remove="DB2iSeriesAccessClientProviderAdapter.cs" />
 		<Compile Remove="DB2iSeriesBulkCopy.AccessClient.cs" />
-		<Compile Remove="DB2iSeriesAttributeReader.cs" />
 	</ItemGroup>
 
 	<ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'net472' ">

@@ -10,7 +10,6 @@
 		<Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
 
 		<ProjectReference Include="..\VisualBasic\Tests.VisualBasic.vbproj" />
-
 		<None Update="Extensions\MySqlTests.tt">
 			<LastGenOutput>MySqlTests.generated.cs</LastGenOutput>
 			<Generator>TextTemplatingFileGenerator</Generator>
@@ -66,6 +65,11 @@
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 	</ItemGroup>
 
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net472' ">
+		<!--Tests fail with a TypeLoadException on Net472 - Generic tests not need for provider-->
+		<Compile Remove="Common\ConnectionBuilderTests.cs" />
+	</ItemGroup>
+
 	<ItemGroup>
 		<Compile Remove="DataProvider\**" />
 		<EmbeddedResource Remove="DataProvider\**" />
@@ -73,9 +77,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Remove="Data\MiniProfilerTests.cs" />
-	  <Compile Remove="Data\DataConnectionTests.cs" />
-	  <Compile Remove="Data\DataExtensionsTests.cs" />
+		<Compile Remove="Data\MiniProfilerTests.cs" />
+		<Compile Remove="Data\DataConnectionTests.cs" />
+		<Compile Remove="Data\DataExtensionsTests.cs" />
 	</ItemGroup>
 
 </Project>

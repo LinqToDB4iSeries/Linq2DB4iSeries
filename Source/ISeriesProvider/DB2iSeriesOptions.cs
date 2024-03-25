@@ -8,6 +8,8 @@
 	(
 		BulkCopyType BulkCopyType = BulkCopyType.MultipleRows,
 		DB2iSeriesIdentifierQuoteMode IdentifierQuoteMode = DB2iSeriesIdentifierQuoteMode.None
+		// If you add another parameter here, don't forget to update
+		// DB2iSeriesOptions copy constructor and CreateID method.
 	)
 		: DataProviderOptions<DB2iSeriesOptions>(BulkCopyType)
 	{

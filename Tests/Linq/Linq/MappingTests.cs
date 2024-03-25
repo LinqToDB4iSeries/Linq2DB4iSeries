@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Linq;
+#if NET472
+using System.ServiceModel;
+#endif
 
 using LinqToDB;
 using LinqToDB.Common;
@@ -11,9 +14,6 @@ using NUnit.Framework;
 namespace Tests.Linq
 {
 	using Model;
-#if NET472
-	using System.ServiceModel;
-#endif
 
 	[TestFixture]
 	public class MappingTests : TestBase
@@ -257,8 +257,9 @@ namespace Tests.Linq
 		[Test]
 		public void MyType1()
 		{
-			using (var db = new TestDataConnection().AddMappingSchema(_myMappingSchema))
+			using (var db = new TestDataConnection())
 			{
+				db.AddMappingSchema(_myMappingSchema);
 				var _ = db.GetTable<MyParent>().ToList();
 			}
 		}
@@ -266,8 +267,9 @@ namespace Tests.Linq
 		[Test]
 		public void MyType2()
 		{
-			using (var db = new TestDataConnection().AddMappingSchema(_myMappingSchema))
+			using (var db = new TestDataConnection())
 			{
+				db.AddMappingSchema(_myMappingSchema);
 				var _ = db.GetTable<MyParent>()
 					.Select(t => new MyParent { ParentID = t.ParentID, Value1 = t.Value1 })
 					.ToList();
@@ -277,8 +279,9 @@ namespace Tests.Linq
 		[Test]
 		public void MyType3()
 		{
-			using (var db = (TestDataConnection) new TestDataConnection().AddMappingSchema(_myMappingSchema))
+			using (var db = (TestDataConnection) new TestDataConnection())
 			{
+				db.AddMappingSchema(_myMappingSchema);
 				try
 				{
 					db.Insert(new MyParent { ParentID = new MyInt { MyValue = 1001 }, Value1 = 1001 });
@@ -293,8 +296,9 @@ namespace Tests.Linq
 		[Test]
 		public void MyType4()
 		{
-			using (var db = (TestDataConnection)new TestDataConnection().AddMappingSchema(_myMappingSchema))
+			using (var db = (TestDataConnection)new TestDataConnection())
 			{
+				db.AddMappingSchema(_myMappingSchema);
 				try
 				{
 					var id = new MyInt { MyValue = 1001 };
@@ -310,8 +314,9 @@ namespace Tests.Linq
 		[Test]
 		public void MyType5()
 		{
-			using (var db = (TestDataConnection)new TestDataConnection().AddMappingSchema(_myMappingSchema))
+			using (var db = (TestDataConnection)new TestDataConnection())
 			{
+				db.AddMappingSchema(_myMappingSchema);
 				try
 				{
 					db.GetTable<MyParent>().Insert(() => new MyParent { ParentID = new MyInt { MyValue = 1001 }, Value1 = 1001 });
@@ -495,7 +500,7 @@ namespace Tests.Linq
 
 		public abstract class RecordLikeBase
 		{
-			public RecordLikeBase(int Id, string BaseValue)
+			protected RecordLikeBase(int Id, string BaseValue)
 			{
 				this.Id = Id;
 				this.BaseValue = BaseValue;
@@ -632,6 +637,114 @@ namespace Tests.Linq
 			}
 		}
 
-#endregion
+		#endregion
+
+		#region Issue 4113
+		public interface IInterface1
+		{
+		}
+
+		public interface IInterface2
+		{
+			Guid Id { get; set; }
+		}
+
+		public interface IInterface3
+		{
+			int Id { get; set; }
+		}
+
+		[Table("Person")]
+		public abstract class BaseModel1
+		{
+			[Column("UNKNOWN")] public virtual Guid Id { get; set; }
+		}
+
+		[Table("Person")]
+		public abstract class BaseModel2: IInterface2
+		{
+			[Column("UNKNOWN")] public virtual Guid Id { get; set; }
+		}
+
+		public sealed class NewModel1 : BaseModel1
+		{
+			[Column("PersonID")] public new int Id { get; set; }
+		}
+
+		public sealed class NewModel2 : BaseModel1, IInterface1
+		{
+			[Column("PersonID")] public new int Id { get; set; }
+		}
+
+		public sealed class NewModel3 : BaseModel2
+		{
+			[Column("PersonID")] public new int Id { get; set; }
+		}
+
+		public sealed class NewModel4 : BaseModel1, IInterface3
+		{
+			[Column("PersonID")] public new int Id { get; set; }
+		}
+
+		public sealed class NewModel5 : BaseModel2, IInterface3
+		{
+			[Column("PersonID")] public new int Id { get; set; }
+		}
+
+		[Test]
+		public void ColumnReplacedWithNew1([IncludeDataSources(true, ProviderName.SQLiteClassic)] string context)
+		{
+			using var db = GetDataContext(context);
+			db.GetTable<NewModel1>().Where(c => c.Id == -1).ToList();
+
+			var ed = db.MappingSchema.GetEntityDescriptor(typeof(NewModel1));
+			Assert.AreEqual(1, ed.Columns.Count);
+			Assert.AreEqual("PersonID", ed.Columns[0].ColumnName);
+		}
+
+		[Test]
+		public void ColumnReplacedWithNew2([IncludeDataSources(true, ProviderName.SQLiteClassic)] string context)
+		{
+			using var db = GetDataContext(context);
+			db.GetTable<NewModel2>().Where(c => c.Id == -1).ToList();
+
+			var ed = db.MappingSchema.GetEntityDescriptor(typeof(NewModel2));
+			Assert.AreEqual(1, ed.Columns.Count);
+			Assert.AreEqual("PersonID", ed.Columns[0].ColumnName);
+		}
+
+		[Test]
+		public void ColumnReplacedWithNew3([IncludeDataSources(true, ProviderName.SQLiteClassic)] string context)
+		{
+			using var db = GetDataContext(context);
+			db.GetTable<NewModel3>().Where(c => c.Id == -1).ToList();
+
+			var ed = db.MappingSchema.GetEntityDescriptor(typeof(NewModel3));
+			Assert.AreEqual(1, ed.Columns.Count);
+			Assert.AreEqual("PersonID", ed.Columns[0].ColumnName);
+		}
+
+		[Test]
+		public void ColumnReplacedWithNew4([IncludeDataSources(true, ProviderName.SQLiteClassic)] string context)
+		{
+			using var db = GetDataContext(context);
+			db.GetTable<NewModel4>().Where(c => c.Id == -1).ToList();
+
+			var ed = db.MappingSchema.GetEntityDescriptor(typeof(NewModel4));
+			Assert.AreEqual(1, ed.Columns.Count);
+			Assert.AreEqual("PersonID", ed.Columns[0].ColumnName);
+		}
+
+		[Test]
+		public void ColumnReplacedWithNew5([IncludeDataSources(true, ProviderName.SQLiteClassic)] string context)
+		{
+			using var db = GetDataContext(context);
+			db.GetTable<NewModel5>().Where(c => c.Id == -1).ToList();
+
+			var ed = db.MappingSchema.GetEntityDescriptor(typeof(NewModel5));
+			Assert.AreEqual(1, ed.Columns.Count);
+			Assert.AreEqual("PersonID", ed.Columns[0].ColumnName);
+		}
+		#endregion
 	}
 }

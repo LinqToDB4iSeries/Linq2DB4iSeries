@@ -7,6 +7,12 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="linq2db.AspNet" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\FSharp\Tests.FSharp.fsproj" />
 		<ProjectReference Include="..\Base\Tests.Base.csproj" />
 

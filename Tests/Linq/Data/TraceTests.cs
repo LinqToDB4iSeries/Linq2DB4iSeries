@@ -1,19 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using LinqToDB;
-using LinqToDB.Configuration;
-using NUnit.Framework;
 
+using LinqToDB;
 using LinqToDB.Data;
+
+using NUnit.Framework;
 
 namespace Tests.Data
 {
-	using System.Data;
 	using Model;
-	using Tests.Tools;
+	using Tools;
 
 	[TestFixture]
 	public class TraceTests : TestBase
@@ -126,7 +126,7 @@ namespace Tests.Data
 				// the same command is reported on each step
 				var command = events[TraceInfoStep.BeforeExecute]!.Command;
 				Assert.AreSame(command, events[TraceInfoStep.AfterExecute]!.Command);
-				Assert.AreSame(command, events[TraceInfoStep.Completed]!.Command);
+				Assert.That(events[TraceInfoStep.Completed]!.Command, Is.Null);
 				Assert.NotNull(command);
 
 				// steps called once

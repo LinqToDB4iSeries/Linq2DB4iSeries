@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Globalization;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
 using FluentAssertions;
 using LinqToDB;
+using LinqToDB.Data;
 using LinqToDB.Mapping;
 using LinqToDB.SqlQuery;
 using NUnit.Framework;
@@ -13,6 +17,7 @@ namespace Tests.Linq
 	[TestFixture]
 	public class ConvertTests : TestBase
 	{
+		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void Test1([DataSources(TestProvName.AllSQLite)] string context)
 		{
@@ -555,17 +560,16 @@ namespace Tests.Linq
 		{
 			var guid = "febe3eca-cb5f-40b2-ad39-2979d312afca";
 			using (var db = GetDataContext(context))
-#pragma warning disable CA1311 // Specify a culture or use an invariant version
 				AreEqual(
 					from t in    Types where Sql.ConvertTo<string>.From(t.GuidValue).ToLower() == guid select t.GuidValue,
 					from t in db.Types where Sql.ConvertTo<string>.From(t.GuidValue).ToLower() == guid select t.GuidValue);
-#pragma warning restore CA1311 // Specify a culture or use an invariant version
 		}
 
 		#endregion
 
 		#region Boolean
 
+		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void ToBit1([DataSources] string context)
 		{
@@ -583,6 +587,7 @@ namespace Tests.Linq
 					select t);
 		}
 
+		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void ToBit2([DataSources] string context)
 		{
@@ -601,7 +606,7 @@ namespace Tests.Linq
 					select t);
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56", Configuration = ProviderName.ClickHouseOctonica)]
+		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void ConvertToBoolean1([DataSources] string context)
 		{
@@ -611,7 +616,7 @@ namespace Tests.Linq
 					from p in from t in db.Types select Convert.ToBoolean(t.MoneyValue) where p == true select p);
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56", Configuration = ProviderName.ClickHouseOctonica)]
+		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void ConvertToBoolean2([DataSources] string context)
 		{
@@ -1523,6 +1528,238 @@ namespace Tests.Linq
 				sqlConverted.Should().Be(noSqlConverted);
 			}
 		}
-		
+
+		#region Issue #4043
+
+		[Table("Issue4043")]
+		class Issue4043TableRaw
+		{
+			[Column] public int     Id    { get; set; }
+			[Column] public string? Value { get; set; }
+
+			public static readonly Issue4043TableRaw[] Data = new[]
+			{
+				new Issue4043TableRaw() { Id = 1, Value = /*lang=json,strict*/ "{\"Field1\": 1, \"Field2\": -1 }" }
+			};
+		}
+
+		[Table("Issue4043")]
+		class Issue4043Table
+		{
+			[Column] public int          Id    { get; set; }
+			[Column] public ValueObject? Value { get; set; }
+		}
+
+		[Table("Issue4043")]
+		class Issue4043ScalarTable
+		{
+			[Column] public ValueObject? Value { get; set; }
+		}
+
+		[Table("Issue4043")]
+		class Issue4043TableWithCtor
+		{
+			public Issue4043TableWithCtor(int Id, ValueObject? Value)
+			{
+				this.Id    = Id;
+				this.Value = Value;
+			}
+
+			[Column] public int          Id    { get; set; }
+			[Column] public ValueObject? Value { get; set; }
+		}
+
+		[Table("Issue4043")]
+		class Issue4043ScalarTableWithCtor
+		{
+			public Issue4043ScalarTableWithCtor(ValueObject? Value)
+			{
+				this.Value = Value;
+			}
+
+			[Column] public ValueObject? Value { get; set; }
+		}
+
+		class ValueObject
+		{
+			public int Field1 { get; set; }
+			public int Field2 { get; set; }
+		}
+
+		[Test]
+		public void TextExecuteTypeConverter([IncludeDataSources(ProviderName.SQLiteClassic)] string context)
+		{
+			var ms = new MappingSchema();
+			ms.SetConvertExpression<string, ValueObject?>(json => JsonSerializer.Deserialize<ValueObject>(json, (JsonSerializerOptions?)null));
+
+			using var db = GetDataConnection(context, ms);
+			using var _  = db.CreateLocalTable(Issue4043TableRaw.Data);
+
+			var result = db.Execute<Issue4043Table>("select Id, Value from Issue4043");
+
+			Assert.That(result, Is.Not.Null);
+			Assert.That(result.Id, Is.EqualTo(1));
+			Assert.That(result.Value, Is.Not.Null);
+			Assert.That(result.Value!.Field1, Is.EqualTo(1));
+			Assert.That(result.Value!.Field2, Is.EqualTo(-1));
+		}
+
+		[Test]
+		public void TextExecuteTypeConverterWithCtor([IncludeDataSources(ProviderName.SQLiteClassic)] string context)
+		{
+			var ms = new MappingSchema();
+			ms.SetConvertExpression<string, ValueObject?>(json => JsonSerializer.Deserialize<ValueObject>(json, (JsonSerializerOptions?)null));
+
+			using var db = GetDataConnection(context, ms);
+			using var _  = db.CreateLocalTable(Issue4043TableRaw.Data);
+
+			var result = db.Execute<Issue4043TableWithCtor>("select Id, Value from Issue4043");
+
+			Assert.That(result, Is.Not.Null);
+			Assert.That(result.Id, Is.EqualTo(1));
+			Assert.That(result.Value, Is.Not.Null);
+			Assert.That(result.Value!.Field1, Is.EqualTo(1));
+			Assert.That(result.Value!.Field2, Is.EqualTo(-1));
+		}
+
+		[Test]
+		public void TextExecuteScalarEntityTypeConverter([IncludeDataSources(ProviderName.SQLiteClassic)] string context)
+		{
+			var ms = new MappingSchema();
+			ms.SetConvertExpression<string, ValueObject?>(json => JsonSerializer.Deserialize<ValueObject>(json, (JsonSerializerOptions?)null));
+
+			using var db = GetDataConnection(context, ms);
+			using var _  = db.CreateLocalTable(Issue4043TableRaw.Data);
+
+			var result = db.Execute<Issue4043ScalarTable>("select Value from Issue4043");
+
+			Assert.That(result, Is.Not.Null);
+			Assert.That(result.Value, Is.Not.Null);
+			Assert.That(result.Value!.Field1, Is.EqualTo(1));
+			Assert.That(result.Value!.Field2, Is.EqualTo(-1));
+		}
+
+		[Test]
+		public void TextExecuteScalarEntityTypeConverterWithCtor([IncludeDataSources(ProviderName.SQLiteClassic)] string context)
+		{
+			var ms = new MappingSchema();
+			ms.SetConvertExpression<string, ValueObject?>(json => JsonSerializer.Deserialize<ValueObject>(json, (JsonSerializerOptions?)null));
+
+			using var db = GetDataConnection(context, ms);
+			using var _  = db.CreateLocalTable(Issue4043TableRaw.Data);
+
+			var result = db.Execute<Issue4043ScalarTableWithCtor>("select Value from Issue4043");
+
+			Assert.That(result, Is.Not.Null);
+			Assert.That(result.Value, Is.Not.Null);
+			Assert.That(result.Value!.Field1, Is.EqualTo(1));
+			Assert.That(result.Value!.Field2, Is.EqualTo(-1));
+		}
+
+		[Test]
+		public void TextExecuteScalar([IncludeDataSources(ProviderName.SQLiteClassic)] string context)
+		{
+			var ms = new MappingSchema();
+			ms.SetScalarType(typeof(ValueObject));
+			ms.SetConvertExpression<string, ValueObject?>(json => JsonSerializer.Deserialize<ValueObject>(json, (JsonSerializerOptions?)null));
+
+			using var db = GetDataConnection(context, ms);
+			using var _  = db.CreateLocalTable(Issue4043TableRaw.Data);
+
+			var result = db.Execute<ValueObject>("select Value from Issue4043");
+
+			Assert.That(result, Is.Not.Null);
+			Assert.That(result.Field1, Is.EqualTo(1));
+			Assert.That(result.Field2, Is.EqualTo(-1));
+		}
+
+		[Test]
+		public void TextExecuteColumnConverter([IncludeDataSources( ProviderName.SQLiteClassic)] string context)
+		{
+			var ms = new MappingSchema();
+			new FluentMappingBuilder(ms)
+				.Entity<Issue4043Table>()
+				.Property(e => e.Value)
+				.HasConversion(o => JsonSerializer.Serialize(o, (JsonSerializerOptions?)null), json => JsonSerializer.Deserialize<ValueObject>(json, (JsonSerializerOptions?)null))
+				.Build();
+
+			using var db = GetDataConnection(context, ms);
+			using var _  = db.CreateLocalTable(Issue4043TableRaw.Data);
+
+			var result = db.Execute<Issue4043Table>("select Id, Value from Issue4043");
+
+			Assert.That(result, Is.Not.Null);
+			Assert.That(result.Id, Is.EqualTo(1));
+			Assert.That(result.Value, Is.Not.Null);
+			Assert.That(result.Value!.Field1, Is.EqualTo(1));
+			Assert.That(result.Value!.Field2, Is.EqualTo(-1));
+		}
+
+		[ActiveIssue(Details = "Not supported case as we cannot connect .ctor parameter to column")]
+		[Test]
+		public void TextExecuteColumnConverterWithCtor([IncludeDataSources(ProviderName.SQLiteClassic)] string context)
+		{
+			var ms = new MappingSchema();
+			new FluentMappingBuilder(ms)
+				.Entity<Issue4043TableWithCtor>()
+				.Property(e => e.Value)
+				.HasConversion(o => JsonSerializer.Serialize(o, (JsonSerializerOptions?)null), json => JsonSerializer.Deserialize<ValueObject>(json, (JsonSerializerOptions?)null))
+				.Build();
+
+			using var db = GetDataConnection(context, ms);
+			using var _  = db.CreateLocalTable(Issue4043TableRaw.Data);
+
+			var result = db.Execute<Issue4043TableWithCtor>("select Id, Value from Issue4043");
+
+			Assert.That(result, Is.Not.Null);
+			Assert.That(result.Id, Is.EqualTo(1));
+			Assert.That(result.Value, Is.Not.Null);
+			Assert.That(result.Value!.Field1, Is.EqualTo(1));
+			Assert.That(result.Value!.Field2, Is.EqualTo(-1));
+		}
+
+		[Test]
+		public void TextExecuteScalarEntityColumnConverter([IncludeDataSources(ProviderName.SQLiteClassic)] string context)
+		{
+			var ms = new MappingSchema();
+			new FluentMappingBuilder(ms)
+				.Entity<Issue4043ScalarTable>()
+				.Property(e => e.Value)
+				.HasConversion(o => JsonSerializer.Serialize(o, (JsonSerializerOptions?)null), json => JsonSerializer.Deserialize<ValueObject>(json, (JsonSerializerOptions?)null))
+				.Build();
+
+			using var db = GetDataConnection(context, ms);
+			using var _  = db.CreateLocalTable(Issue4043TableRaw.Data);
+
+			var result = db.Execute<Issue4043ScalarTable>("select Value from Issue4043");
+
+			Assert.That(result, Is.Not.Null);
+			Assert.That(result.Value, Is.Not.Null);
+			Assert.That(result.Value!.Field1, Is.EqualTo(1));
+			Assert.That(result.Value!.Field2, Is.EqualTo(-1));
+		}
+
+		[ActiveIssue(Details = "Not supported case as we cannot connect .ctor parameter to column")]
+		[Test]
+		public void TextExecuteScalarEntityColumnConverterWithCtor([IncludeDataSources(ProviderName.SQLiteClassic)] string context)
+		{
+			var ms = new MappingSchema();
+			new FluentMappingBuilder(ms)
+				.Entity<Issue4043ScalarTableWithCtor>()
+				.Property(e => e.Value)
+				.HasConversion(o => JsonSerializer.Serialize(o, (JsonSerializerOptions?)null), json => JsonSerializer.Deserialize<ValueObject>(json, (JsonSerializerOptions?)null))
+				.Build();
+
+			using var db = GetDataConnection(context, ms);
+			using var _  = db.CreateLocalTable(Issue4043TableRaw.Data);
+
+			var result = db.Execute<Issue4043ScalarTableWithCtor>("select Value from Issue4043");
+
+			Assert.That(result, Is.Not.Null);
+			Assert.That(result.Value, Is.Not.Null);
+			Assert.That(result.Value!.Field1, Is.EqualTo(1));
+			Assert.That(result.Value!.Field2, Is.EqualTo(-1));
+		}
+		#endregion
 	}
 }
