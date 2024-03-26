@@ -28,6 +28,9 @@ namespace Tests
 				//Tests have internal logic based on BulkCopyType - Copied to custom tests
 				case ("BulkCopyTests", "KeepIdentity_SkipOnInsertTrue"):
 				case ("BulkCopyTests", "KeepIdentity_SkipOnInsertFalse"):
+				//Tests rely on context being DB2
+				case ("BulkCopyTests", "BulkCopyAsyncEnumerableWithCloseAfterUseDataConnection"):
+				case ("BulkCopyTests", "BulkCopyAsyncWithCloseAfterUseDataConnection"):
 				//Tests have property have space - Copied to custom tests
 				case ("DynamicColumnsTests", "SqlPropertyNoStoreNonIdentifier"):
 				case ("DynamicColumnsTests", "SqlPropertyNoStoreNonIdentifierGrouping"):
@@ -39,6 +42,8 @@ namespace Tests
 				case ("MergeTests", "TestParametersInListSourceProperty"):
 				//Tests active issue with DB2 family ordering NULL last by default - Not applicable
 				case ("MergeTests", "SortedMergeResultsIssue"):
+				//Merge in Cte not supported 
+				case ("MergeTests", "MergeIntoCteIssue4107"):
 				//Tests are not applicable for Db2i (MERGE from/to CTE)
 				case ("MergeTests", "MergeFromCte"):
 				case ("MergeTests", "MergeIntoCte"):
@@ -75,6 +80,9 @@ namespace Tests
 				//Implicit transactions do not function properly in .NET
 				case ("DataConnectionTests", "TestDisposeFlagCloning962Test1"):
 				case ("DataConnectionTests", "TestDisposeFlagCloning962Test2"):
+				//Tests break on net472 - generic linq2db tests - not need to test provider
+				case ("ConnectionBuilderTests", "CanUseLoggingFactoryFromIoc"):
+				case ("ConnectionBuilderTests", "CanUseWithLoggingFromFactory"):
 				//Query contains invalid keyword permission
 				case ("Issue825Tests", "Test"):
 				//Test for unsupported WCF feature
@@ -112,9 +120,12 @@ namespace Tests
 				case ("ConvertExpressionTests", "Issue3791Test"):
 				//Ignore custom extension tests 
 				case ("SqlExtensionTests", _):
+				//DB2i only supports ASCII identifiers	
+				case ("IdentifierTests", _):
 				//Test cases invalid for DB2i
-				case ("InSubqueryTests", "InTest"):
-				case ("InSubqueryTests", "InNullTest"):
+				case ("InSubqueryTests", _):
+				//Test cases rely on TestUtils.GetSchemaName
+				case ("Issue681Tests", _):
 					return Enumerable.Empty<string>();
 
 				//Access client throws a different exception so it is excluded
@@ -135,6 +146,12 @@ namespace Tests
 				case ("AnalyticTests", "Issue1799Test1"):
 				case ("AnalyticTests", "Issue1799Test2"):
 					return contexts.Intersect(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_74));
+
+				//Tests use generic mapping schema so GAS guid doesn't work
+				case ("ConcurrencyTests", "TestGuid"):
+				case ("ConcurrencyTests", "TestGuidAsync"):
+				case ("ConcurrencyTests", "TestTestGuidAsync"): // probably type, also adding the correct one for future proofing
+					return contexts.Where(c => !c.Contains("GAS"));
 			}
 
 			return contexts;

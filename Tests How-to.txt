@@ -1,6 +1,6 @@
 - How to execute the tests in this project:
 
-1. Copy the DataProviders.json file to UserDataProviders.json in "Tests" folder
+1. Copy the DataProviders.json file to UserDataProviders.json in "Tests" folder and enable the providers to be tested (defaults are v7.4 AccessClient and v7.4 ODBC)
 2. Replace {HOST}, {USER}, {PASSWORD}, {LIBRARY_LIST} and {DEFAULT_SCHEMA} with your own values. Don't worry about commiting this file is excluded in git
 3. If you are going to run GAS and non GAS tests at the same time you have to use different schemas for each set
 4. You can disable any of the providers in the NET472 and CORE31 Providers sections at the bottom of the file.
@@ -9,14 +9,15 @@
 
 The tests have been set up in a way that tests from upstream can be simply copied over. You have to copy only the source code files and not the project files as follows:
 
-- Copy all code (e.g. exlude \bin, \obj and .csproj file) from :
+- Copy all code (e.g. exclude \bin, \obj and .csproj file) from:
 	Tests\Base (except CustomizationSupport folder)
-	Tests\Linq
+	Tests\Linq (except Custom folder)
 	Tests\FSharp 
 	Tests\VisualBasic
 	Tests\Model
+It's best to delete the existing code and then copy the new one over in case any files have been deleted from upstream
 
-- Add or update dependencies in /Build/*.props files as neeeded
+- Add or update dependencies in /Build/*.props files as neeeded. Directory.Packages.props can be safely copied - just make sure the linq2db libs are added to the target version.
 - Tweaks to test SQL setup files in Data\Create Scripts\ might be needed
 
 

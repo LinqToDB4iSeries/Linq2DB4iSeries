@@ -602,7 +602,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return bulkCopy.BulkCopyAsync(options.BulkCopyOptions.BulkCopyType.GetEffectiveType(), table, options, source, cancellationToken);
 		}
 
-#if NET472_OR_GREATER
+#if !NET45
 		public override Task<BulkCopyRowsCopied> BulkCopyAsync<T>(DataOptions options, ITable<T> table, IAsyncEnumerable<T> source, CancellationToken cancellationToken)
 		{
 			return bulkCopy.BulkCopyAsync(options.BulkCopyOptions.BulkCopyType.GetEffectiveType(), table, options, source, cancellationToken);

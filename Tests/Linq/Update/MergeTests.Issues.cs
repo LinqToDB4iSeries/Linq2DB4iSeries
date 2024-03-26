@@ -668,7 +668,7 @@ namespace Tests.xUpdate
 					.Merge()
 					.Using(ReviewIndex.Data)
 					.OnTargetKey()
-					.UpdateWhenNotMatchedBySource(t =>  new ReviewIndex() { Id = 2, Value = "3"})
+					.UpdateWhenNotMatchedBySource(t =>  new ReviewIndex() { Id = 2, Value = "3" })
 					.Merge();
 			}
 		}
@@ -794,7 +794,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void TestNullableParameterInSourceQuery([IncludeDataSources(true, TestProvName.AllSqlServer2008Plus, ProviderName.PostgreSQL15)] string context)
+		public void TestNullableParameterInSourceQuery([IncludeDataSources(true, TestProvName.AllSqlServer2008Plus, TestProvName.AllPostgreSQL15Plus)] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (var target = db.CreateLocalTable<TestNullableParameterTarget>())

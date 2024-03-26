@@ -26,7 +26,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			var options = dataOptions.BulkCopyOptions;
 			var descriptor = dataConnection.MappingSchema.GetEntityDescriptor(typeof(T));
 			var columns = descriptor.Columns.Where(c => !c.SkipOnInsert || options.KeepIdentity == true && c.IsIdentity).ToList();
-			var rd = new BulkCopyReader<T>(dataConnection, columns, source);
+			using var rd = new BulkCopyReader<T>(dataConnection, columns, source);
 			var rc = new BulkCopyRowsCopied();
 			var sqlBuilder = dataConnection.DataProvider.CreateSqlBuilder(table.DataContext.MappingSchema, dataOptions);
 			var tableName = GetTableName(sqlBuilder, options, table);
@@ -137,6 +137,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 						return;
 					}
+
+					if (table.DataContext.CloseAfterUse)
+						table.DataContext.Close();
 				}
 			}
 

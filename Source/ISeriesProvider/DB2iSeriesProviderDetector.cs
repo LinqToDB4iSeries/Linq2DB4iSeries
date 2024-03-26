@@ -63,8 +63,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				var serverVersionParts = conn.ServerVersion.Substring(0, 5).Split('.');
 				var major = int.Parse(serverVersionParts.First());
 				var minor = int.Parse(serverVersionParts.Last());
+				var patchLevel = 0;
+				try
+				{
+					patchLevel = GetMaxPatchLevel(conn, major, minor);
+				}
+				catch
+				{
+					// Failed to get level from server, falling back to default
 
-				var patchLevel = GetMaxPatchLevel(conn, major, minor);
+				}
 
 				return new ServerVersion(major, minor, patchLevel);
 			}

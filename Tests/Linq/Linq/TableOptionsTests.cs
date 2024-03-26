@@ -9,6 +9,7 @@ using LinqToDB.Mapping;
 
 using NUnit.Framework;
 
+
 namespace Tests.Linq
 {
 	[TestFixture]
@@ -146,7 +147,7 @@ namespace Tests.Linq
 			TestProvName.AllSqlServer,
 			TestProvName.AllSybase)] string context)
 		{
-			if (context.IsAnyOf(TestProvName.AllSqlServer) && context.EndsWith(".LinqService"))
+			if (context.IsAnyOf(TestProvName.AllSqlServer) && context.IsRemote())
 				return;
 
 			using var db = GetDataContext(context);
@@ -158,7 +159,9 @@ namespace Tests.Linq
 			table.Insert(() => new CreateIfNotExistsTable { Id = 1, Value = 2 });
 
 			_ = table.ToArray();
-			_ = db.CreateTempTable<CreateIfNotExistsTable>(tableOptions:TableOptions.NotSet);
+			using (db.CreateTempTable<CreateIfNotExistsTable>(tableOptions: TableOptions.NotSet))
+			{
+			}
 		}
 
 		[Test]
@@ -175,7 +178,7 @@ namespace Tests.Linq
 			TestProvName.AllSqlServer,
 			TestProvName.AllSybase)] string context)
 		{
-			if (context.IsAnyOf(TestProvName.AllSqlServer) && context.EndsWith(".LinqService"))
+			if (context.IsAnyOf(TestProvName.AllSqlServer) && context.IsRemote())
 				return;
 
 			using var db = GetDataContext(context);
@@ -185,7 +188,9 @@ namespace Tests.Linq
 			using var table = db.CreateTempTable<CreateIfNotExistsTable>();
 
 			_ = table.ToArray();
-			_ = db.CreateTempTable<CreateIfNotExistsTable>(tableOptions:TableOptions.NotSet);
+			using (db.CreateTempTable<CreateIfNotExistsTable>(tableOptions: TableOptions.NotSet))
+			{
+			}
 		}
 
 		[UsedImplicitly]

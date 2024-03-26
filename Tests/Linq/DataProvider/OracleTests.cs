@@ -334,8 +334,8 @@ namespace Tests.DataProvider
 				Assert.That(conn.Execute<DateTime> ("SELECT \"datetimeoffsetDataType\" FROM \"AllTypes\" WHERE ID = 1"), Is.EqualTo(default(DateTime)));
 				Assert.That(conn.Execute<DateTime?>("SELECT \"datetimeoffsetDataType\" FROM \"AllTypes\" WHERE ID = 1"), Is.EqualTo(default(DateTime?)));
 
-				Assert.That(conn.Execute<DateTimeOffset?>(PathThroughSql, new DataParameter("p", dto)).                         ToString(), Is.EqualTo(dto.ToString()));
-				Assert.That(conn.Execute<DateTimeOffset?>(PathThroughSql, new DataParameter("p", dto, DataType.DateTimeOffset)).ToString(), Is.EqualTo(dto.ToString()));
+				Assert.That(conn.Execute<DateTimeOffset?>(PathThroughSql, new DataParameter("p", dto)).                         ToString(), Is.EqualTo(dto.ToString(DateTimeFormatInfo.InvariantInfo)));
+				Assert.That(conn.Execute<DateTimeOffset?>(PathThroughSql, new DataParameter("p", dto, DataType.DateTimeOffset)).ToString(), Is.EqualTo(dto.ToString(DateTimeFormatInfo.InvariantInfo)));
 			}
 		}
 
@@ -2646,55 +2646,55 @@ namespace Tests.DataProvider
 		[Test]
 		public void Issue723Test1([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
+			//var schema = context.IsAnyOf(TestProvName.AllOracle19) ? "ISSUE723SCHEMA" : "C##ISSUE723SCHEMA";
+			var schema = "C##ISSUE723SCHEMA";
 			// v12 fix: ORA-65096: invalid common user or role name
 			// http://www.dba-oracle.com/t_ora_65096_create_user_12c_without_c_prefix.htm
 
 			var ms = new MappingSchema();
-			using (var db = (DataConnection)GetDataContext(context, ms))
+			using var db = (DataConnection)GetDataContext(context, ms);
+			var currentUser = db.Execute<string>("SELECT user FROM dual");
+			db.Execute("GRANT CREATE ANY TRIGGER TO " + currentUser);
+			db.Execute("GRANT CREATE ANY SEQUENCE TO " + currentUser);
+			db.Execute("GRANT DROP ANY TRIGGER TO " + currentUser);
+			db.Execute("GRANT DROP ANY SEQUENCE TO " + currentUser);
+
+			try { db.Execute($"DROP USER {schema} CASCADE"); } catch { }
+
+			db.Execute($"CREATE USER {schema} IDENTIFIED BY password");
+
+			try
 			{
-				var currentUser = db.Execute<string>("SELECT user FROM dual");
-				db.Execute("GRANT CREATE ANY TRIGGER TO " + currentUser);
-				db.Execute("GRANT CREATE ANY SEQUENCE TO " + currentUser);
-				db.Execute("GRANT DROP ANY TRIGGER TO " + currentUser);
-				db.Execute("GRANT DROP ANY SEQUENCE TO " + currentUser);
 
-				try {db.Execute("DROP USER C##ISSUE723SCHEMA CASCADE");} catch { }
+				var tableSpace = db.Execute<string>($"SELECT default_tablespace FROM sys.dba_users WHERE username = '{schema}'");
+				db.Execute($"ALTER USER {schema} quota unlimited on {tableSpace}");
 
-				db.Execute("CREATE USER C##ISSUE723SCHEMA IDENTIFIED BY password");
+				db.CreateTable<Issue723Table>(schemaName: schema);
+				Assert.That(db.LastQuery!.Contains($"{schema}.ISSUE723TABLE"));
 
 				try
 				{
 
-					var tableSpace = db.Execute<string>("SELECT default_tablespace FROM sys.dba_users WHERE username = 'C##ISSUE723SCHEMA'");
-					db.Execute($"ALTER USER C##ISSUE723SCHEMA quota unlimited on {tableSpace}");
+					new FluentMappingBuilder(db.MappingSchema)
+						.Entity<Issue723Table>()
+						.HasSchemaName(schema)
+						.Build();
 
-					db.CreateTable<Issue723Table>(schemaName: "C##ISSUE723SCHEMA");
-					Assert.That(db.LastQuery!.Contains("C##ISSUE723SCHEMA.ISSUE723TABLE"));
-
-					try
+					for (var i = 1; i < 3; i++)
 					{
-
-						new FluentMappingBuilder(db.MappingSchema)
-							.Entity<Issue723Table>()
-							.HasSchemaName("C##ISSUE723SCHEMA")
-							.Build();
-
-						for (var i = 1; i < 3; i++)
-						{
-							var id = Convert.ToInt32(db.InsertWithIdentity(new Issue723Table() { StringValue = i.ToString() }));
-							Assert.AreEqual(i, id);
-						}
-						Assert.That(db.LastQuery.Contains("C##ISSUE723SCHEMA.ISSUE723TABLE"));
+						var id = Convert.ToInt32(db.InsertWithIdentity(new Issue723Table() { StringValue = i.ToString() }));
+						Assert.AreEqual(i, id);
 					}
-					finally
-					{
-						db.DropTable<Issue723Table>(schemaName: "C##ISSUE723SCHEMA");
-					}
+					Assert.That(db.LastQuery.Contains($"{schema}.ISSUE723TABLE"));
 				}
 				finally
 				{
-					db.Execute("DROP USER C##ISSUE723SCHEMA CASCADE");
+					db.DropTable<Issue723Table>(schemaName: schema);
 				}
+			}
+			finally
+			{
+				db.Execute($"DROP USER {schema} CASCADE");
 			}
 		}
 
@@ -4277,5 +4277,61 @@ END convert_bool;");
 
 		[Sql.Expression("convert_bool({0})", ServerSideOnly = true)]
 		public static bool Issue3742Function(string parameter) => throw new InvalidOperationException();
+
+		#region Issue 4172
+
+		[Table(Name = "ISSUE4172TABLE")]
+		sealed class ISSUE4172TABLE
+		{
+			[Column("ROLE"), Nullable] public Role ROLE { get; set; }
+		}
+
+		enum Role
+		{
+			[MapValue("")]
+			Unknown,
+
+			[MapValue("1")]
+			Role1,
+
+			[MapValue("2")]
+			Role2
+		}
+
+		[Test]
+		public void Issue4172Test1([IncludeDataSources(TestProvName.Oracle12Managed)] string context)
+		{
+			using var db = GetDataConnection(context);
+			using var users = db.CreateLocalTable<ISSUE4172TABLE>();
+
+			users.Insert(() => new ISSUE4172TABLE { ROLE = Role.Role1, });
+
+			// Should return Unknown Role users
+			var data = (
+					from u in users
+					where u.ROLE == Role.Unknown
+					select u).ToList();
+
+			Assert.True(data.Count == 0, "Incorrect count");
+		}
+
+		[Test]
+		public void Issue4172Test2([IncludeDataSources(TestProvName.Oracle12Managed)] string context)
+		{
+			using var db = GetDataConnection(context);
+			using var users = db.CreateLocalTable<ISSUE4172TABLE>();
+
+			users.Insert(() => new ISSUE4172TABLE { ROLE = Role.Role1, });
+
+			// Should return Known Role users
+			var data = (
+				 from u in users
+				 where u.ROLE != Role.Unknown
+				 select u).ToList();
+
+			Assert.True(data.Count == 1, "Incorrect count");
+		}
+
+		#endregion
 	}
 }

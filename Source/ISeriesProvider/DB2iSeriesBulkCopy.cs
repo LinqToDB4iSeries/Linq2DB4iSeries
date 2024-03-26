@@ -2,11 +2,10 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-
 namespace LinqToDB.DataProvider.DB2iSeries
 {
 	using Data;
-		
+	
 	internal partial class DB2iSeriesBulkCopy : BasicBulkCopy
 	{
 		const int MAX_ALLOWABLE_MULTIPLE_ROWS_BATCH_SIZE = 100;
@@ -70,7 +69,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 			return MultipleRowsCopy(table, options, source);
 		}
-
+		
 		protected override Task<BulkCopyRowsCopied> ProviderSpecificCopyAsync<T>(ITable<T> table, DataOptions options, IEnumerable<T> source, CancellationToken cancellationToken)
 		{
 			if (table.DataContext is DataConnection dataConnection)
@@ -110,7 +109,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return MultipleRowsCopyAsync(table, options, source, cancellationToken);
 		}
 
-#if NET472_OR_GREATER
+#if !NET45
 		protected override async Task<BulkCopyRowsCopied> ProviderSpecificCopyAsync<T>(ITable<T> table, DataOptions options, IAsyncEnumerable<T> source, CancellationToken cancellationToken)
 		{
 			if (table.DataContext is DataConnection dataConnection)
@@ -121,13 +120,16 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					if (dataProvider.TryGetProviderConnection(dataConnection, out var connection))
 					{
 						var enumerator = source.GetAsyncEnumerator(cancellationToken);
+						
 						await using (enumerator.ConfigureAwait(Common.Configuration.ContinueOnCapturedContext))
 						{
+							var sourceData = await AsyncToSyncEnumerable(enumerator);
+
 							// call the synchronous provider-specific implementation as provider doesn't support async
 							return ProviderSpecificCopyImpl_DB2(
 								table,
 								options.BulkCopyOptions,
-								AsyncToSyncEnumerable(enumerator),
+								sourceData,
 								dataConnection,
 								connection,
 								adapter.BulkCopy,
@@ -135,19 +137,44 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						}
 					}
 				}
+#if NETFRAMEWORK
+				else if (dataProvider.ProviderType.IsAccessClient()
+					&& dataProvider.Adapter.WrappedAdapter is DB2iSeriesAccessClientProviderAdapter idb2Adapter)
+				{
+					var enumerator = source.GetAsyncEnumerator(cancellationToken);
+					await using (enumerator.ConfigureAwait(Common.Configuration.ContinueOnCapturedContext))
+					{
+						var sourceData = await AsyncToSyncEnumerable(enumerator);
+
+						if (dataProvider.TryGetProviderConnection(dataConnection, out var connection))
+							// call the synchronous provider-specific implementation as provider doesn't support async
+							return ProviderSpecificCopyImpl_AccessClient(
+								table,
+								options,
+								sourceData,
+								dataConnection,
+								connection,
+								idb2Adapter,
+								TraceAction);
+					}
+				}
+#endif
 			}
 
 			return await MultipleRowsCopyAsync(table, options, source, cancellationToken).ConfigureAwait(Common.Configuration.ContinueOnCapturedContext);
 		}
 
-		private static IEnumerable<T> AsyncToSyncEnumerable<T>(IAsyncEnumerator<T> enumerator)
+		private static async Task<IEnumerable<T>> AsyncToSyncEnumerable<T>(IAsyncEnumerator<T> enumerator)
 		{
-			while (enumerator.MoveNextAsync().GetAwaiter().GetResult())
+			var result = new List<T>();
+			while (await enumerator.MoveNextAsync())
 			{
-				yield return enumerator.Current;
+				result.Add(enumerator.Current);
 			}
+			return result;
 		}
 #endif
+
 		private int GetMultipleRowsMaxBatchSize(DataOptions options)
 		{
 			var maxBatchSize = options.BulkCopyOptions.MaxBatchSize ?? int.MaxValue;
@@ -165,7 +192,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return MultipleRowsCopy2Async(new DB2iSeriesMultipleRowsHelper<T>(table, options, dB2ISeriesSqlProviderFlags) { BatchSize = GetMultipleRowsMaxBatchSize(options) }, source, " FROM " + Constants.SQL.DummyTableName(), cancellationToken);
 		}
 
-#if NET472_OR_GREATER
+#if !NET45
 		protected override Task<BulkCopyRowsCopied> MultipleRowsCopyAsync<T>(ITable<T> table, DataOptions options, IAsyncEnumerable<T> source, CancellationToken cancellationToken)
 		{
 			return MultipleRowsCopy2Async(new DB2iSeriesMultipleRowsHelper<T>(table, options, dB2ISeriesSqlProviderFlags) { BatchSize = GetMultipleRowsMaxBatchSize(options) }, source, " FROM " + Constants.SQL.DummyTableName(), cancellationToken);

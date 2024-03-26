@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Text;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
-	using LinqToDB.Common;
 	using Mapping;
 	using SqlQuery;
 	using System.Data.Linq;
@@ -20,7 +18,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			SetDataType(typeof(string), new SqlDataType(DataType.NVarChar, typeof(string), 255));
 
-			SetValueToSqlConverter(typeof(string), (sb, _, v) => ConvertStringToSql(sb, v.ToString()));
+			SetValueToSqlConverter(typeof(string), (sb, _, v) => ConvertStringToSql(sb, (string)v));
 			SetValueToSqlConverter(typeof(char), (sb, _, v) => ConvertCharToSql(sb, (char)v));
 			SetValueToSqlConverter(typeof(byte[]), (sb, _, v) => ConvertBinaryToSql(sb, (byte[])v));
 			SetValueToSqlConverter(typeof(Binary), (sb, _, v) => ConvertBinaryToSql(sb, ((Binary)v).ToArray()));
@@ -46,7 +44,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public DB2iSeriesMappingSchema(string configuration, MappingSchema providerSchema) 
 			: base(configuration, providerSchema, DB2iSeriesMappingSchemaBase.Instance)
 		{
-			SetValueToSqlConverter(typeof(Guid), (sb, _, _, v) => DB2iSeriesSqlBuilder.ConvertGuidToSql(sb, (Guid)v));
+			SetValueToSqlConverter(typeof(Guid), (sb, _, _, v) => ConvertGuidToSql(sb, (Guid)v));
 		}
 	}
 

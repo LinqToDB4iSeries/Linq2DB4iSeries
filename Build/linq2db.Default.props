@@ -1,6 +1,6 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<PropertyGroup>
-		<Version>5.1.1</Version>
+		<Version>5.4.0</Version>
 
 		<Description>LINQ to DB is a data access technology that provides a run-time infrastructure for managing relational data as objects.  This package is a provider for DB2 on the IBM iSeries.</Description>
 		<Authors>Roy Chase, Nikos Sarris</Authors>
@@ -8,7 +8,7 @@
 		<RepositoryType>git</RepositoryType>
 
 		<AppDesignerFolder>Properties</AppDesignerFolder>
-		<LangVersion>10.0</LangVersion>
+		<LangVersion>12.0</LangVersion>
 		<Nullable>enable</Nullable>
 		<WarningLevel>4</WarningLevel>
 		<ErrorReport>prompt</ErrorReport>
@@ -19,6 +19,7 @@
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<SignAssembly>True</SignAssembly>
 		<DelaySign>False</DelaySign>
+		<IsPackable>false</IsPackable>
 
 		<GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
 		<GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
@@ -35,7 +36,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" />
+		<PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>build; analyzers</IncludeAssets>
+		</PackageReference>
 		<AdditionalFiles Include="$(MSBuildThisFileDirectory)/BannedSymbols.txt" />
 
 		<PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers">

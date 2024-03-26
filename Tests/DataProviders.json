@@ -1,6 +1,6 @@
 ﻿{
 	"BaseConnectionStrings": {
-		"NoLinqService" : "true",
+		"NoLinqService": "true",
 		"Connections": {
 			"DB2.iSeries.Net.Base": {
 				"Provider": "DB2.iSeries.Net.74",
@@ -72,7 +72,7 @@
 				"Provider": "DB2.iSeries.Net.74",
 				"ConnectionString": "[DB2.iSeries.Net.Base.GAS]"
 			},
-			
+
 			//Acccess Client ODBC provider
 			"DB2.iSeries.ODBC.71": {
 				"Provider": "DB2.iSeries.ODBC.71",
@@ -106,7 +106,7 @@
 				"Provider": "DB2.iSeries.ODBC.74",
 				"ConnectionString": "[DB2.iSeries.ODBC.Base.GAS]"
 			},
-			
+
 			//Acccess Client OleDb provider
 			"DB2.iSeries.OleDb.71": {
 				"Provider": "DB2.iSeries.OleDb.71",
@@ -140,7 +140,7 @@
 				"Provider": "DB2.iSeries.OleDb.74",
 				"ConnectionString": "[DB2.iSeries.OleDb.Base.GAS]"
 			},
-			
+
 			//DB2Connect DB2 provider
 			"DB2.iSeries.DB2Connect.71": {
 				"Provider": "DB2.iSeries.DB2Connect.71",
@@ -179,76 +179,74 @@
 	"NET472": {
 		"BasedOn": "LocalConnectionStrings",
 		"DefaultConfiguration": "DB2.iSeries.OleDb.74",
-		"Providers":
-		[
-			"DB2.iSeries.ODBC.71",
-			"DB2.iSeries.ODBC.72",
-			"DB2.iSeries.ODBC.73",
-			"DB2.iSeries.ODBC.74",
-			"DB2.iSeries.ODBC.71.GAS",
-			"DB2.iSeries.ODBC.72.GAS",
-			"DB2.iSeries.ODBC.73.GAS",
-			"DB2.iSeries.ODBC.74.GAS",
+		"Providers": [
+			//"DB2.iSeries.ODBC.71",
+			//"DB2.iSeries.ODBC.72",
+			//"DB2.iSeries.ODBC.73",
+			//"DB2.iSeries.ODBC.74",
+			//"DB2.iSeries.ODBC.71.GAS",
+			//"DB2.iSeries.ODBC.72.GAS",
+			//"DB2.iSeries.ODBC.73.GAS",
+			//"DB2.iSeries.ODBC.74.GAS",
 
-			"DB2.iSeries.OleDb.71",
-			"DB2.iSeries.OleDb.72",
-			"DB2.iSeries.OleDb.73",
-			"DB2.iSeries.OleDb.74",
-			"DB2.iSeries.OleDb.71.GAS",
-			"DB2.iSeries.OleDb.72.GAS",
-			"DB2.iSeries.OleDb.73.GAS",
-			"DB2.iSeries.OleDb.74.GAS",
+			//"DB2.iSeries.OleDb.71",
+			//"DB2.iSeries.OleDb.72",
+			//"DB2.iSeries.OleDb.73",
+			//"DB2.iSeries.OleDb.74",
+			//"DB2.iSeries.OleDb.71.GAS",
+			//"DB2.iSeries.OleDb.72.GAS",
+			//"DB2.iSeries.OleDb.73.GAS",
+			//"DB2.iSeries.OleDb.74.GAS",
 
-			"DB2.iSeries.DB2Connect.71",
-			"DB2.iSeries.DB2Connect.72",
-			"DB2.iSeries.DB2Connect.73",
-			"DB2.iSeries.DB2Connect.74",
-			"DB2.iSeries.DB2Connect.71.GAS",
-			"DB2.iSeries.DB2Connect.72.GAS",
-			"DB2.iSeries.DB2Connect.73.GAS",
-			"DB2.iSeries.DB2Connect.74.GAS",
+			//"DB2.iSeries.DB2Connect.71",
+			//"DB2.iSeries.DB2Connect.72",
+			//"DB2.iSeries.DB2Connect.73",
+			//"DB2.iSeries.DB2Connect.74",
+			//"DB2.iSeries.DB2Connect.71.GAS",
+			//"DB2.iSeries.DB2Connect.72.GAS",
+			//"DB2.iSeries.DB2Connect.73.GAS",
+			//"DB2.iSeries.DB2Connect.74.GAS",
 
-			"DB2.iSeries.Net.71",
-			"DB2.iSeries.Net.72",
-			"DB2.iSeries.Net.73",
-			"DB2.iSeries.Net.74",
-			"DB2.iSeries.Net.71.GAS",
-			"DB2.iSeries.Net.72.GAS",
-			"DB2.iSeries.Net.73.GAS",
-			"DB2.iSeries.Net.74.GAS"
+			//"DB2.iSeries.Net.71",
+			//"DB2.iSeries.Net.72",
+			//"DB2.iSeries.Net.73",
+			//"DB2.iSeries.Net.74",
+			//"DB2.iSeries.Net.71.GAS",
+			//"DB2.iSeries.Net.72.GAS",
+			//"DB2.iSeries.Net.73.GAS",
+			//"DB2.iSeries.Net.74.GAS"
 		]
 	},
 	"NET60": {
 		"BasedOn": "LocalConnectionStrings",
 		"DefaultConfiguration": "DB2.iSeries.OleDb.74",
-		"Providers":
-		[
-			"DB2.iSeries.ODBC.71",
-			"DB2.iSeries.ODBC.72",
-			"DB2.iSeries.ODBC.73",
-			"DB2.iSeries.ODBC.74",
-			"DB2.iSeries.ODBC.71.GAS",
-			"DB2.iSeries.ODBC.72.GAS",
-			"DB2.iSeries.ODBC.73.GAS",
-			"DB2.iSeries.ODBC.74.GAS",
+		"Providers": [
+			//"DB2.iSeries.ODBC.71",
+			//"DB2.iSeries.ODBC.72",
+			//"DB2.iSeries.ODBC.73",
+			//"DB2.iSeries.ODBC.74",
+			//"DB2.iSeries.ODBC.71.GAS",
+			//"DB2.iSeries.ODBC.72.GAS",
+			//"DB2.iSeries.ODBC.73.GAS",
+			//"DB2.iSeries.ODBC.74.GAS",
 
-			"DB2.iSeries.OleDb.71",
-			"DB2.iSeries.OleDb.72",
-			"DB2.iSeries.OleDb.73",
-			"DB2.iSeries.OleDb.74",
-			"DB2.iSeries.OleDb.71.GAS",
-			"DB2.iSeries.OleDb.72.GAS",
-			"DB2.iSeries.OleDb.73.GAS",
-			"DB2.iSeries.OleDb.74.GAS",
+			//"DB2.iSeries.OleDb.71",
+			//"DB2.iSeries.OleDb.72",
+			//"DB2.iSeries.OleDb.73",
+			//"DB2.iSeries.OleDb.74",
+			//"DB2.iSeries.OleDb.71.GAS",
+			//"DB2.iSeries.OleDb.72.GAS",
+			//"DB2.iSeries.OleDb.73.GAS",
+			//"DB2.iSeries.OleDb.74.GAS",
 
-			"DB2.iSeries.DB2Connect.71",
-			"DB2.iSeries.DB2Connect.72",
-			"DB2.iSeries.DB2Connect.73",
-			"DB2.iSeries.DB2Connect.74",
-			"DB2.iSeries.DB2Connect.71.GAS",
-			"DB2.iSeries.DB2Connect.72.GAS",
-			"DB2.iSeries.DB2Connect.73.GAS",
-			"DB2.iSeries.DB2Connect.74.GAS"
+			//"DB2.iSeries.DB2Connect.71",
+			//"DB2.iSeries.DB2Connect.72",
+			//"DB2.iSeries.DB2Connect.73",
+			//"DB2.iSeries.DB2Connect.74",
+			//"DB2.iSeries.DB2Connect.71.GAS",
+			//"DB2.iSeries.DB2Connect.72.GAS",
+			//"DB2.iSeries.DB2Connect.73.GAS",
+			//"DB2.iSeries.DB2Connect.74.GAS"
 		]
 	}
 }

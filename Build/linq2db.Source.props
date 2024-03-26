@@ -10,11 +10,13 @@
 			<Pack>true</Pack>
 			<PackagePath>/</PackagePath>
 		</Content>
+		<None Include="../../README.md" Pack="true" PackagePath="\"/>
 	</ItemGroup>
 
 	<PropertyGroup>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 		<PackageLicenseFile>MIT-LICENSE.txt</PackageLicenseFile>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageProjectUrl>https://github.com/LinqToDB4iSeries/Linq2DB4iSeries</PackageProjectUrl>
 		<PackageIcon>linq2db2i.png</PackageIcon>
 		<PackageTags>linq;linq2db;LinqToDB;ORM;database;DB;SQL;DB2;IBM;iSeries</PackageTags>
@@ -32,9 +34,14 @@
 		<DebugSymbols>true</DebugSymbols>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<IsPackable>true</IsPackable>
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
 		<PackageReference Include="Microsoft.SourceLink.GitHub">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
