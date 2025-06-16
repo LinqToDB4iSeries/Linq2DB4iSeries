@@ -1,0 +1,40 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="ARM" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/.doc/">
+    <File Path="MIT-LICENSE.txt" />
+    <File Path="README.md" />
+    <File Path="Tests How-to.txt" />
+  </Folder>
+  <Folder Name="/build/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
+  <Folder Name="/build/src/">
+    <File Path="Source/BannedSymbols.txt" />
+    <File Path="Source/Directory.Build.props" />
+  </Folder>
+  <Folder Name="/build/test/">
+    <File Path="Tests/BannedSymbols.txt" />
+    <File Path="Tests/Directory.Build.props" />
+    <File Path="Tests/linq2db.BasicTestProjects.props" />
+    <File Path="Tests/linq2db.Providers.props" />
+    <File Path="Tests/linq2db.TestProjects.props" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="Source/ISeriesProvider/LinqToDB.DataProvider.DB2iSeries.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <File Path="Tests/DataProviders.json" />
+    <File Path="Tests/UserDataProviders.json" />
+    <Project Path="Tests/Base/Tests.Base.csproj" />
+    <Project Path="Tests/FSharp/Tests.FSharp.fsproj" />
+    <Project Path="Tests/Linq/Tests.csproj" />
+    <Project Path="Tests/Model/Tests.Model.csproj" />
+    <Project Path="Tests/VisualBasic/Tests.VisualBasic.vbproj" />
+  </Folder>
+</Solution>

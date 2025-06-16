@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
+
 using LinqToDB;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -8,29 +10,13 @@ namespace Tests.UserTests
 	[TestFixture]
 	public class Issue133Tests : TestBase
 	{
-		static readonly string[] SupportedProviders = new[]
-		{
-			TestProvName.AllSqlServer,
-			TestProvName.AllOracle,
-			TestProvName.AllClickHouse
-		}.SelectMany(_ => _.Split(',')).ToArray();
-
-		[AttributeUsage(AttributeTargets.Parameter)]
-		public class SupportsAnalyticFunctionsContextAttribute : IncludeDataSourcesAttribute
-		{
-			public SupportsAnalyticFunctionsContextAttribute(bool includeLinqService = true, params string[] excludedProviders)
-				: base(includeLinqService, SupportedProviders.Except(excludedProviders.SelectMany(_ => _.Split(','))).ToArray())
-			{
-			}
-		}
-
 		[Sql.Expression("COUNT(*) * 100E0 / SUM(COUNT(*)) OVER()", ServerSideOnly = true, IsAggregate = true)]
 		private static double CountPercents()
 		{
 			throw new InvalidOperationException("This function should be used only in database code");
 		}
 
-		[Test, ActiveIssue("Wrong Having detection")]
+		[Test]
 		public void NegativeWhereTest([SupportsAnalyticFunctionsContext] string context)
 		{
 			using (var db = GetDataContext(context))
@@ -41,9 +27,9 @@ namespace Tests.UserTests
 					.Where(_ => _.Sum != 36)
 					.ToList();
 
-				Assert.AreEqual(5, result.Count);
+				Assert.That(result, Has.Count.EqualTo(5));
 
-				Assert.AreEqual(100d, result.Sum(_ => _.CountPercents), 0.001);
+				Assert.That(result.Sum(_ => _.CountPercents), Is.EqualTo(100d).Within(0.001));
 			}
 		}
 
@@ -58,8 +44,8 @@ namespace Tests.UserTests
 					.Having(_ => _.Sum != 36)
 					.ToList();
 
-				Assert.AreEqual(5, result.Count);
-				Assert.AreEqual(100d, result.Sum(_ => _.CountPercents), 0.001);
+				Assert.That(result, Has.Count.EqualTo(5));
+				Assert.That(result.Sum(_ => _.CountPercents), Is.EqualTo(100d).Within(0.001));
 			}
 		}
 
@@ -78,8 +64,8 @@ namespace Tests.UserTests
 					.Where(_ => _.Sum != 36)
 					.ToList();
 
-				Assert.AreEqual(5, result.Count);
-				Assert.AreEqual(100d, result.Sum(_ => _.CountPercents), 0.001);
+				Assert.That(result, Has.Count.EqualTo(5));
+				Assert.That(result.Sum(_ => _.CountPercents), Is.EqualTo(100d).Within(0.001));
 			}
 		}
 
@@ -89,17 +75,17 @@ namespace Tests.UserTests
 			using (var db = GetDataContext(context))
 			{
 				var result = db.Child
-					.GroupBy(_ => _.ParentID)
-					.Select(_ => new
+					.GroupBy(c => c.ParentID)
+					.Select(g => new
 					{
-						CountPercents = _.Count() * 100d / Sql.Ext.Sum(_.Count()).Over().ToValue(),
-						Sum = _.Sum(r => r.ParentID)
+						CountPercents = g.Count() * 100d / Sql.Ext.Sum(g.Count()).Over().ToValue(),
+						Sum = g.Sum(r => r.ParentID)
 					})
-					.Having(_ => _.Sum != 36)
+					.Having(x => x.Sum != 36)
 					.ToList();
 
-				Assert.AreEqual(5, result.Count);
-				Assert.AreEqual(100d, result.Sum(_ => _.CountPercents), 0.001);
+				Assert.That(result, Has.Count.EqualTo(5));
+				Assert.That(result.Sum(_ => _.CountPercents), Is.EqualTo(100d).Within(0.001));
 			}
 		}
 	}

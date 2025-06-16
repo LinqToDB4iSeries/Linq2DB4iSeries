@@ -8,10 +8,10 @@ using LinqToDB.Mapping;
 
 using NUnit.Framework;
 
+using Tests.Model;
+
 namespace Tests.xUpdate
 {
-	using Model;
-
 	public partial class MergeTests
 	{
 		[Test]
@@ -19,7 +19,7 @@ namespace Tests.xUpdate
 		{
 			ResetPersonIdentity(context);
 
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			using (db.BeginTransaction())
 			{
 				PrepareIdentityData(db, context);
@@ -45,7 +45,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(1, rows, context);
 
-				Assert.AreEqual(7, result.Count);
+				Assert.That(result, Has.Count.EqualTo(7));
 
 				AssertPerson(IdentityPersons[0], result[0]);
 				AssertPerson(IdentityPersons[1], result[1]);
@@ -59,16 +59,13 @@ namespace Tests.xUpdate
 			}
 		}
 
-		// ASE: server dies
 		[Test]
-		public void ExplicitIdentityInsert([IdentityInsertMergeDataContextSource(
-			false,
-			TestProvName.AllSybase)]
+		public void ExplicitIdentityInsert([IdentityInsertMergeDataContextSource(false, TestProvName.AllSybase)]
 			string context)
 		{
 			ResetPersonIdentity(context);
 
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			using (db.BeginTransaction())
 			{
 				PrepareIdentityData(db, context);
@@ -80,8 +77,8 @@ namespace Tests.xUpdate
 					.Using(db.GetTable<MPerson>())
 					.On((t, s) => t.ID == s.ID && t.FirstName != "first 3")
 					.InsertWhenNotMatchedAnd(
-						s => s.Patient!.Diagnosis.Contains("sick")
-						, s => new MPerson()
+						s => s.Patient!.Diagnosis.Contains("sick"),
+						s => new MPerson()
 						{
 							ID        = nextId + 1,
 							FirstName = "Inserted 1",
@@ -91,10 +88,12 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = db.GetTable<MPerson>().OrderBy(_ => _.ID).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(1));
 
-				Assert.AreEqual(1, rows);
-
-				Assert.AreEqual(7, result.Count);
+					Assert.That(result, Has.Count.EqualTo(7));
+				}
 
 				AssertPerson(IdentityPersons[0], result[0]);
 				AssertPerson(IdentityPersons[1], result[1]);
@@ -102,25 +101,24 @@ namespace Tests.xUpdate
 				AssertPerson(IdentityPersons[3], result[3]);
 				AssertPerson(IdentityPersons[4], result[4]);
 				AssertPerson(IdentityPersons[5], result[5]);
-
-				Assert.AreEqual(nextId + 1, result[6].ID);
-				Assert.AreEqual(Gender.Male, result[6].Gender);
-				Assert.AreEqual("Inserted 1", result[6].FirstName);
-				Assert.AreEqual("Inserted 2", result[6].LastName);
-				Assert.IsNull(result[6].MiddleName);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[6].ID, Is.EqualTo(nextId + 1));
+					Assert.That(result[6].Gender, Is.EqualTo(Gender.Male));
+					Assert.That(result[6].FirstName, Is.EqualTo("Inserted 1"));
+					Assert.That(result[6].LastName, Is.EqualTo("Inserted 2"));
+					Assert.That(result[6].MiddleName, Is.Null);
+				}
 			}
 		}
 
-		// ASE: server dies
 		[Test]
-		public void ExplicitNoIdentityInsert([IdentityInsertMergeDataContextSource(
-			false,
-			TestProvName.AllSybase)]
+		public void ExplicitNoIdentityInsert([IdentityInsertMergeDataContextSource(false, TestProvName.AllSybase)]
 			string context)
 		{
 			ResetPersonIdentity(context);
 
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			using (db.BeginTransaction())
 			{
 				PrepareIdentityData(db, context);
@@ -145,7 +143,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(1, rows, context);
 
-				Assert.AreEqual(7, result.Count);
+				Assert.That(result, Has.Count.EqualTo(7));
 
 				AssertPerson(IdentityPersons[0], result[0]);
 				AssertPerson(IdentityPersons[1], result[1]);
@@ -153,12 +151,14 @@ namespace Tests.xUpdate
 				AssertPerson(IdentityPersons[3], result[3]);
 				AssertPerson(IdentityPersons[4], result[4]);
 				AssertPerson(IdentityPersons[5], result[5]);
-
-				Assert.AreEqual(nextId, result[6].ID);
-				Assert.AreEqual(Gender.Male, result[6].Gender);
-				Assert.AreEqual("Inserted 1", result[6].FirstName);
-				Assert.AreEqual("Inserted 2", result[6].LastName);
-				Assert.IsNull(result[6].MiddleName);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[6].ID, Is.EqualTo(nextId));
+					Assert.That(result[6].Gender, Is.EqualTo(Gender.Male));
+					Assert.That(result[6].FirstName, Is.EqualTo("Inserted 1"));
+					Assert.That(result[6].LastName, Is.EqualTo("Inserted 2"));
+					Assert.That(result[6].MiddleName, Is.Null);
+				}
 			}
 		}
 
@@ -201,16 +201,18 @@ namespace Tests.xUpdate
 
 				AssertRowCount(2, rows, context);
 
-				Assert.AreEqual(3, result.Count);
+				Assert.That(result, Has.Count.EqualTo(3));
 
 				var newRecord = new TestMapping1();
-
-				Assert.AreEqual(lastId, result[0].Id);
-				Assert.AreEqual(null, result[0].Field);
-				Assert.AreEqual(lastId + 1, result[1].Id);
-				Assert.AreEqual(22, result[1].Field);
-				Assert.AreEqual(lastId + 2, result[2].Id);
-				Assert.AreEqual(23, result[2].Field);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[0].Id, Is.EqualTo(lastId));
+					Assert.That(result[0].Field, Is.Null);
+					Assert.That(result[1].Id, Is.EqualTo(lastId + 1));
+					Assert.That(result[1].Field, Is.EqualTo(22));
+					Assert.That(result[2].Id, Is.EqualTo(lastId + 2));
+					Assert.That(result[2].Field, Is.EqualTo(23));
+				}
 			}
 		}
 
@@ -277,11 +279,14 @@ namespace Tests.xUpdate
 
 		private static void AssertPerson(MPerson expected, MPerson actual)
 		{
-			Assert.AreEqual(expected.ID        , actual.ID);
-			Assert.AreEqual(expected.Gender    , actual.Gender);
-			Assert.AreEqual(expected.FirstName , actual.FirstName);
-			Assert.AreEqual(expected.LastName  , actual.LastName);
-			Assert.AreEqual(expected.MiddleName, actual.MiddleName);
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(actual.ID, Is.EqualTo(expected.ID));
+				Assert.That(actual.Gender, Is.EqualTo(expected.Gender));
+				Assert.That(actual.FirstName, Is.EqualTo(expected.FirstName));
+				Assert.That(actual.LastName, Is.EqualTo(expected.LastName));
+				Assert.That(actual.MiddleName, Is.EqualTo(expected.MiddleName));
+			}
 		}
 
 		private void PrepareIdentityData(ITestDataContext db, string context)

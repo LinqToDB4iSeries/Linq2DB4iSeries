@@ -3,9 +3,9 @@ using System.Linq;
 using System.Threading.Tasks;
 
 using LinqToDB;
+using LinqToDB.Async;
 using LinqToDB.Data;
-using LinqToDB.DataProvider.SqlServer;
-using LinqToDB.Linq;
+
 using NUnit.Framework;
 
 namespace Tests.Extensions
@@ -23,9 +23,9 @@ namespace Tests.Extensions
 
 				var q = db.Parent.Select(p => p);
 
-				var str = q.ToString();
+				var str = q.ToSqlQuery().Sql;
 
-				TestContext.WriteLine(str);
+				BaselinesManager.LogQuery(str);
 
 				Assert.That(str, Contains.Substring("---"));
 				Assert.That(str, Contains.Substring("----"));
@@ -40,9 +40,9 @@ namespace Tests.Extensions
 					Assert.That(ctx.LastQuery, Contains.Substring("----"));
 				}
 
-				str = q.ToString();
+				str = q.ToSqlQuery().Sql;
 
-				TestContext.WriteLine(str);
+				BaselinesManager.LogQuery(str);
 
 				Assert.That(str, Contains.Substring("---"));
 				Assert.That(str, Is.Not.Contains("----"));
@@ -84,21 +84,23 @@ namespace Tests.Extensions
 				db.NextQueryHints.Add(oneTimeHint);
 
 				var query = db.Parent.Where(r => r.ParentID == 11);
-				var sql = db is DataConnection ? null : query.ToString();
+				var sql = db is DataConnection ? null : query.ToSqlQuery().Sql;
 				await query.ToListAsync();
 				if (db is DataConnection dc) sql = dc.LastQuery!;
 
-				Assert.True(sql!.Contains(sharedHint), $"(1) expected {sharedHint}. Has alien hint: {sql.Contains("many")}");
-				Assert.True(sql.Contains(oneTimeHint), $"(1) expected {oneTimeHint}. Has alien hint: {sql.Contains("once")}");
+				Assert.That(sql, Is.Not.Null);
+				Assert.That(sql, Does.Contain(sharedHint), $"(1) expected {sharedHint}. Has alien hint: {sql.Contains("many")}");
+				Assert.That(sql, Does.Contain(oneTimeHint), $"(1) expected {oneTimeHint}. Has alien hint: {sql.Contains("once")}");
 
 				query = db.Parent.Where(r => r.ParentID == 11);
-				sql = db is DataConnection ? null : query.ToString();
+				sql = db is DataConnection ? null : query.ToSqlQuery().Sql;
 				await query.ToListAsync();
 				if (db is DataConnection dc2) sql = dc2.LastQuery!;
 
-				Assert.True(sql!.Contains(sharedHint), $"(2) expected {sharedHint}. Has alien hint: {sql.Contains("many")}");
-				Assert.False(sql.Contains(oneTimeHint), $"(2) expected no {oneTimeHint}");
-				Assert.False(sql.Contains("once"), $"(2) alien one-time hint found");
+				Assert.That(sql, Is.Not.Null);
+				Assert.That(sql, Does.Contain(sharedHint), $"(2) expected {sharedHint}. Has alien hint: {sql.Contains("many")}");
+				Assert.That(sql, Does.Not.Contain(oneTimeHint), $"(2) expected no {oneTimeHint}");
+				Assert.That(sql, Does.Not.Contain("once"), $"(2) alien one-time hint found");
 			}
 		}
 	}

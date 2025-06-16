@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 
 using LinqToDB;
-using LinqToDB.Common;
 using LinqToDB.Mapping;
 
 using NUnit.Framework;
@@ -35,7 +34,7 @@ namespace Tests.UserTests
 		}
 
 		[Test]
-		public void Test1([DataSources(ProviderName.Access, TestProvName.AllInformix, TestProvName.AllClickHouse)] string context)
+		public void Test1([DataSources(TestProvName.AllInformix, TestProvName.AllClickHouse)] string context)
 		{
 			var harnessIds = new int[2];
 
@@ -50,7 +49,7 @@ namespace Tests.UserTests
 		[Test]
 		public void Test2([DataSources(TestProvName.AllAccess, TestProvName.AllInformix, TestProvName.AllSybase, TestProvName.AllClickHouse)] string context)
 		{
-			var harnessIds = Array<int>.Empty;
+			var harnessIds = Array.Empty<int>();
 
 			using (var db = GetDataContext(context))
 				db.GetTable<Parent>()

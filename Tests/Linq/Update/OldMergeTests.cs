@@ -9,10 +9,10 @@ using LinqToDB.Mapping;
 
 using NUnit.Framework;
 
+using Tests.Model;
+
 namespace Tests.xUpdate
 {
-	using Model;
-
 	[TestFixture]
 	[Order(10000)]
 	[Obsolete("Tests for obsolete API. Will be removed with API under question.")]
@@ -20,16 +20,10 @@ namespace Tests.xUpdate
 	{
 		[Test]
 		public void Merge(
-			[DataSources(
+			[MergeDataContextSource(
 				false,
-				TestProvName.AllAccess,
 				TestProvName.AllInformix,
-				TestProvName.AllMySql,
 				TestProvName.AllPostgreSQL,
-				TestProvName.AllSQLite,
-				ProviderName.SqlCe,
-				TestProvName.AllClickHouse,
-				TestProvName.AllSqlServer2005,
 				TestProvName.AllSybase,
 				TestProvName.AllSapHana)]
 			string context)
@@ -53,27 +47,21 @@ namespace Tests.xUpdate
 		{
 			using (var db = GetDataConnection(context))
 			{
-				db.Merge(Array<Person>.Empty);
+				db.Merge(Array.Empty<Person>());
 			}
 		}
 
 		[Test]
 		public void MergeWithDelete(
-			[DataSources(
+			[MergeDataContextSource(
 				false,
-				TestProvName.AllAccess,
-				TestProvName.AllClickHouse,
 				ProviderName.DB2,
 				TestProvName.AllFirebird,
-				TestProvName.AllMySql,
 				TestProvName.AllPostgreSQL,
-				TestProvName.AllSQLite,
 				TestProvName.AllOracle,
 				TestProvName.AllSybase,
 				TestProvName.AllInformix,
-				TestProvName.AllSapHana,
-				ProviderName.SqlCe,
-				TestProvName.AllSqlServer2005)]
+				TestProvName.AllSapHana)]
 			string context)
 		{
 			using (var db = GetDataConnection(context))
@@ -84,21 +72,15 @@ namespace Tests.xUpdate
 
 		[Test]
 		public void MergeWithDeletePredicate1(
-			[DataSources(
+			[MergeDataContextSource(
 				false,
-				TestProvName.AllAccess,
-				TestProvName.AllClickHouse,
 				ProviderName.DB2,
 				TestProvName.AllFirebird,
-				TestProvName.AllMySql,
 				TestProvName.AllPostgreSQL,
-				TestProvName.AllSQLite,
 				TestProvName.AllOracle,
 				TestProvName.AllSybase,
 				TestProvName.AllInformix,
-				TestProvName.AllSapHana,
-				ProviderName.SqlCe,
-				TestProvName.AllSqlServer2005)]
+				TestProvName.AllSapHana)]
 			string context)
 		{
 			using (var db = GetDataConnection(context))
@@ -109,21 +91,15 @@ namespace Tests.xUpdate
 
 		[Test]
 		public void MergeWithDeletePredicate2(
-			[DataSources(
+			[MergeDataContextSource(
 				false,
-				TestProvName.AllAccess,
-				TestProvName.AllClickHouse,
 				ProviderName.DB2,
 				TestProvName.AllFirebird,
-				TestProvName.AllMySql,
 				TestProvName.AllPostgreSQL,
-				TestProvName.AllSQLite,
 				TestProvName.AllOracle,
 				TestProvName.AllSybase,
 				TestProvName.AllInformix,
-				TestProvName.AllSapHana,
-				ProviderName.SqlCe,
-				TestProvName.AllSqlServer2005)]
+				TestProvName.AllSapHana)]
 			string context)
 		{
 			using (var db = GetDataConnection(context))
@@ -134,21 +110,15 @@ namespace Tests.xUpdate
 
 		[Test]
 		public async Task MergeWithDeletePredicate2Async(
-			[DataSources(
+			[MergeDataContextSource(
 				false,
-				TestProvName.AllAccess,
-				TestProvName.AllClickHouse,
 				ProviderName.DB2,
 				TestProvName.AllFirebird,
-				TestProvName.AllMySql,
 				TestProvName.AllPostgreSQL,
-				TestProvName.AllSQLite,
 				TestProvName.AllOracle,
 				TestProvName.AllSybase,
 				TestProvName.AllInformix,
-				TestProvName.AllSapHana,
-				ProviderName.SqlCe,
-				TestProvName.AllSqlServer2005)]
+				TestProvName.AllSapHana)]
 			string context)
 		{
 			using (var db = GetDataConnection(context))
@@ -159,21 +129,15 @@ namespace Tests.xUpdate
 
 		[Test]
 		public void MergeWithDeletePredicate3(
-			[DataSources(
+			[MergeDataContextSource(
 				false,
-				TestProvName.AllAccess,
-				TestProvName.AllClickHouse,
 				ProviderName.DB2,
 				TestProvName.AllFirebird,
-				TestProvName.AllMySql,
 				TestProvName.AllPostgreSQL,
-				TestProvName.AllSQLite,
 				TestProvName.AllOracle,
 				TestProvName.AllSybase,
 				TestProvName.AllInformix,
-				TestProvName.AllSapHana,
-				ProviderName.SqlCe,
-				TestProvName.AllSqlServer2005)]
+				TestProvName.AllSapHana)]
 			string context)
 		{
 			using (var db = GetDataConnection(context))
@@ -185,21 +149,15 @@ namespace Tests.xUpdate
 
 		[Test]
 		public void MergeWithDeletePredicate4(
-			[DataSources(
+			[MergeDataContextSource(
 				false,
-				TestProvName.AllAccess,
-				TestProvName.AllClickHouse,
 				ProviderName.DB2,
 				TestProvName.AllFirebird,
-				TestProvName.AllMySql,
 				TestProvName.AllPostgreSQL,
-				TestProvName.AllSQLite,
 				TestProvName.AllOracle,
 				TestProvName.AllSybase,
 				TestProvName.AllInformix,
-				TestProvName.AllSapHana,
-				ProviderName.SqlCe,
-				TestProvName.AllSqlServer2005)]
+				TestProvName.AllSapHana)]
 			string context)
 		{
 			using (var db = GetDataConnection(context))
@@ -213,21 +171,15 @@ namespace Tests.xUpdate
 
 		[Test]
 		public void MergeWithDeletePredicate5(
-			[DataSources(
+			[MergeDataContextSource(
 				false,
-				TestProvName.AllAccess,
-				TestProvName.AllClickHouse,
 				ProviderName.DB2,
 				TestProvName.AllFirebird,
-				TestProvName.AllMySql,
 				TestProvName.AllPostgreSQL,
-				TestProvName.AllSQLite,
 				TestProvName.AllOracle,
 				TestProvName.AllSybase,
 				TestProvName.AllInformix,
-				TestProvName.AllSapHana,
-				ProviderName.SqlCe,
-				TestProvName.AllSqlServer2005)]
+				TestProvName.AllSapHana)]
 			string context)
 		{
 			using (var db = GetDataConnection(context))
@@ -246,20 +198,14 @@ namespace Tests.xUpdate
 
 		[Test]
 		public void MergeChar1(
-			[DataSources(
+			[MergeDataContextSource(
 				false,
-				TestProvName.AllAccess,
-				TestProvName.AllClickHouse,
 				ProviderName.DB2,
 				TestProvName.AllInformix,
-				TestProvName.AllMySql,
 				TestProvName.AllPostgreSQL,
-				TestProvName.AllSQLite,
 				TestProvName.AllOracle,
 				TestProvName.AllSybase,
-				TestProvName.AllSapHana,
-				ProviderName.SqlCe,
-				TestProvName.AllSqlServer2005)]
+				TestProvName.AllSapHana)]
 			string context)
 		{
 			ResetAllTypesIdentity(context);
@@ -279,20 +225,14 @@ namespace Tests.xUpdate
 
 		[Test]
 		public void MergeChar2(
-			[DataSources(
+			[MergeDataContextSource(
 				false,
-				TestProvName.AllAccess,
-				TestProvName.AllClickHouse,
 				ProviderName.DB2,
-				TestProvName.AllMySql,
 				TestProvName.AllPostgreSQL,
-				TestProvName.AllSQLite,
 				TestProvName.AllOracle,
 				TestProvName.AllSybase,
 				TestProvName.AllInformix,
-				TestProvName.AllSapHana,
-				ProviderName.SqlCe,
-				TestProvName.AllSqlServer2005)]
+				TestProvName.AllSapHana)]
 			string context)
 		{
 			using (var db = GetDataConnection(context))

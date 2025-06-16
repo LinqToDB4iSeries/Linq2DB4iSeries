@@ -1,25 +1,27 @@
 ﻿using System;
-using LinqToDB.SqlQuery;
+
 using static LinqToDB.Sql;
+
+using LinqToDB.Internal.SqlQuery;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
 	internal class DateDiffBuilderDB2i : IExtensionCallBuilder
 	{
-		public void Build(ISqExtensionBuilder builder)
+		public void Build(Sql.ISqlExtensionBuilder builder)
 		{
 			var part = builder.GetValue<DateParts>(0);
-			var startDate = builder.GetExpression(1);
-			var endDate = builder.GetExpression(2);
+			var startDate = builder.GetExpression(1)!;
+			var endDate = builder.GetExpression(2)!;
 
 			var secondsExpr = builder.Mul<int>(builder.Sub<int>(
-					new SqlFunction(typeof(int), "Days", endDate),
-					new SqlFunction(typeof(int), "Days", startDate)),
+					new SqlFunction(builder.Mapping.GetDbDataType(typeof(int)), "Days", endDate),
+					new SqlFunction(builder.Mapping.GetDbDataType(typeof(int)), "Days", startDate)),
 				new SqlValue(86400));
 
 			var midnight = builder.Sub<int>(
-				new SqlFunction(typeof(int), "MIDNIGHT_SECONDS", endDate),
-				new SqlFunction(typeof(int), "MIDNIGHT_SECONDS", startDate));
+				new SqlFunction(builder.Mapping.GetDbDataType(typeof(int)), "MIDNIGHT_SECONDS", endDate),
+				new SqlFunction(builder.Mapping.GetDbDataType(typeof(int)), "MIDNIGHT_SECONDS", startDate));
 
 			var resultExpr = builder.Add<int>(secondsExpr, midnight);
 
@@ -34,8 +36,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 						builder.Mul(resultExpr, 1000),
 						builder.Div(
 							builder.Sub<int>(
-								new SqlFunction(typeof(int), "MICROSECOND", endDate),
-								new SqlFunction(typeof(int), "MICROSECOND", startDate)),
+								new SqlFunction(builder.Mapping.GetDbDataType(typeof(int)), "MICROSECOND", endDate),
+								new SqlFunction(builder.Mapping.GetDbDataType(typeof(int)), "MICROSECOND", startDate)),
 							1000));
 					break;
 				default:

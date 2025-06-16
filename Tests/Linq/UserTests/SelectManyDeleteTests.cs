@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using LinqToDB;
+using LinqToDB.Internal.Common;
 using LinqToDB.Mapping;
 
 using NUnit.Framework;
@@ -38,17 +39,10 @@ namespace Tests.UserTests
 			public List<Child> Children { get; set; } = null!;
 		}
 
+		[YdbMemberNotFound]
+		[ThrowsForProvider(typeof(LinqToDBException), TestProvName.AllClickHouse, ErrorMessage = ErrorHelper.ClickHouse.Error_CorrelatedDelete)]
 		[Test]
-		public void Test([DataSources(
-			ProviderName.Access,
-			TestProvName.AllClickHouse,
-			ProviderName.DB2,
-			TestProvName.AllInformix,
-			TestProvName.AllOracle,
-			ProviderName.SqlCe,
-			TestProvName.AllSQLite,
-			TestProvName.AllSapHana)]
-			string context)
+		public void Test([DataSources] string context)
 		{
 			var harnessIds = new int[2];
 

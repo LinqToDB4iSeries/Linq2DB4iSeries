@@ -10,31 +10,31 @@ namespace Tests.UserTests
 	public class Issue1164Tests : TestBase
 	{
 		[Test]
-		public void TestOleDb([IncludeDataSources(ProviderName.Access)] string context)
+		public void TestOleDb([IncludeDataSources(TestProvName.AllAccessOleDb)] string context)
 		{
 			var cs = DataConnection.GetConnectionString(context).Replace("TestData", "issue_1164");
 
-			using (var db = new DataConnection(new AccessOleDbDataProvider(), cs))
+			using (var db = new DataConnection(new DataOptions().UseConnectionString(AccessTools.GetDataProvider(provider: AccessProvider.OleDb, connectionString: cs), cs)))
 			{
 				var schemaProvider = db.DataProvider.GetSchemaProvider();
 
 				var schema = schemaProvider.GetSchema(db);
-				
-				Assert.IsNotNull(schema);
+
+				Assert.That(schema, Is.Not.Null);
 			}
 		}
 
 		[Test]
-		public void TestOdbc([IncludeDataSources(ProviderName.AccessOdbc)] string context)
+		public void TestOdbc([IncludeDataSources(TestProvName.AllAccessOdbc)] string context)
 		{
 			var cs = DataConnection.GetConnectionString(context).Replace("TestData.ODBC", "issue_1164");
-			using (var db = new DataConnection(new AccessODBCDataProvider(), cs))
+			using (var db = new DataConnection(new DataOptions().UseConnectionString(AccessTools.GetDataProvider(provider: AccessProvider.ODBC, connectionString: cs), cs)))
 			{
 				var schemaProvider = db.DataProvider.GetSchemaProvider();
 
 				var schema = schemaProvider.GetSchema(db);
 
-				Assert.IsNotNull(schema);
+				Assert.That(schema, Is.Not.Null);
 			}
 		}
 	}

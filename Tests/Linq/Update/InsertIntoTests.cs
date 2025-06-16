@@ -1,6 +1,8 @@
 ﻿using System.Linq;
+
 using LinqToDB;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.xUpdate
@@ -34,9 +36,11 @@ namespace Tests.xUpdate
 
 				var source = table.Single();
 				var result = destTable.Single();
-
-				Assert.That(source.Value,      Is.EqualTo(result.Value));
-				Assert.That(source.OtherValue, Is.EqualTo(result.OtherValue));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(source.Value, Is.EqualTo(result.Value));
+					Assert.That(source.OtherValue, Is.EqualTo(result.OtherValue));
+				}
 			}
 		}
 
@@ -53,9 +57,11 @@ namespace Tests.xUpdate
 
 				var source = table.Single();
 				var result = destTable.Single();
-
-				Assert.That(source.Value,      Is.EqualTo(result.Value));
-				Assert.That(source.OtherValue, Is.EqualTo(result.OtherValue));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(source.Value, Is.EqualTo(result.Value));
+					Assert.That(source.OtherValue, Is.EqualTo(result.OtherValue));
+				}
 			}
 		}
 
@@ -72,9 +78,11 @@ namespace Tests.xUpdate
 
 				var source = table.Single();
 				var result = destTable.Single();
-
-				Assert.That(source.Value,      Is.EqualTo(result.Value));
-				Assert.That(source.OtherValue, Is.EqualTo(result.OtherValue));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(source.Value, Is.EqualTo(result.Value));
+					Assert.That(source.OtherValue, Is.EqualTo(result.OtherValue));
+				}
 			}
 		}
 
@@ -92,9 +100,11 @@ namespace Tests.xUpdate
 
 				var source = table.Single();
 				var result = destTable.Single();
-
-				Assert.That(source.Value,      Is.EqualTo(result.Value));
-				Assert.That(result.OtherValue, Is.Null);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(source.Value, Is.EqualTo(result.Value));
+					Assert.That(result.OtherValue, Is.Null);
+				}
 			}
 		}
 
@@ -115,9 +125,11 @@ namespace Tests.xUpdate
 
 				var source = table.Single();
 				var result = destTable.Single();
-
-				Assert.That(source.Value,      Is.EqualTo(result.Value - 2));
-				Assert.That(source.OtherValue, Is.EqualTo(result.OtherValue - 2));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(source.Value, Is.EqualTo(result.Value - 2));
+					Assert.That(source.OtherValue, Is.EqualTo(result.OtherValue - 2));
+				}
 			}
 		}
 	}

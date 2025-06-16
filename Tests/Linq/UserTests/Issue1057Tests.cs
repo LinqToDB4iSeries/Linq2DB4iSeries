@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Linq;
 using System.Linq.Expressions;
+
+using LinqToDB;
+using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
 {
-	using LinqToDB;
-	using LinqToDB.Mapping;
-
 	public class Issue1057Tests : TestBase
 	{
 		[Table, InheritanceMapping(Code = "bda.Requests", Type = typeof(BdaTask))]
@@ -48,7 +49,6 @@ namespace Tests.UserTests
 
 			[Column]
 			[Column(Configuration = ProviderName.DB2, DbType = "char")]
-			[Column(Configuration = ProviderName.Firebird, DbType = "char(1)")]
 			public bool Actual { get; set; }
 		}
 
@@ -73,9 +73,12 @@ namespace Tests.UserTests
 						});
 					var res = query.ToArray();
 
-					Assert.AreEqual(1, res.Length);
-					Assert.IsNotNull(res[0].Instance);
-					Assert.AreEqual(2, res[0].ActualStageId);
+					Assert.That(res, Has.Length.EqualTo(1));
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(res[0].Instance, Is.Not.Null);
+						Assert.That(res[0].ActualStageId, Is.EqualTo(2));
+					}
 				}
 			}
 		}
@@ -101,10 +104,12 @@ namespace Tests.UserTests
 						});
 					var res = query.ToArray();
 
-					Assert.AreEqual(1, res.Length);
-					Assert.IsNotNull(res[0].Instance);
-					Assert.AreEqual(2, res[0].ActualStageId);
-
+					Assert.That(res, Has.Length.EqualTo(1));
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(res[0].Instance, Is.Not.Null);
+						Assert.That(res[0].ActualStageId, Is.EqualTo(2));
+					}
 
 					var query2 = db.GetTable<Task>()
 						.Select(p => new
@@ -115,9 +120,12 @@ namespace Tests.UserTests
 
 					var res2 = query2.OrderBy(_ => _.Instance.Id).ToArray();
 
-					Assert.AreEqual(2, res2.Length);
-					Assert.IsNotNull(res2[0].Instance);
-					Assert.AreEqual(2, res2[0].ActualStageId);
+					Assert.That(res2, Has.Length.EqualTo(2));
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(res2[0].Instance, Is.Not.Null);
+						Assert.That(res2[0].ActualStageId, Is.EqualTo(2));
+					}
 				}
 			}
 		}

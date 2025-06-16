@@ -1,19 +1,21 @@
 ﻿using System;
 using System.Reflection;
 using System.Linq;
-using LinqToDB.SqlQuery;
+
 using static LinqToDB.Sql;
+
+using LinqToDB.SqlQuery;
+using LinqToDB.Internal.SqlQuery;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
 	internal class TrimBuilderDB2i : IExtensionCallBuilder
 	{
-		public void Build(ISqExtensionBuilder builder)
+		public void Build(Sql.ISqlExtensionBuilder builder)
 		{
 			var stringExpression = builder.GetExpression(0);
-			//var charExpression = builder.GetExpression(1);
-
-			char[] chars = null;
+			
+			char[]? chars = null;
 			if (builder.Member is not MethodInfo methodInfo)
 				throw new InvalidOperationException("Member is not a trim method.");
 
@@ -27,7 +29,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				}
 				else if (charParameter.ParameterType == typeof(char?[]))
 				{
-					chars = builder.GetValue<char?[]>(1).Where(x => x.HasValue).Select(x => x.Value).Distinct().ToArray();
+					chars = builder.GetValue<char?[]>(1).Where(x => x.HasValue).Select(x => x!.Value).Distinct().ToArray();
 				}
 				else if (charParameter.ParameterType == typeof(char))
 				{
@@ -51,9 +53,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			if (chars == null || chars.Length == 0)
 			{
 				builder.ResultExpression = new SqlFunction(
-					typeof(string),
+					builder.Mapping.GetDbDataType(typeof(string)),
 					direction,
-					stringExpression);
+					stringExpression!);
 				return;
 			}
 
@@ -61,11 +63,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				throw new LinqToDBException("TrimLeft/TrimRight with multiple characters not supported on i series version 7.1");
 
 			builder.ResultExpression = new SqlExpression(
-				typeof(string),
+				builder.Mapping.GetDbDataType(typeof(string)),
 				direction + "({0}, {1})",
 				Precedence.Primary,
-				stringExpression,
-				new SqlExpression(typeof(string), "{0}", new SqlValue(new string(chars))));
+				stringExpression!,
+				new SqlExpression(builder.Mapping.GetDbDataType(typeof(string)), "{0}", new SqlValue(new string(chars))));
 		}
 	}
 }

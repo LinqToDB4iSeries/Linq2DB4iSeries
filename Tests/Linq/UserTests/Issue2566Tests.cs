@@ -1,8 +1,9 @@
 ﻿using System.Linq;
+
 using LinqToDB;
 using LinqToDB.Data;
 using LinqToDB.Mapping;
-using LinqToDB.Tools;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -81,13 +82,13 @@ namespace Tests.UserTests
 					.Where(m => m.Value == AnredeAuswahlliste.Frau)
 					.ToList();
 
-				Assert.That(simple.Count, Is.EqualTo(1));
+				Assert.That(simple, Has.Count.EqualTo(1));
 
 				var inList = dataClasses
 					.Where(m => m.Value!.In<AnredeAuswahlliste>(AnredeAuswahlliste.Frau, AnredeAuswahlliste.Herr))
 					.ToList();
 
-				Assert.That(inList.Count, Is.EqualTo(2));
+				Assert.That(inList, Has.Count.EqualTo(2));
 			}
 		}
 
@@ -111,13 +112,13 @@ namespace Tests.UserTests
 					.Where(m => m.Value == AnredeAuswahlliste.Frau)
 					.ToList();
 
-				Assert.That(simple.Count, Is.EqualTo(1));
+				Assert.That(simple, Has.Count.EqualTo(1));
 
 				var inList = dataClasses
 					.Where(m => m.Value!.In<AnredeAuswahlliste>(AnredeAuswahlliste.Frau, AnredeAuswahlliste.Herr))
 					.ToList();
 
-				Assert.That(inList.Count, Is.EqualTo(2));
+				Assert.That(inList, Has.Count.EqualTo(2));
 			}
 		}
 

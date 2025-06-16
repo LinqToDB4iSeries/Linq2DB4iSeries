@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Linq;
+
 using LinqToDB;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.Linq
@@ -39,7 +41,6 @@ namespace Tests.Linq
 			[NotColumn] public Type? NotMapped  { get; set; }
 		}
 
-
 		static Tuple<SuperClass[], Subclass1[], Subclass2[]> GenerateTestData()
 		{
 			var items1 = Enumerable.Range(1, 10).Select(i => new SuperClass
@@ -70,7 +71,7 @@ namespace Tests.Linq
 		{
 			var testData = GenerateTestData();
 
-			using (var db = GetDataContext(context))
+			using (var db = GetDataContext(context, o => o.OmitUnsupportedCompareNulls(context)))
 			using (db.CreateLocalTable(testData.Item1))
 			using (db.CreateLocalTable(testData.Item2))
 			using (db.CreateLocalTable(testData.Item3))
@@ -108,7 +109,7 @@ namespace Tests.Linq
 		{
 			var testData = GenerateTestData();
 
-			using (var db = GetDataContext(context))
+			using (var db = GetDataContext(context, o => o.OmitUnsupportedCompareNulls(context)))
 			using (db.CreateLocalTable(testData.Item1))
 			using (db.CreateLocalTable(testData.Item2))
 			using (db.CreateLocalTable(testData.Item3))

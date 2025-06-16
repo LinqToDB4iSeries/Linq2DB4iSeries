@@ -21,9 +21,9 @@ namespace Tests.DataProvider
 				var output1 = new DataParameter("output1", null, DataType.Int32) { Direction = ParameterDirection.Output };
 				var output2 = new DataParameter("output2", null, DataType.Int32) { Direction = ParameterDirection.Output };
 				var result = db.ExecuteProc("ExecuteProcInt2Parameters", input, output1, output2);
-				Assert.AreEqual(2, output1.Value);
-				Assert.AreEqual(3, output2.Value);
-				Assert.AreEqual(TestProvNameDb2i.IsiSeriesODBC(context) ? 0 : -1, result);
+				Assert.That(output1.Value, Is.EqualTo(2));
+				Assert.That(output2.Value, Is.EqualTo(3));
+				Assert.That(result, Is.EqualTo(TestProvNameDb2i.IsiSeriesODBC(context) ? 0 : -1));
 			}
 		}
 	}

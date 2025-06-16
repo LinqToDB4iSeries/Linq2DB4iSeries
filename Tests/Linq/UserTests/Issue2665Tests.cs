@@ -1,6 +1,8 @@
 ﻿using System.Linq;
+
 using LinqToDB;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -71,7 +73,7 @@ namespace Tests.UserTests
 
 					var res = query2.ToList();
 
-					Assert.AreEqual(res.Count, 0);
+					Assert.That(res, Is.Empty);
 				}
 			}
 		}

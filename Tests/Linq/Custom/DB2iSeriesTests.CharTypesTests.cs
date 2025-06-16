@@ -114,19 +114,15 @@ namespace Tests.DataProvider
 
 					var records = db.GetTable<StringTestTable>().Where(_ => _.Id > lastId).OrderBy(_ => _.Id).ToList();
 
-					Assert.AreEqual(testData.Count, records.Count);
+					Assert.That(records.Count, Is.EqualTo(testData.Count));
 
 					testData.Zip(records, (expected, actual) => (expected, actual))
 						.ToList().ForEach(x =>
 					{
 						var (expected, actual) = x;
-						
-						Assert.AreEqual(expected.String?.TrimEnd(' '), actual.String);
 
-						if (TestProvNameDb2i.IsiSeriesOleDb(context) && expected.NString is { } && expected.NString.StartsWith("test20")) //OleDb strips \u3000
-							Assert.AreEqual(expected.NString?.TrimEnd(), actual.NString);
-						else
-							Assert.AreEqual(expected.NString?.TrimEnd(' '), actual.NString);
+						Assert.That(actual.String, Is.EqualTo(expected.String?.TrimEnd(' ')));
+						Assert.That(actual.NString, Is.EqualTo(expected.NString?.TrimEnd(' ')));
 					});
 				}
 				finally
@@ -146,7 +142,8 @@ namespace Tests.DataProvider
 				try
 				{
 					//Strip null chars - not supported in DB2i
-					var testData = CharTestData.Where(_ => _.NChar != '\0').ToList();
+					//var testData = CharTestData.Where(_ => _.NChar != '\0').ToList();
+					var testData = CharTestData.ToList();
 
 					testData.ForEach(record =>
 					{
@@ -158,20 +155,24 @@ namespace Tests.DataProvider
 					});
 
 					var records = db.GetTable<CharTestTable>().Where(_ => _.Id > lastId).OrderBy(_ => _.Id).ToList();
-					
-					Assert.AreEqual(testData.Count, records.Count);
+
+					Assert.That(records.Count, Is.EqualTo(testData.Count));
 
 					testData.Zip(records, (expected, actual) => (expected, actual))
 						.ToList().ForEach(x =>
 						{
 							var (expected, actual) = x;
 
-							Assert.AreEqual(TestProvNameDb2i.IsiSeriesOleDb(context) && expected.Char == ' '  ? '\0' : expected.Char, actual.Char);
-							
-							if (TestProvNameDb2i.IsiSeriesOleDb(context) && expected.NChar == '\u3000') // OleDb strips \u3000
-								Assert.AreEqual('\0', actual.NChar);
+							if (TestProvNameDb2i.IsiSeriesOleDb(context) && expected.NChar == '\0') // OleDb treats null character as space
+							{
+								Assert.That(actual.Char, Is.EqualTo(' '));
+								Assert.That(actual.NChar, Is.EqualTo(' '));
+							}
 							else
-								Assert.AreEqual(expected.NChar == ' ' ? '\0' : expected.NChar, actual.NChar);
+							{
+								Assert.That(actual.Char, Is.EqualTo(expected.Char));
+								Assert.That(actual.NChar, Is.EqualTo(expected.NChar));
+							}
 						});
 				}
 				finally

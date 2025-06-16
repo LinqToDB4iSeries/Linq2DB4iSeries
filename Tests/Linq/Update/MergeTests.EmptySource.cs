@@ -1,14 +1,14 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 
 using LinqToDB;
-using LinqToDB.Common;
 
 using NUnit.Framework;
 
+using Tests.Model;
+
 namespace Tests.xUpdate
 {
-	using Model;
-
 	// tests for empty enumerable source
 	public partial class MergeTests
 	{
@@ -23,7 +23,7 @@ namespace Tests.xUpdate
 
 				var rows = table
 					.Merge()
-					.Using(Array<TestMapping1>.Empty)
+					.Using(Array.Empty<TestMapping1>())
 					.OnTargetKey()
 					.InsertWhenNotMatched()
 					.Merge();
@@ -32,7 +32,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(0, rows, context);
 
-				Assert.AreEqual(4, result.Count);
+				Assert.That(result, Has.Count.EqualTo(4));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -53,7 +53,7 @@ namespace Tests.xUpdate
 
 				var rows = table
 					.Merge()
-					.Using(Array<Person>.Empty)
+					.Using(Array.Empty<Person>())
 					.On((t, s) => t.Id == s.ID)
 					.InsertWhenNotMatched(s => new TestMapping1()
 					{
@@ -65,7 +65,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(0, rows, context);
 
-				Assert.AreEqual(4, result.Count);
+				Assert.That(result, Has.Count.EqualTo(4));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);

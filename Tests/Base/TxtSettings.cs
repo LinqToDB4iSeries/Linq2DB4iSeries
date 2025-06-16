@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using LinqToDB.Common;
+
 using LinqToDB.Configuration;
 
 namespace Tests
@@ -11,7 +11,7 @@ namespace Tests
 			public string                  TypeName   { get; set; } = null!;
 			public string?                 Name       { get; set; }
 			public bool                    Default    { get; set; }
-			public IEnumerable<NamedValue> Attributes => Array<NamedValue>.Empty;
+			public IEnumerable<NamedValue> Attributes => [];
 		}
 
 		sealed class ConnectionStringSettings : IConnectionStringSettings
@@ -26,7 +26,6 @@ namespace Tests
 		public string?                                DefaultConfiguration { get; set; }
 		public string?                                DefaultDataProvider  { get; set; }
 		public IEnumerable<IConnectionStringSettings> ConnectionStrings => _strings;
-
 
 		readonly List<DataProviderSettings>     _dataProviders = new List<DataProviderSettings>();
 		readonly List<ConnectionStringSettings> _strings       = new List<ConnectionStringSettings>();

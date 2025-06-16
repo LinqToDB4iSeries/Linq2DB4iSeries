@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
+using System.Diagnostics;
+
+using LinqToDB.Data;
+using LinqToDB.Internal.DataProvider;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
-	using Data;
-	using Tools;
-	using System.Diagnostics;
-	using System.Data.Common;
-
 	internal partial class DB2iSeriesBulkCopy : BasicBulkCopy
 	{
 		private const int MAX_ACCESS_CLIENT_BATCH_SIZE = 10000;
@@ -22,6 +22,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			DbConnection connection,
 			DB2iSeriesAccessClientProviderAdapter adapter,
 			Action<DataConnection, Func<string>, Func<int>> traceAction)
+			where T : notnull
 		{
 			var options = dataOptions.BulkCopyOptions;
 			var descriptor = dataConnection.MappingSchema.GetEntityDescriptor(typeof(T));

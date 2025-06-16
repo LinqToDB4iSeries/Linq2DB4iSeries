@@ -49,11 +49,7 @@ namespace Tests.DataProvider
 			[IncludeDataSources(false, TestProvNameDb2i.All)] string context,
 			[Values(null, true, false)] bool? keepIdentity,
 			[Values] BulkCopyType copyType,
-#if NET472
-			[Values(0, 1)] int asyncMode) // 0 == sync, 1 == async
-#else
 			[Values(0, 1, 2)] int asyncMode) // 0 == sync, 1 == async, 2 == async with IAsyncEnumerable
-#endif
 		{
 			ResetAllTypesIdentity(context);
 
@@ -74,15 +70,15 @@ namespace Tests.DataProvider
 
 					var data = db.GetTable<TestTable2>().Where(_ => _.ID > lastId).OrderBy(_ => _.ID).ToArray();
 
-					Assert.AreEqual(2, data.Length);
+					Assert.That(data.Length, Is.EqualTo(2));
 
 					// oracle supports identity insert only starting from version 12c, which is not used yet for tests
 					var useGenerated = keepIdentity != true;
-						
-					Assert.AreEqual(lastId + (!useGenerated ? 10 : 1), data[0].ID);
-					Assert.AreEqual(200, data[0].Value);
-					Assert.AreEqual(lastId + (!useGenerated ? 20 : 2), data[1].ID);
-					Assert.AreEqual(300, data[1].Value);
+
+					Assert.That(data[0].ID, Is.EqualTo(lastId + (!useGenerated ? 10 : 1)));
+					Assert.That(data[0].Value, Is.EqualTo(200));
+					Assert.That(data[1].ID, Is.EqualTo(lastId + (!useGenerated ? 20 : 2)));
+					Assert.That(data[1].Value, Is.EqualTo(300));
 
 					async Task perform()
 					{
@@ -113,11 +109,9 @@ namespace Tests.DataProvider
 						}
 						else // asynchronous with IAsyncEnumerable
 						{
-#if !NET472
 							await db.BulkCopyAsync(
 								options,
 								AsAsyncEnumerable(values));
-#endif
 						}
 					}
 				}
@@ -134,11 +128,7 @@ namespace Tests.DataProvider
 			[IncludeDataSources(false, TestProvNameDb2i.All)] string context,
 			[Values(null, true, false)] bool? keepIdentity,
 			[Values] BulkCopyType copyType,
-#if NET472
-			[Values(0, 1)] int asyncMode) // 0 == sync, 1 == async
-#else
 			[Values(0, 1, 2)]           int          asyncMode) // 0 == sync, 1 == async, 2 == async with IAsyncEnumerable
-#endif
 		{
 			ResetAllTypesIdentity(context);
 
@@ -159,14 +149,14 @@ namespace Tests.DataProvider
 
 					var data = db.GetTable<TestTable1>().Where(_ => _.ID > lastId).OrderBy(_ => _.ID).ToArray();
 
-					Assert.AreEqual(2, data.Length);
+					Assert.That(data.Length, Is.EqualTo(2));
 
 					var useGenerated = keepIdentity != true;
-						
-					Assert.AreEqual(lastId + (!useGenerated ? 10 : 1), data[0].ID);
-					Assert.AreEqual(200, data[0].Value);
-					Assert.AreEqual(lastId + (!useGenerated ? 20 : 2), data[1].ID);
-					Assert.AreEqual(300, data[1].Value);
+
+					Assert.That(data[0].ID, Is.EqualTo(lastId + (!useGenerated ? 10 : 1)));
+					Assert.That(data[0].Value, Is.EqualTo(200));
+					Assert.That(data[1].ID, Is.EqualTo(lastId + (!useGenerated ? 20 : 2)));
+					Assert.That(data[1].Value, Is.EqualTo(300));
 
 					async Task perform()
 					{
@@ -197,11 +187,9 @@ namespace Tests.DataProvider
 						}
 						else // asynchronous with IAsyncEnumerable
 						{
-#if !NET472
 							await db.BulkCopyAsync(
 								options,
 								AsAsyncEnumerable(values));
-#endif
 						}
 					}
 				}
@@ -213,7 +201,6 @@ namespace Tests.DataProvider
 			}
 		}
 
-#if !NET472
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 		private async IAsyncEnumerable<T> AsAsyncEnumerable<T>(IEnumerable<T> enumerable)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
@@ -224,7 +211,6 @@ namespace Tests.DataProvider
 				yield return enumerator.Current;
 			}
 		}
-#endif
 
 		private async Task<bool> ExecuteAsync(DataConnection db, string context, Func<Task> perform, bool? keepIdentity, BulkCopyType copyType)
 		{
@@ -232,8 +218,8 @@ namespace Tests.DataProvider
 			if (copyType == BulkCopyType.RowByRow && keepIdentity == true)
 			{
 				var ex = Assert.CatchAsync(async () => await perform());
-				Assert.IsInstanceOf<LinqToDBException>(ex);
-				Assert.AreEqual("BulkCopyOptions.KeepIdentity = true is not supported by BulkCopyType.RowByRow mode", ex!.Message);
+				Assert.That(ex, Is.InstanceOf<LinqToDBException>());
+				Assert.That(ex!.Message, Is.EqualTo("BulkCopyOptions.KeepIdentity = true is not supported by BulkCopyType.RowByRow mode"));
 				return false;
 			}
 
@@ -241,7 +227,7 @@ namespace Tests.DataProvider
 			{
 				var ex = Assert.CatchAsync(async () => await perform());
 				//Assert.IsInstanceOf<LinqToDBException>(ex);
-				Assert.IsTrue(ex!.Message.Contains("GENERATED ALWAYS"));
+				Assert.That(ex!.Message.Contains("GENERATED ALWAYS"), Is.True);
 				return false;
 			}
 

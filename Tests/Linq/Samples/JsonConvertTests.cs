@@ -3,13 +3,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+
 using LinqToDB;
 using LinqToDB.Data;
 using LinqToDB.Expressions;
 using LinqToDB.Extensions;
+using LinqToDB.Internal.Extensions;
+using LinqToDB.Internal.SqlQuery;
 using LinqToDB.Mapping;
 using LinqToDB.SqlQuery;
+
 using Newtonsoft.Json;
+
 using NUnit.Framework;
 
 namespace Tests.Samples
@@ -81,7 +86,7 @@ namespace Tests.Samples
 			MappingHelper.GenerateConvertorsForTables(typeof(MyDataConnection), _convertorSchema);
 		}
 
-		public MyDataConnection(string providerName, string connectionString, MappingSchema mappingSchema) : base(providerName, connectionString, mappingSchema)
+		public MyDataConnection(string providerName, string connectionString, MappingSchema mappingSchema) : base(new DataOptions().UseConnectionString(providerName, connectionString).UseMappingSchema(mappingSchema))
 		{
 			AddMappingSchema(_convertorSchema);
 		}
@@ -112,7 +117,7 @@ namespace Tests.Samples
 	{
 		sealed class JsonValueBuilder : Sql.IExtensionCallBuilder
 		{
-			public void Build(Sql.ISqExtensionBuilder builder)
+			public void Build(Sql.ISqlExtensionBuilder builder)
 			{
 				var pathExpr = builder.Arguments[0];
 				if (pathExpr.NodeType != ExpressionType.MemberAccess)
@@ -136,7 +141,7 @@ namespace Tests.Samples
 				var entity = pathList[0];
 				var field  = pathList[1];
 
-				var fieldSql = builder.ConvertExpressionToSql(field);
+				var fieldSql = builder.ConvertExpressionToSql(field)!;
 				builder.AddParameter("field", fieldSql);
 
 				var propPathStr = "$";
@@ -148,7 +153,6 @@ namespace Tests.Samples
 				builder.AddParameter("propPath", new SqlValue(propPathStr));
 			}
 		}
-
 
 		[Sql.Extension("JSON_VALUE({field}, {propPath})", Precedence = Precedence.Primary, BuilderType = typeof(JsonValueBuilder), ServerSideOnly = true, CanBeNull = false)]
 		public static string Value(object? path)
@@ -170,11 +174,14 @@ namespace Tests.Samples
 
 				var objects = table.Where(t => Json.Value(t.Data!.Property1) == "Pr1")
 					.ToArray();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(db.LastQuery!, Does.Not.Contain("IS NULL"));
 
-				Assert.That(!db.LastQuery!.Contains("IS NULL"));
+					Assert.That(objects, Has.Length.EqualTo(1));
+				}
 
-				Assert.AreEqual(1, objects.Length);
-				Assert.AreEqual("Pr1", objects[0].Data!.Property1);
+				Assert.That(objects[0].Data!.Property1, Is.EqualTo("Pr1"));
 			}
 		}
 	}

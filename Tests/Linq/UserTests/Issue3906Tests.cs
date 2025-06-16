@@ -1,12 +1,10 @@
 ﻿using System.Linq;
-using FluentAssertions;
+using System.Linq.Dynamic.Core;
+
 using LinqToDB;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
-using System.Linq.Dynamic.Core;
-using System.Linq.Dynamic.Core.CustomTypeProviders;
-using System.Collections.Generic;
-using System;
 
 namespace Tests.UserTests
 {
@@ -35,7 +33,7 @@ namespace Tests.UserTests
 		}
 
 		[Test]
-		public void QueryNotPossible([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		public void QueryNotPossible([IncludeDataSources(TestProvName.AllSQLite, TestProvName.AllSqlServer2008Plus)] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (db.CreateLocalTable<InfeedAdvicePositionDTO>())

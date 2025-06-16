@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Linq;
 using System.Reflection;
+
+using static LinqToDB.Sql;
+
 using LinqToDB.Metadata;
 using LinqToDB.Mapping;
-using System.Linq;
-using static LinqToDB.Sql;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
@@ -21,10 +23,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public MappingAttribute[] GetAttributes(Type type, MemberInfo memberInfo)
 		{
 			var attribute = GetMappingAttribute(type, memberInfo);
-			return attribute is not null ? new MappingAttribute[] { attribute } : EmptyArray<MappingAttribute>.Value; 
+			return attribute is not null ? [attribute] : [];
 		}
 
-		private MappingAttribute GetMappingAttribute(Type type, MemberInfo memberInfo)
+		private MappingAttribute? GetMappingAttribute(Type type, MemberInfo memberInfo)
 		{
 			if (type == typeof(Sql))
 			{
@@ -36,14 +38,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					nameof(Sql.TrimLeft) => attributes.Trim,
 					nameof(Sql.TrimRight) => attributes.Trim,
 					nameof(Sql.Truncate) => attributes.Truncate,
-					nameof(Sql.DateAdd) => attributes.DateAdd,
-					nameof(Sql.DatePart) => attributes.DatePart,
 					nameof(Sql.DateDiff) => attributes.DateDiff,
 					nameof(Sql.Log) => attributes.Log,
 					nameof(Sql.Log10) => attributes.Log10,
 					nameof(Sql.Atan2) => attributes.Atan2,
 					nameof(Sql.StringAggregate) when memberInfo is MethodInfo stringAggregateMethod
 						=> stringAggregateMethod.GetParameters().Any(x => x.Name == "selector") ? attributes.StringAggregateSelector : attributes.StringAggregateSource,
+					nameof(Sql.CurrentTimestampUtc) => attributes.CurrentTimestampUtc,
 					_ => null
 				};
 			}
@@ -77,7 +78,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public MappingAttribute[] GetAttributes(Type type)
 		{
-			return EmptyArray<MappingAttribute>.Value;
+			return [];
 		}
 
 		public string GetObjectID()
@@ -87,7 +88,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public MemberInfo[] GetDynamicColumns(Type type)
 		{
-			return EmptyArray<MemberInfo>.Value;
+			return [];
 		}
 	}
 }

@@ -1,14 +1,17 @@
 ﻿using System;
 using System.Data.Common;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 
 using LinqToDB.Common;
 using LinqToDB.DataProvider.ClickHouse;
-using LinqToDB.Tools;
+using LinqToDB.Metrics;
 using LinqToDB.Tools.Activity;
 
 using NUnit.Framework;
+
+using Oracle.ManagedDataAccess.Client;
 
 using Tests;
 
@@ -24,6 +27,49 @@ public class TestsInitialization
 	[OneTimeSetUp]
 	public void TestAssemblySetup()
 	{
+		// temporary, see SQLite.Runtime.props notes
+		Environment.SetEnvironmentVariable("PreLoadSQLite_BaseDirectory", Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "sds"));
+
+#if NET8_0_OR_GREATER
+		// this API is not available in NETFX, but for some reason it works if SDS test run first (which is true now)
+		IntPtr? handle = null;
+		System.Runtime.InteropServices.NativeLibrary.SetDllImportResolver(typeof(System.Data.SQLite.AssemblySourceIdAttribute).Assembly, (module, assembly, searchPath) =>
+		{
+			if (module == "e_sqlite3")
+			{
+				if (handle == null)
+				{
+					// This code targets System.Data.SQLite version 2.0.2
+					var type = assembly.GetType("System.Data.SQLite.UnsafeNativeMethods");
+					if (type == null)
+					{
+						throw new InvalidOperationException($"Failed to find type 'System.Data.SQLite.UnsafeNativeMethods' in assembly '{assembly.FullName}'.");
+					}
+
+					var field = type.GetField("_SQLiteNativeModuleHandle", BindingFlags.Static | BindingFlags.NonPublic);
+					if (field == null)
+					{
+						throw new InvalidOperationException($"Failed to find field '_SQLiteNativeModuleHandle' in type '{type.FullName}'.");
+					}
+
+					handle = field.GetValue(null) as IntPtr?;
+					if (handle == null)
+					{
+						throw new InvalidOperationException($"Failed to get value of '_SQLiteNativeModuleHandle'.");
+					}
+				}
+
+				return handle.Value;
+			}
+
+			return IntPtr.Zero;
+		});
+#else
+		// force load of SDS runtime first as there is no SetDllImportResolver API
+		using (var _ = new System.Data.SQLite.SQLiteConnection("", false))
+		{ }
+#endif
+
 #if DEBUG
 		ActivityService.AddFactory(ActivityHierarchyFactory);
 
@@ -38,7 +84,7 @@ public class TestsInitialization
 
 		_doMetrics = true;
 #else
-		_doMetrics = TestBase.StoreMetrics == true;
+		_doMetrics = TestConfiguration.StoreMetrics == true;
 #endif
 
 		if (_doMetrics)
@@ -56,10 +102,12 @@ public class TestsInitialization
 
 		// netcoreapp2.1 adds DbProviderFactories support, but providers should be registered by application itself
 		// this code allows to load assembly using factory without adding explicit reference to project
-		CopySQLiteRuntime();
 		RegisterSqlCEFactory();
 
-#if NET472 && !AZURE
+		// enable ora11 protocol with v23 client
+		OracleConfiguration.SqlNetAllowedLogonVersionClient = OracleAllowedLogonVersionClient.Version11;
+
+#if NETFRAMEWORK && !AZURE
 		// configure assembly redirect for referenced assemblies to use version from GAC
 		// this solves exception from provider-specific tests, when it tries to load version from redist folder
 		// but loaded from GAC assembly has other version
@@ -71,9 +119,13 @@ public class TestsInitialization
 				return DbProviderFactories.GetFactory("IBM.Data.DB2").GetType().Assembly;
 
 			if (requestedAssembly.Name == "IBM.Data.Informix")
+			{
 				// chose your red or blue pill carefully
 				//return DbProviderFactories.GetFactory("IBM.Data.Informix").GetType().Assembly;
+#pragma warning disable CS0618 // Type or member is obsolete
 				return typeof(IBM.Data.Informix.IfxTimeSpan).Assembly;
+#pragma warning restore CS0618 // Type or member is obsolete
+			}
 
 			return null;
 		};
@@ -90,28 +142,9 @@ public class TestsInitialization
 		CustomizationSupport.Init();
 	}
 
-	// workaround for
-	// https://github.com/ericsink/SQLitePCL.raw/issues/389
-	// https://github.com/dotnet/efcore/issues/19396
-	private void CopySQLiteRuntime()
-	{
-#if NET472
-		const string runtimeFile = "e_sqlite3.dll";
-		var destPath             = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, runtimeFile);
-		var sourcePath           = System.IO.Path.Combine(
-			AppDomain.CurrentDomain.BaseDirectory,
-			"runtimes",
-			IntPtr.Size == 4 ? "win-x86" : "win-x64",
-			"native",
-			runtimeFile);
-
-		System.IO.File.Copy(sourcePath, destPath, true);
-#endif
-	}
-
 	private void RegisterSqlCEFactory()
 	{
-#if !NET472
+#if !NETFRAMEWORK
 		try
 		{
 			// default install pathes. Hardcoded for now as hardly anyone will need other location in near future
@@ -135,8 +168,8 @@ public class TestsInitialization
 			Debug.WriteLine(str);
 			TestContext.Progress.WriteLine(str);
 
-			if (TestBase.StoreMetrics == true)
-				BaselinesWriter.WriteMetrics(TestBase.BaselinesPath!, str);
+			if (TestConfiguration.StoreMetrics == true)
+				BaselinesWriter.WriteMetrics(TestConfiguration.BaselinesPath!, str);
 		}
 	}
 }

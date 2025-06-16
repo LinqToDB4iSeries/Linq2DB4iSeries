@@ -1,31 +1,38 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading.Tasks;
 
 using LinqToDB;
+using LinqToDB.Async;
+using LinqToDB.Common;
+using LinqToDB.Data;
+using LinqToDB.Extensions;
 using LinqToDB.Linq;
 using LinqToDB.Mapping;
 using LinqToDB.SqlQuery;
+
 using NUnit.Framework;
+
+using Shouldly;
+
+using Tests.Model;
 
 namespace Tests.Linq
 {
-	using LinqToDB.Common;
-	using LinqToDB.Data;
-	using Model;
-
 	[TestFixture]
 	public class ExpressionsTests : TestBase
 	{
 		[Sql.Expression("{0} << {1}", Precedence = Precedence.Primary)]
 		[Sql.Expression(ProviderName.ClickHouse, "bitShiftLeft({0}, {1})", Precedence = Precedence.Primary)]
-		public static long Shl(long v, int s) => v << s;
+		private static long Shl(long v, int s) => v << s;
 
 		[Sql.Expression("{0} >> {1}", Precedence = Precedence.Primary)]
 		[Sql.Expression(ProviderName.ClickHouse, "bitShiftRight({0}, {1})", Precedence = Precedence.Primary)]
-		public static long Shr(long v, int s) => v >> s;
+		private static long Shr(long v, int s) => v >> s;
 
 		static ExpressionsTests()
 		{
@@ -149,7 +156,8 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void MethodExpression4([DataSources(TestProvName.AllClickHouse)] string context)
+		[ThrowsRequiresCorrelatedSubquery]
+		public void MethodExpression4([DataSources] string context)
 		{
 			var n = 3;
 
@@ -173,7 +181,8 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void MethodExpression5([DataSources(ProviderName.SqlCe, TestProvName.AllClickHouse)] string context, [Values(1, 2) ]int n)
+		[ThrowsRequiresCorrelatedSubquery]
+		public void MethodExpression5([DataSources(ProviderName.SqlCe)] string context, [Values(1, 2) ]int n)
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
@@ -195,7 +204,8 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void MethodExpression6([DataSources(TestProvName.AllClickHouse)] string context)
+		[ThrowsRequiresCorrelatedSubquery]
+		public void MethodExpression6([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
@@ -217,7 +227,8 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void MethodExpression7([DataSources(ProviderName.SqlCe, TestProvName.AllClickHouse)] string context)
+		[ThrowsRequiresCorrelatedSubquery]
+		public void MethodExpression7([DataSources(ProviderName.SqlCe)] string context)
 		{
 			var n = 2;
 
@@ -263,7 +274,7 @@ namespace Tests.Linq
 		[Test]
 		public void MethodExpression9([IncludeDataSources(TestProvName.AllSQLite, TestProvName.AllClickHouse)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 				AreEqual(
 					from ch in Child
 					from p in
@@ -389,7 +400,8 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void AssociationMethodExpression([DataSources(TestProvName.AllClickHouse)] string context)
+		[ThrowsRequiresCorrelatedSubquery]
+		public void AssociationMethodExpression([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
@@ -400,8 +412,9 @@ namespace Tests.Linq
 					select GrandChildren(p).Count());
 		}
 
+		[ThrowsRequiresCorrelatedSubquery]
 		[Test]
-		public async Task AssociationMethodExpressionAsync([DataSources(TestProvName.AllClickHouse)] string context)
+		public async Task AssociationMethodExpressionAsync([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -494,6 +507,7 @@ namespace Tests.Linq
 			}
 		}
 
+		[YdbMemberNotFound]
 		[Test]
 		public void LeftJoinTest2([DataSources(TestProvName.AllClickHouse)] string context)
 		{
@@ -558,7 +572,7 @@ namespace Tests.Linq
 		}
 
 		[ExpressionMethod(nameof(WrapExpression))]
-		public static T Wrap<T>(T value)
+		private static T Wrap<T>(T value)
 		{
 			return value;
 		}
@@ -586,123 +600,113 @@ namespace Tests.Linq
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void CompareWithNullCheck1([IncludeDataSources(true, TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
 				// NULL == NULL
-				Assert.True(db.Parent
-					.Any(p => p.ParentID == 2 && p.Value1 == Noop(FirstIfNullOrSecondAsNumber(null, "-1"))));
+				Assert.That(db.Parent
+					.Any(p => p.ParentID == 2 && p.Value1 == Noop(FirstIfNullOrSecondAsNumber(null, "-1"))), Is.True);
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void CompareWithNullCheck2([IncludeDataSources(true, TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
 				// NULL == NULL
-				Assert.True(db.Parent
-					.Any(p => p.ParentID == 2 && Noop(FirstIfNullOrSecondAsNumber(null, "-1")) == p.Value1));
+				Assert.That(db.Parent
+					.Any(p => p.ParentID == 2 && Noop(FirstIfNullOrSecondAsNumber(null, "-1")) == p.Value1), Is.True);
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void CompareWithNullCheck3([IncludeDataSources(true, TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
 				// 3 == 3
-				Assert.True(db.Parent
-					.Any(p => p.ParentID == 3 && p.Value1 == Noop(FirstIfNullOrSecondAsNumber("", "3"))));
+				Assert.That(db.Parent
+					.Any(p => p.ParentID == 3 && p.Value1 == Noop(FirstIfNullOrSecondAsNumber("", "3"))), Is.True);
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void CompareWithNullCheck4([IncludeDataSources(true, TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
 				// 3 == 3
-				Assert.True(db.Parent
-					.Any(p => p.ParentID == 3 && Noop(FirstIfNullOrSecondAsNumber("", "3")) == p.Value1));
+				Assert.That(db.Parent
+					.Any(p => p.ParentID == 3 && Noop(FirstIfNullOrSecondAsNumber("", "3")) == p.Value1), Is.True);
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void CompareWithNullCheck5([IncludeDataSources(true, TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
 				// 3 != NULL
-				Assert.True(db.Parent
-					.Any(p => p.ParentID == 3 && p.Value1 != Noop(FirstIfNullOrSecondAsNumber(null, "-1"))));
+				Assert.That(db.Parent
+					.Any(p => p.ParentID == 3 && p.Value1 != Noop(FirstIfNullOrSecondAsNumber(null, "-1"))), Is.True);
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void CompareWithNullCheck6([IncludeDataSources(true, TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
 				// NULL != 3
-				Assert.True(db.Parent
-					.Any(p => p.ParentID == 3 && Noop(FirstIfNullOrSecondAsNumber(null, "-1")) != p.Value1));
+				Assert.That(db.Parent
+					.Any(p => p.ParentID == 3 && Noop(FirstIfNullOrSecondAsNumber(null, "-1")) != p.Value1), Is.True);
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void CompareWithNullCheck7([IncludeDataSources(true, TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
 				// NULL != 4
-				Assert.True(db.Parent
-					.Any(p => p.ParentID == 2 && p.Value1 != Noop(FirstIfNullOrSecondAsNumber("4", "4"))));
+				Assert.That(db.Parent
+					.Any(p => p.ParentID == 2 && p.Value1 != Noop(FirstIfNullOrSecondAsNumber("4", "4"))), Is.True);
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void CompareWithNullCheck8([IncludeDataSources(true, TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
 				// 4 != NULL
-				Assert.True(db.Parent
-					.Any(p => p.ParentID == 2 && Noop(FirstIfNullOrSecondAsNumber("4", "4")) != p.Value1));
+				Assert.That(db.Parent
+					.Any(p => p.ParentID == 2 && Noop(FirstIfNullOrSecondAsNumber("4", "4")) != p.Value1), Is.True);
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void CompareWithNullCheck9([IncludeDataSources(true, TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
 				// 5 != 6
-				Assert.True(db.Parent
-					.Any(p => p.ParentID == 5 && p.Value1 != Noop(FirstIfNullOrSecondAsNumber("not5", "6"))));
+				Assert.That(db.Parent
+					.Any(p => p.ParentID == 5 && p.Value1 != Noop(FirstIfNullOrSecondAsNumber("not5", "6"))), Is.True);
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void CompareWithNullCheck10([IncludeDataSources(true, TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
 				// 6 != 5
-				Assert.True(db.Parent
-					.Any(p => p.ParentID == 5 && Noop(FirstIfNullOrSecondAsNumber("not5", "6")) != p.Value1));
+				Assert.That(db.Parent
+					.Any(p => p.ParentID == 5 && Noop(FirstIfNullOrSecondAsNumber("not5", "6")) != p.Value1), Is.True);
 			}
 		}
 
@@ -712,8 +716,8 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 			{
 				// NULL == NULL
-				Assert.True(db.GetTable<AllTypes>()
-					.Any(p => p.ID == 1 && p.intDataType == Noop(FirstIfNullOrSecondAsNumber(p.varcharDataType, "-1"))));
+				Assert.That(db.GetTable<AllTypes>()
+					.Any(p => p.ID == 1 && p.intDataType == Noop(FirstIfNullOrSecondAsNumber(p.varcharDataType, "-1"))), Is.True);
 			}
 		}
 
@@ -723,80 +727,74 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 			{
 				// NULL == NULL
-				Assert.True(db.GetTable<AllTypes>()
-					.Any(p => p.ID == 1 && Noop(FirstIfNullOrSecondAsNumber(p.varcharDataType, "-1")) == p.intDataType));
+				Assert.That(db.GetTable<AllTypes>()
+					.Any(p => p.ID == 1 && Noop(FirstIfNullOrSecondAsNumber(p.varcharDataType, "-1")) == p.intDataType), Is.True);
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void CompareWithNullCheck23([IncludeDataSources(true, TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
 				// 7777777 == 7777777
-				Assert.True(db.GetTable<AllTypes>()
-					.Any(p => p.ID == 2 && p.intDataType == Noop(FirstIfNullOrSecondAsNumber(p.varcharDataType, "7777777"))));
+				Assert.That(db.GetTable<AllTypes>()
+					.Any(p => p.ID == 2 && p.intDataType == Noop(FirstIfNullOrSecondAsNumber(p.varcharDataType, "7777777"))), Is.True);
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void CompareWithNullCheck24([IncludeDataSources(true, TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
 				// 7777777 == 7777777
-				Assert.True(db.GetTable<AllTypes>()
-					.Any(p => p.ID == 2 && Noop(FirstIfNullOrSecondAsNumber(p.varcharDataType, "7777777")) == p.intDataType));
+				Assert.That(db.GetTable<AllTypes>()
+					.Any(p => p.ID == 2 && Noop(FirstIfNullOrSecondAsNumber(p.varcharDataType, "7777777")) == p.intDataType), Is.True);
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void CompareWithNullCheck25([IncludeDataSources(true, TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
 				// 7777777 != NULL
-				Assert.True(db.GetTable<AllTypes>()
-					.Any(p => p.ID == 2 && p.intDataType != Noop(FirstIfNullOrSecondAsNumber(p.char20DataType, "1"))));
+				Assert.That(db.GetTable<AllTypes>()
+					.Any(p => p.ID == 2 && p.intDataType != Noop(FirstIfNullOrSecondAsNumber(p.char20DataType, "1"))), Is.True);
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void CompareWithNullCheck26([IncludeDataSources(true, TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
 				// NULL != 7777777
-				Assert.True(db.GetTable<AllTypes>()
-					.Any(p => p.ID == 2 && Noop(FirstIfNullOrSecondAsNumber(p.char20DataType, "1")) != p.intDataType));
+				Assert.That(db.GetTable<AllTypes>()
+					.Any(p => p.ID == 2 && Noop(FirstIfNullOrSecondAsNumber(p.char20DataType, "1")) != p.intDataType), Is.True);
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void CompareWithNullCheck27([IncludeDataSources(true, TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
 				// 7777777 != 1
-				Assert.True(db.GetTable<AllTypes>()
-					.Any(p => p.ID == 2 && p.intDataType != Noop(FirstIfNullOrSecondAsNumber(p.varcharDataType, "1"))));
+				Assert.That(db.GetTable<AllTypes>()
+					.Any(p => p.ID == 2 && p.intDataType != Noop(FirstIfNullOrSecondAsNumber(p.varcharDataType, "1"))), Is.True);
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void CompareWithNullCheck28([IncludeDataSources(true, TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
 				// 1 != 7777777
-				Assert.True(db.GetTable<AllTypes>()
-					.Any(p => p.ID == 2 && Noop(FirstIfNullOrSecondAsNumber(p.varcharDataType, "1")) != p.intDataType));
+				Assert.That(db.GetTable<AllTypes>()
+					.Any(p => p.ID == 2 && Noop(FirstIfNullOrSecondAsNumber(p.varcharDataType, "1")) != p.intDataType), Is.True);
 			}
 		}
 
@@ -810,13 +808,13 @@ namespace Tests.Linq
 		}
 
 		[Sql.Expression("COALESCE({0}, {0})", ServerSideOnly = true)]
-		public static int? Noop(int? value)
+		private static int? Noop(int? value)
 		{
 			throw new InvalidOperationException();
 		}
 
 		[ExpressionMethod(nameof(Func2Expr))]
-		public static int? FirstIfNullOrSecondAsNumber(string? value, string intValue)
+		private static int? FirstIfNullOrSecondAsNumber(string? value, string intValue)
 		{
 			throw new InvalidOperationException();
 		}
@@ -879,7 +877,7 @@ namespace Tests.Linq
 		}
 
 		[ExpressionMethod(nameof(GetTernaryExpressionValue1Expr))]
-		public static int? GetTernaryExpressionValue1(int? value)
+		private static int? GetTernaryExpressionValue1(int? value)
 		{
 			throw new InvalidOperationException();
 		}
@@ -891,7 +889,7 @@ namespace Tests.Linq
 		}
 
 		[ExpressionMethod(nameof(GetTernaryExpressionValue2Expr))]
-		public static int? GetTernaryExpressionValue2(int? value)
+		private static int? GetTernaryExpressionValue2(int? value)
 		{
 			throw new InvalidOperationException();
 		}
@@ -903,7 +901,7 @@ namespace Tests.Linq
 		}
 
 		[ExpressionMethod(nameof(GetTernaryExpressionValue3Expr))]
-		public static int? GetTernaryExpressionValue3(int? value)
+		private static int? GetTernaryExpressionValue3(int? value)
 		{
 			throw new InvalidOperationException();
 		}
@@ -915,7 +913,7 @@ namespace Tests.Linq
 		}
 
 		[ExpressionMethod(nameof(GetTernaryExpressionValue4Expr))]
-		public static int? GetTernaryExpressionValue4(int? value)
+		private static int? GetTernaryExpressionValue4(int? value)
 		{
 			throw new InvalidOperationException();
 		}
@@ -927,7 +925,7 @@ namespace Tests.Linq
 		}
 
 		[ExpressionMethod(nameof(GetTernaryExpressionValue5Expr))]
-		public static int? GetTernaryExpressionValue5(int? value)
+		private static int? GetTernaryExpressionValue5(int? value)
 		{
 			throw new InvalidOperationException();
 		}
@@ -977,7 +975,7 @@ namespace Tests.Linq
 		}
 
 		[ExpressionMethod(nameof(JsonExtractPathExpression))]
-		public static TJsonProp JsonExtractPathText<TColumn, TJsonProp>(
+		private static TJsonProp JsonExtractPathText<TColumn, TJsonProp>(
 			TColumn field,
 			Expression<Func<TColumn, TJsonProp>> path)
 			=> throw new InvalidOperationException();
@@ -989,17 +987,17 @@ namespace Tests.Linq
 		}
 
 		[Sql.Expression("{0}::json #>> {1}", ServerSideOnly = true, IsPredicate = true)]
-		public static TJsonProp JsonExtractPathText<TColumn, TJsonProp>(TColumn left, string right)
+		private static TJsonProp JsonExtractPathText<TColumn, TJsonProp>(TColumn left, string right)
 			=> throw new InvalidOperationException();
 
-		public static string JsonPath<TColumn, TJsonProp>(Expression<Func<TColumn, TJsonProp>> extractor) => "'{json, text}'";
+		private static string JsonPath<TColumn, TJsonProp>(Expression<Func<TColumn, TJsonProp>> extractor) => "'{json, text}'";
 		#endregion
 
 		#region issue 2434
 		[Table]
 		sealed class Issue2434Table
 		{
-			[Column] public int     Id;
+			[PrimaryKey] public int     Id;
 			[Column] public string? FirstName;
 			[Column] public string? LastName;
 
@@ -1024,7 +1022,7 @@ namespace Tests.Linq
 		[Table]
 		public class Issue3472TableDC
 		{
-			[Column] public int Id { get; set; }
+			[PrimaryKey] public int Id { get; set; }
 
 			[ExpressionMethod(nameof(PersonsCountExpr), IsColumn = true)]
 			public int PersonsCount { get; set; }
@@ -1032,10 +1030,10 @@ namespace Tests.Linq
 			private static Expression<Func<Issue3472TableDC, DataConnection, int>> PersonsCountExpr() => (r, db) => db.GetTable<Person>().Where(p => p.ID == r.Id).Count();
 		}
 
-		[Table]
+		[Table(nameof(Issue3472TableDC))]
 		public class Issue3472TableDCTX
 		{
-			[Column] public int Id { get; set; }
+			[PrimaryKey] public int Id { get; set; }
 
 			[ExpressionMethod(nameof(PersonsCountExpr), IsColumn = true)]
 			public int PersonsCount { get; set; }
@@ -1044,7 +1042,8 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void Issue3472Test([DataSources(TestProvName.AllClickHouse)] string context)
+		[ThrowsRequiresCorrelatedSubquery]
+		public void Issue3472Test([DataSources] string context)
 		{
 			using var db = GetDataContext(context);
 			if (db is DataConnection)
@@ -1062,7 +1061,6 @@ namespace Tests.Linq
 
 		#region Null check generated
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void TestNullCheckInExpressionLeft([IncludeDataSources(TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
@@ -1072,7 +1070,6 @@ namespace Tests.Linq
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void TestNullCheckInExpressionRight([IncludeDataSources(TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
@@ -1101,13 +1098,13 @@ namespace Tests.Linq
 		}
 
 		[Sql.Expression("{0}", ServerSideOnly = true, IsNullable = Sql.IsNullableType.SameAsFirstParameter)]
-		public static int? Function2(int? Value) => throw new InvalidOperationException();
+		private static int? Function2(int? Value) => throw new InvalidOperationException();
 
 		[ExpressionMethod(nameof(Function1LeftExpr))]
-		public static int? Function1Left(int? value) => throw new InvalidOperationException();
+		private static int? Function1Left(int? value) => throw new InvalidOperationException();
 
 		[ExpressionMethod(nameof(Function1RightExpr))]
-		public static int? Function1Right(int? value) => throw new InvalidOperationException();
+		private static int? Function1Right(int? value) => throw new InvalidOperationException();
 
 		[Sql.Expression("CAST(N'SHOULD NOT BE CALLED' AS INT)", ServerSideOnly = true)]
 		private static int Fail(int value) => throw new InvalidOperationException();
@@ -1125,37 +1122,44 @@ namespace Tests.Linq
 		#endregion
 
 		#region Regression: query comparison
+		[YdbCteAsSource]
 		[Test(Description = "Tests regression introduced in 3.5.2")]
-		public void ComparisonTest1([DataSources(ProviderName.SqlCe, TestProvName.AllClickHouse)] string context)
+		public void ComparisonTest1([DataSources(ProviderName.SqlCe, TestProvName.AllClickHouse)] string context, [Values(1, 2)] int iteration)
 		{
 			using (var db = GetDataContext(context))
 			{
-				var left  = GetQuery(db, null);
+				var left  = GetQuery(db, 0);
 				var right = GetQuery(db, 2);
 
-				Assert.False(
+				var cacheMiss = db.Patient.GetCacheMissCount();
+
+				Assert.That(
 					db.Person.Where(_ =>
 					left.Where(rec => !right.Select(r2 => r2.PersonID).Contains(rec.PersonID)).Select(_ => Sql.Ext.Count(_.PersonID, Sql.AggregateModifier.None).ToValue()).Single() == 0
 					&&
 					right.Where(rec => !left.Select(r2 => r2.PersonID).Contains(rec.PersonID)).Select(_ => Sql.Ext.Count(_.PersonID, Sql.AggregateModifier.None).ToValue()).Single() == 0)
-					.Any());
+					.Any(), Is.False);
+
+				if (iteration > 1)
+					db.Patient.GetCacheMissCount().ShouldBe(cacheMiss);
 			}
 		}
 
+		[YdbCteAsSource]
 		[Test(Description = "Tests regression introduced in 3.5.2")]
 		public void ComparisonTest2([DataSources(TestProvName.AllAccess, TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
-				var left  = GetQuery(db, null);
+				var left  = GetQuery(db, 0);
 				var right = GetQuery(db, 2);
 
-				Assert.False(
+				Assert.That(
 					db.Person.Where(_ =>
 					left.Where(rec => !right.Select(r2 => r2.PersonID).Contains(rec.PersonID)).Count() == 0
 					&&
 					right.Where(rec => !left.Select(r2 => r2.PersonID).Contains(rec.PersonID)).Count() == 0)
-					.Any());
+					.Any(), Is.False);
 			}
 		}
 
@@ -1165,8 +1169,220 @@ namespace Tests.Linq
 		}
 
 		#endregion
+
+		#region Issue 4613
+		[Table]
+		class Issue4613Service
+		{
+			[PrimaryKey] public int IdContract { get; set; }
+		}
+
+		[Table]
+		class Issue4613Contract
+		{
+			[PrimaryKey] public int Id { get; set; }
+		}
+
+		class Issue4613ServiceProjection
+		{
+			public int IdContract { get; set; }
+		}
+
+		static class Issue4613Expressions
+		{
+			[ExpressionMethod(nameof(ToServiceProjectionExpr))]
+			public static Issue4613ServiceProjection ToServiceProjection(Issue4613Service serv)
+				=> throw new NotImplementedException();
+
+			static Expression<Func<Issue4613Service, Issue4613ServiceProjection>> ToServiceProjectionExpr()
+				=> (serv) => new Issue4613ServiceProjection { IdContract = serv.IdContract };
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4613")]
+		public void Issue4613Test([DataSources] string context)
+		{
+			using var db = GetDataContext(context);
+			using var t1 = db.CreateLocalTable<Issue4613Service>();
+			using var t2 = db.CreateLocalTable<Issue4613Contract>();
+
+			var query = (
+				from servProj in (
+				from serv in db.GetTable<Issue4613Service>()
+				select Issue4613Expressions.ToServiceProjection(serv))
+				join contract in db.GetTable<Issue4613Contract>() on servProj.IdContract equals contract.Id
+				select new
+				{
+					Contract = contract,
+					Service = servProj
+				});
+
+			query.ToList();
+		}
+
+		#endregion
+
+		#region Issue 5040
+
+		static class Issue5040
+		{
+			public interface IBaseEntity
+			{
+			}
+
+			public interface IEntityWithPermissions : IBaseEntity
+			{
+				int PermissionObjectId { get; }
+			}
+
+			[Table]
+			public sealed class User : IBaseEntity
+			{
+				[Column(SkipOnUpdate = true)] public int Id { get; set; }
+				// Comment it and query generation works
+				[Column] public string? Username { get; set; }
+			}
+
+			[Table]
+			public sealed class Permission : IBaseEntity
+			{
+				[Column(SkipOnUpdate = true)] public int Id { get; set; }
+				[Column] public int ObjectId { get; set; }
+			}
+
+			[Table, ProtectedEntity]
+			public sealed class Account : IEntityWithPermissions
+			{
+				[Column] public int UserId { get; set; }
+
+				[Association(CanBeNull = false, ThisKey = nameof(UserId), OtherKey = nameof(User.Id))]
+				public User User { get; } = null!;
+
+				[ExpressionMethod(nameof(PermissionObjectIdExpression))]
+				public int PermissionObjectId => PermissionObjectIdExpression().Compile()(this);
+
+				static Expression<Func<Account, int>> PermissionObjectIdExpression() => x => x.UserId;
+			}
+
+			public class ProtectedEntityAttribute()
+				: EntityFilterAttribute(typeof(ProtectedEntityAttribute), nameof(Filter))
+			{
+				private static IQueryable<T> Filter<T>(IQueryable<T> q, IDataContext dbCtx)
+					where T : IEntityWithPermissions
+					=> q.Where(x => dbCtx
+							.GetTable<Permission>()
+							.Select(y => y.ObjectId)
+							.Contains(x.PermissionObjectId));
+			}
+
+			[AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = true)]
+			public class EntityFilterAttribute(Type providerType, string propertyName) : Attribute
+			{
+				public Type ProviderType { get; } = providerType;
+				public string PropertyName { get; } = propertyName;
+			}
+
+			internal static class EntityFilterHelper
+			{
+				public static Func<IQueryable<TEntity>, IDataContext, IQueryable<TEntity>>? GetEntityFilter<TEntity>()
+				{
+					var filters = FindAllFilterAttributes(typeof(TEntity))
+						.Select(GetLambda<TEntity, IDataContext>)
+						.ToArray();
+
+					return filters.Any()
+						? (q, dbCtx) => filters.Aggregate(q, (currQ, nextFunc) => nextFunc(currQ, dbCtx))
+						: null;
+				}
+
+				private static List<EntityFilterAttribute> FindAllFilterAttributes(Type entityType)
+				{
+					var relevantTypes = new HashSet<Type>();
+					var processQueue = new Queue<Type>();
+					processQueue.Enqueue(entityType);
+
+					while (processQueue.Count > 0)
+					{
+						var processType = processQueue.Dequeue();
+
+						if (processType.BaseType != null)
+						{
+							processQueue.Enqueue(processType.BaseType);
+						}
+
+						foreach (var iFace in processType.GetInterfaces())
+						{
+							processQueue.Enqueue(iFace);
+						}
+
+						relevantTypes.Add(processType);
+					}
+
+					return relevantTypes
+						.SelectMany(x => x.GetAttributes<EntityFilterAttribute>(true))
+						.ToList();
+				}
+
+				private static Func<IQueryable<TEntity>, TContext, IQueryable<TEntity>> GetLambda<TEntity, TContext>(
+					EntityFilterAttribute entityFilter
+				)
+				{
+					var methodInfo = entityFilter.ProviderType
+						.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+						.FirstOrDefault(m => m.Name == entityFilter.PropertyName && m.IsGenericMethodDefinition)
+						?? throw new ArgumentException($"Method '{entityFilter.PropertyName}' not found in type '{entityFilter.ProviderType.FullName}' or is not a generic method definition.");
+
+					if (methodInfo.IsGenericMethod)
+					{
+						methodInfo = methodInfo.MakeGenericMethod(typeof(TEntity));
+					}
+
+					var qParam = Expression.Parameter(typeof(IQueryable<TEntity>), "q");
+					var dbCtxParam = Expression.Parameter(typeof(TContext), "dbCtx");
+
+					var methodCall = Expression.Call(null, methodInfo, qParam, dbCtxParam);
+
+					var lambda = Expression.Lambda<Func<IQueryable<TEntity>, TContext, IQueryable<TEntity>>>(
+						methodCall,
+						qParam,
+						dbCtxParam);
+
+					return lambda.Compile();
+				}
+			}
+
+			public static class ModelBuilderExtensions
+			{
+				public static void ProcessEntity<TEntity>(FluentMappingBuilder builder)
+				{
+					var filter = EntityFilterHelper.GetEntityFilter<TEntity>();
+					if (filter != null)
+					{
+						builder.Entity<TEntity>().HasQueryFilter(filter);
+					}
+				}
+			}
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/5040")]
+		public void Issue5040Test([IncludeDataSources(true, ProviderName.SQLiteClassic)] string context)
+		{
+			var ms = new MappingSchema();
+			var fb = new FluentMappingBuilder(ms);
+			Issue5040.ModelBuilderExtensions.ProcessEntity<Issue5040.Account>(fb);
+			fb.Build();
+
+			using var db = GetDataContext(context, o => o.UseMappingSchema(ms));
+			using var t1 = db.CreateLocalTable<Issue5040.Account>();
+			using var t2 = db.CreateLocalTable<Issue5040.Permission>();
+			using var t3 = db.CreateLocalTable<Issue5040.User>();
+
+			t1.ToList();
+		}
+
+		#endregion
 	}
 
+	#region Extensions
 	static class ExpressionTestExtensions
 	{
 		public sealed class LeftJoinInfo<TOuter,TInner>
@@ -1230,4 +1446,5 @@ namespace Tests.Linq
 		}
 		*/
 	}
+	#endregion
 }

@@ -1,24 +1,20 @@
-﻿using LinqToDB.Common;
-using LinqToDB.Data;
-using LinqToDB.SqlQuery;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+
+using LinqToDB.Internal.DataProvider;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
 	internal partial class DB2iSeriesSqlBuilder
 	{
-		public static string UnnamedParameterMarker { get; } = "?";
-		public static string NamedQueryParameterMarkerPrefix { get; } = "@";
-		public static string NamedStoredProcedureParameterMarkerPrefix { get; } = ":";
-
+		public const char UnnamedParameterMarker = '?';
+		public const char NamedParameterMarkerPrefix = '@';
+		
 		private static void AppendConversion(StringBuilder stringBuilder, int value)
 		{
-			stringBuilder.Append("CHR(").Append(value).Append(')');
+			stringBuilder.Append("CHR(").Append(value.ToString(CultureInfo.InvariantCulture)).Append(')');
 		}
 
 		public static void ConvertStringToSql(StringBuilder stringBuilder, string value)
@@ -64,7 +60,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			};
 
 			if (quoted) stringBuilder.Append('\'');
-			stringBuilder.AppendFormat(format, value);
+			stringBuilder.AppendFormat(CultureInfo.InvariantCulture, format, value);
 			if (quoted) stringBuilder.Append('\'');
 		}
 
@@ -72,7 +68,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public static void ConvertDateOnlyToSql(StringBuilder stringBuilder, DateOnly value, bool quoted = true)
 		{
 			if (quoted) stringBuilder.Append('\'');
-			stringBuilder.AppendFormat("{0:yyyy-MM-dd}", value);
+			stringBuilder.AppendFormat(CultureInfo.InvariantCulture, "{0:yyyy-MM-dd}", value);
 			if (quoted) stringBuilder.Append('\'');
 		}
 
@@ -96,9 +92,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return sb.ToString();
 		}
 
-		/// <summary>
-		/// The Ole Db provider requires DateTime strings to match the DB type's precision.
-		/// </summary>
+		// The Ole Db provider requires DateTime strings to match the DB type's precision.
 		private static string GetSqlDateTimeFormat(int value, int? precision)
 		{
 			if (value == 0 || precision == 0)
@@ -114,7 +108,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public static void ConvertTimeToSql(StringBuilder stringBuilder, TimeSpan time, bool quoted = true)
 		{
 			if (quoted) stringBuilder.Append('\'');
-			stringBuilder.Append($"{time:hh\\:mm\\:ss}");
+			stringBuilder.Append(FormattableString.Invariant($"{time:hh\\:mm\\:ss}"));
 			if (quoted) stringBuilder.Append('\'');
 		}
 
@@ -146,10 +140,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			  .Append(')');
 		}
 
-		public static string GetDbType(string name, int? length, int? precision, int? scale)
+		public static string? GetDbType(string? name, int? length, int? precision, int? scale)
 		{
 			if (name is null)
 				return null;
+
+			if (length is null && precision is null)
+				return name;
 
 			if (name.Contains('('))
 				return name;
@@ -167,13 +164,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			stringBuilder.Append(name);
 
 			if (length > 0)
-				stringBuilder.Append('(').Append(length).Append(')');
+				stringBuilder.Append('(').Append(length.Value.ToString(CultureInfo.InvariantCulture)).Append(')');
 
 			else if (precision >= 0)
 			{
-				stringBuilder.Append('(').Append(precision);
+				stringBuilder.Append('(').Append(precision.Value.ToString(CultureInfo.InvariantCulture));
 				if (scale >= 0)
-					stringBuilder.Append(", ").Append(scale);
+					stringBuilder.Append(", ").Append(scale.Value.ToString(CultureInfo.InvariantCulture));
 				stringBuilder.Append(')');
 			}
 

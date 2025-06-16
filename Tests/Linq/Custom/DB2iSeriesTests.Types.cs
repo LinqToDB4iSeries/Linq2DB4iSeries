@@ -1,4 +1,7 @@
-﻿using System;
+﻿#if NETFRAMEWORK
+using IBM.Data.DB2.iSeries;
+#endif
+using System;
 using System.Data.Linq;
 using System.Linq;
 using System.Text;
@@ -9,13 +12,6 @@ using LinqToDB.Common;
 using LinqToDB.Data;
 using NUnit.Framework;
 using LinqToDB.Mapping;
-using LinqToDB.Tools.Comparers;
-
-#if NETFRAMEWORK
-using IBM.Data.DB2.iSeries;
-#endif
-
-#nullable disable
 
 namespace Tests.DataProvider
 {
@@ -331,7 +327,7 @@ namespace Tests.DataProvider
 		[Test]
 		public void TestString([IncludeDataSources(TestProvNameDb2i.All)] string context)
 		{
-			string ExecuteScalarTest(DataConnection conn, string value, string castTo = null)
+			string ExecuteScalarTest(DataConnection conn, string value, string? castTo = null)
 			{
 				return  conn.ExecuteScalar<string>(value, castTo);
 			}
@@ -396,7 +392,7 @@ namespace Tests.DataProvider
 					Is.EqualTo(unicodeText));
 
 				Assert.That(
-					conn.ExecuteScalarParameter<string>(DataParameter.Create("p", (string)null), "nvarchar(10)"),
+					conn.ExecuteScalarParameter<string>(DataParameter.Create("p", (string?)null), "nvarchar(10)"),
 					Is.Null);
 
 				//This case fails on ODBC provider. Casting a numeric parameter to nvarchar/nclob produces null
@@ -528,7 +524,7 @@ namespace Tests.DataProvider
 					Is.EqualTo("A"));
 				Assert.That(
 					conn.ExecuteScalarParameterObject<string>("p", "nvarchar(10)",
-						new { p = conn.MappingSchema.GetConverter<TestEnum?, string>()(TestEnum.AA) }),
+						new { p = conn.MappingSchema.GetConverter<TestEnum?, string>()!(TestEnum.AA) }),
 					Is.EqualTo("A"));
 			}
 		}
@@ -556,7 +552,7 @@ namespace Tests.DataProvider
 						.Select(t => t.BLOBDATATYPE)
 						.First();
 
-					Assert.AreEqual(data, blob);
+					Assert.That(blob, Is.EqualTo(data));
 				}
 				finally
 				{
@@ -590,7 +586,7 @@ namespace Tests.DataProvider
 						.Select(t => t.CLOBDATATYPE)
 						.First();
 
-					Assert.AreEqual(data, blob);
+					Assert.That(blob, Is.EqualTo(data));
 				}
 				finally
 				{
@@ -613,8 +609,8 @@ namespace Tests.DataProvider
 			{
 				var list = db.GetTable<AllTypesNullable_Issue1287>().Where(_ => _.charDataType == 'Y').ToList();
 
-				Assert.AreEqual(1, list.Count);
-				Assert.AreEqual('Y', list[0].charDataType);
+				Assert.That(list, Has.Count.EqualTo(1));
+				Assert.That(list[0].charDataType, Is.EqualTo('Y'));
 			}
 		}
 
@@ -712,70 +708,74 @@ namespace Tests.DataProvider
 
 			public static void AssertEqual(TestTimeTypes actual, TestTimeTypes expected)
 			{
-				Assert.AreEqual(expected.Date1, actual.Date1);
-				Assert.AreEqual(expected.Date2, actual.Date2);
-				Assert.AreEqual(expected.Time, actual.Time);
-				Assert.AreEqual(expected.Id, actual.Id);
-				Assert.AreEqual(expected.TimeStamp0, actual.TimeStamp0);
-				Assert.AreEqual(expected.TimeStamp1, actual.TimeStamp1);
-				Assert.AreEqual(expected.TimeStamp2, actual.TimeStamp2);
-				Assert.AreEqual(expected.TimeStamp3, actual.TimeStamp3);
-				Assert.AreEqual(expected.TimeStamp4, actual.TimeStamp4);
-				Assert.AreEqual(expected.TimeStamp5, actual.TimeStamp5);
-				Assert.AreEqual(expected.TimeStamp6, actual.TimeStamp6);
-				Assert.AreEqual(expected.TimeStamp7, actual.TimeStamp7);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(actual.Date1, Is.EqualTo(expected.Date1));
+					Assert.That(actual.Date2, Is.EqualTo(expected.Date2));
+					Assert.That(actual.Time, Is.EqualTo(expected.Time));
+					Assert.That(actual.Id, Is.EqualTo(expected.Id));
+					Assert.That(actual.TimeStamp0, Is.EqualTo(expected.TimeStamp0));
+					Assert.That(actual.TimeStamp1, Is.EqualTo(expected.TimeStamp1));
+					Assert.That(actual.TimeStamp2, Is.EqualTo(expected.TimeStamp2));
+					Assert.That(actual.TimeStamp3, Is.EqualTo(expected.TimeStamp3));
+					Assert.That(actual.TimeStamp4, Is.EqualTo(expected.TimeStamp4));
+					Assert.That(actual.TimeStamp5, Is.EqualTo(expected.TimeStamp5));
+					Assert.That(actual.TimeStamp6, Is.EqualTo(expected.TimeStamp6));
+					Assert.That(actual.TimeStamp7, Is.EqualTo(expected.TimeStamp7));
+				}
 			}
 		}
 
 		[Test]
 		public void TestTimespanAndTimeValues([IncludeDataSources(false, TestProvNameDb2i.All)] string context, [Values] bool useParameters)
 		{
-			using (var db = GetDataContext(context))
-			using (var table = db.CreateLocalTable(TestTimeTypes.Data))
+			using var db = GetDataContext(context);
+			using var table = db.CreateLocalTable(TestTimeTypes.Data);
+			
+			db.InlineParameters = !useParameters;
+
+			var data = TestTimeTypes.Data[0];
+			var savedData = table.ToList();
+			var last = savedData.Last();
+
+			var record = table.Where(_ => _.Id == 1).Single();
+			TestTimeTypes.AssertEqual(record, data);
+
+			record = table.Where(_ => _.Date1 == data.Date1).Single();
+			TestTimeTypes.AssertEqual(record, data);
+
+			record = table.Where(_ => _.Date2 == data.Date2).Single();
+			TestTimeTypes.AssertEqual(record, data);
+
+			record = table.Where(_ => _.Time == data.Time).Single();
+			TestTimeTypes.AssertEqual(record, data);
+
+			record = table.Where(_ => _.TimeStamp0 == data.TimeStamp0).Single();
+			TestTimeTypes.AssertEqual(record, data);
+
+			record = table.Where(_ => _.TimeStamp1 == data.TimeStamp1).Single();
+			TestTimeTypes.AssertEqual(record, data);
+
+			record = table.Where(_ => _.TimeStamp2 == data.TimeStamp2).Single();
+			TestTimeTypes.AssertEqual(record, data);
+
+			record = table.Where(_ => _.TimeStamp3 == data.TimeStamp3).Single();
+			TestTimeTypes.AssertEqual(record, data);
+
+			record = table.Where(_ => _.TimeStamp4 == data.TimeStamp4).Single();
+			TestTimeTypes.AssertEqual(record, data);
+
+			record = table.Where(_ => _.TimeStamp5 == data.TimeStamp5).Single();
+			TestTimeTypes.AssertEqual(record, data);
+
+			record = table.Where(_ => _.TimeStamp6 == data.TimeStamp6).Single();
+			TestTimeTypes.AssertEqual(record, data);
+
+			// older versions of the iSeries OS do not support timespans with precision > 6.
+			if (TestProvNameDb2i.GetVersion(context) > LinqToDB.DataProvider.DB2iSeries.DB2iSeriesVersion.V7_2)
 			{
-				db.InlineParameters = !useParameters;
-
-				var data = TestTimeTypes.Data[0];
-
-				var record = table.Where(_ => _.Id == 1).Single();
+				record = table.Where(_ => _.TimeStamp7 == data.TimeStamp7).Single();
 				TestTimeTypes.AssertEqual(record, data);
-
-				record = table.Where(_ => _.Date1 == data.Date1).Single();
-				TestTimeTypes.AssertEqual(record, data);
-
-				record = table.Where(_ => _.Date2 == data.Date2).Single();
-				TestTimeTypes.AssertEqual(record, data);
-
-				record = table.Where(_ => _.Time == data.Time).Single();
-				TestTimeTypes.AssertEqual(record, data);
-
-				record = table.Where(_ => _.TimeStamp0 == data.TimeStamp0).Single();
-				TestTimeTypes.AssertEqual(record, data);
-
-				record = table.Where(_ => _.TimeStamp1 == data.TimeStamp1).Single();
-				TestTimeTypes.AssertEqual(record, data	);
-
-				record = table.Where(_ => _.TimeStamp2 == data.TimeStamp2).Single();
-				TestTimeTypes.AssertEqual(record, data);
-
-				record = table.Where(_ => _.TimeStamp3 == data.TimeStamp3).Single();
-				TestTimeTypes.AssertEqual(record, data);
-
-				record = table.Where(_ => _.TimeStamp4 == data.TimeStamp4).Single();
-				TestTimeTypes.AssertEqual(record, data);
-
-				record = table.Where(_ => _.TimeStamp5 == data.TimeStamp5).Single();
-				TestTimeTypes.AssertEqual(record, data);
-
-				record = table.Where(_ => _.TimeStamp6 == data.TimeStamp6).Single();
-				TestTimeTypes.AssertEqual(record, data);
-
-				// older versions of the iSeries OS do not support timespans with precision > 6.
-				if (TestProvNameDb2i.GetVersion(context) > LinqToDB.DataProvider.DB2iSeries.DB2iSeriesVersion.V7_2)
-				{
-					record = table.Where(_ => _.TimeStamp7 == data.TimeStamp7).Single();
-					TestTimeTypes.AssertEqual(record, data);
-				}
 			}
 		}
 
@@ -783,7 +783,7 @@ namespace Tests.DataProvider
 		class TestParametersTable
 		{
 			[Column] public int Id { get; set; }
-			[Column] public string Text { get; set; }
+			[Column] public string? Text { get; set; }
 		}
 
 		// https://github.com/linq2db/linq2db/issues/2091
@@ -800,7 +800,7 @@ namespace Tests.DataProvider
 				var query = from f in table where f.Text == text select f;
 				var result = query.ToArray();
 
-				Assert.True(db.LastQuery!.Contains(db.GetParameterMarker("")));
+				Assert.That(db.LastQuery!.Contains(db.GetParameterMarker("")), Is.True);
 			}
 		}
 
@@ -816,6 +816,112 @@ namespace Tests.DataProvider
 				var actual = from t in db.Types where Sql.ConvertTo<string>.From(t.GuidValue) == guid select t.GuidValue;
 
 				AreEqual(expected, actual);
+			}
+		}
+
+		[Test]
+		public void TestReadAllTypes([DataSources(TestProvNameDb2i.All_ODBC)] string context)
+		{
+			using var db = GetDataContext(context);
+			
+			var actual = db.GetTable<ALLTYPE>().Where(x => x.ID == 2).FirstOrDefault()!;
+
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(actual.DECFLOAT16DATATYPE, Is.EqualTo(888.456m));
+				Assert.That(actual.DECFLOAT34DATATYPE, Is.EqualTo(777.987m));
+
+				Assert.That(actual.BIGINTDATATYPE, Is.EqualTo(1000000L));
+				Assert.That(actual.INTDATATYPE, Is.EqualTo(444444));
+				Assert.That(actual.SMALLINTDATATYPE, Is.EqualTo(100));
+				Assert.That(actual.DECIMALDATATYPE, Is.EqualTo(666m));
+
+				Assert.That(actual.REALDATATYPE, Is.EqualTo(222.987f));
+				Assert.That(actual.DOUBLEDATATYPE, Is.EqualTo(555.987d));
+
+				Assert.That(actual.CHARDATATYPE, Is.EqualTo('Y'));
+
+				Assert.That(actual.VARCHARDATATYPE, Is.EqualTo("var-char"));
+
+				Assert.That(actual.CLOBDATATYPE, Is.EqualTo("567"));
+				Assert.That(actual.DBCLOBDATATYPE, Is.EqualTo("890"));
+
+				Assert.That(actual.BINARYDATATYPE, Is.EqualTo(new byte[] { 0xF1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }));
+				Assert.That(actual.VARBINARYDATATYPE, Is.EqualTo(new byte[] { 0xF4 }));
+				Assert.That(actual.BLOBDATATYPE, Is.EqualTo(new byte[] { 0xF2, 0xF3, 0xF4 }));
+
+				Assert.That(actual.GRAPHICDATATYPE, Is.EqualTo("graphic"));
+				Assert.That(actual.VARGRAPHICDATATYPE, Is.EqualTo("vargraphic"));
+
+				Assert.That(actual.DATEDATATYPE, Is.EqualTo(new DateTime(2012, 12, 12)));
+				Assert.That(actual.TIMEDATATYPE, Is.EqualTo(new TimeSpan(12, 12, 12)));
+				Assert.That(actual.TIMESTAMPDATATYPE, Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12, 0)));
+
+				Assert.That(actual.XMLDATATYPE, Is.EqualTo("<root><element strattr=\"strvalue\" intattr=\"12345\"/></root>"));
+			}
+		}
+
+		[Test]
+		public void TestReadAllTypes_NoXml([DataSources] string context)
+		{
+			using var db = GetDataContext(context);
+
+			var actual = db.GetTable<ALLTYPE>().Where(x => x.ID == 2)
+				.Select(x => new 
+				{
+					x.DECFLOAT16DATATYPE,
+					x.DECFLOAT34DATATYPE,
+					x.BIGINTDATATYPE,
+					x.INTDATATYPE,
+					x.SMALLINTDATATYPE,
+					x.DECIMALDATATYPE,
+					x.REALDATATYPE,
+					x.DOUBLEDATATYPE,
+					x.CHARDATATYPE,
+					x.VARCHARDATATYPE,
+					x.CLOBDATATYPE,
+					x.DBCLOBDATATYPE,
+					x.BINARYDATATYPE,
+					x.VARBINARYDATATYPE,
+					x.BLOBDATATYPE,
+					x.GRAPHICDATATYPE,
+					x.VARGRAPHICDATATYPE,
+					x.DATEDATATYPE,
+					x.TIMEDATATYPE,
+					x.TIMESTAMPDATATYPE,
+				})
+				.FirstOrDefault()!;
+
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(actual.DECFLOAT16DATATYPE, Is.EqualTo(888.456m));
+				Assert.That(actual.DECFLOAT34DATATYPE, Is.EqualTo(777.987m));
+
+				Assert.That(actual.BIGINTDATATYPE, Is.EqualTo(1000000L));
+				Assert.That(actual.INTDATATYPE, Is.EqualTo(444444));
+				Assert.That(actual.SMALLINTDATATYPE, Is.EqualTo(100));
+				Assert.That(actual.DECIMALDATATYPE, Is.EqualTo(666m));
+
+				Assert.That(actual.REALDATATYPE, Is.EqualTo(222.987f));
+				Assert.That(actual.DOUBLEDATATYPE, Is.EqualTo(555.987d));
+
+				Assert.That(actual.CHARDATATYPE, Is.EqualTo('Y'));
+
+				Assert.That(actual.VARCHARDATATYPE, Is.EqualTo("var-char"));
+
+				Assert.That(actual.CLOBDATATYPE, Is.EqualTo("567"));
+				Assert.That(actual.DBCLOBDATATYPE, Is.EqualTo("890"));
+
+				Assert.That(actual.BINARYDATATYPE, Is.EqualTo(new byte[] { 0xF1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }));
+				Assert.That(actual.VARBINARYDATATYPE, Is.EqualTo(new byte[] { 0xF4 }));
+				Assert.That(actual.BLOBDATATYPE, Is.EqualTo(new byte[] { 0xF2, 0xF3, 0xF4 }));
+
+				Assert.That(actual.GRAPHICDATATYPE, Is.EqualTo("graphic"));
+				Assert.That(actual.VARGRAPHICDATATYPE, Is.EqualTo("vargraphic"));
+
+				Assert.That(actual.DATEDATATYPE, Is.EqualTo(new DateTime(2012, 12, 12)));
+				Assert.That(actual.TIMEDATATYPE, Is.EqualTo(new TimeSpan(12, 12, 12)));
+				Assert.That(actual.TIMESTAMPDATATYPE, Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12, 0)));
 			}
 		}
 	}

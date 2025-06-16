@@ -1,4 +1,8 @@
-﻿namespace LinqToDB.DataProvider.DB2iSeries
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+
+namespace LinqToDB.DataProvider.DB2iSeries
 {
 	internal static class Constants
 	{
@@ -47,9 +51,50 @@
 			public const string NChar = "NCHAR";
 			public const string NVarChar = "NVARCHAR";
 			public const string NClob = "NCLOB";
-			public const string GraphicUnicode = "GRAPHIC CCSID 1200";
-			public const string VarGraphicUnicode = "VARGRAPHIC CCSID 1200";
-			public const string DBClobUnicode = "DBCLOB CCSID 1200";
+			
+			private readonly static Dictionary<string, string> OleDbTypesToDB2 = new(StringComparer.OrdinalIgnoreCase)
+			{
+				{ "DBTYPE_I2", SmallInt },
+				{ "DBTYPE_I4", Integer },
+				{ "DBTYPE_I8", BigInt },
+				{ "DBTYPE_R4", Real },
+				{ "DBTYPE_R8", Double },
+				{ "DBTYPE_NUMERIC", Decimal },
+				{ "DBTYPE_DBDATE", Date },
+				{ "DBTYPE_DBTIME", Time },
+				{ "DBTYPE_DBTIMESTAMP", TimeStamp },
+				{ "DBTYPE_CHAR", Char },
+				{ "DBTYPE_VARCHAR", VarChar },
+				{ "DBTYPE_LONGVARCHAR", Clob },
+				{ "DBTYPE_WCHAR", Graphic },
+				{ "DBTYPE_WVARCHAR", VarGraphic },
+				{ "DBTYPE_WLONGVARCHAR", DbClob },
+				{ "DBTYPE_BINARY", Binary },
+				{ "DBTYPE_VARBINARY", VarBinary },
+				{ "DBTYPE_LONGVARBINARY", Blob },
+			};
+
+			internal static string FromOleDbType(string oleDbType)
+				=> OleDbTypesToDB2.TryGetValue(oleDbType, out var dbType) ? dbType : oleDbType;
+
+			internal static class Groups
+			{
+				public static readonly ReadOnlyCollection<string> StringTypes = new([
+					Char, VarChar, Clob,
+					Graphic, VarGraphic, DbClob,
+					NChar,  NVarChar, NClob,
+				]);
+
+				public static readonly ReadOnlyCollection<string> VariableLengthStringTypes = new([
+					VarChar, Clob,
+					VarGraphic, DbClob,
+					NVarChar, NClob,
+				]);
+
+				public static readonly ReadOnlyCollection<string> FixedLengthStringTypes = new([
+					Char, Graphic, NChar,
+				]);
+			}
 		}
 
 		public static class SQL

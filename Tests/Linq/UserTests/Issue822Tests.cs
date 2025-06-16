@@ -16,6 +16,7 @@ namespace Tests.UserTests
 
 		int? ID2;
 
+		[YdbCteAsSource]
 		[Test]
 		public void TestWrongValue([DataSources(TestProvName.AllClickHouse)] string context, [Values(1, 2)] int _)
 		{
@@ -26,8 +27,8 @@ namespace Tests.UserTests
 
 				ID1 = 3;
 				var result = query.ToList();
-				Assert.AreEqual(1, result.Count);
-				Assert.AreEqual(3, result[0].ID);
+				Assert.That(result, Has.Count.EqualTo(1));
+				Assert.That(result[0].ID, Is.EqualTo(3));
 
 				query = db.GetTable<LinqDataTypes2>()
 					.Where(_ => GetSource(db, ID2!.Value).Select(r => r.ID).Contains(_.ID));
@@ -35,11 +36,12 @@ namespace Tests.UserTests
 				ID1 = 2;
 				ID2 = 4;
 				result = query.ToList();
-				Assert.AreEqual(1, result.Count);
-				Assert.AreEqual(4, result[0].ID);
+				Assert.That(result, Has.Count.EqualTo(1));
+				Assert.That(result[0].ID, Is.EqualTo(4));
 			}
 		}
 
+		[YdbCteAsSource]
 		[Test]
 		public void TestNullValue([DataSources(TestProvName.AllClickHouse)] string context, [Values(1, 2)] int _)
 		{
@@ -50,8 +52,8 @@ namespace Tests.UserTests
 
 				ID1 = 3;
 				var result = query.ToList();
-				Assert.AreEqual(1, result.Count);
-				Assert.AreEqual(3, result[0].ID);
+				Assert.That(result, Has.Count.EqualTo(1));
+				Assert.That(result[0].ID, Is.EqualTo(3));
 
 				query = db.GetTable<LinqDataTypes2>()
 					.Where(_ => GetSource(db, ID2!.Value).Select(r => r.ID).Contains(_.ID));
@@ -59,8 +61,8 @@ namespace Tests.UserTests
 				ID1 = null;
 				ID2 = 4;
 				result = query.ToList();
-				Assert.AreEqual(1, result.Count);
-				Assert.AreEqual(4, result[0].ID);
+				Assert.That(result, Has.Count.EqualTo(1));
+				Assert.That(result[0].ID, Is.EqualTo(4));
 			}
 		}
 

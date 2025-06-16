@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
+
 using LinqToDB;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -96,10 +98,7 @@ namespace Tests.UserTests
 
 			public override int GetHashCode()
 			{
-				unchecked
-				{
-					return (Id.GetHashCode() * 397) ^ TypeID.GetHashCode();
-				}
+				return HashCode.Combine(Id, TypeID);
 			}
 		}
 
@@ -137,20 +136,17 @@ namespace Tests.UserTests
 
 			public override int GetHashCode()
 			{
-				unchecked
-				{
-					var hashCode = Id.GetHashCode();
-					hashCode = (hashCode * 397) ^ (Name != null ? Name.GetHashCode() : 0);
-					hashCode = (hashCode * 397) ^ (ShortName != null ? ShortName.GetHashCode() : 0);
-					hashCode = (hashCode * 397) ^ Height;
-					hashCode = (hashCode * 397) ^ Depth;
-					hashCode = (hashCode * 397) ^ Width;
-					return hashCode;
-				}
+				return HashCode.Combine(
+					Id,
+					Name,
+					ShortName,
+					Height,
+					Depth,
+					Width
+				);
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void Test([IncludeDataSources(TestProvName.AllSQLite, TestProvName.AllClickHouse)] string context)
 		{

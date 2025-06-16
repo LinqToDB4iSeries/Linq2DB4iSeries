@@ -1,15 +1,17 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using FluentAssertions;
+
 using LinqToDB;
+using LinqToDB.Interceptors;
 
 using NUnit.Framework;
 
+using Shouldly;
+
+using Tests.Model;
+
 namespace Tests.Linq
 {
-	using LinqToDB.Interceptors;
-	using Model;
-
 	[TestFixture]
 	public class EntityCreatedTests : TestBase
 	{
@@ -36,8 +38,8 @@ namespace Tests.Linq
 			{
 				if (CheckEntityIdentity && entity is Parent p)
 				{
-					eventData.TableOptions.Should().Be(TableOptions.NotSet);
-					eventData.TableName.Should().Be(nameof(Parent));
+					eventData.TableOptions.ShouldBe(TableOptions.NotSet);
+					eventData.TableName.ShouldBe(nameof(Parent));
 
 					if (Parents.TryGetValue(p.ParentID, out var pr))
 						return entity;
@@ -84,7 +86,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void EntityCreatedTest3([DataSources] string configString, [Values(false,true)] bool checkEntityIdentity)
+		public void EntityCreatedTest3([DataSources] string configString, [Values] bool checkEntityIdentity)
 		{
 			var interceptor = new TestEntityServiceInterceptor();
 			using (var db = GetEntityCreatedContext(configString, interceptor))

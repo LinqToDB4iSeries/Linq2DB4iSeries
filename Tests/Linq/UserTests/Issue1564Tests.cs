@@ -1,6 +1,8 @@
 ﻿using System.Linq;
+
 using LinqToDB;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -59,7 +61,7 @@ namespace Tests.UserTests
 				pathQuery.ToList();
 				adminCategoriesQuery.ToList();
 
-				Assert.True(adminCategoriesQuery.ToString()!.Contains("ORDER BY"));
+				Assert.That(adminCategoriesQuery.ToSqlQuery().Sql, Does.Contain("ORDER BY"));
 			}
 
 			IQueryable<AdminCategoryPathItemCte> GetPathQuery(IDataContext db)

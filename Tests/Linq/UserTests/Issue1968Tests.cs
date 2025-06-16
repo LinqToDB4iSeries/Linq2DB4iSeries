@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+
 using LinqToDB;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -103,9 +105,12 @@ namespace Tests.UserTests
 					.LoadWith(x => x.Faculties)
 					.LoadWith(m => m.Subjects).ToList();
 
-				Assert.That(result.Count,              Is.EqualTo(1));
-				Assert.That(result[0].Faculties.Count, Is.EqualTo(1));
-				Assert.That(result[0].Subjects.Count,  Is.EqualTo(1));
+				Assert.That(result, Has.Count.EqualTo(1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[0].Faculties, Has.Count.EqualTo(1));
+					Assert.That(result[0].Subjects, Has.Count.EqualTo(1));
+				}
 			}
 		}
 	}

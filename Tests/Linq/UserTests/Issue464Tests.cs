@@ -13,9 +13,8 @@ namespace Tests.UserTests
 	[TestFixture]
 	public class Issue464Tests : TestBase
 	{
-
 		[Test]
-		public void Test([DataSources(false)] string context)
+		public void Test([IncludeDataSources(false, TestProvName.AllFirebird)] string context)
 		{
 			var schema = new MappingSchema();
 
@@ -35,8 +34,7 @@ namespace Tests.UserTests
 				  .HasColumn(x => x.Value)
 				  .Build();
 
-			using (var db = new DataConnection(context))
-			using (new FirebirdQuoteMode(FirebirdIdentifierQuoteMode.Auto))
+			using (var db = new DataConnection(new DataOptions().UseConfiguration(context).UseFirebird(o => o with { IdentifierQuoteMode = FirebirdIdentifierQuoteMode.Auto })))
 			{
 				db.AddMappingSchema(schema);
 				try

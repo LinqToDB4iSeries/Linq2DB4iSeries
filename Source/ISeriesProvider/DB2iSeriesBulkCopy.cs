@@ -2,10 +2,12 @@
 using System.Threading;
 using System.Threading.Tasks;
 
+using LinqToDB.Data;
+using LinqToDB.Internal.DataProvider;
+using LinqToDB.Internal.DataProvider.DB2;
+
 namespace LinqToDB.DataProvider.DB2iSeries
 {
-	using Data;
-	
 	internal partial class DB2iSeriesBulkCopy : BasicBulkCopy
 	{
 		const int MAX_ALLOWABLE_MULTIPLE_ROWS_BATCH_SIZE = 100;
@@ -38,7 +40,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			if (table.DataContext is DataConnection dataConnection)
 			{
 				if (dataProvider.ProviderType.IsDB2()
-					&& dataProvider.Adapter.WrappedAdapter is DB2.DB2ProviderAdapter db2Adapter)
+					&& dataProvider.Adapter.WrappedAdapter is DB2ProviderAdapter db2Adapter)
 				{
 					if (dataProvider.TryGetProviderConnection(dataConnection, out var connection))
 						return ProviderSpecificCopyImpl_DB2(
@@ -46,7 +48,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 							options.BulkCopyOptions,
 							source,
 							dataConnection,
-							connection,
+							connection!,
 							db2Adapter.BulkCopy,
 							TraceAction);
 				}
@@ -61,7 +63,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 							options,
 							source,
 							dataConnection,
-							connection,
+							connection!,
 							idb2Adapter,
 							TraceAction);
 				}
@@ -75,7 +77,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			if (table.DataContext is DataConnection dataConnection)
 			{
 				if (dataProvider.ProviderType.IsDB2()
-					&& dataProvider.Adapter.WrappedAdapter is DB2.DB2ProviderAdapter db2Adapter)
+					&& dataProvider.Adapter.WrappedAdapter is DB2ProviderAdapter db2Adapter)
 				{
 					if (dataProvider.TryGetProviderConnection(dataConnection, out var connection))
 						// call the synchronous provider-specific implementation as provider doesn't support async
@@ -84,7 +86,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 							options.BulkCopyOptions,
 							source,
 							dataConnection,
-							connection,
+							connection!,
 							db2Adapter.BulkCopy,
 							TraceAction));
 				}
@@ -99,7 +101,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 							options,
 							source,
 							dataConnection,
-							connection,
+							connection!,
 							idb2Adapter,
 							TraceAction));
 				}
@@ -109,19 +111,18 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return MultipleRowsCopyAsync(table, options, source, cancellationToken);
 		}
 
-#if !NET45
 		protected override async Task<BulkCopyRowsCopied> ProviderSpecificCopyAsync<T>(ITable<T> table, DataOptions options, IAsyncEnumerable<T> source, CancellationToken cancellationToken)
 		{
 			if (table.DataContext is DataConnection dataConnection)
 			{
 				if (dataProvider.ProviderType == DB2iSeriesProviderType.DB2
-					&& dataProvider.Adapter.WrappedAdapter is DB2.DB2ProviderAdapter adapter)
+					&& dataProvider.Adapter.WrappedAdapter is DB2ProviderAdapter adapter)
 				{
 					if (dataProvider.TryGetProviderConnection(dataConnection, out var connection))
 					{
 						var enumerator = source.GetAsyncEnumerator(cancellationToken);
 						
-						await using (enumerator.ConfigureAwait(Common.Configuration.ContinueOnCapturedContext))
+						await using (enumerator.ConfigureAwait(false))
 						{
 							var sourceData = await AsyncToSyncEnumerable(enumerator);
 
@@ -131,7 +132,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 								options.BulkCopyOptions,
 								sourceData,
 								dataConnection,
-								connection,
+								connection!,
 								adapter.BulkCopy,
 								TraceAction);
 						}
@@ -142,7 +143,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					&& dataProvider.Adapter.WrappedAdapter is DB2iSeriesAccessClientProviderAdapter idb2Adapter)
 				{
 					var enumerator = source.GetAsyncEnumerator(cancellationToken);
-					await using (enumerator.ConfigureAwait(Common.Configuration.ContinueOnCapturedContext))
+					await using (enumerator.ConfigureAwait(false))
 					{
 						var sourceData = await AsyncToSyncEnumerable(enumerator);
 
@@ -153,7 +154,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 								options,
 								sourceData,
 								dataConnection,
-								connection,
+								connection!,
 								idb2Adapter,
 								TraceAction);
 					}
@@ -161,7 +162,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 #endif
 			}
 
-			return await MultipleRowsCopyAsync(table, options, source, cancellationToken).ConfigureAwait(Common.Configuration.ContinueOnCapturedContext);
+			return await MultipleRowsCopyAsync(table, options, source, cancellationToken).ConfigureAwait(false);
 		}
 
 		private static async Task<IEnumerable<T>> AsyncToSyncEnumerable<T>(IAsyncEnumerator<T> enumerator)
@@ -173,7 +174,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 			return result;
 		}
-#endif
 
 		private int GetMultipleRowsMaxBatchSize(DataOptions options)
 		{
@@ -192,11 +192,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return MultipleRowsCopy2Async(new DB2iSeriesMultipleRowsHelper<T>(table, options, dB2ISeriesSqlProviderFlags) { BatchSize = GetMultipleRowsMaxBatchSize(options) }, source, " FROM " + Constants.SQL.DummyTableName(), cancellationToken);
 		}
 
-#if !NET45
 		protected override Task<BulkCopyRowsCopied> MultipleRowsCopyAsync<T>(ITable<T> table, DataOptions options, IAsyncEnumerable<T> source, CancellationToken cancellationToken)
 		{
 			return MultipleRowsCopy2Async(new DB2iSeriesMultipleRowsHelper<T>(table, options, dB2ISeriesSqlProviderFlags) { BatchSize = GetMultipleRowsMaxBatchSize(options) }, source, " FROM " + Constants.SQL.DummyTableName(), cancellationToken);
 		}
-#endif
 	}
 }

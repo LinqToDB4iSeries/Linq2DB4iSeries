@@ -2,10 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using FluentAssertions;
+
 using LinqToDB;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
+
+using Shouldly;
 
 namespace Tests.UserTests
 {
@@ -48,20 +51,20 @@ namespace Tests.UserTests
 			Day
 		}
 
-		[Sql.Extension("Sum({expr})", IsAggregate = true)]
-		public static TV SumCustom<T, TV>(IEnumerable<T> items, [ExprParameter] Expression<Func<T, TV>> expr)
+		[Sql.Extension("Sum({expr})", IsAggregate = true, ServerSideOnly = true)]
+		private static TV SumCustom<T, TV>(IEnumerable<T> items, [ExprParameter] Expression<Func<T, TV>> expr)
 		{
 			throw new NotImplementedException();
 		}
 
-		[Sql.Extension("Sum({items})", IsAggregate = true)]
-		public static T SumCustom<T>([ExprParameter] IEnumerable<T> items)
+		[Sql.Extension("Sum({items})", IsAggregate = true, ServerSideOnly = true)]
+		private static T SumCustom<T>([ExprParameter] IEnumerable<T> items)
 		{
 			throw new NotImplementedException();
 		}
 
 		[Test]
-		public void SubqueryAggregation([DataSources(ProviderName.SqlCe, TestProvName.AllSybase, TestProvName.AllClickHouse)] string context)
+		public void SubqueryAggregation([IncludeDataSources(TestProvName.AllPostgreSQL, TestProvName.AllSQLite, TestProvName.AllSqlServer2008Plus)] string context)
 		{
 			var ms      = new MappingSchema();
 			var builder = new FluentMappingBuilder(ms);
@@ -166,7 +169,6 @@ namespace Tests.UserTests
 								.Select(e => e.StartHour != null ? e.StartHour : e.EndHour)
 								.DefaultIfEmpty(0)
 								.Sum()
-
 						});
 
 					var expected = expectedQuery
@@ -174,12 +176,12 @@ namespace Tests.UserTests
 						.ThenByDescending(x => x.WithoutParentReference ?? 0)
 						.ToArray();
 
-					result.Should().HaveCount(expected.Length);
+					result.Length.ShouldBe(expected.Length);
 
 					for (int i = 0; i < result.Length; i++)
 					{
-						result[i].WithParentReference.Should().Be(expected[i].WithParentReference);
-						result[i].WithoutParentReference.Should().Be(expected[i].WithoutParentReference);
+						result[i].WithParentReference.ShouldBe(expected[i].WithParentReference);
+						result[i].WithoutParentReference.ShouldBe(expected[i].WithoutParentReference);
 					}
 
 				}

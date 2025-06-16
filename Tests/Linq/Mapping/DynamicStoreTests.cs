@@ -1,10 +1,13 @@
-﻿using LinqToDB;
-using LinqToDB.Mapping;
-using NUnit.Framework;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+
+using LinqToDB;
+using LinqToDB.Data;
+using LinqToDB.Mapping;
+
+using NUnit.Framework;
 
 namespace Tests.Mapping
 {
@@ -24,6 +27,7 @@ namespace Tests.Mapping
 		[Table("DynamicColumnsTestTable")]
 		sealed class FluentMetadataBasedStore
 		{
+			[PrimaryKey]
 			public int Id { get; set; }
 
 			public Dictionary<string, object> Values { get; set; } = new Dictionary<string, object>();
@@ -99,7 +103,7 @@ namespace Tests.Mapping
 			}
 		}
 
-		[DynamicColumnAccessor(GetterExpressionMethod = nameof(GetPropertyExpression), SetterExpressionMethod =nameof(SetPropertyExpression))]
+		[DynamicColumnAccessor(GetterExpressionMethod = nameof(GetPropertyExpression), SetterExpressionMethod = nameof(SetPropertyExpression))]
 		sealed class InstanceGetterSetterExpressionMethods : CustomSetterGetterBase
 		{
 			public static Expression<Func<InstanceGetterSetterExpressionMethods, string, object, object>> GetPropertyExpression
@@ -364,13 +368,15 @@ namespace Tests.Mapping
 				obj.Values.Add("Name", "test_name");
 				db.Insert(obj);
 
-
 				var data = db.GetTable<FluentMetadataBasedStore>().ToList();
-				Assert.AreEqual(1, data.Count);
-				Assert.AreEqual(5, data[0].Id);
-				Assert.AreEqual(1, data[0].Values.Count);
-				Assert.AreEqual("Name", data[0].Values.Keys.Single());
-				Assert.AreEqual("test_name", data[0].Values["Name"]);
+				Assert.That(data, Has.Count.EqualTo(1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(data[0].Id, Is.EqualTo(5));
+					Assert.That(data[0].Values, Has.Count.EqualTo(1));
+					Assert.That(data[0].Values.Keys.Single(), Is.EqualTo("Name"));
+					Assert.That(data[0].Values["Name"], Is.EqualTo("test_name"));
+				}
 			}
 		}
 
@@ -393,13 +399,15 @@ namespace Tests.Mapping
 				obj.Values.Add("Name", "test_name");
 				db.Insert(obj);
 
-
 				var data = db.GetTable<FluentMetadataBasedStore>().ToList();
-				Assert.AreEqual(1, data.Count);
-				Assert.AreEqual(5, data[0].Id);
-				Assert.AreEqual(1, data[0].Values.Count);
-				Assert.AreEqual("Name", data[0].Values.Keys.Single());
-				Assert.AreEqual("test_name", data[0].Values["Name"]);
+				Assert.That(data, Has.Count.EqualTo(1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(data[0].Id, Is.EqualTo(5));
+					Assert.That(data[0].Values, Has.Count.EqualTo(1));
+					Assert.That(data[0].Values.Keys.Single(), Is.EqualTo("Name"));
+					Assert.That(data[0].Values["Name"], Is.EqualTo("test_name"));
+				}
 			}
 		}
 
@@ -424,14 +432,16 @@ namespace Tests.Mapping
 				obj.SQLiteValues.Add("Name", "test_name");
 				db.Insert(obj);
 
-
 				var data = db.GetTable<FluentMetadataBasedStore>().ToList();
-				Assert.AreEqual(1, data.Count);
-				Assert.AreEqual(5, data[0].Id);
-				Assert.AreEqual(0, data[0].Values.Count);
-				Assert.AreEqual(1, data[0].SQLiteValues.Count);
-				Assert.AreEqual("Name", data[0].SQLiteValues.Keys.Single());
-				Assert.AreEqual("test_name", data[0].SQLiteValues["Name"]);
+				Assert.That(data, Has.Count.EqualTo(1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(data[0].Id, Is.EqualTo(5));
+					Assert.That(data[0].Values, Is.Empty);
+					Assert.That(data[0].SQLiteValues, Has.Count.EqualTo(1));
+					Assert.That(data[0].SQLiteValues.Keys.Single(), Is.EqualTo("Name"));
+					Assert.That(data[0].SQLiteValues["Name"], Is.EqualTo("test_name"));
+				}
 			}
 		}
 
@@ -453,12 +463,15 @@ namespace Tests.Mapping
 				db.Insert(obj);
 
 				var data = db.GetTable<AttributeMetadataBasedStore>().ToList();
-				Assert.AreEqual(1, data.Count);
-				Assert.AreEqual(5, data[0].Id);
-				Assert.AreEqual(0, data[0].Values.Count);
-				Assert.AreEqual(1, data[0].SQLiteValues.Count);
-				Assert.AreEqual("Name", data[0].SQLiteValues.Keys.Single());
-				Assert.AreEqual("test_name", data[0].SQLiteValues["Name"]);
+				Assert.That(data, Has.Count.EqualTo(1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(data[0].Id, Is.EqualTo(5));
+					Assert.That(data[0].Values, Is.Empty);
+					Assert.That(data[0].SQLiteValues, Has.Count.EqualTo(1));
+					Assert.That(data[0].SQLiteValues.Keys.Single(), Is.EqualTo("Name"));
+					Assert.That(data[0].SQLiteValues["Name"], Is.EqualTo("test_name"));
+				}
 			}
 		}
 
@@ -482,11 +495,14 @@ namespace Tests.Mapping
 				db.Insert(obj);
 
 				var data = db.GetTable<FluentMetadataBasedStore>().ToList();
-				Assert.AreEqual(1, data.Count);
-				Assert.AreEqual(5, data[0].Id);
-				Assert.AreEqual(1, data[0].Values.Count);
-				Assert.AreEqual("Name", data[0].Values.Keys.Single());
-				Assert.AreEqual("test_name", data[0].Values["Name"]);
+				Assert.That(data, Has.Count.EqualTo(1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(data[0].Id, Is.EqualTo(5));
+					Assert.That(data[0].Values, Has.Count.EqualTo(1));
+					Assert.That(data[0].Values.Keys.Single(), Is.EqualTo("Name"));
+					Assert.That(data[0].Values["Name"], Is.EqualTo("test_name"));
+				}
 			}
 		}
 
@@ -508,12 +524,15 @@ namespace Tests.Mapping
 				db.Insert(obj);
 
 				var data = db.GetTable<InstanceGetterSetterMethods>().ToList();
-				Assert.AreEqual(1, data.Count);
-				Assert.AreEqual(5, data[0].Id);
-				Assert.AreEqual(0, data[0].SQLiteValues.Count);
-				Assert.AreEqual(1, data[0].Values.Count);
-				Assert.AreEqual("Name", data[0].Values.Keys.Single());
-				Assert.AreEqual("test_name", data[0].Values["Name"]);
+				Assert.That(data, Has.Count.EqualTo(1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(data[0].Id, Is.EqualTo(5));
+					Assert.That(data[0].SQLiteValues, Is.Empty);
+					Assert.That(data[0].Values, Has.Count.EqualTo(1));
+					Assert.That(data[0].Values.Keys.Single(), Is.EqualTo("Name"));
+					Assert.That(data[0].Values["Name"], Is.EqualTo("test_name"));
+				}
 			}
 		}
 
@@ -539,15 +558,18 @@ namespace Tests.Mapping
 				StaticGetterSetterMethods.InstanceValues.Clear();
 
 				var data = db.GetTable<StaticGetterSetterMethods>().ToList();
-				Assert.AreEqual(1, data.Count);
-				Assert.AreEqual(5, data[0].Id);
-				Assert.AreEqual(0, data[0].SQLiteValues.Count);
-				Assert.AreEqual(0, data[0].Values.Count);
-				Assert.AreEqual(1, StaticGetterSetterMethods.InstanceValues.Count);
-				Assert.AreEqual(5, StaticGetterSetterMethods.InstanceValues.Keys.Single());
-				Assert.AreEqual(1, StaticGetterSetterMethods.InstanceValues[5].Count);
-				Assert.AreEqual("Name", StaticGetterSetterMethods.InstanceValues[5].Keys.Single());
-				Assert.AreEqual("test_name", StaticGetterSetterMethods.InstanceValues[5]["Name"]);
+				Assert.That(data, Has.Count.EqualTo(1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(data[0].Id, Is.EqualTo(5));
+					Assert.That(data[0].SQLiteValues, Is.Empty);
+					Assert.That(data[0].Values, Is.Empty);
+					Assert.That(StaticGetterSetterMethods.InstanceValues, Has.Count.EqualTo(1));
+					Assert.That(StaticGetterSetterMethods.InstanceValues.Keys.Single(), Is.EqualTo(5));
+					Assert.That(StaticGetterSetterMethods.InstanceValues[5], Has.Count.EqualTo(1));
+					Assert.That(StaticGetterSetterMethods.InstanceValues[5].Keys.Single(), Is.EqualTo("Name"));
+					Assert.That(StaticGetterSetterMethods.InstanceValues[5]["Name"], Is.EqualTo("test_name"));
+				}
 			}
 		}
 
@@ -569,12 +591,15 @@ namespace Tests.Mapping
 				db.Insert(obj);
 
 				var data = db.GetTable<InstanceGetterSetterExpressionMethods>().ToList();
-				Assert.AreEqual(1, data.Count);
-				Assert.AreEqual(5, data[0].Id);
-				Assert.AreEqual(0, data[0].SQLiteValues.Count);
-				Assert.AreEqual(1, data[0].Values.Count);
-				Assert.AreEqual("Name", data[0].Values.Keys.Single());
-				Assert.AreEqual("test_name", data[0].Values["Name"]);
+				Assert.That(data, Has.Count.EqualTo(1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(data[0].Id, Is.EqualTo(5));
+					Assert.That(data[0].SQLiteValues, Is.Empty);
+					Assert.That(data[0].Values, Has.Count.EqualTo(1));
+					Assert.That(data[0].Values.Keys.Single(), Is.EqualTo("Name"));
+					Assert.That(data[0].Values["Name"], Is.EqualTo("test_name"));
+				}
 			}
 		}
 
@@ -601,15 +626,18 @@ namespace Tests.Mapping
 				StaticGetterSetterExpressionMethods.InstanceValues.Clear();
 
 				var data = db.GetTable<StaticGetterSetterExpressionMethods>().ToList();
-				Assert.AreEqual(1, data.Count);
-				Assert.AreEqual(5, data[0].Id);
-				Assert.AreEqual(0, data[0].SQLiteValues.Count);
-				Assert.AreEqual(0, data[0].Values.Count);
-				Assert.AreEqual(1, StaticGetterSetterExpressionMethods.InstanceValues.Count);
-				Assert.AreEqual(5, StaticGetterSetterExpressionMethods.InstanceValues.Keys.Single());
-				Assert.AreEqual(1, StaticGetterSetterExpressionMethods.InstanceValues[5].Count);
-				Assert.AreEqual("Name", StaticGetterSetterExpressionMethods.InstanceValues[5].Keys.Single());
-				Assert.AreEqual("test_name", StaticGetterSetterExpressionMethods.InstanceValues[5]["Name"]);
+				Assert.That(data, Has.Count.EqualTo(1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(data[0].Id, Is.EqualTo(5));
+					Assert.That(data[0].SQLiteValues, Is.Empty);
+					Assert.That(data[0].Values, Is.Empty);
+					Assert.That(StaticGetterSetterExpressionMethods.InstanceValues, Has.Count.EqualTo(1));
+					Assert.That(StaticGetterSetterExpressionMethods.InstanceValues.Keys.Single(), Is.EqualTo(5));
+					Assert.That(StaticGetterSetterExpressionMethods.InstanceValues[5], Has.Count.EqualTo(1));
+					Assert.That(StaticGetterSetterExpressionMethods.InstanceValues[5].Keys.Single(), Is.EqualTo("Name"));
+					Assert.That(StaticGetterSetterExpressionMethods.InstanceValues[5]["Name"], Is.EqualTo("test_name"));
+				}
 			}
 		}
 
@@ -631,12 +659,15 @@ namespace Tests.Mapping
 				db.Insert(obj);
 
 				var data = db.GetTable<SQLiteInstanceGetterSetterMethods>().ToList();
-				Assert.AreEqual(1, data.Count);
-				Assert.AreEqual(5, data[0].Id);
-				Assert.AreEqual(0, data[0].Values.Count);
-				Assert.AreEqual(1, data[0].SQLiteValues.Count);
-				Assert.AreEqual("Name", data[0].SQLiteValues.Keys.Single());
-				Assert.AreEqual("test_name", data[0].SQLiteValues["Name"]);
+				Assert.That(data, Has.Count.EqualTo(1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(data[0].Id, Is.EqualTo(5));
+					Assert.That(data[0].Values, Is.Empty);
+					Assert.That(data[0].SQLiteValues, Has.Count.EqualTo(1));
+					Assert.That(data[0].SQLiteValues.Keys.Single(), Is.EqualTo("Name"));
+					Assert.That(data[0].SQLiteValues["Name"], Is.EqualTo("test_name"));
+				}
 			}
 		}
 
@@ -658,12 +689,15 @@ namespace Tests.Mapping
 				db.Insert(obj);
 
 				var data = db.GetTable<GetterSetterVsStorageMethods1>().ToList();
-				Assert.AreEqual(1, data.Count);
-				Assert.AreEqual(5, data[0].Id);
-				Assert.AreEqual(0, data[0].Values.Count);
-				Assert.AreEqual(1, data[0].SQLiteValues.Count);
-				Assert.AreEqual("Name", data[0].SQLiteValues.Keys.Single());
-				Assert.AreEqual("test_name", data[0].SQLiteValues["Name"]);
+				Assert.That(data, Has.Count.EqualTo(1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(data[0].Id, Is.EqualTo(5));
+					Assert.That(data[0].Values, Is.Empty);
+					Assert.That(data[0].SQLiteValues, Has.Count.EqualTo(1));
+					Assert.That(data[0].SQLiteValues.Keys.Single(), Is.EqualTo("Name"));
+					Assert.That(data[0].SQLiteValues["Name"], Is.EqualTo("test_name"));
+				}
 			}
 		}
 
@@ -685,12 +719,15 @@ namespace Tests.Mapping
 				db.Insert(obj);
 
 				var data = db.GetTable<GetterSetterVsStorageMethods2>().ToList();
-				Assert.AreEqual(1, data.Count);
-				Assert.AreEqual(5, data[0].Id);
-				Assert.AreEqual(0, data[0].Values.Count);
-				Assert.AreEqual(1, data[0].SQLiteValues.Count);
-				Assert.AreEqual("Name", data[0].SQLiteValues.Keys.Single());
-				Assert.AreEqual("test_name", data[0].SQLiteValues["Name"]);
+				Assert.That(data, Has.Count.EqualTo(1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(data[0].Id, Is.EqualTo(5));
+					Assert.That(data[0].Values, Is.Empty);
+					Assert.That(data[0].SQLiteValues, Has.Count.EqualTo(1));
+					Assert.That(data[0].SQLiteValues.Keys.Single(), Is.EqualTo("Name"));
+					Assert.That(data[0].SQLiteValues["Name"], Is.EqualTo("test_name"));
+				}
 			}
 		}
 
@@ -739,15 +776,18 @@ namespace Tests.Mapping
 				db.Insert(obj);
 
 				var data = db.GetTable<CustomSetterGetterBase>().ToList();
-				Assert.AreEqual(1, data.Count);
-				Assert.AreEqual(5, data[0].Id);
-				Assert.AreEqual(0, data[0].SQLiteValues.Count);
-				Assert.AreEqual(0, data[0].Values.Count);
-				Assert.AreEqual(1, storage.Count);
-				Assert.AreEqual(5, storage.Keys.Single());
-				Assert.AreEqual(1, storage[5].Count);
-				Assert.AreEqual("Name", storage[5].Keys.Single());
-				Assert.AreEqual("test_name", storage[5]["Name"]);
+				Assert.That(data, Has.Count.EqualTo(1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(data[0].Id, Is.EqualTo(5));
+					Assert.That(data[0].SQLiteValues, Is.Empty);
+					Assert.That(data[0].Values, Is.Empty);
+					Assert.That(storage, Has.Count.EqualTo(1));
+					Assert.That(storage.Keys.Single(), Is.EqualTo(5));
+					Assert.That(storage[5], Has.Count.EqualTo(1));
+					Assert.That(storage[5].Keys.Single(), Is.EqualTo("Name"));
+					Assert.That(storage[5]["Name"], Is.EqualTo("test_name"));
+				}
 			}
 		}
 
@@ -788,12 +828,15 @@ namespace Tests.Mapping
 				db.Insert(obj);
 
 				var data = db.GetTable<AttributeMetadataBasedStore>().ToList();
-				Assert.AreEqual(1, data.Count);
-				Assert.AreEqual(5, data[0].Id);
-				Assert.AreEqual(0, data[0].Values.Count);
-				Assert.AreEqual(1, data[0].SQLiteValues.Count);
-				Assert.AreEqual("Name", data[0].SQLiteValues.Keys.Single());
-				Assert.AreEqual("me_default", data[0].SQLiteValues["Name"]);
+				Assert.That(data, Has.Count.EqualTo(1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(data[0].Id, Is.EqualTo(5));
+					Assert.That(data[0].Values, Is.Empty);
+					Assert.That(data[0].SQLiteValues, Has.Count.EqualTo(1));
+					Assert.That(data[0].SQLiteValues.Keys.Single(), Is.EqualTo("Name"));
+					Assert.That(data[0].SQLiteValues["Name"], Is.EqualTo("me_default"));
+				}
 			}
 		}
 
@@ -815,12 +858,15 @@ namespace Tests.Mapping
 				db.Insert(obj);
 
 				var data = db.GetTable<InstanceGetterSetterMethods>().ToList();
-				Assert.AreEqual(1, data.Count);
-				Assert.AreEqual(5, data[0].Id);
-				Assert.AreEqual(0, data[0].SQLiteValues.Count);
-				Assert.AreEqual(1, data[0].Values.Count);
-				Assert.AreEqual("Name", data[0].Values.Keys.Single());
-				Assert.AreEqual("accessor_def", data[0].Values["Name"]);
+				Assert.That(data, Has.Count.EqualTo(1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(data[0].Id, Is.EqualTo(5));
+					Assert.That(data[0].SQLiteValues, Is.Empty);
+					Assert.That(data[0].Values, Has.Count.EqualTo(1));
+					Assert.That(data[0].Values.Keys.Single(), Is.EqualTo("Name"));
+					Assert.That(data[0].Values["Name"], Is.EqualTo("accessor_def"));
+				}
 			}
 		}
 
@@ -863,5 +909,127 @@ namespace Tests.Mapping
 				Assert.Throws<LinqToDBException>(() => db.GetTable<NoGetterSetterMethods>().ToList());
 			}
 		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/3859")]
+		public void Issue3859Test1([DataSources] string context)
+		{
+			var ms = new MappingSchema();
+			new FluentMappingBuilder(ms)
+				.Entity<FluentMetadataBasedStore>()
+					.DynamicColumnsStore(x => x.Values)
+					.Property(x => x.Id).IsColumn()
+				.Build();
+
+			using var db = GetDataContext(context, ms);
+			using var tb = db.CreateLocalTable<FluentMetadataBasedStore>();
+
+			tb.Select(x => new
+			{
+				Value1 = x.Values["All"],
+				Value2 = x.Id
+			}).ToArray();
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/3859")]
+		public void Issue3859Test2([DataSources] string context)
+		{
+			var ms = new MappingSchema();
+			new FluentMappingBuilder(ms)
+				.Entity<FluentMetadataBasedStore>()
+					.DynamicColumnsStore(x => x.Values)
+					.Property(x => x.Id).IsColumn()
+				.Build();
+
+			using var db = GetDataContext(context, ms);
+			using var tb = db.CreateLocalTable<FluentMetadataBasedStore>();
+
+			var query = tb
+				.Select(x => new
+				{
+					Value1 = x.Values["All"],
+					Value2 = x.Id
+				})
+				.GroupBy(x => x.Value1,
+				(g, e) => new
+				{
+					Value1 = g,
+					Value2 = e.Count()
+				});
+
+			Assert.That(() => query.ToArray(), Throws.Exception.InstanceOf<LinqToDBException>());
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/3859")]
+		public void Issue3859Test3([DataSources] string context)
+		{
+			var ms = new MappingSchema();
+			new FluentMappingBuilder(ms)
+				.Entity<FluentMetadataBasedStore>()
+					.DynamicColumnsStore(x => x.Values)
+					.Property(x => x.Id).IsColumn()
+				.Build();
+
+			using var db = GetDataContext(context, ms);
+			using var tb = db.CreateLocalTable<FluentMetadataBasedStore>();
+
+			var query = tb
+				.Select(x => new
+				{
+					Value1 = x.Values["All"],
+					Value2 = x.Id
+				})
+				.AsEnumerable()
+				.GroupBy(x => x.Value1,
+				(g, e) => new
+				{
+					Value1 = g,
+					Value2 = e.Count()
+				});
+
+			query.ToArray();
+		}
+
+		#region Issue 2953
+		[ActiveIssue]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/2953")]
+		public void Issue2953Test1([IncludeDataSources(TestProvName.AllSqlServer)] string context)
+		{
+			using var db = GetDataContext(context);
+
+			var result = db.FromSql<DbEntity>("SELECT * FROM Person WHERE PersonID = 1").ToArray();
+
+			Assert.That(result, Has.Length.EqualTo(1));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(result[0].Properties.ContainsKey("FirstName"), Is.True);
+				Assert.That(result[0].Properties["FirstName"], Is.EqualTo("John"));
+			}
+		}
+
+		[ActiveIssue]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/2953")]
+		public void Issue2953Test2([IncludeDataSources(TestProvName.AllSqlServer)] string context)
+		{
+			using var db = GetDataContext(context);
+
+			var result = db.Query<DbEntity>("SELECT * FROM Person WHERE PersonID = 1").ToArray();
+
+			Assert.That(result, Has.Length.EqualTo(1));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(result[0].Properties.ContainsKey("FirstName"), Is.True);
+				Assert.That(result[0].Properties["FirstName"], Is.EqualTo("John"));
+			}
+		}
+
+		[Table("Person")]
+		sealed class DbEntity
+		{
+			[Column] public int PersonID { get; set; }
+
+			[DynamicColumnsStore]
+			public Dictionary<string, object> Properties { get; set; } = new();
+		}
+		#endregion
 	}
 }

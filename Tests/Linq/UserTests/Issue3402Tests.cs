@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using FluentAssertions;
+
 using LinqToDB;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -36,6 +37,7 @@ namespace Tests.UserTests
 			public bool IsActive { get; set; }
 		}
 
+		[YdbMemberNotFound]
 		[Test]
 		public void ColumnOptimization([DataSources(TestProvName.AllClickHouse)] string context)
 		{
@@ -69,6 +71,7 @@ namespace Tests.UserTests
 			}
 		}
 
+		[YdbMemberNotFound]
 		[Test]
 		public void SubQueryAny([DataSources(TestProvName.AllClickHouse)] string context)
 		{

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Linq.Expressions;
+
 using LinqToDB;
 using LinqToDB.Mapping;
 
@@ -89,8 +90,8 @@ namespace Tests.Linq
 					select t;
 
 				//DO NOT REMOVE, it forces caching query
-				var str = query.ToString();
-				TestContext.WriteLine(str);
+				var str = query.ToSqlQuery().Sql;
+				BaselinesManager.LogQuery(str);
 
 				var expected = from t in sampleData
 					from t2 in sampleData.Where(predicate.Compile())

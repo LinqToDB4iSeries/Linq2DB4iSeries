@@ -4,10 +4,10 @@ using LinqToDB;
 
 using NUnit.Framework;
 
+using Tests.Model;
+
 namespace Tests.Linq
 {
-	using Model;
-
 	[TestFixture]
 	public class ExtensionTests : TestBase
 	{
@@ -57,10 +57,12 @@ namespace Tests.Linq
 				var table1 = db.GetTable<ParenTable>();
 				var table2 = table1.TableName("Parent2");
 				var table3 = table2.TableName("Parent3");
-
-				Assert.AreEqual(table1.TableName, "ParenTable");
-				Assert.AreEqual(table2.TableName, "Parent2");
-				Assert.AreEqual(table3.TableName, "Parent3");
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(table1.TableName, Is.EqualTo("ParenTable"));
+					Assert.That(table2.TableName, Is.EqualTo("Parent2"));
+					Assert.That(table3.TableName, Is.EqualTo("Parent3"));
+				}
 			}
 		}
 
@@ -72,10 +74,12 @@ namespace Tests.Linq
 				var table1 = db.GetTable<ParenTable>();
 				var table2 = table1.DatabaseName("db2");
 				var table3 = table2.DatabaseName("db3");
-
-				Assert.AreEqual(table1.DatabaseName, null);
-				Assert.AreEqual(table2.DatabaseName, "db2");
-				Assert.AreEqual(table3.DatabaseName, "db3");
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(table1.DatabaseName, Is.Null);
+					Assert.That(table2.DatabaseName, Is.EqualTo("db2"));
+					Assert.That(table3.DatabaseName, Is.EqualTo("db3"));
+				}
 			}
 		}
 
@@ -87,10 +91,12 @@ namespace Tests.Linq
 				var table1 = db.GetTable<ParenTable>();
 				var table2 = table1.SchemaName("schema2");
 				var table3 = table2.SchemaName("schema3");
-
-				Assert.AreEqual(table1.SchemaName, null);
-				Assert.AreEqual(table2.SchemaName, "schema2");
-				Assert.AreEqual(table3.SchemaName, "schema3");
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(table1.SchemaName, Is.Null);
+					Assert.That(table2.SchemaName, Is.EqualTo("schema2"));
+					Assert.That(table3.SchemaName, Is.EqualTo("schema3"));
+				}
 			}
 		}
 

@@ -1,23 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Data.Linq;
-using System.Globalization;
+using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Threading;
 
 using LinqToDB;
+using LinqToDB.Data;
+using LinqToDB.Interceptors;
 using LinqToDB.Mapping;
-using LinqToDB.Extensions;
 
 using NUnit.Framework;
 
+using Tests.Model;
+
 namespace Tests.Linq
 {
-	using LinqToDB.Common;
-	using LinqToDB.Data;
-	using Model;
-
 	// TODO: delete this test when we implement type tests for all databases similar to CLickHouse tests
 	[TestFixture]
 	public class DataTypesTests : TestBase
@@ -25,7 +20,7 @@ namespace Tests.Linq
 		public abstract class TypeTable<TType>
 			where TType : struct
 		{
-			[Column] public int    Id             { get; set; }
+			[PrimaryKey] public int    Id         { get; set; }
 			[Column] public TType  Column         { get; set; }
 			[Column] public TType? ColumnNullable { get; set; }
 		}
@@ -46,7 +41,7 @@ namespace Tests.Linq
 		{
 			using var db = (TestDataConnection)GetDataContext(context);
 
-			TestType<GuidTable, Guid>(db, GuidTable.Data, context);
+			TestType<GuidTable, Guid>(db, GuidTable.Data, context, supportLiterals: !context.IsAnyOf(TestProvName.AllAccessOdbc));
 		}
 		#endregion
 
@@ -71,14 +66,14 @@ namespace Tests.Linq
 		#endregion
 
 		#region DateOnly
-#if NET6_0_OR_GREATER
+#if SUPPORTS_DATEONLY
 		[Table]
 		public class DateOnlyTable : TypeTable<DateOnly>
 		{
 			public static DateOnlyTable[] Data = new[]
 			{
-				new DateOnlyTable() { Id = 1, Column = new DateOnly(1950, 1, 1), ColumnNullable = null },
-				new DateOnlyTable() { Id = 2, Column = new DateOnly(2020, 2, 29), ColumnNullable = new DateOnly(2200, 1, 1) },
+				new DateOnlyTable() { Id = 1, Column = new DateOnly(1980, 1, 1), ColumnNullable = null },
+				new DateOnlyTable() { Id = 2, Column = new DateOnly(2020, 2, 29), ColumnNullable = new DateOnly(2020, 1, 1) },
 			};
 		}
 
@@ -103,7 +98,6 @@ namespace Tests.Linq
 			};
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void TestBoolean([DataSources(false)] string context)
 		{
@@ -176,7 +170,7 @@ namespace Tests.Linq
 		[Sql.Expression("{0} = {1}", IsPredicate = true)]
 		private static bool Equality(object? x, object? y) => throw new NotImplementedException();
 
-		private void TestType<TTable, TType>(DataConnection db, TTable[] data, string context)
+		private void TestType<TTable, TType>(DataConnection db, TTable[] data, string context, bool supportLiterals = true)
 			where TTable: TypeTable<TType>
 			where TType: struct
 		{
@@ -188,33 +182,43 @@ namespace Tests.Linq
 			db.InlineParameters = false;
 			db.OnNextCommandInitialized((_, cmd) =>
 			{
-				Assert.AreEqual(supportsParameters ? 2 : 0, cmd.Parameters.Count);
+				Assert.That(cmd.Parameters, Has.Count.EqualTo(supportsParameters ? 2 : 0));
 				return cmd;
 			});
 
 			var records = table.Where(r => Equality(r.Column, data[1].Column) && Equality(r.ColumnNullable, data[1].ColumnNullable)).ToArray();
-			Assert.AreEqual(1, records.Length);
+			Assert.That(records, Has.Length.EqualTo(1));
 
 			var record = records[0];
-			Assert.AreEqual(2, record.Id);
-			Assert.AreEqual(data[1].Column, record.Column);
-			Assert.AreEqual(data[1].ColumnNullable, record.ColumnNullable);
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(record.Id, Is.EqualTo(2));
+				Assert.That(record.Column, Is.EqualTo(data[1].Column));
+				Assert.That(record.ColumnNullable, Is.EqualTo(data[1].ColumnNullable));
+			}
 
 			// test literal
 			db.InlineParameters = true;
 			db.OnNextCommandInitialized((_, cmd) =>
 			{
-				Assert.AreEqual(0, cmd.Parameters.Count);
+				if (supportLiterals)
+					Assert.That(cmd.Parameters, Is.Empty);
+				else
+					Assert.That(cmd.Parameters, Has.Count.EqualTo(2));
 				return cmd;
 			});
 
 			records = table.Where(r => Equality(r.Column, data[1].Column) && Equality(r.ColumnNullable, data[1].ColumnNullable)).ToArray();
-			Assert.AreEqual(1, records.Length);
+			Assert.That(records, Has.Length.EqualTo(1));
 
 			record = records[0];
-			Assert.AreEqual(2, record.Id);
-			Assert.AreEqual(data[1].Column, record.Column);
-			Assert.AreEqual(data[1].ColumnNullable, record.ColumnNullable);
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(record.Id, Is.EqualTo(2));
+				Assert.That(record.Column, Is.EqualTo(data[1].Column));
+				Assert.That(record.ColumnNullable, Is.EqualTo(data[1].ColumnNullable));
+			}
+
 			db.InlineParameters = false;
 
 			// test bulk copy
@@ -233,13 +237,67 @@ namespace Tests.Linq
 
 			db.BulkCopy(options, data);
 			var records = table.OrderBy(r => r.Id).ToArray();
-			Assert.AreEqual(2, records.Length);
-			Assert.AreEqual(data[0].Id, records[0].Id);
-			Assert.AreEqual(data[0].Column, records[0].Column);
-			Assert.AreEqual(data[0].ColumnNullable, records[0].ColumnNullable);
-			Assert.AreEqual(data[1].Id, records[1].Id);
-			Assert.AreEqual(data[1].Column, records[1].Column);
-			Assert.AreEqual(data[1].ColumnNullable, records[1].ColumnNullable);
+			Assert.That(records, Has.Length.EqualTo(2));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(records[0].Id, Is.EqualTo(data[0].Id));
+				Assert.That(records[0].Column, Is.EqualTo(data[0].Column));
+				Assert.That(records[0].ColumnNullable, Is.EqualTo(data[0].ColumnNullable));
+				Assert.That(records[1].Id, Is.EqualTo(data[1].Id));
+				Assert.That(records[1].Column, Is.EqualTo(data[1].Column));
+				Assert.That(records[1].ColumnNullable, Is.EqualTo(data[1].ColumnNullable));
+			}
+		}
+		#endregion
+
+		#region Issue 1918
+		[ActiveIssue(Configurations = [
+			// cannot create table, DataType.Blob not mapped
+			TestProvName.AllAccess, TestProvName.AllClickHouse, TestProvName.AllPostgreSQL, ProviderName.SqlCe,
+			TestProvName.AllSqlServer, TestProvName.AllSybase,
+			// fails on insert
+			TestProvName.AllSQLite, TestProvName.AllSapHana, TestProvName.AllOracle, TestProvName.AllInformix, TestProvName.AllFirebird,
+			// fails on select
+			TestProvName.AllMySql, ProviderName.DB2
+			])]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/1918")]
+		public void Issue1918Test([DataSources] string context)
+		{
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable<Issue1918Table>();
+
+			using (var stream = new MemoryStream())
+			{
+				var entity = new Issue1918Table()
+				{
+					Id = 1,
+					Blob = stream
+				};
+
+				db.Insert(entity);
+				stream.WriteByte(1);
+				stream.Flush();
+				stream.WriteByte(2);
+			}
+
+			var record = tb.Single();
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(record.Id, Is.EqualTo(1));
+				Assert.That(record.Blob, Is.Not.Null);
+			}
+
+			using var ms = new MemoryStream();
+			record.Blob!.CopyTo(ms);
+			var data = ms.ToArray();
+			Assert.That(data, Is.EqualTo(new byte[] { 1, 2 }));
+		}
+
+		[Table("Issue4163Table")]
+		sealed class Issue1918Table
+		{
+			[PrimaryKey] public int Id { get; set; }
+			[Column(DataType = DataType.Blob)] public Stream? Blob { get; set; }
 		}
 		#endregion
 	}

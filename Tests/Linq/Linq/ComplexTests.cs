@@ -3,22 +3,23 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Text.Json;
 
 using LinqToDB;
+using LinqToDB.Data;
 using LinqToDB.Mapping;
 
 using NUnit.Framework;
 
+using Tests.Model;
+
 namespace Tests.Linq
 {
-	using LinqToDB.Data;
-	using Model;
-
 	[TestFixture]
 	public class ComplexTests : TestBase
 	{
 		[Test]
-		public void Contains1([DataSources(TestProvName.AllAccess, TestProvName.AllClickHouse)] string context)
+		public void Contains1([DataSources(TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -61,7 +62,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void Contains2([DataSources(TestProvName.AllAccess, TestProvName.AllClickHouse)] string context)
+		public void Contains2([DataSources(TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -119,7 +120,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void Contains3([DataSources(TestProvName.AllSQLite, ProviderName.Access, TestProvName.AllClickHouse)] string context)
+		public void Contains3([DataSources(TestProvName.AllSQLite, TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -162,7 +163,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void Contains4([DataSources(TestProvName.AllSQLite, ProviderName.Access, TestProvName.AllClickHouse)] string context)
+		public void Contains4([DataSources(TestProvName.AllSQLite, TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -214,6 +215,7 @@ namespace Tests.Linq
 			}
 		}
 
+		[YdbCteAsSource]
 		[Test]
 		public void Contains6([DataSources] string context)
 		{
@@ -336,7 +338,7 @@ namespace Tests.Linq
 
 			using (var db = new TestDataConnection())
 			{
-				Assert.AreEqual(1, db.Parent.Count(final));
+				Assert.That(db.Parent.Count(final), Is.EqualTo(1));
 			}
 		}
 
@@ -428,13 +430,13 @@ namespace Tests.Linq
 		{
 			using (var db = new DataConnection())
 			{
-				var res =
+				var query =
 					from rc in db.GetTable<TestEntity>()
 					join li in db.GetTable<LookupEntity>() on rc.Id equals li.InnerEntity!.Id
 					where rc.EntityType == TestEntityType.Type1
 					select rc;
 
-				var _ = res.ToList();
+				var _ = query.ToList();
 			}
 		}
 
@@ -466,16 +468,16 @@ namespace Tests.Linq
 		[Table("T2")]
 		public class T2
 		{
-			[Column] public int InstrumentId { get; set; }
-			[Column] public int IndexId { get; set; }
+			[Column, PrimaryKey] public int InstrumentId { get; set; }
+			[Column, PrimaryKey] public int IndexId { get; set; }
 
 		}
 
 		[Table("T3")]
 		public class T3
 		{
-			[Column] public int InstrumentId { get; set; }
-			[Column] public int IndexId { get; set; }
+			[Column, PrimaryKey] public int InstrumentId { get; set; }
+			[Column, PrimaryKey] public int IndexId { get; set; }
 		}
 
 		[Test]
@@ -514,7 +516,7 @@ namespace Tests.Linq
 //
 //				_ = db.Person.ToList();
 
-				Assert.That(res.Count, Is.EqualTo(1));
+				Assert.That(res, Has.Count.EqualTo(1));
 			}
 		}
 
@@ -529,6 +531,8 @@ namespace Tests.Linq
 		[Column("user_name", "Name")]
 		public class User
 		{
+			[PrimaryKey] public int Id { get; set; }
+
 			public string? Name;
 
 			[Column("street", ".Street")]
@@ -539,6 +543,7 @@ namespace Tests.Linq
 			{
 				new User()
 				{
+					Id = 1,
 					Name = "Freddy",
 					Residence = new Address()
 					{
@@ -557,12 +562,12 @@ namespace Tests.Linq
 			using (var users = db.CreateLocalTable<User>())
 			{
 				var query = users.Select(u => u.Residence!.City);
-				Assert.AreEqual(1, query.GetSelectQuery().Select.Columns.Count);
+				Assert.That(query.GetSelectQuery().Select.Columns, Has.Count.EqualTo(1));
 
 				query.ToList();
 
 				query = users.Select(u => u.Residence!.Street);
-				Assert.AreEqual(1, query.GetSelectQuery().Select.Columns.Count);
+				Assert.That(query.GetSelectQuery().Select.Columns, Has.Count.EqualTo(1));
 
 				query.ToList();
 			}
@@ -576,13 +581,465 @@ namespace Tests.Linq
 			{
 				var result = users.ToList();
 
-				Assert.AreEqual(1, result.Count);
-				Assert.AreEqual(User.TestData[0].Name, result[0].Name);
-				Assert.IsNotNull(result[0].Residence);
-				Assert.AreEqual(User.TestData[0].Residence!.Building, result[0].Residence!.Building);
-				Assert.AreEqual(User.TestData[0].Residence!.City, result[0].Residence!.City);
-				Assert.AreEqual(User.TestData[0].Residence!.Street, result[0].Residence!.Street);
+				Assert.That(result, Has.Count.EqualTo(1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[0].Name, Is.EqualTo(User.TestData[0].Name));
+					Assert.That(result[0].Residence, Is.Not.Null);
+					Assert.That(result[0].Residence!.Building, Is.EqualTo(User.TestData[0].Residence!.Building));
+					Assert.That(result[0].Residence!.City, Is.EqualTo(User.TestData[0].Residence!.City));
+					Assert.That(result[0].Residence!.Street, Is.EqualTo(User.TestData[0].Residence!.Street));
+				}
 			}
 		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/940")]
+		public void FilterByComposite_Class([DataSources] string context)
+		{
+			using var db    = GetDataContext(context);
+			using var users = db.CreateLocalTable(User.TestData);
+
+			var record = users.Where(u => u.Residence == User.TestData[0].Residence).Single();
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(record.Name, Is.EqualTo("Freddy"));
+				Assert.That(record.Residence, Is.Not.Null);
+				Assert.That(record.Residence!.Building, Is.EqualTo(User.TestData[0].Residence!.Building));
+				Assert.That(record.Residence.City, Is.EqualTo(User.TestData[0].Residence!.City));
+				Assert.That(record.Residence.Street, Is.EqualTo(User.TestData[0].Residence!.Street));
+			}
+		}
+
+		struct AddressStruct : IEquatable<AddressStruct>
+		{
+			public string? City { get; set; }
+			public string? Street { get; set; }
+			public int Building { get; set; }
+
+			public static bool operator ==(AddressStruct key1, AddressStruct key2)
+			{
+				return key1.City == key2.City && key1.Street == key2.Street && key1.Building == key2.Building;
+			}
+
+			public static bool operator !=(AddressStruct key1, AddressStruct key2)
+			{
+				return key1.City != key2.City || key1.Street != key2.Street || key1.Building != key2.Building;
+			}
+
+			public override int GetHashCode()
+			{
+				return City?.GetHashCode() ?? 0 ^ Street?.GetHashCode() ?? 0 ^ Building.GetHashCode();
+			}
+
+			public override bool Equals(object? obj)
+			{
+				if (obj is not AddressStruct other)
+					return false;
+
+				return Equals(other);
+			}
+
+			public bool Equals(AddressStruct other)
+			{
+				return City == other.City
+					&& Street == other.Street
+					&& Building == other.Building;
+			}
+		}
+
+		[Column("city", "Residence.City")]
+		[Column("user_name", "Name")]
+		class UserStruct
+		{
+			[PrimaryKey] public int Id { get; set; }
+
+			public string? Name;
+
+			[Column("street", ".Street")]
+			[Column("building_number", MemberName = ".Building")]
+			public AddressStruct Residence { get; set; }
+
+			public static readonly UserStruct[] TestData = new []
+			{
+				new UserStruct()
+				{
+					Id = 1,
+					Name = "Freddy",
+					Residence = new AddressStruct()
+					{
+						Building = 13,
+						City     = "Springwood",
+						Street   = "Elm Street"
+					}
+				}
+			};
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/940")]
+		public void FilterByComposite_Struct([DataSources] string context)
+		{
+			var ms = new MappingSchema();
+			ms.SetScalarType(typeof(AddressStruct), false);
+
+			using var db    = GetDataContext(context, ms);
+			using var users = db.CreateLocalTable(UserStruct.TestData);
+
+			var record = users.Where(u => u.Residence == UserStruct.TestData[0].Residence).Single();
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(record.Name, Is.EqualTo("Freddy"));
+				Assert.That(record.Residence!.Building, Is.EqualTo(UserStruct.TestData[0].Residence.Building));
+				Assert.That(record.Residence.City, Is.EqualTo(UserStruct.TestData[0].Residence.City));
+				Assert.That(record.Residence.Street, Is.EqualTo(UserStruct.TestData[0].Residence.Street));
+			}
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/2874")]
+		public void SelectCompositePropertyMapped_Class([DataSources] string context)
+		{
+			using var db    = GetDataContext(context);
+			using var users = db.CreateLocalTable(User.TestData);
+
+			var residence = users.Select(u => u.Residence).Distinct().Single();
+
+			Assert.That(residence, Is.Not.Null);
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(residence!.Building, Is.EqualTo(User.TestData[0].Residence!.Building));
+				Assert.That(residence.City, Is.EqualTo(User.TestData[0].Residence!.City));
+				Assert.That(residence.Street, Is.EqualTo(User.TestData[0].Residence!.Street));
+			}
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/2874")]
+		public void SelectCompositePropertyMapped_Struct([DataSources] string context)
+		{
+			var ms = new MappingSchema();
+			ms.SetScalarType(typeof(AddressStruct), false);
+
+			using var db    = GetDataContext(context, ms);
+			using var users = db.CreateLocalTable(UserStruct.TestData);
+
+			var residence = users.Select(u => u.Residence).Distinct().Single();
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(residence.Building, Is.EqualTo(UserStruct.TestData[0].Residence.Building));
+				Assert.That(residence.City, Is.EqualTo(UserStruct.TestData[0].Residence.City));
+				Assert.That(residence.Street, Is.EqualTo(UserStruct.TestData[0].Residence.Street));
+			}
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4568")]
+		public void SelectCompositePropertyMapped_Class_OnlyRequiredColumns([DataSources] string context)
+		{
+			using var db    = GetDataContext(context);
+
+			var query = db.GetTable<User>().Select(u => u.Residence);
+
+			Assert.That(query.GetSelectQuery().Select.Columns, Has.Count.EqualTo(3));
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4568")]
+		public void SelectCompositePropertyMapped_Struct_OnlyRequiredColumns([DataSources] string context)
+		{
+			var ms = new MappingSchema();
+			ms.SetScalarType(typeof(AddressStruct), false);
+
+			using var db    = GetDataContext(context, ms);
+
+			var query = db.GetTable<UserStruct>().Select(u => u.Residence);
+
+			Assert.That(query.GetSelectQuery().Select.Columns, Has.Count.EqualTo(3));
+		}
+
+		#region Issue 4139
+		[ActiveIssue]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4139")]
+		public void Issue4139Test([DataSources] string context)
+		{
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable(Issue4139Table.Data);
+
+			var records = tb.LoadWith(t => t.Parent!.Parent).OrderBy(r => r.Id).ToArray();
+
+			Assert.That(records.Count(), Is.EqualTo(2));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(records[0].Parent, Is.Null);
+				Assert.That(records[1].Parent, Is.Not.Null);
+				Assert.That(records[1].Parent!.ParentId, Is.EqualTo(1));
+				Assert.That(records[1].Parent!.Parent, Is.Not.Null);
+			}
+
+			Assert.That(records[1].Parent!.Parent!.Id, Is.EqualTo(1));
+		}
+
+		[Table]
+		sealed class Issue4139Table
+		{
+			[PrimaryKey] public int Id { get; set; }
+
+			[Column("ParentId", ".ParentId")]
+			// TODO: missing ctor
+			//[Association(".Parent", ThisKey = ".ParentId", OtherKey = "Id")]
+			public Issue4139Parent? Parent { get; set; }
+
+			public static readonly Issue4139Table[] Data = new[]
+			{
+				new Issue4139Table() { Id = 1 },
+				new Issue4139Table() { Id = 2, Parent = new() { ParentId = 1 } }
+			};
+		}
+
+		sealed class Issue4139Parent
+		{
+			public int? ParentId { get; set; }
+			public Issue4139Table? Parent { get; set; }
+		}
+		#endregion
+
+		#region Record Constructors
+		static class RecordTests
+		{
+			public sealed class Table
+			{
+				[PrimaryKey]
+				public int Id { get; set; }
+
+				public Struct Struct { get; set; }
+
+				public Class Class { get; set; } = null!;
+			}
+
+			public struct Struct
+			{
+				public int Value1 { get; set; }
+				public int Value2 { get; set; }
+			}
+
+			public sealed class Class
+			{
+				public int Value1 { get; set; }
+				public int Value2 { get; set; }
+			}
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/5056")]
+		public void ChildRecordTest([IncludeDataSources(true, TestProvName.AllSQLite)] string context, [Values] bool asScalars, [Values] bool useInit)
+		{
+			if (!asScalars && !useInit)
+				Assert.Inconclusive("Unsupported case");
+
+			var ms = new MappingSchema();
+
+			if (asScalars)
+			{
+				ms.AddScalarType(typeof(RecordTests.Struct), DataType.Int32);
+				ms.AddScalarType(typeof(RecordTests.Class), DataType.Int32);
+
+				ms.SetConverter<RecordTests.Struct, DataParameter>(p => new DataParameter(null, p.Value1 + p.Value2));
+				ms.SetConverter<RecordTests.Class, DataParameter>(p => new DataParameter(null, p.Value1 - p.Value2));
+
+				// use long as sqlite returns integers as Int64 values
+				ms.SetConverter<long, RecordTests.Struct>(v => new RecordTests.Struct() { Value1 = (int)v + 4, Value2 = (int)v - 5 });
+				ms.SetConverter<long, RecordTests.Class>(v => new RecordTests.Class() { Value1 = (int)v - 3, Value2 = (int)v + 2 });
+
+				// remote context serialization
+				if (context.IsRemote())
+				{
+					ms.SetConverter<string, RecordTests.Struct>(v => new RecordTests.Struct() { Value1 = int.Parse(v.Split(':')[0]), Value2 = int.Parse(v.Split(':')[1]) });
+					ms.SetConverter<string, RecordTests.Class>(v => new RecordTests.Class() { Value1 = int.Parse(v.Split(':')[0]), Value2 = int.Parse(v.Split(':')[1]) });
+					ms.SetConverter<RecordTests.Struct, string>(v => $"{v.Value1}:{v.Value2}");
+					ms.SetConverter<RecordTests.Class, string>(v => $"{v.Value1}:{v.Value2}");
+				}
+			}
+			else
+			{
+				new FluentMappingBuilder(ms)
+					.Entity<RecordTests.Table>()
+						.Property(e => e.Struct.Value1).HasColumnName("struct_value1")
+						.Property(e => e.Struct.Value2).HasColumnName("struct_value2")
+						.Property(e => e.Class.Value1).HasColumnName("class_value1")
+						.Property(e => e.Class.Value2).HasColumnName("class_value2")
+					.Build()
+					;
+			}
+
+			using var db = GetDataContext(context, ms);
+			using var tb = db.CreateLocalTable<RecordTests.Table>();
+
+			if (useInit)
+			{
+				tb.Insert(() => new RecordTests.Table()
+				{
+					Id = 1,
+					Struct = new RecordTests.Struct()
+					{
+						Value1 = 5,
+						Value2 = 8
+					},
+					Class = new RecordTests.Class()
+					{
+						Value1 = -4,
+						Value2 = -12
+					}
+				});
+			}
+			else
+			{
+				var structValue = new RecordTests.Struct()
+				{
+					Value1 = 5,
+					Value2 = 8
+				};
+				var classValue = new RecordTests.Class()
+				{
+					Value1 = -4,
+					Value2 = -12
+				};
+
+				tb.Insert(() => new RecordTests.Table()
+				{
+					Id = 1,
+					Struct = structValue,
+					Class = classValue
+				});
+			}
+
+			var record = tb.Single();
+			Assert.That(record.Class, Is.Not.Null);
+
+			if (asScalars)
+			{
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(record.Struct.Value1, Is.EqualTo(17));
+					Assert.That(record.Struct.Value2, Is.EqualTo(8));
+					Assert.That(record.Class.Value1, Is.EqualTo(5));
+					Assert.That(record.Class.Value2, Is.EqualTo(10));
+				}
+			}
+			else
+			{
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(record.Struct.Value1, Is.EqualTo(5));
+					Assert.That(record.Struct.Value2, Is.EqualTo(8));
+					Assert.That(record.Class.Value1, Is.EqualTo(-4));
+					Assert.That(record.Class.Value2, Is.EqualTo(-12));
+				}
+			}
+
+			if (useInit)
+			{
+				tb.Update(r => new RecordTests.Table()
+				{
+					Id = 1,
+					Struct = new RecordTests.Struct()
+					{
+						Value1 = 12,
+						Value2 = -11
+					},
+					Class = new RecordTests.Class()
+					{
+						Value1 = -3,
+						Value2 = 5
+					}
+				});
+			}
+			else
+			{
+				var structValue = new RecordTests.Struct()
+				{
+					Value1 = 12,
+					Value2 = -11
+				};
+				var classValue = new RecordTests.Class()
+				{
+					Value1 = -3,
+					Value2 = 5
+				};
+
+				tb.Update(r => new RecordTests.Table()
+				{
+					Id = 1,
+					Struct = structValue,
+					Class = classValue
+				});
+			}
+
+			record = tb.Single();
+
+			if (asScalars)
+			{
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(record.Struct.Value1, Is.EqualTo(5));
+					Assert.That(record.Struct.Value2, Is.EqualTo(-4));
+					Assert.That(record.Class.Value1, Is.EqualTo(-11));
+					Assert.That(record.Class.Value2, Is.EqualTo(-6));
+				}
+			}
+			else
+			{
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(record.Struct.Value1, Is.EqualTo(12));
+					Assert.That(record.Struct.Value2, Is.EqualTo(-11));
+					Assert.That(record.Class.Value1, Is.EqualTo(-3));
+					Assert.That(record.Class.Value2, Is.EqualTo(5));
+				}
+			}
+		}
+		#endregion
+
+		#region Issue 5056
+		static class Issue5056
+		{
+			public sealed class Table
+			{
+				[PrimaryKey]
+				public required int Id { get; init; }
+
+				[ValueConverter(ConverterType = typeof(ComplexTypeConverter))]
+				[Column(DataType = DataType.NVarChar)]
+				public required ComplexType ComplexType { get; init; }
+			}
+
+			[ScalarType]
+			public sealed class ComplexType
+			{
+				public required int Id { get; init; }
+			}
+
+			sealed class ComplexTypeConverter() : ValueConverter<ComplexType, string>(
+				obj => JsonSerializer.Serialize(obj, JsonSerializerOptions.Default),
+				json => JsonSerializer.Deserialize<ComplexType>(json, JsonSerializerOptions.Default)!,
+				false)
+			{
+			}
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/5056")]
+		public void Issue5056Test([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable<Issue5056.Table>();
+
+			tb.Insert(() => new Issue5056.Table()
+			{
+				Id = 1,
+				ComplexType = new Issue5056.ComplexType()
+				{
+					Id = 2,
+				}
+			});
+
+			var inserted = tb.Single();
+
+			Assert.That(inserted.ComplexType.Id, Is.EqualTo(2));
+		}
+
+		#endregion
 	}
 }

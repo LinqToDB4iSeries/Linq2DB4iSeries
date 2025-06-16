@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 
 using LinqToDB;
 using LinqToDB.Common;
@@ -7,14 +8,13 @@ using LinqToDB.Mapping;
 
 using NUnit.Framework;
 
+using Tests.Model;
+
 namespace Tests.xUpdate
 {
-	using Model;
-
 	// Regression tests converted from tests for previous version of Merge API to new API.
 	public partial class MergeTests
 	{
-		// ASE: just fails
 		[Test]
 		public void Merge([MergeDataContextSource(TestProvName.AllSybase)] string context)
 		{
@@ -30,7 +30,6 @@ namespace Tests.xUpdate
 			}
 		}
 
-		// ASE: just fails
 		[Test]
 		public void MergeWithEmptySource([MergeDataContextSource(TestProvName.AllOracle, TestProvName.AllSybase)] string context)
 		{
@@ -38,7 +37,7 @@ namespace Tests.xUpdate
 			{
 				db.GetTable<Person>()
 					.Merge()
-					.Using(Array<Person>.Empty)
+					.Using(Array.Empty<Person>())
 					.OnTargetKey()
 					.UpdateWhenMatched()
 					.InsertWhenNotMatched()
@@ -47,9 +46,9 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void MergeWithDelete([IncludeDataSources(TestProvName.AllSqlServer2008Plus)] string context)
+		public void MergeWithDelete([MergeNotMatchedBySourceDataContextSource(true)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			using (db.BeginTransaction())
 			{
 				db.GetTable<LinqDataTypes2>()
@@ -64,9 +63,9 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void MergeWithDeletePredicate1([IncludeDataSources(TestProvName.AllSqlServer2008Plus)] string context)
+		public void MergeWithDeletePredicate1([MergeNotMatchedBySourceDataContextSource(true)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			using (db.BeginTransaction())
 			{
 				db.GetTable<LinqDataTypes2>()
@@ -81,9 +80,9 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void MergeWithDeletePredicate3([IncludeDataSources(TestProvName.AllSqlServer2008Plus)] string context)
+		public void MergeWithDeletePredicate3([MergeNotMatchedBySourceDataContextSource(true)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			using (db.BeginTransaction())
 			{
 				db.Insert(new Person()
@@ -115,9 +114,9 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void MergeWithDeletePredicate4([IncludeDataSources(TestProvName.AllSqlServer2008Plus)] string context)
+		public void MergeWithDeletePredicate4([MergeNotMatchedBySourceDataContextSource(true)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			using (db.BeginTransaction())
 			{
 				db.Insert(new Person()
@@ -151,9 +150,9 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void MergeWithDeletePredicate5([IncludeDataSources(TestProvName.AllSqlServer2008Plus)] string context)
+		public void MergeWithDeletePredicate5([MergeNotMatchedBySourceDataContextSource(true)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			using (db.BeginTransaction())
 			{
 				db.GetTable<Child>()
@@ -195,7 +194,7 @@ namespace Tests.xUpdate
 		{
 			ResetAllTypesIdentity(context);
 
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			using (db.BeginTransaction())
 			{
 				var id = ConvertTo<int>.From(db.GetTable<AllType>().InsertWithIdentity(() => new AllType
@@ -227,7 +226,7 @@ namespace Tests.xUpdate
 			TestProvName.AllInformix)]
 			string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			using (db.BeginTransaction())
 			{
 				db.GetTable<AllType>()
@@ -265,7 +264,7 @@ namespace Tests.xUpdate
 		{
 			ResetAllTypesIdentity(context);
 
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			using (db.BeginTransaction())
 			{
 				var lastId = db.GetTable<AllType>().Select(_ => _.ID).Max();
@@ -289,10 +288,12 @@ namespace Tests.xUpdate
 				AssertRowCount(1, rows, context);
 
 				var row = db.GetTable<AllType>().OrderByDescending(_ => _.ID).Take(1).Single();
-
-				Assert.AreEqual('\0', row.charDataType);
-				Assert.AreEqual("\0", row.ncharDataType);
-				Assert.AreEqual("test\0it", row.nvarcharDataType);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(row.charDataType, Is.EqualTo('\0'));
+					Assert.That(row.ncharDataType, Is.EqualTo("\0"));
+					Assert.That(row.nvarcharDataType, Is.EqualTo("test\0it"));
+				}
 			}
 		}
 	}

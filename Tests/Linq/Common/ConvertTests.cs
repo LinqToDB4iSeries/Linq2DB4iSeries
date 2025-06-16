@@ -2,7 +2,9 @@
 using System.Data.Linq;
 using System.Data.SqlTypes;
 using System.Globalization;
+
 using LinqToDB.Common;
+using LinqToDB.Internal.Conversion;
 using LinqToDB.Mapping;
 
 using NUnit.Framework;
@@ -18,10 +20,13 @@ namespace Tests.Common
 		[Test]
 		public void SameType()
 		{
-			Assert.AreEqual(1,   ConvertTo<int>.        From(1));
-			Assert.AreEqual("1", ConvertTo<string>.     From("1"));
-			Assert.AreEqual(1,   Convert<int,int>      .From(1));
-			Assert.AreEqual("1", Convert<string,string>.From("1"));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ConvertTo<int>.From(1), Is.EqualTo(1));
+				Assert.That(ConvertTo<string>.From("1"), Is.EqualTo("1"));
+				Assert.That(Convert<int, int>.From(1), Is.EqualTo(1));
+				Assert.That(Convert<string, string>.From("1"), Is.EqualTo("1"));
+			}
 		}
 
 		[Test]
@@ -29,27 +34,27 @@ namespace Tests.Common
 		{
 			Convert<int,string>.Lambda = i => (i * 2).ToString();
 
-			Assert.AreEqual("4", Convert<int,string>.From(2));
+			Assert.That(Convert<int,string>.From(2), Is.EqualTo("4"));
 
 			Convert<int,string>.Expression = i => (i * 3).ToString();
 
-			Assert.AreEqual("9", Convert<int,string>.From(3));
+			Assert.That(Convert<int,string>.From(3), Is.EqualTo("9"));
 
 			Convert<int,string>.Lambda = null;
 
-			Assert.AreEqual("1", Convert<int,string>.From(1));
+			Assert.That(Convert<int,string>.From(1), Is.EqualTo("1"));
 		}
 
 		[Test]
 		public void ObjectToString()
 		{
-			Assert.AreEqual("1", Convert<int,string>.From(1));
+			Assert.That(Convert<int,string>.From(1), Is.EqualTo("1"));
 		}
 
 		[Test]
 		public void ToObject()
 		{
-			Assert.AreEqual(1, ConvertTo<object>.From(1));
+			Assert.That(ConvertTo<object>.From(1), Is.EqualTo(1));
 		}
 
 		enum Enum1
@@ -61,18 +66,21 @@ namespace Tests.Common
 		[Test]
 		public void Nullable()
 		{
-			Assert.AreEqual(null,         Convert<int?,  Enum1?>.From(null));
-			Assert.AreEqual(0,            Convert<int?,  int>.   From(null));
-			Assert.AreEqual(10,           Convert<int,   int?>.  From(10));
-			Assert.AreEqual(Enum1.Value1, Convert<int?,  Enum1>. From(null));
-			Assert.AreEqual(1,            Convert<Enum1, int?>.  From(Enum1.Value2));
-			Assert.AreEqual(null,         Convert<Enum1?,int?>.  From(null));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(Convert<int?, Enum1?>.From(null), Is.Null);
+				Assert.That(Convert<int?, int>.From(null), Is.Zero);
+				Assert.That(Convert<int, int?>.From(10), Is.EqualTo(10));
+				Assert.That(Convert<int?, Enum1>.From(null), Is.EqualTo(Enum1.Value1));
+				Assert.That(Convert<Enum1, int?>.From(Enum1.Value2), Is.EqualTo(1));
+				Assert.That(Convert<Enum1?, int?>.From(null), Is.Null);
+			}
 		}
 
 		[Test]
 		public void Ctor()
 		{
-			Assert.AreEqual(10m, Convert<int,decimal>.From(10));
+			Assert.That(Convert<int,decimal>.From(10), Is.EqualTo(10m));
 		}
 
 		sealed class TestData1
@@ -98,40 +106,54 @@ namespace Tests.Common
 		[Test]
 		public void ConvertTo()
 		{
-			Assert.AreEqual(10, ConvertTo<TestData1>.From(10).Value);
-			Assert.AreEqual(10, ConvertTo<TestData2>.From(10).Value);
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ConvertTo<TestData1>.From(10).Value, Is.EqualTo(10));
+				Assert.That(ConvertTo<TestData2>.From(10).Value, Is.EqualTo(10));
+			}
 		}
 
 		[Test]
 		public void Conversion()
 		{
-			Assert.AreEqual(10,     ConvertTo<int>. From(10.0));
-			Assert.AreEqual(100,    ConvertTo<byte>.From(100));
-			Assert.AreEqual('\x10', ConvertTo<char>.From(0x10));
-			Assert.AreEqual(0x10,   ConvertTo<int>. From('\x10'));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ConvertTo<int>.From(10.0), Is.EqualTo(10));
+				Assert.That(ConvertTo<byte>.From(100), Is.EqualTo(100));
+				Assert.That(ConvertTo<char>.From(0x10), Is.EqualTo('\x10'));
+				Assert.That(ConvertTo<int>.From('\x10'), Is.EqualTo(0x10));
+			}
 		}
 
 		[Test]
 		public void Parse()
 		{
-			Assert.AreEqual(10,                       ConvertTo<int>.     From("10"));
-			Assert.AreEqual(new DateTime(2012, 1, 1), ConvertTo<DateTime>.From("2012-1-1"));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ConvertTo<int>.From("10"), Is.EqualTo(10));
+				Assert.That(ConvertTo<DateTime>.From("2012-1-1"), Is.EqualTo(new DateTime(2012, 1, 1)));
+			}
 		}
 
 		[Test]
 		public void ParseChar()
 		{
-			Assert.AreEqual('\0', ConvertTo<char>.From((string?)null));
-			Assert.AreEqual('\0', ConvertTo<char>.From(""));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ConvertTo<char>.From((string?)null), Is.EqualTo('\0'));
+				Assert.That(ConvertTo<char>.From(""), Is.EqualTo('\0'));
+			}
 		}
 
 		[Test]
 		public void ToStringTest()
 		{
 			Convert<DateTime,string>.Expression = d => d.ToString(DateTimeFormatInfo.InvariantInfo);
-
-			Assert.AreEqual("10",                  ConvertTo<string>.From(10));
-			Assert.AreEqual("01/20/2012 16:20:30", ConvertTo<string>.From(new DateTime(2012, 1, 20, 16, 20, 30, 40, DateTimeKind.Utc)));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ConvertTo<string>.From(10), Is.EqualTo("10"));
+				Assert.That(ConvertTo<string>.From(new DateTime(2012, 1, 20, 16, 20, 30, 40, DateTimeKind.Utc)), Is.EqualTo("01/20/2012 16:20:30"));
+			}
 
 			Convert<DateTime,string>.Expression = null;
 		}
@@ -139,14 +161,14 @@ namespace Tests.Common
 		[Test]
 		public void FromValue()
 		{
-			Assert.AreEqual(10, ConvertTo<int>.From(new SqlInt32(10)));
+			Assert.That(ConvertTo<int>.From(new SqlInt32(10)), Is.EqualTo(10));
 		}
 
 		[Test]
 		public void ToBinary()
 		{
 			const string data = "emHMhse9zrLxj7O/";
-			Assert.AreEqual(Convert.FromBase64String(data), ConvertTo<Binary>.From(data).ToArray());
+			Assert.That(ConvertTo<Binary>.From(data).ToArray(), Is.EqualTo(Convert.FromBase64String(data)));
 		}
 
 		enum Enum2
@@ -164,21 +186,24 @@ namespace Tests.Common
 		[Test]
 		public void EnumValue()
 		{
-			Assert.AreEqual(Enum2.Value1, ConvertTo<Enum2?>.From((int?)1));
-			Assert.AreEqual(Enum2.Value1, ConvertTo<Enum2>. From(Enum2.Value1));
-			Assert.AreEqual(Enum2.Value2, ConvertTo<Enum2>. From(Enum3.Value2));
-			Assert.AreEqual(Enum2.Value1, ConvertTo<Enum2>. From(1));
-			Assert.AreEqual(Enum2.Value1, ConvertTo<Enum2>. From((int?)1));
-			Assert.AreEqual(Enum2.Value1, ConvertTo<Enum2?>.From(1));
-			Assert.AreEqual(Enum3.Value1, ConvertTo<Enum3>. From(1.0));
-			Assert.AreEqual(Enum3.Value1, ConvertTo<Enum3?>.From(1.0));
-			Assert.AreEqual(Enum3.Value1, ConvertTo<Enum3?>.From((double?)1.0));
-			Assert.AreEqual(Enum2.Value1, ConvertTo<Enum2>. From("1"));
-			Assert.AreEqual(Enum2.Value1, ConvertTo<Enum2>. From("+1"));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ConvertTo<Enum2?>.From((int?)1), Is.EqualTo(Enum2.Value1));
+				Assert.That(ConvertTo<Enum2>.From(Enum2.Value1), Is.EqualTo(Enum2.Value1));
+				Assert.That(ConvertTo<Enum2>.From(Enum3.Value2), Is.EqualTo(Enum2.Value2));
+				Assert.That(ConvertTo<Enum2>.From(1), Is.EqualTo(Enum2.Value1));
+				Assert.That(ConvertTo<Enum2>.From((int?)1), Is.EqualTo(Enum2.Value1));
+				Assert.That(ConvertTo<Enum2?>.From(1), Is.EqualTo(Enum2.Value1));
+				Assert.That(ConvertTo<Enum3>.From(1.0), Is.EqualTo(Enum3.Value1));
+				Assert.That(ConvertTo<Enum3?>.From(1.0), Is.EqualTo(Enum3.Value1));
+				Assert.That(ConvertTo<Enum3?>.From((double?)1.0), Is.EqualTo(Enum3.Value1));
+				Assert.That(ConvertTo<Enum2>.From("1"), Is.EqualTo(Enum2.Value1));
+				Assert.That(ConvertTo<Enum2>.From("+1"), Is.EqualTo(Enum2.Value1));
 
-			Assert.AreEqual("Value1", ConvertTo<string>.From(Enum2.Value1));
-			Assert.AreEqual(Enum2.Value1, ConvertTo<Enum2>. From("Value1"));
-			Assert.AreEqual(Enum2.Value2, ConvertTo<Enum2>. From("value2"));
+				Assert.That(ConvertTo<string>.From(Enum2.Value1), Is.EqualTo("Value1"));
+				Assert.That(ConvertTo<Enum2>.From("Value1"), Is.EqualTo(Enum2.Value1));
+				Assert.That(ConvertTo<Enum2>.From("value2"), Is.EqualTo(Enum2.Value2));
+			}
 		}
 
 		enum Enum4
@@ -199,33 +224,40 @@ namespace Tests.Common
 		[Test]
 		public void ConvertFromEnum1()
 		{
-			Assert.AreEqual(15,    ConvertTo<int>.   From(Enum4.Value1));
-			Assert.AreEqual(25,    ConvertTo<int>.   From(Enum4.Value2));
-			Assert.AreEqual(0,     ConvertTo<int>.   From(Enum4.Value3));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ConvertTo<int>.From(Enum4.Value1), Is.EqualTo(15));
+				Assert.That(ConvertTo<int>.From(Enum4.Value2), Is.EqualTo(25));
+				Assert.That(ConvertTo<int>.From(Enum4.Value3), Is.Zero);
 
-			Assert.AreEqual("115", ConvertTo<string>.From(Enum4.Value1));
-			Assert.AreEqual("125", ConvertTo<string>.From(Enum4.Value2));
-			Assert.AreEqual(null,  ConvertTo<string>.From(Enum4.Value3));
+				Assert.That(ConvertTo<string>.From(Enum4.Value1), Is.EqualTo("115"));
+				Assert.That(ConvertTo<string>.From(Enum4.Value2), Is.EqualTo("125"));
+				Assert.That(ConvertTo<string>.From(Enum4.Value3), Is.Null);
+			}
 		}
 
 		[Test]
 		public void ConvertFromEnum2()
 		{
 			var cf = MappingSchema.Default.GetConverter<Enum4,int>()!;
-
-			Assert.AreEqual(15, cf(Enum4.Value1));
-			Assert.AreEqual(25, cf(Enum4.Value2));
-			Assert.AreEqual(0,  cf(Enum4.Value3));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(cf(Enum4.Value1), Is.EqualTo(15));
+				Assert.That(cf(Enum4.Value2), Is.EqualTo(25));
+				Assert.That(cf(Enum4.Value3), Is.Zero);
+			}
 		}
 
 		[Test]
 		public void ConvertFromEnum3()
 		{
 			var cf = new MappingSchema("1").GetConverter<Enum4,int>()!;
-
-			Assert.AreEqual(15, cf(Enum4.Value1));
-			Assert.AreEqual(25, cf(Enum4.Value2));
-			Assert.AreEqual(35, cf(Enum4.Value3));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(cf(Enum4.Value1), Is.EqualTo(15));
+				Assert.That(cf(Enum4.Value2), Is.EqualTo(25));
+				Assert.That(cf(Enum4.Value3), Is.EqualTo(35));
+			}
 		}
 
 		[Test]
@@ -233,17 +265,17 @@ namespace Tests.Common
 		{
 			var cf = MappingSchema.Default.GetConverter<Enum4,int>()!;
 
-			Assert.AreEqual(0,  cf(Enum4.Value3));
+			Assert.That(cf(Enum4.Value3), Is.Zero);
 
 			cf = new MappingSchema("1").GetConverter<Enum4,int>()!;
 
-			Assert.AreEqual(35, cf(Enum4.Value3));
+			Assert.That(cf(Enum4.Value3), Is.EqualTo(35));
 		}
 
 		[Test]
 		public void ConvertToEnum1()
 		{
-			Assert.AreEqual(Enum4.Value2, ConvertTo<Enum4>.From(25));
+			Assert.That(ConvertTo<Enum4>.From(25), Is.EqualTo(Enum4.Value2));
 		}
 
 		enum Enum5
@@ -261,19 +293,19 @@ namespace Tests.Common
 		[Test]
 		public void ConvertToEnum2()
 		{
-			Assert.AreEqual(Enum6.Value2, ConvertTo<Enum6>.From(Enum5.Value1));
+			Assert.That(ConvertTo<Enum6>.From(Enum5.Value1), Is.EqualTo(Enum6.Value2));
 		}
 
 		[Test]
 		public void ConvertToEnum3()
 		{
-			Assert.AreEqual(Enum5.Value2, ConvertTo<Enum5>.From(Enum6.Value1));
+			Assert.That(ConvertTo<Enum5>.From(Enum6.Value1), Is.EqualTo(Enum5.Value2));
 		}
 
 		[Test]
 		public void ConvertToEnum7()
 		{
-			Assert.AreEqual(Enum5.Value2, ConvertTo<Enum5>.From((Enum6?)Enum6.Value1));
+			Assert.That(ConvertTo<Enum5>.From((Enum6?)Enum6.Value1), Is.EqualTo(Enum5.Value2));
 		}
 
 		enum Enum7
@@ -291,13 +323,13 @@ namespace Tests.Common
 		[Test]
 		public void ConvertToEnum8()
 		{
-			Assert.AreEqual(Enum8.Value2, ConvertTo<Enum8>.From(Enum7.Value1));
+			Assert.That(ConvertTo<Enum8>.From(Enum7.Value1), Is.EqualTo(Enum8.Value2));
 		}
 
 		[Test]
 		public void ConvertToEnum9()
 		{
-			Assert.AreEqual(Enum7.Value2, ConvertTo<Enum7>.From(Enum8.Value1));
+			Assert.That(ConvertTo<Enum7>.From(Enum8.Value1), Is.EqualTo(Enum7.Value2));
 		}
 
 		enum Enum9
@@ -313,16 +345,22 @@ namespace Tests.Common
 		[Test]
 		public void ConvertToEnum10()
 		{
-			Assert.AreEqual(Enum9.Value1, ConvertTo<Enum9>.From(1));
-			Assert.AreEqual(Enum9.Value1, ConvertTo<Enum9>.From(10));
-			Assert.AreEqual(Enum9.Value2, ConvertTo<Enum9>.From(2));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ConvertTo<Enum9>.From(1), Is.EqualTo(Enum9.Value1));
+				Assert.That(ConvertTo<Enum9>.From(10), Is.EqualTo(Enum9.Value1));
+				Assert.That(ConvertTo<Enum9>.From(2), Is.EqualTo(Enum9.Value2));
+			}
 		}
 
 		[Test]
 		public void ConvertFromEnum5()
 		{
-			Assert.AreEqual(10, ConvertTo<int>.From(Enum9.Value1));
-			Assert.AreEqual( 2, ConvertTo<int>.From(Enum9.Value2));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ConvertTo<int>.From(Enum9.Value1), Is.EqualTo(10));
+				Assert.That(ConvertTo<int>.From(Enum9.Value2), Is.EqualTo(2));
+			}
 		}
 
 		enum Enum10
@@ -358,9 +396,12 @@ namespace Tests.Common
 		[Test]
 		public void ConvertToEnum11()
 		{
-			Assert.AreEqual(Enum11.Value1, ConvertTo<Enum11>.From(Enum10.Value2));
-			Assert.AreEqual(Enum11.Value2, ConvertTo<Enum11>.From(Enum10.Value1));
-			Assert.AreEqual(Enum11.Value3, ConvertTo<Enum11>.From(Enum10.Value3));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ConvertTo<Enum11>.From(Enum10.Value2), Is.EqualTo(Enum11.Value1));
+				Assert.That(ConvertTo<Enum11>.From(Enum10.Value1), Is.EqualTo(Enum11.Value2));
+				Assert.That(ConvertTo<Enum11>.From(Enum10.Value3), Is.EqualTo(Enum11.Value3));
+			}
 		}
 
 		[Test]
@@ -368,12 +409,10 @@ namespace Tests.Common
 		{
 			var cf = new MappingSchema("1").GetConverter<Enum10,Enum11>()!;
 
-			Assert.Throws(
-				typeof(LinqToDBConvertException),
+			Assert.Throws<LinqToDBConvertException>(
 				() => cf(Enum10.Value2),
 				"Mapping ambiguity. 'Tests.Common.ConvertTest+Enum10.Value1' can be mapped to either 'Tests.Common.ConvertTest+Enum11.Value2' or 'Tests.Common.ConvertTest+Enum11.Value3'.");
-			Assert.Throws(
-				typeof(LinqToDBConvertException),
+			Assert.Throws<LinqToDBConvertException>(
 				() => cf(Enum10.Value1),
 				"Mapping ambiguity. 'Tests.Common.ConvertTest+Enum10.Value1' can be mapped to either 'Tests.Common.ConvertTest+Enum11.Value2' or 'Tests.Common.ConvertTest+Enum11.Value3'.");
 		}
@@ -382,10 +421,12 @@ namespace Tests.Common
 		public void ConvertToEnum13()
 		{
 			var cf = new MappingSchema("2").GetConverter<Enum10,Enum11>()!;
-
-			Assert.AreEqual(Enum11.Value1, cf(Enum10.Value2));
-			Assert.AreEqual(Enum11.Value2, cf(Enum10.Value1));
-			Assert.AreEqual(Enum11.Value3, cf(Enum10.Value4));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(cf(Enum10.Value2), Is.EqualTo(Enum11.Value1));
+				Assert.That(cf(Enum10.Value1), Is.EqualTo(Enum11.Value2));
+				Assert.That(cf(Enum10.Value4), Is.EqualTo(Enum11.Value3));
+			}
 		}
 
 		enum Enum12
@@ -415,8 +456,7 @@ namespace Tests.Common
 		[Test]
 		public void ConvertToEnum14()
 		{
-			Assert.Throws(
-				typeof(LinqToDBConvertException),
+			Assert.Throws<LinqToDBConvertException>(
 				() => ConvertTo<Enum13>.From(Enum12.Value2),
 				"Mapping ambiguity. 'Tests.Common.ConvertTest+Enum12.Value2' can be mapped to either 'Tests.Common.ConvertTest+Enum13.Value1' or 'Tests.Common.ConvertTest+Enum13.Value3'.");
 		}
@@ -431,20 +471,26 @@ namespace Tests.Common
 		[Test]
 		public void ConvertFromNullableEnum1()
 		{
-			Assert.AreEqual("A",  ConvertTo<string>.From((Enum14?)Enum14.AA));
-			Assert.AreEqual(null, ConvertTo<string>.From((Enum14?)null));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ConvertTo<string>.From((Enum14?)Enum14.AA), Is.EqualTo("A"));
+				Assert.That(ConvertTo<string>.From((Enum14?)null), Is.Null);
 
-			Assert.AreEqual("B",  ConvertTo<string>.From((Enum14?)Enum14.BB));
+				Assert.That(ConvertTo<string>.From((Enum14?)Enum14.BB), Is.EqualTo("B"));
 
-			Assert.AreEqual("B",  new MappingSchema().   GetConverter<Enum14?,string>()!(Enum14.BB));
-			Assert.AreEqual("C",  new MappingSchema("1").GetConverter<Enum14?,string>()!(Enum14.BB));
+				Assert.That(new MappingSchema().GetConverter<Enum14?, string>()!(Enum14.BB), Is.EqualTo("B"));
+				Assert.That(new MappingSchema("1").GetConverter<Enum14?, string>()!(Enum14.BB), Is.EqualTo("C"));
+			}
 		}
 
 		[Test]
 		public void ConvertToNullableEnum1()
 		{
-			Assert.AreEqual(Enum14.BB,  new MappingSchema().   GetConverter<string,Enum14?>()!("B"));
-			Assert.AreEqual(Enum14.BB,  new MappingSchema("1").GetConverter<string,Enum14?>()!("C"));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(new MappingSchema().GetConverter<string, Enum14?>()!("B"), Is.EqualTo(Enum14.BB));
+				Assert.That(new MappingSchema("1").GetConverter<string, Enum14?>()!("C"), Is.EqualTo(Enum14.BB));
+			}
 		}
 
 		enum Enum15
@@ -456,9 +502,12 @@ namespace Tests.Common
 		[Test]
 		public void ConvertFromNullableEnum2()
 		{
-			Assert.AreEqual(10,   ConvertTo<int>. From((Enum15?)Enum15.AA));
-			Assert.AreEqual(0,    ConvertTo<int>. From((Enum15?)null));
-			Assert.AreEqual(null, ConvertTo<int?>.From((Enum15?)null));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ConvertTo<int>.From((Enum15?)Enum15.AA), Is.EqualTo(10));
+				Assert.That(ConvertTo<int>.From((Enum15?)null), Is.Zero);
+				Assert.That(ConvertTo<int?>.From((Enum15?)null), Is.Null);
+			}
 		}
 
 		[Test]
@@ -469,21 +518,25 @@ namespace Tests.Common
 
 			var convertFromDecimalFunc1 = (Func<decimal, CustomMoneyType>)convertFromDecimalLambdaExpression1.CompileExpression();
 			var convertFromDecimalFunc2 = (Func<decimal, CustomMoneyType>)convertFromDecimalLambdaExpression2!.CompileExpression();
-
-			Assert.AreEqual(new CustomMoneyType { Amount = 1.11m }, convertFromDecimalFunc1(1.11m));
-			Assert.AreEqual(new CustomMoneyType { Amount = 1.11m }, convertFromDecimalFunc2(1.11m));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(convertFromDecimalFunc1(1.11m), Is.EqualTo(new CustomMoneyType { Amount = 1.11m }));
+				Assert.That(convertFromDecimalFunc2(1.11m), Is.EqualTo(new CustomMoneyType { Amount = 1.11m }));
+			}
 
 			var (convertFromNullableDecimalLambdaExpression1, convertFromNullableDecimalLambdaExpression2, b2)
 				= ConvertBuilder.GetConverter(null, typeof(decimal?), typeof(CustomMoneyType));
 
 			var convertFromNullableDecimalFunc1 = (Func<decimal?, CustomMoneyType>)convertFromNullableDecimalLambdaExpression1.CompileExpression();
 			var convertFromNullableDecimalFunc2 = (Func<decimal?, CustomMoneyType>)convertFromNullableDecimalLambdaExpression2!.CompileExpression();
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(convertFromNullableDecimalFunc1(1.11m), Is.EqualTo(new CustomMoneyType { Amount = 1.11m }));
+				Assert.That(convertFromNullableDecimalFunc2(1.11m), Is.EqualTo(new CustomMoneyType { Amount = 1.11m }));
 
-			Assert.AreEqual(new CustomMoneyType { Amount = 1.11m }, convertFromNullableDecimalFunc1(1.11m));
-			Assert.AreEqual(new CustomMoneyType { Amount = 1.11m }, convertFromNullableDecimalFunc2(1.11m));
-
-			Assert.AreEqual(new CustomMoneyType { Amount = null }, convertFromNullableDecimalFunc1(null));
-			Assert.AreEqual(new CustomMoneyType { Amount = null }, convertFromNullableDecimalFunc2(null));
+				Assert.That(convertFromNullableDecimalFunc1(null), Is.EqualTo(new CustomMoneyType { Amount = null }));
+				Assert.That(convertFromNullableDecimalFunc2(null), Is.EqualTo(new CustomMoneyType { Amount = null }));
+			}
 		}
 
 		private struct CustomMoneyType

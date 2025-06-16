@@ -7,13 +7,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
 {
 	internal static class ExpressionTools
 	{
-		public static readonly Expression<Func<string, string>> TrimStringExpression
+		public static readonly Expression<Func<string, string?>> TrimStringExpression
 				= x => ReaderExpressionTools.TrimString(x);
 
 		public static LambdaExpressionBuilder<T> FromMethodInvocation<T>(Type type, string method)
 		{
 			var parameter = Expression.Parameter(type);
-			var body = Expression.Call(parameter, type.GetMethod(method));
+			var methodInfo = type.GetMethod(method) ?? throw new InvalidOperationException("Method not found in type");
+			var body = Expression.Call(parameter, methodInfo);
 			return new LambdaExpressionBuilder<T>(body, new[] { parameter });
 		}
 

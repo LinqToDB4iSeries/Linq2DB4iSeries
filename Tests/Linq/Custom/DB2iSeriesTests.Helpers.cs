@@ -5,8 +5,6 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 
-#nullable disable
-
 namespace Tests.DataProvider
 {
 	public partial class DB2iSeriesTests
@@ -168,7 +166,7 @@ namespace Tests.DataProvider
 				case DataType.Decimal:
 					if (expectedValue != null)
 					{
-						var val = expectedValue.ToString();
+						var val = expectedValue.ToString()!;
 						int precision = val.Replace("-", "").Replace(".", "").Length;
 						int point = val.IndexOf(".");
 						int scale = point < 0 ? 0 : val.Length - point;

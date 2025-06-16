@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 using LinqToDB;
+using LinqToDB.Async;
 using LinqToDB.Data;
 using LinqToDB.Mapping;
 
@@ -16,10 +17,10 @@ namespace Tests.xUpdate
 	{
 		sealed class TestTable
 		{
-			public int       ID;
-			public string?   Field1;
-			public string?   Field2;
-			public DateTime? CreatedOn;
+			public int       ID        { get; set; }
+			public string?   Field1    { get; set; }
+			public string?   Field2    { get; set; }
+			public DateTime? CreatedOn { get; set; }
 		}
 
 		[Test]
@@ -168,6 +169,104 @@ namespace Tests.xUpdate
 			}
 		}
 
+		[Test]
+		public void CreateLocalTempTable2([IncludeDataSources(TestProvName.AllSqlServer2008Plus/*, ProviderName.DB2*/)] string context)
+		{
+			var ms = new MappingSchema();
+			new FluentMappingBuilder(ms)
+				.Entity<TestTable>()
+					.Property(t => t.Field1)
+						.HasLength(50)
+				.Build();
+
+			using (var db = GetDataContext(context, ms))
+			{
+				const string tableName = "TestTable";
+
+				try
+				{
+					switch (context)
+					{
+						case string when context.IsAnyOf(TestProvName.AllSqlServer2008Plus): db.DropTable<TestTable>("#" + tableName); break;
+						default: db.DropTable<TestTable>(tableName); break;
+					}
+				}
+				catch
+				{
+				}
+
+				ITable<TestTable> table;
+
+				switch (context)
+				{
+					case string when context.IsAnyOf(TestProvName.AllSqlServer2008Plus):
+						table = db.CreateTable<TestTable>(new CreateTableOptions(TableName: "#" + tableName));
+						break;
+					case ProviderName.DB2:
+						table = db.CreateTable<TestTable>(new CreateTableOptions(StatementHeader: "DECLARE GLOBAL TEMPORARY TABLE SESSION.{0}"));
+						break;
+					default:
+						throw new InvalidOperationException();
+				}
+
+				var list = table.ToList();
+
+				table.Drop();
+			}
+		}
+
+		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/58", Configuration = ProviderName.ClickHouseOctonica)]
+		[Test]
+		public async Task CreateLocalTempTable2Async([IncludeDataSources(
+			TestProvName.AllSQLite,
+			TestProvName.AllClickHouse,
+			TestProvName.AllSqlServer2008Plus /*, ProviderName.DB2*/)]
+			string context)
+		{
+			var ms = new MappingSchema();
+			new FluentMappingBuilder(ms)
+				.Entity<TestTable>()
+					.Property(t => t.Field1)
+						.HasLength(50)
+				.Build();
+
+			using (var db = GetDataContext(context, ms))
+			{
+				const string tableName = "TestTable";
+
+				try
+				{
+					switch (context)
+					{
+						case string when context.IsAnyOf(TestProvName.AllSqlServer2008Plus): await db.DropTableAsync<TestTable>("#" + tableName); break;
+						default: await db.DropTableAsync<TestTable>(tableName); break;
+					}
+				}
+				catch
+				{
+				}
+
+				ITable<TestTable> table;
+
+				switch (context)
+				{
+					case string when context.IsAnyOf(TestProvName.AllSqlServer2008Plus):
+						table = await db.CreateTableAsync<TestTable>(new CreateTableOptions(TableName: "#" + tableName));
+						break;
+					case ProviderName.DB2:
+						table = await db.CreateTableAsync<TestTable>(new CreateTableOptions(StatementHeader: "DECLARE GLOBAL TEMPORARY TABLE SESSION.{0}"));
+						break;
+					default:
+						table = await db.CreateTableAsync<TestTable>(new CreateTableOptions(TableName: tableName));
+						break;
+				}
+
+				var list = await table.ToListAsync();
+
+				await table.DropAsync();
+			}
+		}
+
 		enum FieldType1
 		{
 			[MapValue(1)] Value1,
@@ -208,7 +307,7 @@ namespace Tests.xUpdate
 				{
 					db.DropTable<TestEnumTable>();
 				}
-				catch (Exception)
+				catch
 				{
 				}
 
@@ -289,9 +388,11 @@ namespace Tests.xUpdate
 				});
 
 				var qq = conn.GetTable<Aa>().ToList().First();
-
-				Assert.That(qq.bb, Is.EqualTo(99));
-				Assert.That(qq.cc, Is.EqualTo("hallo"));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(qq.bb, Is.EqualTo(99));
+					Assert.That(qq.cc, Is.EqualTo("hallo"));
+				}
 
 				conn.DropTable<Qq>();
 			}
@@ -336,5 +437,89 @@ namespace Tests.xUpdate
 				table.DropTable();
 			}
 		}
+
+		#region Issue 3223
+		[ActiveIssue]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/3223")]
+		public void Issue3223Test([DataSources] string context)
+		{
+			var ms = new MappingSchema();
+			ms.SetDataType(typeof(Enum), DataType.VarChar);
+
+			using var db = GetDataContext(context, ms);
+			using var tb = db.CreateLocalTable(Issue3223Table.Data);
+
+			var res = db.GetTable<Issue3223Raw>().OrderBy(r => r.Id).ToArray();
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(res[0].Value, Is.EqualTo("Value1"));
+				Assert.That(res[1].Value, Is.EqualTo("Value2"));
+				Assert.That(res[2].Value, Is.Null);
+			}
+		}
+
+		[Table("Issue3223Table")]
+		sealed class Issue3223Raw
+		{
+			[PrimaryKey] public int Id { get; set; }
+			[Column] public string? Value { get; set; }
+		}
+
+		[Table("Issue3223Table")]
+		sealed class Issue3223Table
+		{
+			[PrimaryKey] public int Id { get; set; }
+			[Column] public Issue3223Enum? Value { get; set; }
+
+			public static readonly Issue3223Table[] Data =
+			[
+				new Issue3223Table() { Id = 1, Value = Issue3223Enum.Value1 },
+				new Issue3223Table() { Id = 2, Value = Issue3223Enum.Value2 },
+				new Issue3223Table() { Id = 3 }
+			];
+		}
+
+		enum Issue3223Enum
+		{
+			Value1,
+			Value2
+		}
+		#endregion
+
+		[Table(nameof(Issue4671Entity))]
+		public class Issue4671Entity
+		{
+			[Identity, PrimaryKey]
+			public int Id { get; set; }
+
+			[Column]
+			public int Value { get; set; }
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4671")]
+		public void Issue4671Test([DataSources(false, TestProvName.AllClickHouse)] string context)
+		{
+			using var db = GetDataContext(context);
+
+			var ed = db.MappingSchema.GetEntityDescriptor(typeof(Issue4671Entity));
+			var column = ed.Columns.Single(c => c.ColumnName == nameof(Issue4671Entity.Id));
+
+			Assert.That(column.IsIdentity);
+
+			using var t1 = db.CreateLocalTable<Issue4671Entity>();
+			using var t2 = db.CreateTempTable<Issue4671Entity>($"{nameof(Issue4671Entity)}TMP");
+
+			t1.Insert(() => new Issue4671Entity() { Value = 1 });
+			t2.Insert(() => new Issue4671Entity() { Value = 2 });
+
+			var res1 = t1.Single();
+			var res2 = t2.Single();
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(res1.Id, Is.EqualTo(1));
+				Assert.That(res2.Id, Is.EqualTo(1));
+			}
+		}
+
 	}
 }

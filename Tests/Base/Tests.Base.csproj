@@ -1,43 +1,37 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-	<Import Project="..\..\Build\linq2db.Tests.props" />
-
+	
 	<PropertyGroup>
 		<AssemblyName>linq2db.Tests.Base</AssemblyName>
 		<RootNamespace>Tests</RootNamespace>
-		<OutputType>Library</OutputType>
 	</PropertyGroup>
-
+	
 	<ItemGroup>
+		<ProjectCapability Remove="TestContainer" />
+		
 		<ProjectReference Include="..\Model\Tests.Model.csproj" />
 
 		<PackageReference Include="NUnit" />
-		<PackageReference Include="MiniProfiler.Shared" />
+		<PackageReference Include="NUnit.Analyzers" />
+		<PackageReference Include="linq2db.Remote.SignalR.Server" />
+		
 	</ItemGroup>
 
-	<ItemGroup>
-		<ProjectCapability Remove="TestContainer" />
-	</ItemGroup>
-
-	<ItemGroup Condition="'$(TargetFramework)' == 'net472' ">
+	<ItemGroup Condition="'$(TargetFramework)' == 'net462' ">
 		<Reference Include="Microsoft.CSharp" />
 		<Reference Include="System.ServiceModel" />
 
+		<PackageReference Include="MiniProfiler.Shared" />
 		<PackageReference Include="System.Text.Json" />
+		<PackageReference Include="Microsoft.AspNetCore" />
+		<PackageReference Include="Microsoft.AspNetCore.SignalR" />
 	</ItemGroup>
 
-	<ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.1' ">
-		<!--netcoreapp31 needed due to very old transient depndency from oracle 2.19 provider-->
-		<PackageReference Include="System.Text.Json" />
-	</ItemGroup>
-
-	<ItemGroup Condition=" '$(TargetFramework)' != 'net472' ">
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net462' ">
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+		
 		<PackageReference Include="protobuf-net.Grpc.AspNetCore" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<Compile Update="TestProviders\TestNoopProvider.cs">
-			<SubType>Source</SubType>
-		</Compile>
+		<PackageReference Include="MiniProfiler.Minimal" />
+		<PackageReference Include="linq2db.Remote.HttpClient.Sever" />
 	</ItemGroup>
 
 </Project>

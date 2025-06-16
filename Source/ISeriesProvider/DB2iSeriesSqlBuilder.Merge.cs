@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
-using System.Data.SqlTypes;
-using System.Linq;
-using LinqToDB.SqlQuery;
+﻿using System.Linq;
+using System.Collections.Generic;
+
+using LinqToDB.Internal.SqlQuery;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
@@ -14,10 +14,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			base.BuildMergeStatement(merge);
 		}
-
+		
 		//This is redundand as type hints/casting is always handled by the provider because iDB2 requires them everywhere
 		//All tests pass if this is commented out. Consider removing in a later version.
-		protected override bool IsSqlValuesTableValueTypeRequired(SqlValuesTable source, IReadOnlyList<ISqlExpression[]> rows, int row, int column)
+		protected override bool IsSqlValuesTableValueTypeRequired(SqlValuesTable source, IReadOnlyList<List<ISqlExpression>> rows, int row, int column)
 		{
 			if (row == -1)
 				return true;
@@ -40,10 +40,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			// we add type hints to first row only
 			if (row != 0)
 				return false;
-
+			
 			// add type hint only if column contains NULL in all rows
 			return rows.All(r => r[column] is SqlValue value && (value.Value == null
-				|| (value is INullable nullable && nullable.IsNull)));
+				|| value.IsNullValue()));
 		}
 	}
 }

@@ -1,14 +1,14 @@
-﻿using LinqToDB;
-using LinqToDB.DataProvider.SQLite;
-using LinqToDB.Mapping;
-using NUnit.Framework;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Tests.Model;
-using static Tests.xUpdate.MergeTests;
+
+using LinqToDB;
+using LinqToDB.DataProvider.SQLite;
+using LinqToDB.Mapping;
+
+using NUnit.Framework;
 
 namespace Tests.UserTests
 {
@@ -52,21 +52,22 @@ namespace Tests.UserTests
 		[Table("InsertTable1398")]
 		internal sealed class InsertTable
 		{
-			[Column(CanBeNull = false)]
+			[Column(CanBeNull = false), PrimaryKey]
 			public int Value { get; set; }
 		}
 
 		// TODO: disabled providers lacks connections
+		// Access: works, but unstable due to lock conflicts in access
 		[Test]
-		public void TestInsert([DataSources(false, TestProvName.AllFirebird, TestProvName.AllSybase, TestProvName.AllInformix, TestProvName.AllOracle12, TestProvName.AllSQLiteClassic)] string context)
+		public void TestInsert([DataSources(false, TestProvName.AllAccess, TestProvName.AllFirebird, TestProvName.AllSybase, TestProvName.AllInformix, TestProvName.AllOracle12, TestProvName.AllSQLiteClassic)] string context)
 		{
 			const int recordsCount = 20;
 
 			// sqlite connection pooling is not compatible with tested template
-			SQLiteTools.ClearAllPools();
+			SQLiteTools.ClearAllPools(provider: null);
 
 			using (new DisableBaseline("Multi-threading"))
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			using (db.CreateLocalTable<InsertTable>())
 			{
 				var tasks = new List<Task>();
@@ -79,13 +80,13 @@ namespace Tests.UserTests
 
 				Task.WaitAll(tasks.ToArray());
 
-				Assert.AreEqual(db.GetTable<InsertTable>().Count(), db.GetTable<InsertTable>().GroupBy(_ => _.Value).Count());
+				Assert.That(db.GetTable<InsertTable>().GroupBy(_ => _.Value).Count(), Is.EqualTo(db.GetTable<InsertTable>().Count()));
 			}
 		}
 
 		private void Insert(string context, int value)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				db.GetTable<InsertTable>().Insert(() => new InsertTable { Value = value });
 			}

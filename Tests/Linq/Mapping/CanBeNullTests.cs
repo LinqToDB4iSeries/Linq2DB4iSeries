@@ -1,9 +1,12 @@
-﻿using FluentAssertions;
+﻿using System.Collections.Generic;
+using System.Linq;
+
 using LinqToDB.Common;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
-using System.Collections.Generic;
-using System.Linq;
+
+using Shouldly;
 
 namespace Tests.Mapping
 {
@@ -77,7 +80,6 @@ namespace Tests.Mapping
 			public int Id { get; set; }
 		}
 
-#if NET461_OR_GREATER || NETSTANDARD2_0_OR_GREATER || NETCOREAPP2_0_OR_GREATER
 		[Test]
 		public void InferFromMetadata()
 		{
@@ -132,7 +134,6 @@ namespace Tests.Mapping
 				("C1", 'A', true),
 			});
 		}
-#endif
 
 		[Test]
 		public void DefaultValues()
@@ -158,10 +159,10 @@ namespace Tests.Mapping
 			{
 				if (isCol == 'C')
 					e.Columns.Single(c => c.MemberName == key)
-					 .CanBeNull.Should().Be(expected, "column {0}", key);
+					 .CanBeNull.ShouldBe(expected, $"column {key}");
 				else
 					e.Associations.Single(a => a.MemberInfo.Name == key)
-					 .CanBeNull.Should().Be(expected, "association {0}", key);
+					 .CanBeNull.ShouldBe(expected, $"association {key}");
 			}
 		}
 	}

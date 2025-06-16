@@ -1,6 +1,8 @@
 ﻿using System.Linq;
+
 using LinqToDB;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -19,7 +21,7 @@ namespace Tests.UserTests
 		{
 			[Column]
 			int? ID { get; set; }
-			[Column]
+			[PrimaryKey]
 			int DurationID { get; set; }
 			[Column]
 			int DurationInterval { get; set; }
@@ -52,11 +54,14 @@ namespace Tests.UserTests
 
 					var items = query.ToList();
 
-					Assert.AreEqual(1, items.Count);
-					Assert.AreEqual(1, items[0].PersonID);
-					Assert.AreEqual(2, items[0].DurationID);
-					Assert.AreEqual(3, items[0].ID);
-					Assert.AreEqual(4, items[0].DurationInterval);
+					Assert.That(items, Has.Count.EqualTo(1));
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(items[0].PersonID, Is.EqualTo(1));
+						Assert.That(items[0].DurationID, Is.EqualTo(2));
+						Assert.That(items[0].ID, Is.EqualTo(3));
+						Assert.That(items[0].DurationInterval, Is.EqualTo(4));
+					}
 				}
 			}
 		}

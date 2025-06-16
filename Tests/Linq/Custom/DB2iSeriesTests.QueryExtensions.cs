@@ -3,13 +3,11 @@ using LinqToDB;
 using LinqToDB.Data;
 using LinqToDB.DataProvider.DB2iSeries;
 
-#nullable disable
-
 namespace Tests.DataProvider
 {
 	static class DB2iSeriesTestQueryExtensions
 	{
-		public static T ExecuteScalar<T>(this DataConnection connection, string value, string castTo = null)
+		public static T ExecuteScalar<T>(this DataConnection connection, string value, string? castTo = null)
 			=> connection.Execute<T>(GetScalarQuery(value, castTo));
 
 
@@ -32,7 +30,7 @@ namespace Tests.DataProvider
 			if (dataType.HasValue)
 				dataParameter.DataType = dataType.Value;
 
-			return connection.Execute<T>(GetScalarParameterQuery(dataParameter.Name, parameterType), dataParameter);
+			return connection.Execute<T>(GetScalarParameterQuery(dataParameter.Name!, parameterType), dataParameter);
 		}
 
 		public static T ExecuteScalarParameterObject<T>(this DataConnection connection, string parameterName, string parameterType, object parameterValuesObject)
@@ -52,7 +50,7 @@ namespace Tests.DataProvider
 			return connection.Execute<T>(GetScalarQuery(expression), parameterValuesObject);
 		}
 
-		private static string GetScalarQuery(string value, string castTo = null)
+		private static string GetScalarQuery(string value, string? castTo = null)
 		{
 			var sb = new StringBuilder().Append("SELECT ");
 			if (!string.IsNullOrEmpty(castTo))
@@ -77,7 +75,7 @@ namespace Tests.DataProvider
 
 		public static string AsQuoted(this string s) => $"'{s}'";
 
-		public static string GetParameterMarker(this DataConnection dataConnection, string parameterName, string castTo = null)
+		public static string GetParameterMarker(this DataConnection dataConnection, string parameterName, string? castTo = null)
 		{
 			return GetValueSql(
 				dataConnection.DataProvider is DB2iSeriesDataProvider iSeriesDataProvider
@@ -86,7 +84,7 @@ namespace Tests.DataProvider
 				? "?" : parameterName, castTo);
 		}
 
-		public static string GetValueSql(string expression, string castTo = null)
+		public static string GetValueSql(string expression, string? castTo = null)
 		{
 			var sb = new StringBuilder();
 			if (!string.IsNullOrEmpty(castTo))

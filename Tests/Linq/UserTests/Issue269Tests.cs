@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
+
 using LinqToDB;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -30,6 +32,7 @@ namespace Tests.UserTests
 			}
 		}
 
+		[YdbMemberNotFound]
 		[Test]
 		public void TestTake([TestDataContextSource(TestProvName.AllClickHouse)] string context)
 		{
@@ -55,6 +58,7 @@ namespace Tests.UserTests
 			}
 		}
 
+		[YdbMemberNotFound]
 		[Test]
 		public void TestDistinct([TestDataContextSource(TestProvName.AllClickHouse)] string context)
 		{
@@ -69,7 +73,7 @@ namespace Tests.UserTests
 						.Any(_ => _.Contains("with")));
 
 				// DISTINCT should be optimized out
-//				Assert.That(q.EnumQueries().All(x => !x.Select.IsDistinct), Is.True);
+				Assert.That(q.EnumQueries().All(x => !x.Select.IsDistinct), Is.True);
 
 				var e = Patient
 					.Where(pat => Person
@@ -84,7 +88,7 @@ namespace Tests.UserTests
 		}
 
 		[Test]
-		public void TestSkipDistinct([TestDataContextSource(TestProvName.AllClickHouse)] string context)
+		public void TestSkipDistinct([TestDataContextSource(TestProvName.AllClickHouse, ProviderName.Ydb)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -111,7 +115,7 @@ namespace Tests.UserTests
 		}
 
 		[Test]
-		public void TestDistinctSkip([TestDataContextSource(TestProvName.AllClickHouse)] string context)
+		public void TestDistinctSkip([TestDataContextSource(TestProvName.AllClickHouse, ProviderName.Ydb)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -138,7 +142,7 @@ namespace Tests.UserTests
 		}
 
 		[Test]
-		public void TestSkip([TestDataContextSource(TestProvName.AllClickHouse)] string context)
+		public void TestSkip([TestDataContextSource(TestProvName.AllClickHouse, ProviderName.Ydb)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{

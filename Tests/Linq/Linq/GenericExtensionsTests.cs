@@ -4,15 +4,15 @@ using System.Linq;
 using System.Reflection;
 
 using LinqToDB;
-using LinqToDB.Common.Internal;
+using LinqToDB.Internal.Common;
 using LinqToDB.Mapping;
 
 using NUnit.Framework;
 
+using Tests.Model;
+
 namespace Tests.Linq
 {
-	using Model;
-
 	[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
 	public class ExtensionChoiceAttribute : MappingAttribute
 	{
@@ -57,7 +57,7 @@ namespace Tests.Linq
 				found = found.Where(f => f.Types.Any(t => t != null)).ToList();
 
 			if (found.Count == 0)
-				throw new InvalidOperationException("Can not deduce pattern for types sequence: " +
+				throw new InvalidOperationException("Cannot deduce pattern for types sequence: " +
 				                                    string.Join(", ", current.Select(t => t.Name)));
 
 			if (found.Count > 1)
@@ -68,7 +68,7 @@ namespace Tests.Linq
 			return found[0].Expression;
 		}
 
-		public void Build(Sql.ISqExtensionBuilder builder)
+		public void Build(Sql.ISqlExtensionBuilder builder)
 		{
 			var method = builder.Member as MethodInfo;
 
@@ -122,16 +122,18 @@ namespace Tests.Linq
 
 						R9 = Sql.Ext.TestGenericExpression<byte, long>(123, 45)
 					}).First();
-
-				Assert.AreEqual("T5=(CHAR: X, STRING: some string)", result.R1);
-				Assert.AreEqual("T5=(CHAR: null, STRING: another string)", result.R2);
-				Assert.AreEqual(null, result.R3);
-				Assert.AreEqual("T3=(BYTE: 123, INT: 456)", result.R4);
-				Assert.AreEqual("T3=(BYTE: 123, INT: null)", result.R5);
-				Assert.AreEqual("T4=(BYTE: 123, INT: 456)", result.R6);
-				Assert.AreEqual("T2=(BYTE: null)", result.R7);
-				Assert.AreEqual("T2=(BYTE: 45)", result.R8);
-				Assert.AreEqual("T1=UNSUPPORTED PARAMETERS", result.R9);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result.R1, Is.EqualTo("T5=(CHAR: X, STRING: some string)"));
+					Assert.That(result.R2, Is.EqualTo("T5=(CHAR: null, STRING: another string)"));
+					Assert.That(result.R3, Is.Null);
+					Assert.That(result.R4, Is.EqualTo("T3=(BYTE: 123, INT: 456)"));
+					Assert.That(result.R5, Is.EqualTo("T3=(BYTE: 123, INT: null)"));
+					Assert.That(result.R6, Is.EqualTo("T4=(BYTE: 123, INT: 456)"));
+					Assert.That(result.R7, Is.EqualTo("T2=(BYTE: null)"));
+					Assert.That(result.R8, Is.EqualTo("T2=(BYTE: 45)"));
+					Assert.That(result.R9, Is.EqualTo("T1=UNSUPPORTED PARAMETERS"));
+				}
 			}
 		}
 	}

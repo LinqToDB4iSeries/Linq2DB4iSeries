@@ -1,5 +1,7 @@
 ﻿using System.Linq;
+
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -36,7 +38,7 @@ namespace Tests.UserTests
 					select u.Id;
 
 				var ids1 = query.ToArray();
-				Assert.That(ids1.Length, Is.EqualTo(1));
+				Assert.That(ids1, Has.Length.EqualTo(1));
 			}
 		}
 	}

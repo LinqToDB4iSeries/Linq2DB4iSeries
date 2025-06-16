@@ -1,10 +1,14 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
-using FluentAssertions;
+
 using LinqToDB;
 using LinqToDB.Data;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
+
+using Shouldly;
 
 namespace Tests.UserTests
 {
@@ -42,11 +46,12 @@ namespace Tests.UserTests
 				.Set(r => r.t.Sum, r => r.t.Sum + r.eg.SumAggr)
 				.UpdateAsync();
 
-			db.LastQuery.Should().NotContain("JOIN");
+			db.LastQuery!.ShouldNotContain("JOIN");
 		}
 
+		[Obsolete("Remove test after API removed")]
 		[Test]
-		public async Task UpdateByOtherTable([IncludeDataSources(TestProvName.AllPostgreSQL)] string context)
+		public async Task UpdateByOtherTableOld([IncludeDataSources(TestProvName.AllPostgreSQL)] string context)
 		{
 			using var db      = (DataConnection)GetDataContext(context);
 			using var totals  = db.CreateLocalTable<Total>();
@@ -62,7 +67,50 @@ namespace Tests.UserTests
 				.UpdateAsync(totals, g =>
 					new Total { Sum = g.OldSum + g.SumAggr });
 
-				db.LastQuery.Should().NotContain("JOIN");
+				db.LastQuery!.ShouldNotContain("JOIN");
+		}
+
+		[Test]
+		public async Task UpdateByOtherTable([IncludeDataSources(TestProvName.AllPostgreSQL)] string context)
+		{
+			using var db      = (DataConnection)GetDataContext(context);
+			using var totals  = db.CreateLocalTable<Total>();
+			using var entries = db.CreateLocalTable<Entry>();
+
+			await totals.InnerJoin(
+					entries
+						.GroupBy(e => e.TotalId,
+							(totalId, en) => new { TotalId = totalId, SumAggr = en.Sum(i => i.Sum) }),
+					(t, eg) => t.Id == eg.TotalId, (t, eg) => new { t, eg.SumAggr }
+				)
+				.Where(r => r.t.Label == "spendings")
+				.UpdateAsync(q => q.t, g =>
+					new Total { Sum = g.t.Sum + g.SumAggr });
+
+			db.LastQuery!.ShouldNotContain("JOIN");
+		}
+
+		[Obsolete("Remove test after API removed")]
+		[Test]
+		public async Task UpdateByOtherTableWithJoinOld([IncludeDataSources(TestProvName.AllPostgreSQL)] string context)
+		{
+			using var db      = (DataConnection)GetDataContext(context);
+			using var totals  = db.CreateLocalTable<Total>();
+			using var entries = db.CreateLocalTable<Entry>();
+
+			await
+				entries
+					.GroupBy(e => e.TotalId, (totalId, en) => new { TotalId = totalId, SumAggr = en.Sum(i => i.Sum) })
+					.InnerJoin(totals, (eg, t) =>
+						t.Id == eg.TotalId, (eg, t) => new { OldSum = t.Sum, eg.SumAggr, t.Label })
+					.Where(r => r.Label == "spendings")
+					.UpdateAsync(totals, g =>
+						new Total
+						{
+							Sum = g.OldSum + g.SumAggr
+						});
+
+			db.LastQuery!.ShouldNotContain("JOIN");
 		}
 
 		[Test]
@@ -76,15 +124,15 @@ namespace Tests.UserTests
 				entries
 					.GroupBy(e => e.TotalId, (totalId, en) => new { TotalId = totalId, SumAggr = en.Sum(i => i.Sum) })
 					.InnerJoin(totals, (eg, t) =>
-						t.Id == eg.TotalId, (eg, t) => new {  OldSum = t.Sum, eg.SumAggr, t.Label })
-					.Where(r => r.Label == "spendings")
-					.UpdateAsync(totals, g =>
+						t.Id == eg.TotalId, (eg, t) => new { t, eg.SumAggr })
+					.Where(r => r.t.Label == "spendings")
+					.UpdateAsync(q => q.t, g =>
 						new Total
 						{
-							Sum = g.OldSum + g.SumAggr
+							Sum = g.t.Sum + g.SumAggr
 						});
 
-			db.LastQuery.Should().NotContain("JOIN");
+			db.LastQuery!.ShouldNotContain("JOIN");
 		}
 	}
 }

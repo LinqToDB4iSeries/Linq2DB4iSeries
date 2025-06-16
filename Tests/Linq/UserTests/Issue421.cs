@@ -51,7 +51,6 @@ namespace Tests.UserTests
 			}
 		}
 
-
 		[Test]
 		public void Test2([DataSources] string context)
 		{
@@ -86,7 +85,6 @@ namespace Tests.UserTests
 			using (var db = GetDataContext(context))
 			using (db.CreateLocalTable<BlobClass>())
 			{
-
 				var e = new BlobClass() {Id = 1, BlobValue = new byte[] {1, 2, 3}};
 
 				db.Insert(e);
@@ -103,11 +101,10 @@ namespace Tests.UserTests
 			}
 		}
 
-
 		[Test]
 		public void Test4([DataSources] string context)
 		{
-			var tableName = nameof(BlobClass) + (context.IsAnyOf(TestProvName.AllFirebird) ? TestUtils.GetNext().ToString() : null);
+			var tableName = nameof(BlobClass);
 			using (var db = GetDataContext(context))
 			using (var table = db.CreateLocalTable<BlobClass>(tableName))
 			{

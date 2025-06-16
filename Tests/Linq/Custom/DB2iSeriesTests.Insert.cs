@@ -3,8 +3,6 @@ using NUnit.Framework;
 using System.Linq;
 using Tests.Model;
 
-#nullable disable
-
 namespace Tests.DataProvider
 {
 	public partial class DB2iSeriesTests
@@ -29,7 +27,7 @@ namespace Tests.DataProvider
 					() => new MergeTypesByte { FieldByte = 22, FieldULong = val }
 				);
 
-				Assert.AreEqual(1, table.Count());
+				Assert.That(table.Count(), Is.EqualTo(1));
 			}
 		}
 	}

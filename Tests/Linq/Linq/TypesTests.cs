@@ -7,17 +7,16 @@ using System.Linq.Expressions;
 using System.Threading;
 
 using LinqToDB;
+using LinqToDB.Data;
+using LinqToDB.Internal.Extensions;
 using LinqToDB.Mapping;
-using LinqToDB.Extensions;
 
 using NUnit.Framework;
 
+using Tests.Model;
+
 namespace Tests.Linq
 {
-	using LinqToDB.Common;
-	using LinqToDB.Data;
-	using Model;
-
 	[TestFixture]
 	public class TypesTests : TestBase
 	{
@@ -46,7 +45,7 @@ namespace Tests.Linq
 		[Test]
 		public void Bool3([DataSources] string context)
 		{
-			var values = Array<int>.Empty;
+			var values = Array.Empty<int>();
 
 			using (var db = GetDataContext(context))
 				AreEqual(
@@ -117,7 +116,6 @@ namespace Tests.Linq
 					from p in db.Person select new { p.Patient, IsPatient = p.Patient != null });
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void BoolResult2([DataSources] string context)
 		{
@@ -127,7 +125,6 @@ namespace Tests.Linq
 					from p in db.Person select new { IsPatient = Sql.AsSql(p.Patient != null) });
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void BoolResult3([DataSources] string context)
 		{
@@ -156,7 +153,6 @@ namespace Tests.Linq
 					from p in db.Types where p.GuidValue == new Guid("D2F970C0-35AC-4987-9CD5-5BADB1757436") select p.GuidValue);
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void Guid2([DataSources] string context)
 		{
@@ -166,17 +162,7 @@ namespace Tests.Linq
 			var parm = Expression.Parameter(typeof(LinqDataTypes), "p");
 
 			using (var db = GetDataContext(context))
-				Assert.AreNotEqual(
-					db.Types
-						.Where(
-							Expression.Lambda<Func<LinqDataTypes,bool>>(
-								Expression.Equal(
-									Expression.PropertyOrField(parm, "GuidValue"),
-									Expression.Constant(guid3),
-									false,
-									typeof(Guid).GetMethodEx("op_Equality")),
-								new[] { parm }))
-						.Single().GuidValue,
+				Assert.That(
 					db.Types
 						.Where(
 							Expression.Lambda<Func<LinqDataTypes,bool>>(
@@ -186,7 +172,16 @@ namespace Tests.Linq
 									false,
 									typeof(Guid).GetMethodEx("op_Equality")),
 								new[] { parm }))
-						.Single().GuidValue);
+						.Single().GuidValue, Is.Not.EqualTo(db.Types
+						.Where(
+							Expression.Lambda<Func<LinqDataTypes,bool>>(
+								Expression.Equal(
+									Expression.PropertyOrField(parm, "GuidValue"),
+									Expression.Constant(guid3),
+									false,
+									typeof(Guid).GetMethodEx("op_Equality")),
+								new[] { parm }))
+						.Single().GuidValue));
 		}
 
 		[Test]
@@ -200,14 +195,12 @@ namespace Tests.Linq
 					from p in db.Types where ids.Contains(p.GuidValue) select p.GuidValue);
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void NewGuid(
 			[DataSources(
 				ProviderName.DB2,
 				TestProvName.AllInformix,
 				TestProvName.AllFirebird,
-				TestProvName.AllPostgreSQL,
 				TestProvName.AllSQLite,
 				TestProvName.AllAccess,
 				TestProvName.AllSapHana)]
@@ -230,7 +223,7 @@ namespace Tests.Linq
 
 				var guid = db.Types.Single(_ => _.ID == 1001).GuidValue;
 
-				Assert.AreEqual(1001, db.Types.Single(_ => _.GuidValue == guid).ID);
+				Assert.That(db.Types.Single(_ => _.GuidValue == guid).ID, Is.EqualTo(1001));
 			}
 		}
 
@@ -260,8 +253,7 @@ namespace Tests.Linq
 			[DataSources(
 				ProviderName.DB2,
 				TestProvName.AllInformix,
-				TestProvName.AllSQLite,
-				ProviderName.Access)]
+				TestProvName.AllSQLite)]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -298,7 +290,6 @@ namespace Tests.Linq
 			}
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void UpdateBinary2([DataSources(ProviderName.SqlCe)] string context)
 		{
@@ -319,11 +310,10 @@ namespace Tests.Linq
 				var g = from t in db.Types where new[] { 1, 2 }.Contains(t.ID) select t;
 
 				foreach (var binary in g)
-					Assert.AreEqual(binaries[binary.ID - 1], binary.BinaryValue!.ToArray());
+					Assert.That(binary.BinaryValue!.ToArray(), Is.EqualTo(binaries[binary.ID - 1]));
 			}
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void DateTime1([DataSources] string context)
 		{
@@ -335,7 +325,6 @@ namespace Tests.Linq
 											from t in db.Types2 where t.DateTimeValue!.Value.Date > dt!.Value.Date select t);
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void DateTime21([DataSources(TestProvName.AllSQLite)] string context)
 		{
@@ -350,14 +339,14 @@ namespace Tests.Linq
 
 				db.Types2.Update(t => t.ID == 1, t => new LinqDataTypes2 { DateTimeValue = pdt });
 
-				Assert.AreNotEqual(dt.Ticks, dt2!.Value.Ticks);
+				Assert.That(dt2!.Value.Ticks, Is.Not.EqualTo(dt.Ticks));
 			}
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void DateTime22(
 			[DataSources(
+				TestProvName.AllSQLite,
 				ProviderName.SqlCe,
 				TestProvName.AllAccess,
 				TestProvName.AllSqlServer2005,
@@ -382,14 +371,17 @@ namespace Tests.Linq
 
 				db.Types2.Update(t => t.ID == 1, t => new LinqDataTypes2 { DateTimeValue2 = pdt });
 
-				Assert.AreEqual(dt, dt2);
+				if (context.IsAnyOf(ProviderName.ClickHouseMySql, ProviderName.Ydb))
+					dt = dt.AddTicks(-dt.Ticks % 10);
+
+				Assert.That(dt2, Is.EqualTo(dt));
 			}
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void DateTime23(
 			[DataSources(
+				TestProvName.AllSQLite,
 				ProviderName.SqlCe,
 				TestProvName.AllAccess,
 				TestProvName.AllSqlServer2005,
@@ -417,14 +409,17 @@ namespace Tests.Linq
 
 				db.Types2.Update(t => t.ID == 1, t => new LinqDataTypes2 { DateTimeValue2 = pdt });
 
-				Assert.AreEqual(dt, dt2);
+				if (context.IsAnyOf(ProviderName.ClickHouseMySql, ProviderName.Ydb))
+					dt = dt.AddTicks(-dt.Ticks % 10);
+
+				Assert.That(dt2, Is.EqualTo(dt));
 			}
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void DateTime24(
 			[DataSources(
+				TestProvName.AllSQLite,
 				ProviderName.SqlCe,
 				TestProvName.AllAccess,
 				TestProvName.AllSqlServer2005,
@@ -452,11 +447,13 @@ namespace Tests.Linq
 
 				db.Types2.Update(t => t.ID == 1, t => new LinqDataTypes2 { DateTimeValue2 = pdt });
 
-				Assert.AreEqual(dt, dt2);
+				if (context.IsAnyOf(ProviderName.ClickHouseMySql, ProviderName.Ydb))
+					dt = dt.AddTicks(-dt.Ticks % 10);
+
+				Assert.That(dt2, Is.EqualTo(dt));
 			}
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void DateTimeArray1([DataSources] string context)
 		{
@@ -466,9 +463,8 @@ namespace Tests.Linq
 											from t in db.Types2 where new DateTime?[] { new DateTime(2001, 1, 11, 1, 11, 21, 100) }.Contains(t.DateTimeValue) select t);
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
-		public void DateTimeArray2([DataSources(ProviderName.Access)] string context)
+		public void DateTimeArray2([DataSources(TestProvName.AllAccessOleDb)] string context)
 		{
 			var arr = new DateTime?[] { new DateTime(2001, 1, 11, 1, 11, 21, 100), new DateTime(2012, 11, 7, 19, 19, 29, 90) };
 
@@ -478,9 +474,8 @@ namespace Tests.Linq
 											from t in db.Types2 where arr.Contains(t.DateTimeValue) select t);
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
-		public void DateTimeArray3([DataSources(ProviderName.Access)] string context)
+		public void DateTimeArray3([DataSources(TestProvName.AllAccessOleDb)] string context)
 		{
 			var arr = new List<DateTime?> { new DateTime(2001, 1, 11, 1, 11, 21, 100) };
 
@@ -504,7 +499,7 @@ namespace Tests.Linq
 				foreach (var dateTime in arr)
 				{
 					var dt = DateTimeParams(db, dateTime);
-					Assert.AreEqual(dateTime, dt);
+					Assert.That(dt, Is.EqualTo(dateTime));
 				}
 			}
 		}
@@ -552,13 +547,15 @@ namespace Tests.Linq
 
 				var person = db.Person.Single(p => p.FirstName == "擊敗奴隸" && p.LastName == "Юникодкин");
 
-				Assert.NotNull (person);
-				Assert.AreEqual("擊敗奴隸", person.FirstName);
-				Assert.AreEqual("Юникодкин", person.LastName);
+				Assert.That(person, Is.Not.Null);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(person.FirstName, Is.EqualTo("擊敗奴隸"));
+					Assert.That(person.LastName, Is.EqualTo("Юникодкин"));
+				}
 			}
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void TestCultureInfo([DataSources(TestProvName.AllInformix)] string context)
 		{
@@ -574,7 +571,6 @@ namespace Tests.Linq
 			Thread.CurrentThread.CurrentCulture = current;
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void SmallInt([DataSources] string context)
 		{
@@ -641,7 +637,6 @@ namespace Tests.Linq
 					from p in db.GetTable<PersonCharTest>() where 'M' == p.Gender select p.PersonID);
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void BoolTest31([DataSources] string context)
 		{
@@ -651,7 +646,6 @@ namespace Tests.Linq
 											from t in db.Types2 where t.BoolValue!.Value      select t);
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void BoolTest32([DataSources] string context)
 		{
@@ -661,7 +655,6 @@ namespace Tests.Linq
 											from t in db.Types2 where t.BoolValue == true    select t);
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void BoolTest33([DataSources] string context)
 		{
@@ -705,7 +698,6 @@ namespace Tests.Linq
 					from t in db.Parent where param == null || t.Value1 == param select t);
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void CompareNullableBoolean1([DataSources] string context)
 		{
@@ -724,7 +716,6 @@ namespace Tests.Linq
 					from t in db.Types          where param == null || t.BoolValue == param select t);
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void CompareNullableBoolean2([DataSources] string context)
 		{
@@ -759,7 +750,6 @@ namespace Tests.Linq
 					select t1);
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void CompareNullableBoolean3([DataSources] string context)
 		{
@@ -790,7 +780,6 @@ namespace Tests.Linq
 			[Column("realDataType", Configuration = ProviderName.Sybase)]
 			public float? floatDataType { get; set; }
 
-
 			[Column]
 			[Column("DOUBLEDATATYPE", Configuration = ProviderName.DB2)]
 			[Column("realDataType"  , Configuration = ProviderName.Access)]
@@ -820,9 +809,8 @@ namespace Tests.Linq
 				)] string context,
 			[Values] bool inline)
 		{
-			// TODO: update condition to include only Firebird 2.5 when
-			// https://github.com/FirebirdSQL/firebird/issues/6750 releases
-			var skipFloatInf = context.IsAnyOf(TestProvName.AllFirebird) && inline;
+			// Firebird25: https://github.com/FirebirdSQL/firebird/issues/6750
+			var skipFloatInf = context.IsAnyOf(ProviderName.Firebird25) && inline;
 			var skipId       = context.IsAnyOf(ProviderName.DB2) || context.IsAnyOf(TestProvName.AllSybase) || context.IsAnyOf(ProviderName.SqlCe);
 
 			using (var db = GetDataContext(context))
@@ -883,27 +871,129 @@ namespace Tests.Linq
 					.Select(_ => new { _.floatDataType, _.doubleDataType})
 					.ToArray();
 
-				Assert.AreEqual (3   , res.Length);
-				Assert.IsNaN    (res[0].floatDataType);
-				Assert.IsNaN    (res[0].doubleDataType);
+				Assert.That(res, Has.Length.EqualTo(3));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(res[0].floatDataType, Is.NaN);
+					Assert.That(res[0].doubleDataType, Is.NaN);
 
-				Assert.IsNotNull(res[1].floatDataType);
-				Assert.IsNotNull(res[1].doubleDataType);
-				if (skipFloatInf)
-					Assert.IsNaN(res[0].floatDataType);
-				else
-					Assert.True(float.IsNegativeInfinity(res[1].floatDataType!.Value));
-				Assert.True(double.IsNegativeInfinity(res[1].doubleDataType!.Value));
+					Assert.That(res[1].floatDataType, Is.Not.Null);
+					Assert.That(res[1].doubleDataType, Is.Not.Null);
+				}
 
-				Assert.IsNotNull(res[2].floatDataType);
-				Assert.IsNotNull(res[2].doubleDataType);
 				if (skipFloatInf)
-					Assert.IsNaN(res[0].floatDataType);
+					Assert.That(res[0].floatDataType, Is.NaN);
 				else
-					Assert.True     (float.IsPositiveInfinity(res[2].floatDataType!.Value));
-				Assert.True     (double.IsPositiveInfinity(res[2].doubleDataType!.Value));
+					Assert.That(float.IsNegativeInfinity(res[1].floatDataType!.Value), Is.True);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(double.IsNegativeInfinity(res[1].doubleDataType!.Value), Is.True);
+
+					Assert.That(res[2].floatDataType, Is.Not.Null);
+					Assert.That(res[2].doubleDataType, Is.Not.Null);
+				}
+
+				if (skipFloatInf)
+					Assert.That(res[0].floatDataType, Is.NaN);
+				else
+					Assert.That(float.IsPositiveInfinity(res[2].floatDataType!.Value), Is.True);
+				Assert.That(double.IsPositiveInfinity(res[2].doubleDataType!.Value), Is.True);
 			}
 		}
+
+		#region Issue 4469
+		[ActiveIssue(Configurations = [TestProvName.AllSQLite])]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4469")]
+		public void Issue4469Test1([DataSources] string context, [Values] bool inline)
+		{
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable(Issue4469Table.Data);
+			db.InlineParameters = inline;
+
+			var param = 33;
+
+			var result = (from v in tb
+						 select new
+						 {
+							 Integer = Sql.AsSql(v.Integer / param),
+							 Decimal = Sql.AsSql(v.Decimal / param),
+							 Double = Sql.AsSql(v.Double / param),
+						 })
+						 .Single();
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(result.Integer, Is.EqualTo(Issue4469Table.Data[0].Integer / param));
+				Assert.That(Math.Round(result.Decimal, 5), Is.EqualTo(Math.Round(Issue4469Table.Data[0].Decimal / param, 5)));
+				Assert.That(result.Double, Is.EqualTo(Issue4469Table.Data[0].Double / param));
+			}
+		}
+
+		[ActiveIssue(Configurations = [TestProvName.AllSQLite])]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4469")]
+		public void Issue4469Test2([DataSources] string context, [Values] bool inline)
+		{
+			if (context.IsAnyOf(TestProvName.AllFirebirdLess4) && !inline)
+				Assert.Ignore("Hard-to-workaround overflow bug");
+
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable(Issue4469Table.Data);
+			db.InlineParameters = inline;
+
+			var param = 33m;
+
+			var result = (from v in tb
+						  select new
+						  {
+							  Integer = Sql.AsSql(v.Integer / param),
+							  Decimal = Sql.AsSql(v.Decimal / param),
+							  Double  = Sql.AsSql(v.Double / (double)param),
+						  })
+						 .Single();
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(Math.Round(result.Integer, 5), Is.EqualTo(Math.Round(Issue4469Table.Data[0].Integer / param, 5)));
+				Assert.That(Math.Round(result.Decimal, 5), Is.EqualTo(Math.Round(Issue4469Table.Data[0].Decimal / param, 5)));
+				Assert.That(result.Double, Is.EqualTo(Issue4469Table.Data[0].Double / (double)param));
+			}
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4469")]
+		public void Issue4469Test3([DataSources] string context, [Values] bool inline)
+		{
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable(Issue4469Table.Data);
+			db.InlineParameters = inline;
+
+			var param = 33D;
+
+			var result = (from v in tb
+						  select new
+						  {
+							  Integer = Sql.AsSql(v.Integer / param),
+							  Decimal = Sql.AsSql((double)v.Decimal / param),
+							  Double = Sql.AsSql(v.Double / param),
+						  })
+						 .Single();
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(Math.Round(result.Integer, 5), Is.EqualTo(Math.Round(Issue4469Table.Data[0].Integer / param, 5)));
+				Assert.That(Math.Round(result.Decimal, 5), Is.EqualTo(Math.Round((double)Issue4469Table.Data[0].Decimal / param, 5)));
+				Assert.That(Math.Round(result.Double, 5), Is.EqualTo(Math.Round(Issue4469Table.Data[0].Double / param, 5)));
+			}
+		}
+
+		sealed class Issue4469Table
+		{
+			[PrimaryKey] public int Integer { get; set; }
+			[Column(Precision = 10, Scale = 5)] public decimal Decimal { get; set; }
+			public double Double { get; set; }
+
+			public static readonly Issue4469Table[] Data =
+			[
+				new Issue4469Table() { Integer = 100, Decimal = 100m, Double = 100.0 },
+			];
+		}
+		#endregion
 
 	}
 }

@@ -18,7 +18,7 @@
 			return Major.GetHashCode() + Minor.GetHashCode() + PatchLevel.GetHashCode();
 		}
 
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
 			if (obj is ServerVersion other)
 				return other.Major == Major && other.Minor == Minor && other.PatchLevel == PatchLevel;

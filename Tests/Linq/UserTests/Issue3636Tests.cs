@@ -1,13 +1,11 @@
-﻿using System;
-using System.Data.Common;
-using System.Linq;
-using FluentAssertions;
+﻿using System.Linq;
+
 using LinqToDB;
-using LinqToDB.Interceptors;
-using LinqToDB.Linq;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
-using Tests.Model;
+
+using Shouldly;
 
 namespace Tests.UserTests
 {
@@ -22,7 +20,6 @@ namespace Tests.UserTests
 			[Column("id3")] public int ID3 { get; set; } // integer
 		}
 
-
 		[Table]
 		public class T2
 		{
@@ -36,7 +33,7 @@ namespace Tests.UserTests
 			var data1 = new[] { new T1 { ID = 1, ID2 = 2 }, new T1 { ID = 2, ID2 = 2 }, new T1 { ID = 2, ID2 = 85 } };
 			var data2 = new[] { new T2 { ID = 1, ID2 = 2 }, new T2 { ID = 2, ID2 = 2 }, new T2 { ID = 2, ID2 = 85 } };
 
-			using var db     = GetDataContext(context);
+			using var db     = GetDataContext(context, o => o.UseGuardGrouping(false));
 			using var table1 = db.CreateLocalTable(data1);
 			using var table2 = db.CreateLocalTable(data2);
 
@@ -51,31 +48,35 @@ namespace Tests.UserTests
 			var result      = query.OrderBy(x => x.Key).First();
 			var groupResult = result.ToArray();
 
-			groupResult.Select(x => x.s.ID2).Should().AllBeEquivalentTo(myId);
+			groupResult.Select(x => x.s.ID2).ShouldAllBe(id => id == myId);
 
 			if (myId == 2)
 			{
-				Assert.AreEqual(1, result.Key);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result.Key, Is.EqualTo(1));
 
-				Assert.AreEqual(1, groupResult.Length);
-
-				Assert.AreEqual(1, groupResult[0].s.ID);
-				Assert.AreEqual(2, groupResult[0].s.ID2);
-				Assert.AreEqual(0, groupResult[0].s.ID3);
-				Assert.AreEqual(1, groupResult[0].order.ID);
-				Assert.AreEqual(2, groupResult[0].order.ID2);
+					Assert.That(groupResult, Has.Length.EqualTo(1));
+					Assert.That(groupResult[0].s.ID, Is.EqualTo(1));
+					Assert.That(groupResult[0].s.ID2, Is.EqualTo(2));
+					Assert.That(groupResult[0].s.ID3, Is.Zero);
+					Assert.That(groupResult[0].order.ID, Is.EqualTo(1));
+					Assert.That(groupResult[0].order.ID2, Is.EqualTo(2));
+				}
 			}
 			else
 			{
-				Assert.AreEqual(2, result.Key);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result.Key, Is.EqualTo(2));
 
-				Assert.AreEqual(1, groupResult.Length);
-
-				Assert.AreEqual(2, groupResult[0].s.ID);
-				Assert.AreEqual(85, groupResult[0].s.ID2);
-				Assert.AreEqual(0, groupResult[0].s.ID3);
-				Assert.AreEqual(2, groupResult[0].order.ID);
-				Assert.AreEqual(85, groupResult[0].order.ID2);
+					Assert.That(groupResult, Has.Length.EqualTo(1));
+					Assert.That(groupResult[0].s.ID, Is.EqualTo(2));
+					Assert.That(groupResult[0].s.ID2, Is.EqualTo(85));
+					Assert.That(groupResult[0].s.ID3, Is.Zero);
+					Assert.That(groupResult[0].order.ID, Is.EqualTo(2));
+					Assert.That(groupResult[0].order.ID2, Is.EqualTo(85));
+				}
 			}
 		}
 	}

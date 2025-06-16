@@ -1,7 +1,7 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 using LinqToDB;
+using LinqToDB.Async;
 using LinqToDB.Data;
 
 using NUnit.Framework;
@@ -12,7 +12,7 @@ namespace Tests.UserTests
 	public class Issue4389Tests : TestBase
 	{
 		[Test]
-		public async Task Test([IncludeDataSources(ProviderName.ClickHouseClient)] string context)
+		public async Task Test([IncludeDataSources(ProviderName.ClickHouseDriver)] string context)
 		{
 			await using var db  = GetDataContext(context);
 
@@ -22,9 +22,7 @@ namespace Tests.UserTests
 
 			await tmp.BulkCopyAsync(new[] { new { ID = 2 } });
 
-			var count = await tmp.CountAsync();
-
-			TestContext.WriteLine(count);
+			await tmp.CountAsync();
 		}
 	}
 }

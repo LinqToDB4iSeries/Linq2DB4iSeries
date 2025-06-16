@@ -8,7 +8,18 @@ Installing the Linq2Db4iSeries NuGetPackage will automatically install the Linq2
 
 ### Prerequisits
 
-The IBM ADO.net providers are include with iSeries Access Client Solutions for Windows package(https://www-01.ibm.com/marketing/iwm/platform/mrs/assets?source=swg-ia) which will need to be installed onto each machine that runs the software. The DB2 ADO.net providers can be downloaded either as a full downlad with the IBM Data Server Client package (.net framework only) or through nuget as the IBM.Data.DB.Provider (.net framework) or the IBM.Data.DB2.Core (.net core).
+The IBM i Series ADO.net providers (Native, ODBC, Oledb) are included with iSeries Access Client Solutions for Windows package(https://www-01.ibm.com/marketing/iwm/platform/mrs/assets?source=swg-ia) which will need to be installed onto each machine that runs the software. The ODBC driver is also available for linux.
+
+For the DB2 ADO.net providers there are the following options
+- Full download of the IBM Data Server Client package (.net framework only - requires installation on each server and developer machine) 
+- IBM.Data.DB.Provider nuget package (.net framework - versions 11.1 and 11.5 supported) 
+- IBM.Data.DB2.Core nuget package (.net core -  versions 11.1 and 11.5 supported -  linux and macosx supported through IBM.Data.DB2.Core-lnx and IBM.Data.DB2.Core-osx)
+- Net.IBM.Data.DB2 nuget package (.net - versions 11.5 and later supported - linux and macosx supported through Net.IBM.Data.Db2-lnx and Net.IBM.Data.Db2-osx)
+
+For DB2Connect a license file is required (named db2consv_ee.lic). For the full IBM Data Server Client the license can be installed using the license manager application included with the package (db2licm -a <license_file>).
+For the nuget packages, the license file should be placed in the clidriver/license folder under the application base folder.
+
+To include DB2 drivers properly, check the linq2db.Providers.props files in this repository for the relevant target frameworks.
 
 ### Providers
 
@@ -21,12 +32,12 @@ This provider provides the great compatibility but is only available for .net fr
 This provider is advertised by IBM as the most efficient and does seem to be faster than the .net native provider. However it does not support the XML data type properly. Specifically, any schema calls on datareaders that access an XML column throw an exception. There are a few workarounds applied that will make most scenarios work but there are others that break. 
 
 - Access Client OleDb provider
-This provider is similar to the ODBC provider but fails on x86 and has a few other quircks. For example it returns fixed length graphic datatypes trimmed. 
+This provider is similar to the ODBC provider but fails on x86 and has a few other quirks.
 
 - DB2 provider (via DB2Connect)
 This provider uses the same interface as the standard DB2 provider and supports .net framework and .net core (x64 only for core). It is feature rich, maintained by IBM and is available through nuget. However it requires a commercial license.
 
-The recommended provider is DB2Connect if a license can be obtained. Otherwise the native .net provider is great if you're still on .net Framework. The OleDb and ODBC providers are a good choice if you want .net core/standard compatibility but cannot get a DB2Connect license. The ODBC provider has issues with XML columns and the OleDb provider only works on x64. The OleDb provider also had some SQL quirks that we handlde in code (required spaces in specific places) so use with caution.
+The recommended provider is DB2Connect if a license can be obtained, as it provides the best compatibility and is available through nuget packages. Otherwise the native .net provider is great if you're still on .net Framework. The OleDb and ODBC providers are a good choice if you want .net core/standard compatibility but cannot get a DB2Connect license. The ODBC provider has issues with XML columns and the OleDb provider only works on x64. The OleDb provider also had some SQL quirks that are handled in the library code (required spaces in specific places) so use with caution.
 
 For more info on providers see the [provider known issue and quirks wiki artice](https://github.com/LinqToDB4iSeries/Linq2DB4iSeries/wiki/Underlying-ADO-providers-known-issues-and-quirks)
 
@@ -47,14 +58,14 @@ Data Source={SERVER_NAME}; Persist Security Info=True;User ID={USER_ID};Password
 
 - Access Client ODBC provider
 ```
-Driver={IBM i Access ODBC Driver};System=pub400.com;Uid={USER_ID};Pwd={PASSWORD};NAM=0;UNICODESQL=1;MAXDECSCALE=63;MAXDECPREC=63;GRAPHIC=1;MAPDECIMALFLOATDESCRIBE=3;MAXFIELDLEN=2097152;ALLOWUNSCHAR=1;DBQ={LIBRARY_LIST}
+Driver={IBM i Access ODBC Driver};System={SERVER_NAME};Uid={USER_ID};Pwd={PASSWORD};NAM=0;UNICODESQL=1;MAXDECSCALE=63;MAXDECPREC=63;GRAPHIC=1;MAPDECIMALFLOATDESCRIBE=3;MAXFIELDLEN=2097152;ALLOWUNSCHAR=1;DBQ={LIBRARY_LIST}
 ```
 
 For more info see: https://www.ibm.com/support/knowledgecenter/ssw_ibm_i_74/rzaik/connectkeywords.htm#connectkeywords__note1
 
 - Access Client OleDb provider
 ```
-Provider=IBMDA400;Data Source=pub400.com;User Id={USER_ID};Password={PASSWORD};Default Collection={DEFAULT_LIBRARY};Convert Date Time To Char=TRUE;LIBRARY LIST={LIBRARY_LIST};Maximum Decimal Precision=63;Maximum Decimal Scale=63;Naming Convention=0
+Provider=IBMDA400;Data Source={SERVER_NAME};User Id={USER_ID};Password={PASSWORD};Default Collection={DEFAULT_LIBRARY};Convert Date Time To Char=TRUE;LIBRARY LIST={LIBRARY_LIST};Maximum Decimal Precision=63;Maximum Decimal Scale=63;Naming Convention=0;Keep Trailing Blanks=TRUE
 ```
 
 For more info see: https://www.ibm.com/support/pages/access-client-solutions-ole-db-custom-connection-properties
@@ -70,18 +81,19 @@ Database={SERVER_NAME};User ID={USER_ID};Password={PASSWORD};Server={SERVER_NAME
 ### Provider Type
 Supported providers are:
 
-- Access Client native .net provider (.net framework >= 4.5 only)
+- Access Client native .net provider (.net framework >= 4.6.2 only)
 - Access Client ODBC provider
 - Access Client OleDb provider
-- DB2 provider (via DB2 Connect license - only tested up to version 3.3.0 - please report any issues)
+- DB2 provider (via DB2 Connect license)
 
 ### Minimum DB2 Version
 The provider can create SQL compatible with V7.1 and above.  
 
+- V7.4 introduced the DROP IF EXISTS syntax
+- V7.3 introduced the OFFSET clause
 - V7.2 introduced the Truncate Table syntax.
-- V7.1 PTF Level 38, V7.2 PTF Level 9 and V7.3 introduced a proper syntax for SKIP (OFFSET n ROWS). 
 
-To have the provider support these features this new syntax add MinVer="7.2" or "7.3" to the Provider or, if instantiating the provider in code set the parameter appropriatly.
+To have the provider support these features this new features select the appropriate version in the DB2iSeriesOptions.
 
 ### GUIDs
 DB2 doesn't have a GUID type.  By default GUIDs will be stored as CHAR(16) FOR BIT DATA.  This works and is probably the most efficient however it is unreadable when queried directly.

@@ -2,21 +2,20 @@
 
 using LinqToDB;
 using LinqToDB.DataProvider.Oracle;
-using LinqToDB.SqlQuery;
 
 using NUnit.Framework;
 
+using Tests.Model;
+
 namespace Tests.Linq
 {
-	using Model;
-
 	[TestFixture]
 	public class ParserTests : TestBase
 	{
 		[Test]
 		public void Join6([IncludeDataSources(TestProvName.AllSqlServer2008Plus, TestProvName.AllClickHouse)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var actual =
 					from g in db.GrandChild
@@ -37,9 +36,12 @@ namespace Tests.Linq
 		{
 			using (var db = new TestDataConnection())
 			{
-				Assert.IsNotNull(db.OracleXmlTable<Person>(() => "<xml/>"));
-				Assert.IsNotNull(db.OracleXmlTable<Person>("<xml/>"));
-				Assert.IsNotNull(db.OracleXmlTable(new[] { new Person() }));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(db.OracleXmlTable<Person>(() => "<xml/>"), Is.Not.Null);
+					Assert.That(db.OracleXmlTable<Person>("<xml/>"), Is.Not.Null);
+					Assert.That(db.OracleXmlTable(new[] { new Person() }), Is.Not.Null);
+				}
 			}
 		}
 	}

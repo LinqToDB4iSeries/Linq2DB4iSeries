@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Linq;
+using System.Linq.Expressions;
 
 using LinqToDB;
+using LinqToDB.Mapping;
 
 using NUnit.Framework;
 
@@ -13,8 +15,7 @@ namespace Tests.Linq
 		[Test]
 		public void Test1([IncludeDataSources(TestProvName.AllSQLite)] string context)
 		{
-			using(new GenerateExpressionTest(true))
-			using (var db = GetDataContext(context))
+			using (var db = GetDataContext(context, o => o.UseGenerateExpressionTest(true)))
 			{
 				var q2 =
 					from gc1 in db.GrandChild
@@ -34,10 +35,9 @@ namespace Tests.Linq
 						!new[] { 111, 222 }.Contains(gc3.GrandChildID!.Value)
 				select new { p.ParentID, gc3 };
 
-
 				var test = result.GenerateTestString();
 
-				TestContext.WriteLine(test);
+				TestContext.Out.WriteLine(test);
 
 				var _ = result.ToList();
 			}
@@ -53,13 +53,68 @@ namespace Tests.Linq
 					where gc1.Gender == Model.Gender.Male
 					select gc1;
 
-
 				var test = q2.GenerateTestString();
 
-				TestContext.WriteLine(test);
+				TestContext.Out.WriteLine(test);
 
 				var _ = q2.ToList();
 			}
 		}
+
+		#region issue 4322
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4322")]
+		public void Issue4322Test([DataSources] string context)
+		{
+			using var db = GetDataContext(context, o => o.UseGenerateExpressionTest(true));
+
+			var example = new Vector2[] { new Vector2 {X = -10f, Y = 10f} };
+
+			var query = db.GetTable<Entity>().Where(x => PositionFilter(x.Position, example)).Take(3);
+
+			// this works
+			TestUtils.DeleteTestCases();
+
+			// explicitly generate test as query now doesn't fail generation
+			var testCase = query.GenerateTestString();
+			Assert.That(testCase, Is.Not.Null);
+			// ignore generated exception
+			testCase = testCase!.Replace("throw new NotImplementedException", string.Empty);
+			Assert.That(testCase, Does.Not.Contain("Exception"));
+
+			TestUtils.DeleteTestCases();
+		}
+
+		[Table("entities")]
+		sealed class Entity
+		{
+			[Column("position", CanBeNull = false)]
+			public Vector3 Position { get; set; } = null!;
+		}
+
+		sealed class Vector3
+		{
+			public float x;
+			public float y;
+			public float z;
+		}
+
+		sealed class Vector2
+		{
+			public float X;
+			public float Y;
+		}
+
+		[ExpressionMethod(nameof(PositionFilterImplementation))]
+		static bool PositionFilter(Vector3 position, Vector2[] example)
+		{
+			throw new NotImplementedException();
+		}
+
+		static Expression<Func<Vector3, Vector2[], bool>> PositionFilterImplementation()
+		{
+			return (position, example) => example.Any(t => Sql.Expr<bool>($"{position}.x > {t.X}"));
+		}
+
+		#endregion
 	}
 }

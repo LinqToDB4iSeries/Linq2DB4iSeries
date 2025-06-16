@@ -4,14 +4,17 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics.CodeAnalysis;
+
 using LinqToDB;
-using LinqToDB.Common;
 using LinqToDB.Data;
 using LinqToDB.DataProvider;
+using LinqToDB.Internal.DataProvider;
+using LinqToDB.Internal.DataProvider.Translation;
+using LinqToDB.Internal.SqlProvider;
+using LinqToDB.Internal.SqlQuery;
+using LinqToDB.Linq.Translation;
 using LinqToDB.Mapping;
 using LinqToDB.SchemaProvider;
-using LinqToDB.SqlProvider;
-using LinqToDB.SqlQuery;
 
 namespace Tests
 {
@@ -27,7 +30,7 @@ namespace Tests
 		[AllowNull]
 		public override string          ConnectionString { get; set; }
 		public override string          Database         { get; } = null!;
-		public override string          DataSource       => throw new NotImplementedException();
+		public override string          DataSource       => "fake";
 		public override string          ServerVersion    => throw new NotImplementedException();
 		public override ConnectionState State            => _state;
 
@@ -121,7 +124,7 @@ namespace Tests
 
 		protected override DbConnection? DbConnection
 		{
-			get => throw new NotImplementedException();
+			get => null;
 			set => throw new NotImplementedException();
 		}
 
@@ -247,13 +250,12 @@ namespace Tests
 			return _parameters.Count - 1;
 		}
 
-
 		public override void Clear()
 		{
 			_parameters.Clear();
 		}
 
-		public    override IEnumerator GetEnumerator(                                       ) => Array<IEnumerator>.Empty.GetEnumerator();
+		public    override IEnumerator GetEnumerator(                                       ) => Array.Empty<IEnumerator>().GetEnumerator();
 		public    override void        AddRange     (Array values                           ) => throw new NotImplementedException();
 		public    override bool        Contains     (string value                           ) => throw new NotImplementedException();
 		public    override bool        Contains     (object value                           ) => throw new NotImplementedException();
@@ -277,10 +279,13 @@ namespace Tests
 		Type IDynamicProviderAdapter.ParameterType   => typeof(TestNoopDbParameter);
 		Type IDynamicProviderAdapter.CommandType     => typeof(TestNoopDbCommand  );
 		Type IDynamicProviderAdapter.TransactionType => throw new NotImplementedException();
+
+		DbConnection IDynamicProviderAdapter.CreateConnection(string connectionString) => new TestNoopConnection(connectionString);
 	}
 
 	public class TestNoopProvider : DynamicDataProviderBase<TestNoopProviderAdapter>
 	{
+
 		public TestNoopProvider()
 			: base(TestProvName.NoopProvider, new MappingSchema(), new TestNoopProviderAdapter())
 		{
@@ -296,10 +301,12 @@ namespace Tests
 			// Just for triggering of static constructor
 		}
 
-		public override ISqlBuilder     CreateSqlBuilder (MappingSchema mappingSchema, DataOptions dataOptions) => new TestNoopSqlBuilder(this, MappingSchema, dataOptions);
-		public override ISchemaProvider GetSchemaProvider()   => throw new NotImplementedException();
-		public override ISqlOptimizer   GetSqlOptimizer  (DataOptions dataOptions) => TestNoopSqlOptimizer.Instance;
-		public override TableOptions    SupportedTableOptions => TableOptions.None;
+		public override    ISqlBuilder       CreateSqlBuilder (MappingSchema mappingSchema, DataOptions dataOptions) => new TestNoopSqlBuilder(this, MappingSchema, dataOptions);
+		public override    ISchemaProvider   GetSchemaProvider()      => throw new NotImplementedException();
+		protected override IMemberTranslator CreateMemberTranslator() => new MemberTranslatorBase();
+
+		public override    ISqlOptimizer     GetSqlOptimizer  (DataOptions dataOptions) => TestNoopSqlOptimizer.Instance;
+		public override    TableOptions      SupportedTableOptions                      => TableOptions.None;
 	}
 
 	internal sealed class TestNoopSqlBuilder : BasicSqlBuilder
@@ -325,5 +332,21 @@ namespace Tests
 			: base(new SqlProviderFlags())
 		{
 		}
+
+		public override SqlStatement TransformStatement(SqlStatement statement, DataOptions dataOptions, MappingSchema mappingSchema)
+		{
+			switch (statement.QueryType)
+			{
+				case QueryType.Update :
+				{
+					CorrectUpdateSetters((SqlUpdateStatement)statement);
+
+					break;
+				}
+			}
+
+			return statement;
+		}
 	}
+
 }

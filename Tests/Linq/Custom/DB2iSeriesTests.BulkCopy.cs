@@ -6,8 +6,6 @@ using System.Diagnostics;
 using System.Linq;
 using Tests.Model;
 
-#nullable disable
-
 namespace Tests.DataProvider
 {
 	public partial class DB2iSeriesTests

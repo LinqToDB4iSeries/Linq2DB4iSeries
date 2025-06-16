@@ -3,43 +3,44 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Data.Linq;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
-using System.Reflection;
-
-using FluentAssertions;
 
 using LinqToDB;
+using LinqToDB.Async;
 using LinqToDB.Common;
 using LinqToDB.Data;
 using LinqToDB.Data.RetryPolicy;
-using LinqToDB.DataProvider;
 using LinqToDB.DataProvider.Oracle;
 using LinqToDB.Interceptors;
-using LinqToDB.Linq;
-using LinqToDB.Linq.Internal;
-using LinqToDB.SchemaProvider;
-using LinqToDB.Tools;
+using LinqToDB.Internal.DataProvider;
+using LinqToDB.Internal.DataProvider.Oracle;
+using LinqToDB.Internal.Linq;
 using LinqToDB.Mapping;
+using LinqToDB.SchemaProvider;
+using LinqToDB.SqlQuery;
+using LinqToDB.Tools;
 
 using NUnit.Framework;
 
 using Oracle.ManagedDataAccess.Client;
 using Oracle.ManagedDataAccess.Types;
 
+using Shouldly;
+
+using Tests.Model;
+
 using DA = Devart.Data.Oracle;
 
 namespace Tests.DataProvider
 {
-	using Model;
-
 	[TestFixture]
 	public class OracleTests : TestBase
 	{
@@ -56,22 +57,25 @@ namespace Tests.DataProvider
 		[Test]
 		public void TestParameters([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var conn = GetDataConnection(context))
+			using (var conn = GetDataContext(context))
 			{
-				Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.VarBinary("p", null)), Is.EqualTo(null));
-				Assert.That(conn.Execute<char>  (PathThroughSql, DataParameter.Char     ("p", '1')),  Is.EqualTo('1'));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.VarBinary("p", null)), Is.Null);
+					Assert.That(conn.Execute<char>(PathThroughSql, DataParameter.Char("p", '1')), Is.EqualTo('1'));
 
-				Assert.That(conn.Execute<string>(PathThroughSql,                   new { p =  1  }), Is.EqualTo("1"));
-				Assert.That(conn.Execute<string>(PathThroughSql,                   new { p = "1" }), Is.EqualTo("1"));
-				Assert.That(conn.Execute<int>   ("SELECT :p FROM sys.dual",        new { p =  new DataParameter { Value = 1   } }), Is.EqualTo(1));
-				Assert.That(conn.Execute<string>("SELECT :p1 FROM sys.dual",       new { p1 = new DataParameter { Value = "1" } }), Is.EqualTo("1"));
-				Assert.That(conn.Execute<int>   ("SELECT :p1 + :p2 FROM sys.dual", new { p1 = 2, p2 = 3 }), Is.EqualTo(5));
-				Assert.That(conn.Execute<int>   ("SELECT :p2 + :p1 FROM sys.dual", new { p2 = 2, p1 = 3 }), Is.EqualTo(5));
+					Assert.That(conn.Execute<string>(PathThroughSql, new { p = 1 }), Is.EqualTo("1"));
+					Assert.That(conn.Execute<string>(PathThroughSql, new { p = "1" }), Is.EqualTo("1"));
+					Assert.That(conn.Execute<int>("SELECT :p FROM sys.dual", new { p = new DataParameter { Value = 1 } }), Is.EqualTo(1));
+					Assert.That(conn.Execute<string>("SELECT :p1 FROM sys.dual", new { p1 = new DataParameter { Value = "1" } }), Is.EqualTo("1"));
+					Assert.That(conn.Execute<int>("SELECT :p1 + :p2 FROM sys.dual", new { p1 = 2, p2 = 3 }), Is.EqualTo(5));
+					Assert.That(conn.Execute<int>("SELECT :p2 + :p1 FROM sys.dual", new { p2 = 2, p1 = 3 }), Is.EqualTo(5));
+				}
 			}
 		}
 
 		static void TestType<T>(
-			DataConnection   connection,
+			IDataContext     connection,
 			string           dataTypeName,
 			T                value,
 			string           tableName       = "\"AllTypes\"",
@@ -119,7 +123,7 @@ namespace Tests.DataProvider
 		[Test]
 		public void TestDataTypes([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var conn = GetDataConnection(context))
+			using (var conn = GetDataContext(context))
 			{
 				TestType(conn, "\"bigintDataType\"",         1000000L);
 				TestType(conn, "\"numericDataType\"",        9999999m);
@@ -137,8 +141,22 @@ namespace Tests.DataProvider
 				TestType(conn, "\"datetime2DataType\"",      new DateTime(2012, 12, 12, 12, 12, 12, 012));
 				TestType(conn, "\"datetimeoffsetDataType\"", new DateTimeOffset(2012, 12, 12, 12, 12, 12, 12, new TimeSpan(-5, 0, 0)));
 
+				// 1. if test fails here (usually with 1 hour offset during summer time)
+				// you need to set ORA_SDTZ environment variable to timezone name because provider used offset which doesn't work in most cases
+				// See https://oracle-base.com/articles/misc/setting-database-time-zones-in-oracle#ora_sdtz
+				// recent managed provider uses timezone name (as it must do)
+				// but native and devart providers were written by people who don't know that offset != timezone
+				//
+				// 2. Following query will return session timezone, set by provider:
+				// select sessiontimezone from dual
+				//
+				// 3. We cannot use "alter session set time_zone=xxx" as workaround here as we already have data with incorrect offset
+				// inserted into table by Oracle.sql (and whoo knowns which tests it will affect too)
+				//
+				// 4. Devart Direct provider doesn't know about this env variable and I don't see any switches to specify
+				// session timezone for it instead of offset *facepalm*
 				var dt = new DateTimeOffset(2012, 12, 12, 12, 12, 12, 12, TimeSpan.Zero);
-				TestType(conn, "\"localZoneDataType\"", new DateTimeOffset(2012, 12, 12, 12, 12, 12, 12, TimeZoneInfo.Local.GetUtcOffset(dt) /* new TimeSpan(-4, 0, 0)*/), throwException:true);
+				TestType(conn, "\"localZoneDataType\"", new DateTimeOffset(2012, 12, 12, 12, 12, 12, 12, TimeZoneInfo.Local.GetUtcOffset(dt) /* new TimeSpan(-4, 0, 0)*/), throwException: true);
 
 				TestType(conn, "\"charDataType\"",           '1');
 				TestType(conn, "\"varcharDataType\"",        "234");
@@ -157,7 +175,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		void TestNumeric<T>(DataConnection conn, T expectedValue, DataType dataType, string skip = "")
+		void TestNumeric<T>(IDataContext conn, T expectedValue, DataType dataType, string skip = "")
 		{
 			var skipTypes = skip.Split(' ');
 
@@ -174,20 +192,18 @@ namespace Tests.DataProvider
 
 				var sql = string.Format(CultureInfo.InvariantCulture, "SELECT Cast({0} as {1}) FROM sys.dual", sqlValue ?? "NULL", sqlType);
 
-				Debug.WriteLine(sql + " -> " + typeof(T));
-
 				Assert.That(conn.Execute<T>(sql), Is.EqualTo(expectedValue));
 			}
 
-			Debug.WriteLine("{0} -> DataType.{1}",  typeof(T), dataType);
-			Assert.That(conn.Execute<T>(PathThroughSql, new DataParameter { Name = "p", DataType = dataType, Value = expectedValue }), Is.EqualTo(expectedValue));
-			Debug.WriteLine("{0} -> auto", typeof(T));
-			Assert.That(conn.Execute<T>(PathThroughSql, new DataParameter { Name = "p", Value = expectedValue }), Is.EqualTo(expectedValue));
-			Debug.WriteLine("{0} -> new",  typeof(T));
-			Assert.That(conn.Execute<T>(PathThroughSql, new { p = expectedValue }), Is.EqualTo(expectedValue));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(conn.Execute<T>(PathThroughSql, new DataParameter { Name = "p", DataType = dataType, Value = expectedValue }), Is.EqualTo(expectedValue));
+				Assert.That(conn.Execute<T>(PathThroughSql, new DataParameter { Name = "p", Value = expectedValue }), Is.EqualTo(expectedValue));
+				Assert.That(conn.Execute<T>(PathThroughSql, new { p = expectedValue }), Is.EqualTo(expectedValue));
+			}
 		}
 
-		void TestSimple<T>(DataConnection conn, T expectedValue, DataType dataType)
+		void TestSimple<T>(IDataContext conn, T expectedValue, DataType dataType)
 			where T : struct
 		{
 			TestNumeric<T> (conn, expectedValue, dataType);
@@ -198,7 +214,7 @@ namespace Tests.DataProvider
 		[Test]
 		public void TestNumerics([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var conn = GetDataConnection(context))
+			using (var conn = GetDataContext(context))
 			{
 				TestSimple<bool>   (conn, true, DataType.Boolean);
 				TestSimple<sbyte>  (conn, 1,    DataType.SByte);
@@ -246,56 +262,64 @@ namespace Tests.DataProvider
 		[Test]
 		public void TestDate([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var conn = GetDataConnection(context))
+			using (var conn = GetDataContext(context))
 			{
 				var dateTime = new DateTime(2012, 12, 12);
-
-				Assert.That(conn.Execute<DateTime> (PathThroughSql, DataParameter.Date("p", dateTime)),               Is.EqualTo(dateTime));
-				Assert.That(conn.Execute<DateTime?>(PathThroughSql, new DataParameter("p", dateTime, DataType.Date)), Is.EqualTo(dateTime));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(conn.Execute<DateTime>(PathThroughSql, DataParameter.Date("p", dateTime)), Is.EqualTo(dateTime));
+					Assert.That(conn.Execute<DateTime?>(PathThroughSql, new DataParameter("p", dateTime, DataType.Date)), Is.EqualTo(dateTime));
+				}
 			}
 		}
 
 		[Test]
 		public void TestSmallDateTime([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var conn = GetDataConnection(context))
+			using (var conn = GetDataContext(context))
 			{
 				var dateTime = new DateTime(2012, 12, 12, 12, 12, 00);
-
-				Assert.That(conn.Execute<DateTime> (PathThroughSql, DataParameter.SmallDateTime("p", dateTime)),               Is.EqualTo(dateTime));
-				Assert.That(conn.Execute<DateTime?>(PathThroughSql, new DataParameter("p", dateTime, DataType.SmallDateTime)), Is.EqualTo(dateTime));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(conn.Execute<DateTime>(PathThroughSql, DataParameter.SmallDateTime("p", dateTime)), Is.EqualTo(dateTime));
+					Assert.That(conn.Execute<DateTime?>(PathThroughSql, new DataParameter("p", dateTime, DataType.SmallDateTime)), Is.EqualTo(dateTime));
+				}
 			}
 		}
 
 		[Test]
 		public void TestDateTime([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var conn = GetDataConnection(context))
+			using (var conn = GetDataContext(context))
 			{
 				var dateTime = new DateTime(2012, 12, 12, 12, 12, 12);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(conn.Execute<DateTime>("SELECT to_date('2012-12-12 12:12:12', 'YYYY-MM-DD HH:MI:SS') FROM sys.dual"), Is.EqualTo(dateTime));
+					Assert.That(conn.Execute<DateTime?>("SELECT to_date('2012-12-12 12:12:12', 'YYYY-MM-DD HH:MI:SS') FROM sys.dual"), Is.EqualTo(dateTime));
 
-				Assert.That(conn.Execute<DateTime> ("SELECT to_date('2012-12-12 12:12:12', 'YYYY-MM-DD HH:MI:SS') FROM sys.dual"), Is.EqualTo(dateTime));
-				Assert.That(conn.Execute<DateTime?>("SELECT to_date('2012-12-12 12:12:12', 'YYYY-MM-DD HH:MI:SS') FROM sys.dual"), Is.EqualTo(dateTime));
-
-				Assert.That(conn.Execute<DateTime> (PathThroughSql, DataParameter.DateTime("p", dateTime)),               Is.EqualTo(dateTime));
-				Assert.That(conn.Execute<DateTime?>(PathThroughSql, new DataParameter("p", dateTime)),                    Is.EqualTo(dateTime));
-				Assert.That(conn.Execute<DateTime?>(PathThroughSql, new DataParameter("p", dateTime, DataType.DateTime)), Is.EqualTo(dateTime));
+					Assert.That(conn.Execute<DateTime>(PathThroughSql, DataParameter.DateTime("p", dateTime)), Is.EqualTo(dateTime));
+					Assert.That(conn.Execute<DateTime?>(PathThroughSql, new DataParameter("p", dateTime)), Is.EqualTo(dateTime));
+					Assert.That(conn.Execute<DateTime?>(PathThroughSql, new DataParameter("p", dateTime, DataType.DateTime)), Is.EqualTo(dateTime));
+				}
 			}
 		}
 
 		[Test]
 		public void TestDateTime2([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var conn = GetDataConnection(context))
+			using (var conn = GetDataContext(context))
 			{
 				var dateTime1 = new DateTime(2012, 12, 12, 12, 12, 12);
 				var dateTime2 = new DateTime(2012, 12, 12, 12, 12, 12, 12);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(conn.Execute<DateTime?>("SELECT timestamp '2012-12-12 12:12:12.012' FROM sys.dual"), Is.EqualTo(dateTime2));
 
-				Assert.That(conn.Execute<DateTime?>("SELECT timestamp '2012-12-12 12:12:12.012' FROM sys.dual"), Is.EqualTo(dateTime2));
-
-				Assert.That(conn.Execute<DateTime> (PathThroughSql, DataParameter.DateTime2("p", dateTime2)),               Is.EqualTo(dateTime2));
-				Assert.That(conn.Execute<DateTime> (PathThroughSql, DataParameter.Create   ("p", dateTime2)),               Is.EqualTo(dateTime2));
-				Assert.That(conn.Execute<DateTime?>(PathThroughSql, new DataParameter("p", dateTime2, DataType.DateTime2)), Is.EqualTo(dateTime2));
+					Assert.That(conn.Execute<DateTime>(PathThroughSql, DataParameter.DateTime2("p", dateTime2)), Is.EqualTo(dateTime2));
+					Assert.That(conn.Execute<DateTime>(PathThroughSql, DataParameter.Create("p", dateTime2)), Is.EqualTo(dateTime2));
+					Assert.That(conn.Execute<DateTime?>(PathThroughSql, new DataParameter("p", dateTime2, DataType.DateTime2)), Is.EqualTo(dateTime2));
+				}
 			}
 		}
 
@@ -303,113 +327,130 @@ namespace Tests.DataProvider
 		[Test]
 		public void TestDateTimeOffset([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var conn = GetDataConnection(context))
+			using (var conn = GetDataContext(context))
 			{
 				var dto = new DateTimeOffset(2012, 12, 12, 12, 12, 12, 12, new TimeSpan(5, 0, 0));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(conn.Execute<DateTimeOffset>(
+						"SELECT timestamp '2012-12-12 12:12:12.012' FROM sys.dual"),
+						Is.EqualTo(new DateTimeOffset(2012, 12, 12, 12, 12, 12, 12, TimeZoneInfo.Local.GetUtcOffset(new DateTime(2012, 12, 12, 12, 12, 12)))));
 
-				Assert.That(conn.Execute<DateTimeOffset>(
-					"SELECT timestamp '2012-12-12 12:12:12.012' FROM sys.dual"),
-					Is.EqualTo(new DateTimeOffset(2012, 12, 12, 12, 12, 12, 12, TimeZoneInfo.Local.GetUtcOffset(new DateTime(2012, 12, 12, 12, 12, 12)))));
+					Assert.That(conn.Execute<DateTimeOffset?>(
+						"SELECT timestamp '2012-12-12 12:12:12.012' FROM sys.dual"),
+						Is.EqualTo(new DateTimeOffset(2012, 12, 12, 12, 12, 12, 12, TimeZoneInfo.Local.GetUtcOffset(new DateTime(2012, 12, 12, 12, 12, 12)))));
 
-				Assert.That(conn.Execute<DateTimeOffset?>(
-					"SELECT timestamp '2012-12-12 12:12:12.012' FROM sys.dual"),
-					Is.EqualTo(new DateTimeOffset(2012, 12, 12, 12, 12, 12, 12, TimeZoneInfo.Local.GetUtcOffset(new DateTime(2012, 12, 12, 12, 12, 12)))));
+					// no idea how/why it works that way. In any case it is not a good idea to map TS to DT
+					var expected = context.IsAnyOf(TestProvName.AllOracleManaged)
+#if !NETFRAMEWORK
+						? new DateTime(2012, 12, 12, 17, 12, 12, 12)
+#else
+						? new DateTime(2012, 12, 12, 12, 12, 12, 12)
+#endif
+						: new DateTime(2012, 12, 12, 12, 12, 12, 12);
 
-				Assert.That(conn.Execute<DateTime>(
-					"SELECT timestamp '2012-12-12 12:12:12.012 -04:00' FROM sys.dual"),
-					Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12, 12)));
+					Assert.That(conn.Execute<DateTime>(
+						"SELECT timestamp '2012-12-12 12:12:12.012 -04:00' FROM sys.dual"),
+						Is.EqualTo(expected));
 
-				Assert.That(conn.Execute<DateTime?>(
-					"SELECT timestamp '2012-12-12 12:12:12.012 -04:00' FROM sys.dual"),
-					Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12, 12)));
+					Assert.That(conn.Execute<DateTime?>(
+						"SELECT timestamp '2012-12-12 12:12:12.012 -04:00' FROM sys.dual"),
+						Is.EqualTo(expected));
 
-				Assert.That(conn.Execute<DateTimeOffset>(
-					"SELECT timestamp '2012-12-12 12:12:12.012 +05:00' FROM sys.dual"),
-					Is.EqualTo(dto));
+					Assert.That(conn.Execute<DateTimeOffset>(
+						"SELECT timestamp '2012-12-12 12:12:12.012 +05:00' FROM sys.dual"),
+						Is.EqualTo(dto));
 
-				Assert.That(conn.Execute<DateTimeOffset?>(
-					"SELECT timestamp '2012-12-12 12:12:12.012 +05:00' FROM sys.dual"),
-					Is.EqualTo(dto));
+					Assert.That(conn.Execute<DateTimeOffset?>(
+						"SELECT timestamp '2012-12-12 12:12:12.012 +05:00' FROM sys.dual"),
+						Is.EqualTo(dto));
 
-				Assert.That(conn.Execute<DateTime> ("SELECT \"datetimeoffsetDataType\" FROM \"AllTypes\" WHERE ID = 1"), Is.EqualTo(default(DateTime)));
-				Assert.That(conn.Execute<DateTime?>("SELECT \"datetimeoffsetDataType\" FROM \"AllTypes\" WHERE ID = 1"), Is.EqualTo(default(DateTime?)));
+					Assert.That(conn.Execute<DateTime>("SELECT \"datetimeoffsetDataType\" FROM \"AllTypes\" WHERE ID = 1"), Is.Default);
+					Assert.That(conn.Execute<DateTime?>("SELECT \"datetimeoffsetDataType\" FROM \"AllTypes\" WHERE ID = 1"), Is.Default);
+				}
 
-				Assert.That(conn.Execute<DateTimeOffset?>(PathThroughSql, new DataParameter("p", dto)).                         ToString(), Is.EqualTo(dto.ToString(DateTimeFormatInfo.InvariantInfo)));
-				Assert.That(conn.Execute<DateTimeOffset?>(PathThroughSql, new DataParameter("p", dto, DataType.DateTimeOffset)).ToString(), Is.EqualTo(dto.ToString(DateTimeFormatInfo.InvariantInfo)));
+				conn.Execute<DateTimeOffset?>(PathThroughSql, new DataParameter("p", dto)).ShouldBe(dto);
+				conn.Execute<DateTimeOffset?>(PathThroughSql, new DataParameter("p", dto, DataType.DateTimeOffset)).ShouldBe(dto);
 			}
 		}
 
 		[Test]
 		public void TestChar([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var conn = GetDataConnection(context))
+			using (var conn = GetDataContext(context))
 			{
-				Assert.That(conn.Execute<char> ("SELECT Cast('1' as char)    FROM sys.dual"),       Is.EqualTo('1'));
-				Assert.That(conn.Execute<char?>("SELECT Cast('1' as char)    FROM sys.dual"),       Is.EqualTo('1'));
-				Assert.That(conn.Execute<char> ("SELECT Cast('1' as char(1)) FROM sys.dual"),       Is.EqualTo('1'));
-				Assert.That(conn.Execute<char?>("SELECT Cast('1' as char(1)) FROM sys.dual"),       Is.EqualTo('1'));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(conn.Execute<char>("SELECT Cast('1' as char)    FROM sys.dual"), Is.EqualTo('1'));
+					Assert.That(conn.Execute<char?>("SELECT Cast('1' as char)    FROM sys.dual"), Is.EqualTo('1'));
+					Assert.That(conn.Execute<char>("SELECT Cast('1' as char(1)) FROM sys.dual"), Is.EqualTo('1'));
+					Assert.That(conn.Execute<char?>("SELECT Cast('1' as char(1)) FROM sys.dual"), Is.EqualTo('1'));
 
-				Assert.That(conn.Execute<char> ("SELECT Cast('1' as varchar2(20)) FROM sys.dual"),  Is.EqualTo('1'));
-				Assert.That(conn.Execute<char?>("SELECT Cast('1' as varchar2(20)) FROM sys.dual"),  Is.EqualTo('1'));
+					Assert.That(conn.Execute<char>("SELECT Cast('1' as varchar2(20)) FROM sys.dual"), Is.EqualTo('1'));
+					Assert.That(conn.Execute<char?>("SELECT Cast('1' as varchar2(20)) FROM sys.dual"), Is.EqualTo('1'));
 
-				Assert.That(conn.Execute<char> ("SELECT Cast('1' as nchar)     FROM sys.dual"),     Is.EqualTo('1'));
-				Assert.That(conn.Execute<char?>("SELECT Cast('1' as nchar)     FROM sys.dual"),     Is.EqualTo('1'));
-				Assert.That(conn.Execute<char> ("SELECT Cast('1' as nchar(20)) FROM sys.dual"),     Is.EqualTo('1'));
-				Assert.That(conn.Execute<char?>("SELECT Cast('1' as nchar(20)) FROM sys.dual"),     Is.EqualTo('1'));
+					Assert.That(conn.Execute<char>("SELECT Cast('1' as nchar)     FROM sys.dual"), Is.EqualTo('1'));
+					Assert.That(conn.Execute<char?>("SELECT Cast('1' as nchar)     FROM sys.dual"), Is.EqualTo('1'));
+					Assert.That(conn.Execute<char>("SELECT Cast('1' as nchar(20)) FROM sys.dual"), Is.EqualTo('1'));
+					Assert.That(conn.Execute<char?>("SELECT Cast('1' as nchar(20)) FROM sys.dual"), Is.EqualTo('1'));
 
-				Assert.That(conn.Execute<char> ("SELECT Cast('1' as nvarchar2(20)) FROM sys.dual"), Is.EqualTo('1'));
-				Assert.That(conn.Execute<char?>("SELECT Cast('1' as nvarchar2(20)) FROM sys.dual"), Is.EqualTo('1'));
+					Assert.That(conn.Execute<char>("SELECT Cast('1' as nvarchar2(20)) FROM sys.dual"), Is.EqualTo('1'));
+					Assert.That(conn.Execute<char?>("SELECT Cast('1' as nvarchar2(20)) FROM sys.dual"), Is.EqualTo('1'));
 
-				Assert.That(conn.Execute<char> (PathThroughSql, DataParameter.Char    ("p", '1')),  Is.EqualTo('1'));
-				Assert.That(conn.Execute<char?>(PathThroughSql, DataParameter.Char    ("p", '1')),  Is.EqualTo('1'));
+					Assert.That(conn.Execute<char>(PathThroughSql, DataParameter.Char("p", '1')), Is.EqualTo('1'));
+					Assert.That(conn.Execute<char?>(PathThroughSql, DataParameter.Char("p", '1')), Is.EqualTo('1'));
 
-				Assert.That(conn.Execute<char> (PathThroughSql, DataParameter.VarChar ("p", '1')),  Is.EqualTo('1'));
-				Assert.That(conn.Execute<char?>(PathThroughSql, DataParameter.VarChar ("p", '1')),  Is.EqualTo('1'));
-				Assert.That(conn.Execute<char> (PathThroughSql, DataParameter.NChar   ("p", '1')),  Is.EqualTo('1'));
-				Assert.That(conn.Execute<char?>(PathThroughSql, DataParameter.NChar   ("p", '1')),  Is.EqualTo('1'));
-				Assert.That(conn.Execute<char> (PathThroughSql, DataParameter.NVarChar("p", '1')),  Is.EqualTo('1'));
-				Assert.That(conn.Execute<char?>(PathThroughSql, DataParameter.NVarChar("p", '1')),  Is.EqualTo('1'));
-				Assert.That(conn.Execute<char> (PathThroughSql, DataParameter.Create  ("p", '1')),  Is.EqualTo('1'));
-				Assert.That(conn.Execute<char?>(PathThroughSql, DataParameter.Create  ("p", '1')),  Is.EqualTo('1'));
+					Assert.That(conn.Execute<char>(PathThroughSql, DataParameter.VarChar("p", '1')), Is.EqualTo('1'));
+					Assert.That(conn.Execute<char?>(PathThroughSql, DataParameter.VarChar("p", '1')), Is.EqualTo('1'));
+					Assert.That(conn.Execute<char>(PathThroughSql, DataParameter.NChar("p", '1')), Is.EqualTo('1'));
+					Assert.That(conn.Execute<char?>(PathThroughSql, DataParameter.NChar("p", '1')), Is.EqualTo('1'));
+					Assert.That(conn.Execute<char>(PathThroughSql, DataParameter.NVarChar("p", '1')), Is.EqualTo('1'));
+					Assert.That(conn.Execute<char?>(PathThroughSql, DataParameter.NVarChar("p", '1')), Is.EqualTo('1'));
+					Assert.That(conn.Execute<char>(PathThroughSql, DataParameter.Create("p", '1')), Is.EqualTo('1'));
+					Assert.That(conn.Execute<char?>(PathThroughSql, DataParameter.Create("p", '1')), Is.EqualTo('1'));
 
-				Assert.That(conn.Execute<char> (PathThroughSql, new DataParameter { Name = "p", Value = '1' }), Is.EqualTo('1'));
-				Assert.That(conn.Execute<char?>(PathThroughSql, new DataParameter { Name = "p", Value = '1' }), Is.EqualTo('1'));
+					Assert.That(conn.Execute<char>(PathThroughSql, new DataParameter { Name = "p", Value = '1' }), Is.EqualTo('1'));
+					Assert.That(conn.Execute<char?>(PathThroughSql, new DataParameter { Name = "p", Value = '1' }), Is.EqualTo('1'));
+				}
 			}
 		}
 
 		[Test]
 		public void TestString([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var conn = GetDataConnection(context))
+			using (var conn = GetDataContext(context))
 			{
-				Assert.That(conn.Execute<string>("SELECT Cast('12345' as char(20)) FROM sys.dual"),     Is.EqualTo("12345"));
-				Assert.That(conn.Execute<string>("SELECT Cast(NULL    as char(20)) FROM sys.dual"),     Is.Null);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(conn.Execute<string>("SELECT Cast('12345' as char(20)) FROM sys.dual"), Is.EqualTo("12345"));
+					Assert.That(conn.Execute<string>("SELECT Cast(NULL    as char(20)) FROM sys.dual"), Is.Null);
 
-				Assert.That(conn.Execute<string>("SELECT Cast('12345' as varchar2(20)) FROM sys.dual"),  Is.EqualTo("12345"));
-				Assert.That(conn.Execute<string>("SELECT Cast(NULL    as varchar2(20)) FROM sys.dual"),  Is.Null);
+					Assert.That(conn.Execute<string>("SELECT Cast('12345' as varchar2(20)) FROM sys.dual"), Is.EqualTo("12345"));
+					Assert.That(conn.Execute<string>("SELECT Cast(NULL    as varchar2(20)) FROM sys.dual"), Is.Null);
 
-				Assert.That(conn.Execute<string>("SELECT \"textDataType\" FROM \"AllTypes\" WHERE ID = 2"),      Is.EqualTo("567"));
-				Assert.That(conn.Execute<string>("SELECT \"textDataType\" FROM \"AllTypes\" WHERE ID = 1"),      Is.Null);
+					Assert.That(conn.Execute<string>("SELECT \"textDataType\" FROM \"AllTypes\" WHERE ID = 2"), Is.EqualTo("567"));
+					Assert.That(conn.Execute<string>("SELECT \"textDataType\" FROM \"AllTypes\" WHERE ID = 1"), Is.Null);
 
-				Assert.That(conn.Execute<string>("SELECT Cast('12345' as nchar(20)) FROM sys.dual"),     Is.EqualTo("12345"));
-				Assert.That(conn.Execute<string>("SELECT Cast(NULL    as nchar(20)) FROM sys.dual"),     Is.Null);
+					Assert.That(conn.Execute<string>("SELECT Cast('12345' as nchar(20)) FROM sys.dual"), Is.EqualTo("12345"));
+					Assert.That(conn.Execute<string>("SELECT Cast(NULL    as nchar(20)) FROM sys.dual"), Is.Null);
 
-				Assert.That(conn.Execute<string>("SELECT Cast('12345' as nvarchar2(20)) FROM sys.dual"), Is.EqualTo("12345"));
-				Assert.That(conn.Execute<string>("SELECT Cast(NULL    as nvarchar2(20)) FROM sys.dual"), Is.Null);
+					Assert.That(conn.Execute<string>("SELECT Cast('12345' as nvarchar2(20)) FROM sys.dual"), Is.EqualTo("12345"));
+					Assert.That(conn.Execute<string>("SELECT Cast(NULL    as nvarchar2(20)) FROM sys.dual"), Is.Null);
 
-				Assert.That(conn.Execute<string>("SELECT \"ntextDataType\" FROM \"AllTypes\" WHERE ID = 2"),     Is.EqualTo("111"));
-				Assert.That(conn.Execute<string>("SELECT \"ntextDataType\" FROM \"AllTypes\" WHERE ID = 1"),     Is.Null);
+					Assert.That(conn.Execute<string>("SELECT \"ntextDataType\" FROM \"AllTypes\" WHERE ID = 2"), Is.EqualTo("111"));
+					Assert.That(conn.Execute<string>("SELECT \"ntextDataType\" FROM \"AllTypes\" WHERE ID = 1"), Is.Null);
 
-				Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.Char    ("p", "123")), Is.EqualTo("123"));
-				Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.VarChar ("p", "123")), Is.EqualTo("123"));
-				Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.Text    ("p", "123")), Is.EqualTo("123"));
-				Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.NChar   ("p", "123")), Is.EqualTo("123"));
-				Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.NVarChar("p", "123")), Is.EqualTo("123"));
-				Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.NText   ("p", "123")), Is.EqualTo("123"));
-				Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.Create  ("p", "123")), Is.EqualTo("123"));
+					Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.Char("p", "123")), Is.EqualTo("123"));
+					Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.VarChar("p", "123")), Is.EqualTo("123"));
+					Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.Text("p", "123")), Is.EqualTo("123"));
+					Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.NChar("p", "123")), Is.EqualTo("123"));
+					Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.NVarChar("p", "123")), Is.EqualTo("123"));
+					Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.NText("p", "123")), Is.EqualTo("123"));
+					Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.Create("p", "123")), Is.EqualTo("123"));
 
-				Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.Create("p", (string?)null)), Is.EqualTo(null));
-				Assert.That(conn.Execute<string>(PathThroughSql, new DataParameter { Name = "p", Value = "1" }), Is.EqualTo("1"));
+					Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.Create("p", (string?)null)), Is.Null);
+					Assert.That(conn.Execute<string>(PathThroughSql, new DataParameter { Name = "p", Value = "1" }), Is.EqualTo("1"));
+				}
 			}
 		}
 
@@ -419,74 +460,83 @@ namespace Tests.DataProvider
 			var arr1 = new byte[] {       0x30, 0x39 };
 			var arr2 = new byte[] { 0, 0, 0x30, 0x39 };
 
-			using (var conn = GetDataConnection(context))
+			using (var conn = GetDataContext(context))
 			{
-				Assert.That(conn.Execute<byte[]>("SELECT to_blob('3039')     FROM sys.dual"), Is.EqualTo(           arr1));
-				Assert.That(conn.Execute<Binary>("SELECT to_blob('00003039') FROM sys.dual"), Is.EqualTo(new Binary(arr2)));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(conn.Execute<byte[]>("SELECT to_blob('3039')     FROM sys.dual"), Is.EqualTo(arr1));
+					Assert.That(conn.Execute<Binary>("SELECT to_blob('00003039') FROM sys.dual"), Is.EqualTo(new Binary(arr2)));
 
-				Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.VarBinary("p", null)), Is.EqualTo(null));
-				Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.Binary   ("p", arr1)), Is.EqualTo(arr1));
-				Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.VarBinary("p", arr1)), Is.EqualTo(arr1));
-				Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.Create   ("p", arr1)), Is.EqualTo(arr1));
-				Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.VarBinary("p", Array<byte>.Empty)), Is.EqualTo(Array<byte>.Empty));
-				Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.Image    ("p", Array<byte>.Empty)), Is.EqualTo(Array<byte>.Empty));
-				Assert.That(conn.Execute<byte[]>(PathThroughSql, new DataParameter { Name = "p", Value = arr1 }), Is.EqualTo(arr1));
-				Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.Create   ("p", new Binary(arr1))), Is.EqualTo(arr1));
-				Assert.That(conn.Execute<byte[]>(PathThroughSql, new DataParameter("p", new Binary(arr1))), Is.EqualTo(arr1));
+					Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.VarBinary("p", null)), Is.Null);
+					Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.Binary("p", arr1)), Is.EqualTo(arr1));
+					Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.VarBinary("p", arr1)), Is.EqualTo(arr1));
+					Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.Create("p", arr1)), Is.EqualTo(arr1));
+					Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.VarBinary("p", Array.Empty<byte>())), Is.EqualTo(Array.Empty<byte>()));
+					Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.Image("p", Array.Empty<byte>())), Is.EqualTo(Array.Empty<byte>()));
+					Assert.That(conn.Execute<byte[]>(PathThroughSql, new DataParameter { Name = "p", Value = arr1 }), Is.EqualTo(arr1));
+					Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.Create("p", new Binary(arr1))), Is.EqualTo(arr1));
+					Assert.That(conn.Execute<byte[]>(PathThroughSql, new DataParameter("p", new Binary(arr1))), Is.EqualTo(arr1));
+				}
 			}
 		}
 
 		[Test]
 		public void TestOracleManagedTypes([IncludeDataSources(TestProvName.AllOracleManaged)] string context)
 		{
-			using (var conn = GetDataConnection(context))
+			using (var conn = GetDataContext(context))
 			{
 				var arr = new byte[] { 0x30, 0x39 };
-
-				Assert.That(conn.Execute<Oracle.ManagedDataAccess.Types.OracleBinary>   ("SELECT to_blob('3039')          FROM sys.dual").      Value, Is.EqualTo(arr));
-				Assert.That(conn.Execute<Oracle.ManagedDataAccess.Types.OracleBlob>     ("SELECT to_blob('3039')          FROM sys.dual").      Value, Is.EqualTo(arr));
-				Assert.That(conn.Execute<Oracle.ManagedDataAccess.Types.OracleDecimal>  ("SELECT Cast(1       as decimal) FROM sys.dual").      Value, Is.EqualTo(1));
-				Assert.That(conn.Execute<Oracle.ManagedDataAccess.Types.OracleString>   ("SELECT Cast('12345' as char(6)) FROM sys.dual").      Value, Is.EqualTo("12345 "));
-				Assert.That(conn.Execute<Oracle.ManagedDataAccess.Types.OracleClob>     ("SELECT \"ntextDataType\"     FROM \"AllTypes\" WHERE ID = 2").Value, Is.EqualTo("111"));
-				Assert.That(conn.Execute<Oracle.ManagedDataAccess.Types.OracleDate>     ("SELECT \"datetimeDataType\"  FROM \"AllTypes\" WHERE ID = 2").Value, Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12)));
-				Assert.That(conn.Execute<Oracle.ManagedDataAccess.Types.OracleTimeStamp>("SELECT \"datetime2DataType\" FROM \"AllTypes\" WHERE ID = 2").Value, Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12, 12)));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(conn.Execute<Oracle.ManagedDataAccess.Types.OracleBinary>("SELECT to_blob('3039')          FROM sys.dual").Value, Is.EqualTo(arr));
+					Assert.That(conn.Execute<Oracle.ManagedDataAccess.Types.OracleBlob>("SELECT to_blob('3039')          FROM sys.dual").Value, Is.EqualTo(arr));
+					Assert.That(conn.Execute<Oracle.ManagedDataAccess.Types.OracleDecimal>("SELECT Cast(1       as decimal) FROM sys.dual").Value, Is.EqualTo(1));
+					Assert.That(conn.Execute<Oracle.ManagedDataAccess.Types.OracleString>("SELECT Cast('12345' as char(6)) FROM sys.dual").Value, Is.EqualTo("12345 "));
+					Assert.That(conn.Execute<Oracle.ManagedDataAccess.Types.OracleClob>("SELECT \"ntextDataType\"     FROM \"AllTypes\" WHERE ID = 2").Value, Is.EqualTo("111"));
+					Assert.That(conn.Execute<Oracle.ManagedDataAccess.Types.OracleDate>("SELECT \"datetimeDataType\"  FROM \"AllTypes\" WHERE ID = 2").Value, Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12)));
+					Assert.That(conn.Execute<Oracle.ManagedDataAccess.Types.OracleTimeStamp>("SELECT \"datetime2DataType\" FROM \"AllTypes\" WHERE ID = 2").Value, Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12, 12)));
+				}
 			}
 		}
 
 		[Test]
 		public void TestOracleDevartTypes([IncludeDataSources(TestProvName.AllOracleDevart)] string context)
 		{
-			using (var conn = GetDataConnection(context))
+			using (var conn = GetDataContext(context))
 			{
 				var arr = new byte[] { 0x30, 0x39 };
-
-				Assert.That(conn.Execute<DA.OracleBinary   >("SELECT to_blob('3039')          FROM sys.dual").Value, Is.EqualTo(arr));
-				Assert.That(conn.Execute<DA.OracleLob      >("SELECT to_blob('3039')          FROM sys.dual").Value, Is.EqualTo(arr));
-				Assert.That(conn.Execute<DA.OracleNumber   >("SELECT Cast(1       as decimal) FROM sys.dual").Value, Is.EqualTo(1));
-				// note Devart provider trims char from OracleString even with trimming disabled in connection string...
-				Assert.That(conn.Execute<DA.OracleString   >("SELECT Cast('12345' as char(6)) FROM sys.dual").Value, Is.EqualTo("12345"));
-				Assert.That(conn.Execute<DA.OracleLob      >("SELECT \"ntextDataType\"     FROM \"AllTypes\" WHERE ID = 2").Value, Is.EqualTo("111"));
-				Assert.That(conn.Execute<DA.OracleDate     >("SELECT \"datetimeDataType\"  FROM \"AllTypes\" WHERE ID = 2").Value, Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12)));
-				Assert.That(conn.Execute<DA.OracleTimeStamp>("SELECT \"datetime2DataType\" FROM \"AllTypes\" WHERE ID = 2").Value, Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12, 12)));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(conn.Execute<DA.OracleBinary>("SELECT to_blob('3039')          FROM sys.dual").Value, Is.EqualTo(arr));
+					Assert.That(conn.Execute<DA.OracleLob>("SELECT to_blob('3039')          FROM sys.dual").Value, Is.EqualTo(arr));
+					Assert.That(conn.Execute<DA.OracleNumber>("SELECT Cast(1       as decimal) FROM sys.dual").Value, Is.EqualTo(1));
+					// note Devart provider trims char from OracleString even with trimming disabled in connection string...
+					Assert.That(conn.Execute<DA.OracleString>("SELECT Cast('12345' as char(6)) FROM sys.dual").Value, Is.EqualTo("12345"));
+					Assert.That(conn.Execute<DA.OracleLob>("SELECT \"ntextDataType\"     FROM \"AllTypes\" WHERE ID = 2").Value, Is.EqualTo("111"));
+					Assert.That(conn.Execute<DA.OracleDate>("SELECT \"datetimeDataType\"  FROM \"AllTypes\" WHERE ID = 2").Value, Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12)));
+					Assert.That(conn.Execute<DA.OracleTimeStamp>("SELECT \"datetime2DataType\" FROM \"AllTypes\" WHERE ID = 2").Value, Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12, 12)));
+				}
 			}
 		}
 
-#if NET472
+#if NETFRAMEWORK
 
 		[Test]
 		public void TestOracleNativeTypes([IncludeDataSources(TestProvName.AllOracleNative)] string context)
 		{
-			using (var conn = GetDataConnection(context))
+			using (var conn = GetDataContext(context))
 			{
 				var arr = new byte[] { 0x30, 0x39 };
-
-				Assert.That(conn.Execute<Oracle.DataAccess.Types.OracleBinary>   ("SELECT to_blob('3039')          FROM sys.dual").      Value, Is.EqualTo(arr));
-				Assert.That(conn.Execute<Oracle.DataAccess.Types.OracleBlob>     ("SELECT to_blob('3039')          FROM sys.dual").      Value, Is.EqualTo(arr));
-				Assert.That(conn.Execute<Oracle.DataAccess.Types.OracleDecimal>  ("SELECT Cast(1       as decimal) FROM sys.dual").      Value, Is.EqualTo(1));
-				Assert.That(conn.Execute<Oracle.DataAccess.Types.OracleString>   ("SELECT Cast('12345' as char(6)) FROM sys.dual").      Value, Is.EqualTo("12345 "));
-				Assert.That(conn.Execute<Oracle.DataAccess.Types.OracleClob>     ("SELECT \"ntextDataType\"     FROM \"AllTypes\" WHERE ID = 2").Value, Is.EqualTo("111"));
-				Assert.That(conn.Execute<Oracle.DataAccess.Types.OracleDate>     ("SELECT \"datetimeDataType\"  FROM \"AllTypes\" WHERE ID = 2").Value, Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12)));
-				Assert.That(conn.Execute<Oracle.DataAccess.Types.OracleTimeStamp>("SELECT \"datetime2DataType\" FROM \"AllTypes\" WHERE ID = 2").Value, Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12, 12)));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(conn.Execute<Oracle.DataAccess.Types.OracleBinary>("SELECT to_blob('3039')          FROM sys.dual").Value, Is.EqualTo(arr));
+					Assert.That(conn.Execute<Oracle.DataAccess.Types.OracleBlob>("SELECT to_blob('3039')          FROM sys.dual").Value, Is.EqualTo(arr));
+					Assert.That(conn.Execute<Oracle.DataAccess.Types.OracleDecimal>("SELECT Cast(1       as decimal) FROM sys.dual").Value, Is.EqualTo(1));
+					Assert.That(conn.Execute<Oracle.DataAccess.Types.OracleString>("SELECT Cast('12345' as char(6)) FROM sys.dual").Value, Is.EqualTo("12345 "));
+					Assert.That(conn.Execute<Oracle.DataAccess.Types.OracleClob>("SELECT \"ntextDataType\"     FROM \"AllTypes\" WHERE ID = 2").Value, Is.EqualTo("111"));
+					Assert.That(conn.Execute<Oracle.DataAccess.Types.OracleDate>("SELECT \"datetimeDataType\"  FROM \"AllTypes\" WHERE ID = 2").Value, Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12)));
+					Assert.That(conn.Execute<Oracle.DataAccess.Types.OracleTimeStamp>("SELECT \"datetime2DataType\" FROM \"AllTypes\" WHERE ID = 2").Value, Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12, 12)));
+				}
 			}
 		}
 
@@ -496,36 +546,44 @@ namespace Tests.DataProvider
 		public void TestGuid([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
 			using (new DisableBaseline("Server-side guid generation test"))
-			using (var conn = GetDataConnection(context))
+			using (var conn = GetDataContext(context))
 			{
 				var guid = conn.Execute<Guid>("SELECT \"guidDataType\" FROM \"AllTypes\" WHERE ID = 2");
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(conn.Execute<Guid?>("SELECT \"guidDataType\" FROM \"AllTypes\" WHERE ID = 1"), Is.Null);
+					Assert.That(conn.Execute<Guid?>("SELECT \"guidDataType\" FROM \"AllTypes\" WHERE ID = 2"), Is.EqualTo(guid));
 
-				Assert.That(conn.Execute<Guid?>("SELECT \"guidDataType\" FROM \"AllTypes\" WHERE ID = 1"), Is.EqualTo(null));
-				Assert.That(conn.Execute<Guid?>("SELECT \"guidDataType\" FROM \"AllTypes\" WHERE ID = 2"), Is.EqualTo(guid));
-
-				Assert.That(conn.Execute<Guid>(PathThroughSql, DataParameter.Create("p", guid)),                Is.EqualTo(guid));
-				Assert.That(conn.Execute<Guid>(PathThroughSql, new DataParameter { Name = "p", Value = guid }), Is.EqualTo(guid));
+					Assert.That(conn.Execute<Guid>(PathThroughSql, DataParameter.Create("p", guid)), Is.EqualTo(guid));
+					Assert.That(conn.Execute<Guid>(PathThroughSql, new DataParameter { Name = "p", Value = guid }), Is.EqualTo(guid));
+				}
 			}
 		}
 
 		[Test]
 		public void TestXml([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var conn = GetDataConnection(context))
+			using (var conn = GetDataContext(context))
 			{
-				Assert.That(conn.Execute<string>     ("SELECT XMLTYPE('<xml/>') FROM sys.dual").TrimEnd(),  Is.EqualTo("<xml/>"));
-				Assert.That(conn.Execute<XDocument>  ("SELECT XMLTYPE('<xml/>') FROM sys.dual").ToString(), Is.EqualTo("<xml />"));
-				Assert.That(conn.Execute<XmlDocument>("SELECT XMLTYPE('<xml/>') FROM sys.dual").InnerXml,   Is.EqualTo("<xml />"));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(conn.Execute<string>("SELECT XMLTYPE('<xml/>') FROM sys.dual").TrimEnd(), Is.EqualTo("<xml/>"));
+					Assert.That(conn.Execute<XDocument>("SELECT XMLTYPE('<xml/>') FROM sys.dual").ToString(), Is.EqualTo("<xml />"));
+					Assert.That(conn.Execute<XmlDocument>("SELECT XMLTYPE('<xml/>') FROM sys.dual").InnerXml, Is.EqualTo("<xml />"));
+				}
 
 				var xdoc = XDocument.Parse("<xml/>");
 				var xml  = Convert<string,XmlDocument>.Lambda("<xml/>");
 
 				var xmlExpected = context.IsAnyOf(TestProvName.AllOracleNative) ? "<xml/>\n" : "<xml/>";
-				Assert.That(conn.Execute<string>     (PathThroughSql, DataParameter.Xml("p", "<xml/>")),        Is.EqualTo(xmlExpected));
-				Assert.That(conn.Execute<XDocument>  (PathThroughSql, DataParameter.Xml("p", xdoc)).ToString(), Is.EqualTo("<xml />"));
-				Assert.That(conn.Execute<XmlDocument>(PathThroughSql, DataParameter.Xml("p", xml)). InnerXml,   Is.EqualTo("<xml />"));
-				Assert.That(conn.Execute<XDocument>  (PathThroughSql, new DataParameter("p", xdoc)).ToString(), Is.EqualTo("<xml />"));
-				Assert.That(conn.Execute<XDocument>  (PathThroughSql, new DataParameter("p", xml)). ToString(), Is.EqualTo("<xml />"));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.Xml("p", "<xml/>")), Is.EqualTo(xmlExpected));
+					Assert.That(conn.Execute<XDocument>(PathThroughSql, DataParameter.Xml("p", xdoc)).ToString(), Is.EqualTo("<xml />"));
+					Assert.That(conn.Execute<XmlDocument>(PathThroughSql, DataParameter.Xml("p", xml)).InnerXml, Is.EqualTo("<xml />"));
+					Assert.That(conn.Execute<XDocument>(PathThroughSql, new DataParameter("p", xdoc)).ToString(), Is.EqualTo("<xml />"));
+					Assert.That(conn.Execute<XDocument>(PathThroughSql, new DataParameter("p", xml)).ToString(), Is.EqualTo("<xml />"));
+				}
 			}
 		}
 
@@ -538,37 +596,42 @@ namespace Tests.DataProvider
 		[Test]
 		public void TestEnum1([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var conn = GetDataConnection(context))
+			using (var conn = GetDataContext(context))
 			{
-				Assert.That(conn.Execute<TestEnum> ("SELECT 'A' FROM sys.dual"), Is.EqualTo(TestEnum.AA));
-				Assert.That(conn.Execute<TestEnum?>("SELECT 'A' FROM sys.dual"), Is.EqualTo(TestEnum.AA));
-				Assert.That(conn.Execute<TestEnum> ("SELECT 'B' FROM sys.dual"), Is.EqualTo(TestEnum.BB));
-				Assert.That(conn.Execute<TestEnum?>("SELECT 'B' FROM sys.dual"), Is.EqualTo(TestEnum.BB));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(conn.Execute<TestEnum>("SELECT 'A' FROM sys.dual"), Is.EqualTo(TestEnum.AA));
+					Assert.That(conn.Execute<TestEnum?>("SELECT 'A' FROM sys.dual"), Is.EqualTo(TestEnum.AA));
+					Assert.That(conn.Execute<TestEnum>("SELECT 'B' FROM sys.dual"), Is.EqualTo(TestEnum.BB));
+					Assert.That(conn.Execute<TestEnum?>("SELECT 'B' FROM sys.dual"), Is.EqualTo(TestEnum.BB));
+				}
 			}
 		}
 
 		[Test]
 		public void TestEnum2([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var conn = GetDataConnection(context))
+			using (var conn = GetDataContext(context))
 			{
-				Assert.That(conn.Execute<string>(PathThroughSql, new { p = TestEnum.AA }),            Is.EqualTo("A"));
-				Assert.That(conn.Execute<string>(PathThroughSql, new { p = (TestEnum?)TestEnum.BB }), Is.EqualTo("B"));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(conn.Execute<string>(PathThroughSql, new { p = TestEnum.AA }), Is.EqualTo("A"));
+					Assert.That(conn.Execute<string>(PathThroughSql, new { p = (TestEnum?)TestEnum.BB }), Is.EqualTo("B"));
 
-				Assert.That(conn.Execute<string>(PathThroughSql, new { p = ConvertTo<string>.From((TestEnum?)TestEnum.AA) }), Is.EqualTo("A"));
-				Assert.That(conn.Execute<string>(PathThroughSql, new { p = ConvertTo<string>.From(TestEnum.AA) }), Is.EqualTo("A"));
-				Assert.That(conn.Execute<string>(PathThroughSql, new { p = conn.MappingSchema.GetConverter<TestEnum?,string>()!(TestEnum.AA) }), Is.EqualTo("A"));
+					Assert.That(conn.Execute<string>(PathThroughSql, new { p = ConvertTo<string>.From((TestEnum?)TestEnum.AA) }), Is.EqualTo("A"));
+					Assert.That(conn.Execute<string>(PathThroughSql, new { p = ConvertTo<string>.From(TestEnum.AA) }), Is.EqualTo("A"));
+					Assert.That(conn.Execute<string>(PathThroughSql, new { p = conn.MappingSchema.GetConverter<TestEnum?, string>()!(TestEnum.AA) }), Is.EqualTo("A"));
+				}
 			}
 		}
 
 		[Test]
 		public void TestTreatEmptyStringsAsNulls([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var table    = db.GetTable<OracleSpecific.StringTest>();
 				var expected = table.Where(_ => _.KeyValue == "NullValues").ToList();
-
 
 				AreEqual(expected, table.Where(_ => string.IsNullOrEmpty(_.StringValue1)));
 				AreEqual(expected, table.Where(_ => string.IsNullOrEmpty(_.StringValue2)));
@@ -642,7 +705,7 @@ namespace Tests.DataProvider
 			[Column(DataType = DataType.NVarChar      , Length = 40)  , Nullable                            ] public string?         nvarcharDataType       { get; set; } // NVARCHAR2(40)
 			[Column(DataType = DataType.NText         , Length = 4000), Nullable                            ] public string?         ntextDataType          { get; set; } // NCLOB
 			[Column(DataType = DataType.Blob          , Length = 4000), Nullable                            ] public byte[]?         binaryDataType         { get; set; } // BLOB
-			[Column(DataType = DataType.VarBinary     , Length = 530) , Nullable                            ] public byte[]?         bfileDataType          { get; set; } // BFILE
+			[Column(DataType = DataType.BFile)                                                              ] public byte[]?         bfileDataType          { get; set; } // BFILE
 			[Column(DataType = DataType.Binary        , Length = 16)  , Nullable                            ] public byte[]?         guidDataType           { get; set; } // RAW(16)
 			[Column(DataType = DataType.Long)         , Nullable                                            ] public string?         longDataType           { get; set; } // LONG
 			[Column(DataType = DataType.Xml           , Length = 2000), Nullable                            ] public string?         xmlDataType            { get; set; } // XMLTYPE
@@ -660,7 +723,7 @@ namespace Tests.DataProvider
 		[Test]
 		public void TestTimeSpan([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				db.BeginTransaction();
 
@@ -673,7 +736,7 @@ namespace Tests.DataProvider
 		[Test]
 		public void DateTimeTest1([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				db.GetTable<AllTypes>().Delete(t => t.ID >= 1000);
 
@@ -697,7 +760,7 @@ namespace Tests.DataProvider
 		[Test]
 		public async Task DateTimeTest1Async([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				db.GetTable<AllTypes>().Delete(t => t.ID >= 1000);
 
@@ -723,7 +786,7 @@ namespace Tests.DataProvider
 		{
 			ResetAllTypesIdentity(context);
 
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			using (db.BeginTransaction())
 			{
 				db.InlineParameters = false;
@@ -750,7 +813,7 @@ namespace Tests.DataProvider
 		{
 			ResetAllTypesIdentity(context);
 
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			using (db.BeginTransaction())
 			{
 				db.InlineParameters = false;
@@ -779,7 +842,7 @@ namespace Tests.DataProvider
 		[Test]
 		public void SelectDateTime([IncludeDataSources(TestProvName.AllOracleNative)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var ms = new MappingSchema();
 
@@ -802,8 +865,7 @@ namespace Tests.DataProvider
 
 				db.AddMappingSchema(ms);
 
-				var res = db.GetTable<AllTypes>().Where(e => e.datetime2DataType == TestData.DateTime).ToList();
-				Debug.WriteLine(res.Count);
+				db.GetTable<AllTypes>().Where(e => e.datetime2DataType == TestData.DateTime).ToList();
 			}
 		}
 
@@ -826,7 +888,7 @@ namespace Tests.DataProvider
 					stringBuilder.AppendFormat(format, value);
 				});
 
-			using (var db = GetDataConnection(context, ms))
+			using (var db = GetDataContext(context, ms))
 			{
 				db.GetTable<AllTypes>().Delete(t => t.ID >= 1000);
 
@@ -866,7 +928,7 @@ namespace Tests.DataProvider
 					stringBuilder.AppendFormat(format, value);
 				});
 
-			using (var db = GetDataConnection(context, ms))
+			using (var db = GetDataContext(context, ms))
 			{
 				db.GetTable<AllTypes>().Delete(t => t.ID >= 1000);
 
@@ -906,13 +968,13 @@ namespace Tests.DataProvider
 
 				_ = query.FirstOrDefault();
 
-				Assert.That(parameters.Length, Is.EqualTo(2));
+				parameters.Length.ShouldBe(1);
 
 				if (context.IsAnyOf(TestProvName.AllOracleDevart))
 					// another case of sloppy implementation by devart...
-					Assert.True(parameters.Any(p => p.DbType == DbType.DateTime));
+					Assert.That(parameters.Any(p => p.DbType == DbType.DateTime), Is.True);
 				else
-					Assert.True(parameters.Any(p => p.DbType == DbType.Date));
+					Assert.That(parameters.Any(p => p.DbType == DbType.Date), Is.True);
 			}
 		}
 
@@ -936,13 +998,13 @@ namespace Tests.DataProvider
 
 				_ = query.FirstOrDefault();
 
-				Assert.That(parameters.Length, Is.EqualTo(2));
+				parameters.Length.ShouldBe(1);
 
 				if (context.IsAnyOf(TestProvName.AllOracleDevart))
 					// another case of sloppy implementation by devart...
-					Assert.True(parameters.Any(p => p.DbType == DbType.DateTime));
+					Assert.That(parameters.Any(p => p.DbType == DbType.DateTime), Is.True);
 				else
-					Assert.True(parameters.Any(p => p.DbType == DbType.Date));
+					Assert.That(parameters.Any(p => p.DbType == DbType.Date), Is.True);
 			}
 		}
 
@@ -953,44 +1015,44 @@ namespace Tests.DataProvider
 		[Test]
 		public void SequenceInsert([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var db = GetDataContext(context))
-			{
-				db.GetTable<OracleSpecific.SequenceTest>().Where(_ => _.Value == "SeqValue").Delete();
-				db.Insert(new OracleSpecific.SequenceTest { Value = "SeqValue" });
+			using var _ = new DisableBaseline("Sequence values could vary for Oracle");
+			using var db = GetDataContext(context);
 
-				var id = db.GetTable<OracleSpecific.SequenceTest>().Single(_ => _.Value == "SeqValue").ID;
+			db.GetTable<OracleSpecific.SequenceTest>().Where(_ => _.Value == "SeqValue").Delete();
+			db.Insert(new OracleSpecific.SequenceTest { Value = "SeqValue" });
 
-				db.GetTable<OracleSpecific.SequenceTest>().Where(_ => _.ID == id).Delete();
+			var id = db.GetTable<OracleSpecific.SequenceTest>().Single(_ => _.Value == "SeqValue").ID;
 
-				Assert.AreEqual(0, db.GetTable<OracleSpecific.SequenceTest>().Count(_ => _.Value == "SeqValue"));
-			}
+			db.GetTable<OracleSpecific.SequenceTest>().Where(_ => _.ID == id).Delete();
+
+			Assert.That(db.GetTable<OracleSpecific.SequenceTest>().Count(_ => _.Value == "SeqValue"), Is.Zero);
 		}
 
 		[Test]
 		public void SequenceInsertWithIdentity([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var db = GetDataContext(context))
-			{
-				db.GetTable<OracleSpecific.SequenceTest>().Where(_ => _.Value == "SeqValue").Delete();
+			using var _ = new DisableBaseline("Sequence values could vary for Oracle");
+			using var db = GetDataContext(context);
 
-				var id1 = Convert.ToInt32(db.InsertWithIdentity(new OracleSpecific.SequenceTest { Value = "SeqValue" }));
-				var id2 = db.GetTable<OracleSpecific.SequenceTest>().Single(_ => _.Value == "SeqValue").ID;
+			db.GetTable<OracleSpecific.SequenceTest>().Where(_ => _.Value == "SeqValue").Delete();
 
-				Assert.AreEqual(id1, id2);
+			var id1 = Convert.ToInt32(db.InsertWithIdentity(new OracleSpecific.SequenceTest { Value = "SeqValue" }));
+			var id2 = db.GetTable<OracleSpecific.SequenceTest>().Single(_ => _.Value == "SeqValue").ID;
 
-				db.GetTable<OracleSpecific.SequenceTest>().Where(_ => _.ID == id1).Delete();
+			Assert.That(id2, Is.EqualTo(id1));
 
-				Assert.AreEqual(0, db.GetTable<OracleSpecific.SequenceTest>().Count(_ => _.Value == "SeqValue"));
-			}
+			db.GetTable<OracleSpecific.SequenceTest>().Where(_ => _.ID == id1).Delete();
+
+			Assert.That(db.GetTable<OracleSpecific.SequenceTest>().Count(_ => _.Value == "SeqValue"), Is.Zero);
 		}
 
 #endregion
 
 #region BulkCopy
 
-		void BulkCopyLinqTypes(string context, BulkCopyType bulkCopyType)
+		void BulkCopyLinqTypes(string context, BulkCopyType bulkCopyType, AlternativeBulkCopy alternativeBulkCopy)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context, o => o.UseOracle(o => o with { AlternativeBulkCopy = alternativeBulkCopy })))
 			{
 				if (bulkCopyType == BulkCopyType.ProviderSpecific)
 				{
@@ -1038,72 +1100,13 @@ namespace Tests.DataProvider
 			}
 		}
 
-		void BulkCopyLinqTypes(string context, BulkCopyType bulkCopyType, AlternativeBulkCopy alternativeBulkCopy)
+		async Task BulkCopyLinqTypesAsync(string context, BulkCopyType bulkCopyType, AlternativeBulkCopy alternativeBulkCopy)
 		{
-			var cs = DataConnection.GetConnectionString(context);
-			var builder = new DataOptions()
-				.UseOracle(cs, o => o with { AlternativeBulkCopy = alternativeBulkCopy });
-
-			using (var db = new TestDataConnection(builder))
+			using (var db = GetDataContext(context, o => o.UseOracle(o => o with { AlternativeBulkCopy = alternativeBulkCopy })))
 			{
 				if (bulkCopyType == BulkCopyType.ProviderSpecific)
 				{
 					var ms = new MappingSchema();
-
-					new FluentMappingBuilder(ms)
-						.Entity<LinqDataTypes>()
-							.Property(e => e.GuidValue)
-								.IsNotColumn()
-						;
-
-					if (context.IsAnyOf(TestProvName.AllOracleNative))
-					{
-						new FluentMappingBuilder(ms)
-							.Entity<LinqDataTypes>()
-								.Property(e => e.BoolValue)
-									.HasDataType(DataType.Int16)
-							;
-					}
-
-					db.AddMappingSchema(ms);
-				}
-
-				try
-				{
-					db.BulkCopy(
-						new BulkCopyOptions { BulkCopyType = bulkCopyType },
-						Enumerable.Range(0, 10).Select(n =>
-							new LinqDataTypes
-							{
-								ID            = 4000 + n,
-								MoneyValue    = 1000m + n,
-								DateTimeValue = new DateTime(2001,  1,  11,  1, 11, 21, 100),
-								BoolValue     = true,
-								GuidValue     = TestData.SequentialGuid(n),
-								SmallIntValue = (short)n
-							}
-						));
-				}
-				finally
-				{
-					db.GetTable<LinqDataTypes>().Delete(p => p.ID >= 4000);
-				}
-			}
-		}
-
-		async Task BulkCopyLinqTypesAsync(string context, BulkCopyType bulkCopyType)
-		{
-			using (var db = GetDataConnection(context))
-			{
-				if (bulkCopyType == BulkCopyType.ProviderSpecific)
-				{
-					var ms = new MappingSchema();
-
-					new FluentMappingBuilder(ms)
-						.Entity<LinqDataTypes>()
-							.Property(e => e.GuidValue)
-								.IsNotColumn()
-						.Build();
 
 					if (context.IsAnyOf(TestProvName.AllOracleNative))
 					{
@@ -1140,60 +1143,12 @@ namespace Tests.DataProvider
 			}
 		}
 
-		async Task BulkCopyLinqTypesAsync(string context, BulkCopyType bulkCopyType, AlternativeBulkCopy alternativeBulkCopy)
-		{
-			var cs      = DataConnection.GetConnectionString(context);
-			var builder = new DataOptions().UseOracle(cs, o => o with { AlternativeBulkCopy = alternativeBulkCopy });
-
-			using (var db = new TestDataConnection(builder))
-			{
-				if (bulkCopyType == BulkCopyType.ProviderSpecific)
-				{
-					var ms = new MappingSchema();
-
-					if (context.IsAnyOf(TestProvName.AllOracleNative))
-					{
-						new FluentMappingBuilder(ms)
-							.Entity<LinqDataTypes>()
-							.Property(e => e.BoolValue)
-							.HasDataType(DataType.Int16)
-							.Build()
-							;
-					}
-
-					db.AddMappingSchema(ms);
-				}
-
-				try
-				{
-					await db.BulkCopyAsync(
-						new BulkCopyOptions { BulkCopyType = bulkCopyType },
-						Enumerable.Range(0, 10).Select(n =>
-							new LinqDataTypes
-							{
-								ID            = 4000  + n,
-								MoneyValue    = 1000m + n,
-								DateTimeValue = new DateTime(2001,  1,  11,  1, 11, 21, 100),
-								BoolValue     = true,
-								GuidValue     = TestData.SequentialGuid(n),
-								SmallIntValue = (short)n
-							}
-						));
-				}
-				finally
-				{
-					await db.GetTable<LinqDataTypes>().DeleteAsync(p => p.ID >= 4000);
-				}
-			}
-		}
-
 		[Test]
 		public void BulkCopyLinqTypesMultipleRows(
 			[IncludeDataSources(TestProvName.AllOracle)] string context,
 			[Values]                                     AlternativeBulkCopy useAlternativeBulkCopy)
 		{
-			using var mode = new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy);
-			BulkCopyLinqTypes(context, BulkCopyType.MultipleRows);
+			BulkCopyLinqTypes(context, BulkCopyType.MultipleRows, useAlternativeBulkCopy);
 		}
 
 		[Test]
@@ -1201,8 +1156,7 @@ namespace Tests.DataProvider
 			[IncludeDataSources(TestProvName.AllOracle)] string context,
 			[Values]                                     AlternativeBulkCopy useAlternativeBulkCopy)
 		{
-			using var mode = new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy);
-			await BulkCopyLinqTypesAsync(context, BulkCopyType.MultipleRows);
+			await BulkCopyLinqTypesAsync(context, BulkCopyType.MultipleRows, useAlternativeBulkCopy);
 		}
 
 		[Test]
@@ -1210,8 +1164,7 @@ namespace Tests.DataProvider
 			[IncludeDataSources(TestProvName.AllOracle)] string context,
 			[Values]                                     AlternativeBulkCopy useAlternativeBulkCopy)
 		{
-			using var mode = new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy);
-			BulkCopyLinqTypes(context, BulkCopyType.ProviderSpecific);
+			BulkCopyLinqTypes(context, BulkCopyType.ProviderSpecific, useAlternativeBulkCopy);
 		}
 
 		[Test]
@@ -1219,8 +1172,7 @@ namespace Tests.DataProvider
 			[IncludeDataSources(TestProvName.AllOracle)] string context,
 			[Values]                                     AlternativeBulkCopy useAlternativeBulkCopy)
 		{
-			using var mode = new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy);
-			await BulkCopyLinqTypesAsync(context, BulkCopyType.ProviderSpecific);
+			await BulkCopyLinqTypesAsync(context, BulkCopyType.ProviderSpecific, useAlternativeBulkCopy);
 		}
 
 		[Test]
@@ -1228,8 +1180,7 @@ namespace Tests.DataProvider
 			[IncludeDataSources(TestProvName.AllOracle)] string context,
 			[Values]                                     AlternativeBulkCopy useAlternativeBulkCopy)
 		{
-			using var mode = new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy);
-			BulkCopyRetrieveSequence(context, BulkCopyType.ProviderSpecific);
+			BulkCopyRetrieveSequence(context, BulkCopyType.ProviderSpecific, useAlternativeBulkCopy);
 		}
 
 		[Test]
@@ -1237,8 +1188,7 @@ namespace Tests.DataProvider
 			[IncludeDataSources(TestProvName.AllOracle)] string context,
 			[Values]                                     AlternativeBulkCopy useAlternativeBulkCopy)
 		{
-			using var mode = new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy);
-			await BulkCopyRetrieveSequenceAsync(context, BulkCopyType.ProviderSpecific);
+			await BulkCopyRetrieveSequenceAsync(context, BulkCopyType.ProviderSpecific, useAlternativeBulkCopy);
 		}
 
 		[Test]
@@ -1246,8 +1196,7 @@ namespace Tests.DataProvider
 			[IncludeDataSources(TestProvName.AllOracle)] string context,
 			[Values]                                     AlternativeBulkCopy useAlternativeBulkCopy)
 		{
-			using var mode = new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy);
-			BulkCopyRetrieveSequence(context, BulkCopyType.MultipleRows);
+			BulkCopyRetrieveSequence(context, BulkCopyType.MultipleRows, useAlternativeBulkCopy);
 		}
 
 		[Test]
@@ -1255,8 +1204,7 @@ namespace Tests.DataProvider
 			[IncludeDataSources(TestProvName.AllOracle)] string context,
 			[Values]                                     AlternativeBulkCopy useAlternativeBulkCopy)
 		{
-			using var mode = new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy);
-			await BulkCopyRetrieveSequenceAsync(context, BulkCopyType.MultipleRows);
+			await BulkCopyRetrieveSequenceAsync(context, BulkCopyType.MultipleRows, useAlternativeBulkCopy);
 		}
 
 		[Test]
@@ -1264,8 +1212,7 @@ namespace Tests.DataProvider
 			[IncludeDataSources(TestProvName.AllOracle)] string              context,
 			[Values]                                     AlternativeBulkCopy useAlternativeBulkCopy)
 		{
-			using var mode = new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy);
-			BulkCopyRetrieveSequence(context, BulkCopyType.RowByRow);
+			BulkCopyRetrieveSequence(context, BulkCopyType.RowByRow, useAlternativeBulkCopy);
 		}
 
 		[Test]
@@ -1273,8 +1220,7 @@ namespace Tests.DataProvider
 			[IncludeDataSources(TestProvName.AllOracle)] string              context,
 			[Values]                                     AlternativeBulkCopy useAlternativeBulkCopy)
 		{
-			using var mode = new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy);
-			await BulkCopyRetrieveSequenceAsync(context, BulkCopyType.RowByRow);
+			await BulkCopyRetrieveSequenceAsync(context, BulkCopyType.RowByRow, useAlternativeBulkCopy);
 		}
 
 		[Test]
@@ -1357,41 +1303,6 @@ namespace Tests.DataProvider
 			await BulkCopyRetrieveSequenceAsync(context, BulkCopyType.RowByRow, useAlternativeBulkCopy);
 		}
 
-		void BulkCopyRetrieveSequence(string context, BulkCopyType bulkCopyType)
-		{
-			var data = new[]
-			{
-				new OracleSpecific.SequenceTest { Value = "Value"},
-				new OracleSpecific.SequenceTest { Value = "Value"},
-				new OracleSpecific.SequenceTest { Value = "Value"},
-				new OracleSpecific.SequenceTest { Value = "Value"},
-			};
-
-			using (var db = GetDataConnection(context))
-			{
-				db.GetTable<OracleSpecific.SequenceTest>().Where(_ => _.Value == "SeqValue").Delete();
-
-				var options = new BulkCopyOptions
-				{
-					MaxBatchSize       = 5,
-					//RetrieveSequence   = true,
-					KeepIdentity       = bulkCopyType != BulkCopyType.RowByRow,
-					BulkCopyType       = bulkCopyType,
-					NotifyAfter        = 3,
-					RowsCopiedCallback = copied => Debug.WriteLine(copied.RowsCopied)
-				};
-
-				db.BulkCopy(options, data.RetrieveIdentity(db));
-
-				foreach (var d in data)
-				{
-					Assert.That(d.ID, Is.GreaterThan(0));
-				}
-
-				//Assert.That(options.BulkCopyType, Is.EqualTo(bulkCopyType));
-			}
-		}
-
 		void BulkCopyRetrieveSequence(string context, BulkCopyType bulkCopyType, AlternativeBulkCopy alternativeBulkCopy)
 		{
 			var data = new[]
@@ -1402,45 +1313,7 @@ namespace Tests.DataProvider
 				new OracleSpecific.SequenceTest { Value = "Value"},
 			};
 
-			var cs      = DataConnection.GetConnectionString(context);
-			var builder = new DataOptions().UseOracle(cs, o => o with { AlternativeBulkCopy = alternativeBulkCopy });
-
-			using (var db = new TestDataConnection(builder))
-			{
-				db.GetTable<OracleSpecific.SequenceTest>().Where(_ => _.Value == "SeqValue").Delete();
-
-				var options = new BulkCopyOptions
-				{
-					MaxBatchSize = 5,
-					//RetrieveSequence   = true,
-					KeepIdentity       = bulkCopyType != BulkCopyType.RowByRow,
-					BulkCopyType       = bulkCopyType,
-					NotifyAfter        = 3,
-					RowsCopiedCallback = copied => Debug.WriteLine(copied.RowsCopied)
-				};
-
-				db.BulkCopy(options, data.RetrieveIdentity(db));
-
-				foreach (var d in data)
-				{
-					Assert.That(d.ID, Is.GreaterThan(0));
-				}
-
-				//Assert.That(options.BulkCopyType, Is.EqualTo(bulkCopyType));
-			}
-		}
-
-		async Task BulkCopyRetrieveSequenceAsync(string context, BulkCopyType bulkCopyType)
-		{
-			var data = new[]
-			{
-				new OracleSpecific.SequenceTest { Value = "Value"},
-				new OracleSpecific.SequenceTest { Value = "Value"},
-				new OracleSpecific.SequenceTest { Value = "Value"},
-				new OracleSpecific.SequenceTest { Value = "Value"},
-			};
-
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context, o => o.UseOracle(o => o with { AlternativeBulkCopy = alternativeBulkCopy })))
 			{
 				db.GetTable<OracleSpecific.SequenceTest>().Where(_ => _.Value == "SeqValue").Delete();
 
@@ -1451,10 +1324,9 @@ namespace Tests.DataProvider
 					KeepIdentity       = bulkCopyType != BulkCopyType.RowByRow,
 					BulkCopyType       = bulkCopyType,
 					NotifyAfter        = 3,
-					RowsCopiedCallback = copied => Debug.WriteLine(copied.RowsCopied)
 				};
 
-				await db.BulkCopyAsync(options, data.RetrieveIdentity(db));
+				db.BulkCopy(options, data.RetrieveIdentity(db));
 
 				foreach (var d in data)
 				{
@@ -1475,21 +1347,17 @@ namespace Tests.DataProvider
 				new OracleSpecific.SequenceTest { Value = "Value"},
 			};
 
-			var cs      = DataConnection.GetConnectionString(context);
-			var builder = new DataOptions().UseOracle(cs, o => o with { AlternativeBulkCopy = alternativeBulkCopy });
-
-			using (var db = new TestDataConnection(builder))
+			using (var db = GetDataContext(context, o => o.UseOracle(o => o with { AlternativeBulkCopy = alternativeBulkCopy })))
 			{
 				db.GetTable<OracleSpecific.SequenceTest>().Where(_ => _.Value == "SeqValue").Delete();
 
 				var options = new BulkCopyOptions
 				{
-					MaxBatchSize = 5,
+					MaxBatchSize       = 5,
 					//RetrieveSequence   = true,
 					KeepIdentity       = bulkCopyType != BulkCopyType.RowByRow,
 					BulkCopyType       = bulkCopyType,
 					NotifyAfter        = 3,
-					RowsCopiedCallback = copied => Debug.WriteLine(copied.RowsCopied)
 				};
 
 				await db.BulkCopyAsync(options, data.RetrieveIdentity(db));
@@ -1515,7 +1383,7 @@ namespace Tests.DataProvider
 			[Column("VALUE_AS_DATE")]         public DateTime? ValueAsDate    { get; set; }
 		}
 
-		void BulkCopy1(string context, BulkCopyType bulkCopyType)
+		void BulkCopy1(string context, BulkCopyType bulkCopyType, AlternativeBulkCopy alternativeBulkCopy)
 		{
 			var data = new[]
 			{
@@ -1529,14 +1397,13 @@ namespace Tests.DataProvider
 				new Trade { ID = 973, Version = 1, TypeID = 20160, TypeName = "EU Allowances", },
 			};
 
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context, o => o.UseOracle(o => o with { AlternativeBulkCopy = alternativeBulkCopy })))
 			{
 				var options = new BulkCopyOptions
 				{
 					MaxBatchSize = 5,
 					BulkCopyType = bulkCopyType,
 					NotifyAfter  = 3,
-					RowsCopiedCallback = copied => Debug.WriteLine(copied.RowsCopied)
 				};
 
 				db.BulkCopy(options, data);
@@ -1545,7 +1412,7 @@ namespace Tests.DataProvider
 			}
 		}
 
-		async Task BulkCopy1Async(string context, BulkCopyType bulkCopyType)
+		async Task BulkCopy1Async(string context, BulkCopyType bulkCopyType, AlternativeBulkCopy alternativeBulkCopy)
 		{
 			var data = new[]
 			{
@@ -1559,14 +1426,13 @@ namespace Tests.DataProvider
 				new Trade { ID = 973, Version = 1, TypeID = 20160, TypeName = "EU Allowances", },
 			};
 
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context, o => o.UseOracle(o => o with { AlternativeBulkCopy = alternativeBulkCopy })))
 			{
 				var options = new BulkCopyOptions
 				{
 					MaxBatchSize = 5,
 					BulkCopyType = bulkCopyType,
 					NotifyAfter  = 3,
-					RowsCopiedCallback = copied => Debug.WriteLine(copied.RowsCopied)
 				};
 
 				await db.BulkCopyAsync(options, data);
@@ -1580,8 +1446,7 @@ namespace Tests.DataProvider
 			[IncludeDataSources(TestProvName.AllOracle)] string context,
 			[Values]                                     AlternativeBulkCopy useAlternativeBulkCopy)
 		{
-			using (new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy))
-				BulkCopy1(context, BulkCopyType.MultipleRows);
+			BulkCopy1(context, BulkCopyType.MultipleRows, useAlternativeBulkCopy);
 		}
 
 		[Test]
@@ -1589,8 +1454,7 @@ namespace Tests.DataProvider
 			[IncludeDataSources(TestProvName.AllOracle)] string context,
 			[Values]                                     AlternativeBulkCopy useAlternativeBulkCopy)
 		{
-			using (new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy))
-				await BulkCopy1Async(context, BulkCopyType.MultipleRows);
+			await BulkCopy1Async(context, BulkCopyType.MultipleRows, useAlternativeBulkCopy);
 		}
 
 		[Test]
@@ -1598,8 +1462,7 @@ namespace Tests.DataProvider
 			[IncludeDataSources(TestProvName.AllOracle)] string context,
 			[Values]                                     AlternativeBulkCopy useAlternativeBulkCopy)
 		{
-			using (new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy))
-				BulkCopy1(context, BulkCopyType.ProviderSpecific);
+			BulkCopy1(context, BulkCopyType.ProviderSpecific, useAlternativeBulkCopy);
 		}
 
 		[Test]
@@ -1607,8 +1470,7 @@ namespace Tests.DataProvider
 			[IncludeDataSources(TestProvName.AllOracle)] string context,
 			[Values]                                     AlternativeBulkCopy useAlternativeBulkCopy)
 		{
-			using (new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy))
-				await BulkCopy1Async(context, BulkCopyType.ProviderSpecific);
+			await BulkCopy1Async(context, BulkCopyType.ProviderSpecific, useAlternativeBulkCopy);
 		}
 
 		// we use copy of table with all-uppercase names to be able to use it with native
@@ -1628,9 +1490,9 @@ namespace Tests.DataProvider
 			[Column("STRINGVALUE")]                                  public string?   StringValue;
 		}
 
-		void BulkCopy21(string context, BulkCopyType bulkCopyType)
+		void BulkCopy21(string context, BulkCopyType bulkCopyType, AlternativeBulkCopy alternativeBulkCopy)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context, o => o.UseOracle(o => o with { AlternativeBulkCopy = alternativeBulkCopy })))
 			{
 				db.GetTable<LinqDataTypesBC>().Delete();
 
@@ -1666,9 +1528,9 @@ namespace Tests.DataProvider
 			}
 		}
 
-		async Task BulkCopy21Async(string context, BulkCopyType bulkCopyType)
+		async Task BulkCopy21Async(string context, BulkCopyType bulkCopyType, AlternativeBulkCopy alternativeBulkCopy)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context, o => o.UseOracle(o => o with { AlternativeBulkCopy = alternativeBulkCopy })))
 			{
 				db.GetTable<LinqDataTypesBC>().Delete();
 
@@ -1709,8 +1571,7 @@ namespace Tests.DataProvider
 			[IncludeDataSources(TestProvName.AllOracle)] string context,
 			[Values]                                     AlternativeBulkCopy useAlternativeBulkCopy)
 		{
-			using (new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy))
-				BulkCopy21(context, BulkCopyType.MultipleRows);
+			BulkCopy21(context, BulkCopyType.MultipleRows, useAlternativeBulkCopy);
 		}
 
 		[Test]
@@ -1718,8 +1579,7 @@ namespace Tests.DataProvider
 			[IncludeDataSources(TestProvName.AllOracle)] string context,
 			[Values]                                     AlternativeBulkCopy useAlternativeBulkCopy)
 		{
-			using (new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy))
-				await BulkCopy21Async(context, BulkCopyType.MultipleRows);
+			await BulkCopy21Async(context, BulkCopyType.MultipleRows, useAlternativeBulkCopy);
 		}
 
 		// ORA-38910: BATCH ERROR mode is not supported for this operation
@@ -1729,8 +1589,7 @@ namespace Tests.DataProvider
 			[IncludeDataSources(TestProvName.AllOracle)] string context,
 			[Values]                                     AlternativeBulkCopy useAlternativeBulkCopy)
 		{
-			using (new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy))
-				BulkCopy21(context, BulkCopyType.ProviderSpecific);
+			BulkCopy21(context, BulkCopyType.ProviderSpecific, useAlternativeBulkCopy);
 		}
 
 		// ORA-38910: BATCH ERROR mode is not supported for this operation
@@ -1739,14 +1598,13 @@ namespace Tests.DataProvider
 		public async Task BulkCopy21ProviderSpecificAsync(
 			[IncludeDataSources(TestProvName.AllOracle)] string context,
 			[Values]                                     AlternativeBulkCopy useAlternativeBulkCopy)
-			{
-			using (new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy))
-				await BulkCopy21Async(context, BulkCopyType.ProviderSpecific);
-			}
-
-		void BulkCopy22(string context, BulkCopyType bulkCopyType)
 		{
-			using (var db = GetDataConnection(context))
+			await BulkCopy21Async(context, BulkCopyType.ProviderSpecific, useAlternativeBulkCopy);
+		}
+
+		void BulkCopy22(string context, BulkCopyType bulkCopyType, AlternativeBulkCopy alternativeBulkCopy)
+		{
+			using (var db = GetDataContext(context, o => o.UseOracle(o => o with { AlternativeBulkCopy = alternativeBulkCopy })))
 			{
 				db.Types2.Delete(_ => _.ID > 1000);
 
@@ -1779,9 +1637,9 @@ namespace Tests.DataProvider
 			}
 		}
 
-		async Task BulkCopy22Async(string context, BulkCopyType bulkCopyType)
+		async Task BulkCopy22Async(string context, BulkCopyType bulkCopyType, AlternativeBulkCopy alternativeBulkCopy)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context, o => o.UseOracle(o => o with { AlternativeBulkCopy = alternativeBulkCopy })))
 			{
 				db.Types2.Delete(_ => _.ID > 1000);
 
@@ -1818,37 +1676,33 @@ namespace Tests.DataProvider
 		public void BulkCopy22MultipleRows(
 			[IncludeDataSources(TestProvName.AllOracle)] string context,
 			[Values]                                     AlternativeBulkCopy useAlternativeBulkCopy)
-			{
-			using (new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy))
-				BulkCopy22(context, BulkCopyType.MultipleRows);
-			}
+		{
+			BulkCopy22(context, BulkCopyType.MultipleRows, useAlternativeBulkCopy);
+		}
 
 		[Test]
 		public async Task BulkCopy22MultipleRowsAsync(
 			[IncludeDataSources(TestProvName.AllOracle)] string context,
 			[Values]                                     AlternativeBulkCopy useAlternativeBulkCopy)
-			{
-			using (new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy))
-				await BulkCopy22Async(context, BulkCopyType.MultipleRows);
-			}
+		{
+			await BulkCopy22Async(context, BulkCopyType.MultipleRows, useAlternativeBulkCopy);
+		}
 
 		[Test]
 		public void BulkCopy22ProviderSpecific(
 			[IncludeDataSources(TestProvName.AllOracle)] string context,
 			[Values]                                     AlternativeBulkCopy useAlternativeBulkCopy)
 		{
-			using (new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy))
-				BulkCopy22(context, BulkCopyType.ProviderSpecific);
-			}
+			BulkCopy22(context, BulkCopyType.ProviderSpecific, useAlternativeBulkCopy);
+		}
 
 		[Test]
 		public async Task BulkCopy22ProviderSpecificAsync(
 			[IncludeDataSources(TestProvName.AllOracle)] string context,
 			[Values]                                     AlternativeBulkCopy useAlternativeBulkCopy)
-			{
-			using (new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy))
-				await BulkCopy22Async(context, BulkCopyType.ProviderSpecific);
-			}
+		{
+			await BulkCopy22Async(context, BulkCopyType.ProviderSpecific, useAlternativeBulkCopy);
+		}
 
 #endregion
 
@@ -1865,7 +1719,7 @@ namespace Tests.DataProvider
 		[Test]
 		public void LongAliasTest([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				try { db.DropTable<TempTestTable>(); } catch {}
 
@@ -1888,7 +1742,7 @@ namespace Tests.DataProvider
 		[Test]
 		public void XmlTableTest1([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var conn = GetDataConnection(context))
+			using (var conn = GetDataContext(context))
 			{
 				var list = conn.OracleXmlTable(new[]
 					{
@@ -1898,11 +1752,14 @@ namespace Tests.DataProvider
 					.Select(t => new { t.field1, t.field2 })
 					.ToList();
 
-				Assert.That(list.Count, Is.EqualTo(2));
-				Assert.That(list[0].field1, Is.EqualTo(1));
-				Assert.That(list[1].field1, Is.EqualTo(2));
-				Assert.That(list[0].field2, Is.EqualTo("11"));
-				Assert.That(list[1].field2, Is.EqualTo("22"));
+				Assert.That(list, Has.Count.EqualTo(2));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(list[0].field1, Is.EqualTo(1));
+					Assert.That(list[1].field1, Is.EqualTo(2));
+					Assert.That(list[0].field2, Is.EqualTo("11"));
+					Assert.That(list[1].field2, Is.EqualTo("22"));
+				}
 			}
 		}
 
@@ -1923,18 +1780,21 @@ namespace Tests.DataProvider
 					select new { t2.field1, t2.field2 }
 				).ToList();
 
-				Assert.That(list.Count, Is.EqualTo(2));
-				Assert.That(list[0].field1, Is.EqualTo(1));
-				Assert.That(list[1].field1, Is.EqualTo(2));
-				Assert.That(list[0].field2, Is.EqualTo("11"));
-				Assert.That(list[1].field2, Is.EqualTo("22"));
+				Assert.That(list, Has.Count.EqualTo(2));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(list[0].field1, Is.EqualTo(1));
+					Assert.That(list[1].field1, Is.EqualTo(2));
+					Assert.That(list[0].field2, Is.EqualTo("11"));
+					Assert.That(list[1].field2, Is.EqualTo("22"));
+				}
 			}
 		}
 
 		[Test]
 		public void XmlTableTest3([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var conn = GetDataConnection(context))
+			using (var conn = GetDataContext(context))
 			{
 				var data = new[]
 				{
@@ -1946,11 +1806,14 @@ namespace Tests.DataProvider
 					.Select(t => new { t.field1, t.field2 })
 					.ToList();
 
-				Assert.That(list.Count, Is.EqualTo(2));
-				Assert.That(list[0].field1, Is.EqualTo(1));
-				Assert.That(list[1].field1, Is.EqualTo(2));
-				Assert.That(list[0].field2, Is.EqualTo("11"));
-				Assert.That(list[1].field2, Is.EqualTo("22"));
+				Assert.That(list, Has.Count.EqualTo(2));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(list[0].field1, Is.EqualTo(1));
+					Assert.That(list[1].field1, Is.EqualTo(2));
+					Assert.That(list[0].field2, Is.EqualTo("11"));
+					Assert.That(list[1].field2, Is.EqualTo("22"));
+				}
 			}
 		}
 
@@ -1964,17 +1827,20 @@ namespace Tests.DataProvider
 		[Test]
 		public void XmlTableTest4([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var conn = GetDataConnection(context))
+			using (var conn = GetDataContext(context))
 			{
 				var list = conn.OracleXmlTable<XmlData>("<t><r><c0>1</c0><c1>11</c1></r><r><c0>2</c0><c1>22</c1></r></t>")
 					.Select(t => new { t.Field1, t.Field2 })
 					.ToList();
 
-				Assert.That(list.Count, Is.EqualTo(2));
-				Assert.That(list[0].Field1, Is.EqualTo(1));
-				Assert.That(list[1].Field1, Is.EqualTo(2));
-				Assert.That(list[0].Field2, Is.EqualTo("11"));
-				Assert.That(list[1].Field2, Is.EqualTo("22"));
+				Assert.That(list, Has.Count.EqualTo(2));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(list[0].Field1, Is.EqualTo(1));
+					Assert.That(list[1].Field1, Is.EqualTo(2));
+					Assert.That(list[0].Field2, Is.EqualTo("11"));
+					Assert.That(list[1].Field2, Is.EqualTo("22"));
+				}
 			}
 		}
 
@@ -1991,11 +1857,14 @@ namespace Tests.DataProvider
 					.Select(t => new { t.Field1, t.Field2 })
 					.ToList();
 
-				Assert.That(list.Count, Is.EqualTo(2));
-				Assert.That(list[0].Field1, Is.EqualTo(1));
-				Assert.That(list[1].Field1, Is.EqualTo(2));
-				Assert.That(list[0].Field2, Is.EqualTo("11"));
-				Assert.That(list[1].Field2, Is.EqualTo("22"));
+				Assert.That(list, Has.Count.EqualTo(2));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(list[0].Field1, Is.EqualTo(1));
+					Assert.That(list[1].Field1, Is.EqualTo(2));
+					Assert.That(list[0].Field2, Is.EqualTo("11"));
+					Assert.That(list[1].Field2, Is.EqualTo("22"));
+				}
 
 				_data = "<t><r><c0>1</c0><c1>11</c1></r></t>";
 
@@ -2007,16 +1876,19 @@ namespace Tests.DataProvider
 					select new { t2.Field1, t2.Field2 }
 				).ToList();
 
-				Assert.That(list.Count, Is.EqualTo(1));
-				Assert.That(list[0].Field1, Is.EqualTo(1));
-				Assert.That(list[0].Field2, Is.EqualTo("11"));
+				Assert.That(list, Has.Count.EqualTo(1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(list[0].Field1, Is.EqualTo(1));
+					Assert.That(list[0].Field2, Is.EqualTo("11"));
+				}
 			}
 		}
 
 		[Test]
 		public void XmlTableTest6([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var conn = GetDataConnection(context))
+			using (var conn = GetDataContext(context))
 			{
 				var data = new[]
 				{
@@ -2030,11 +1902,14 @@ namespace Tests.DataProvider
 					.Select(t => new { t.Field1, t.Field2 })
 					.ToList();
 
-				Assert.That(list.Count, Is.EqualTo(2));
-				Assert.That(list[0].Field1, Is.EqualTo(1));
-				Assert.That(list[1].Field1, Is.EqualTo(2));
-				Assert.That(list[0].Field2, Is.EqualTo("11"));
-				Assert.That(list[1].Field2, Is.EqualTo("22"));
+				Assert.That(list, Has.Count.EqualTo(2));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(list[0].Field1, Is.EqualTo(1));
+					Assert.That(list[1].Field1, Is.EqualTo(2));
+					Assert.That(list[0].Field2, Is.EqualTo("11"));
+					Assert.That(list[1].Field2, Is.EqualTo("22"));
+				}
 			}
 		}
 
@@ -2055,11 +1930,14 @@ namespace Tests.DataProvider
 					.Select(t => new { t.Field1, t.Field2 })
 					.ToList();
 
-				Assert.That(list.Count, Is.EqualTo(2));
-				Assert.That(list[0].Field1, Is.EqualTo(1));
-				Assert.That(list[1].Field1, Is.EqualTo(2));
-				Assert.That(list[0].Field2, Is.EqualTo("11"));
-				Assert.That(list[1].Field2, Is.EqualTo("22"));
+				Assert.That(list, Has.Count.EqualTo(2));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(list[0].Field1, Is.EqualTo(1));
+					Assert.That(list[1].Field1, Is.EqualTo(2));
+					Assert.That(list[0].Field2, Is.EqualTo("11"));
+					Assert.That(list[1].Field2, Is.EqualTo("22"));
+				}
 
 				xmlData = "<t><r><c0>1</c0><c1>11</c1></r></t>";
 
@@ -2067,9 +1945,12 @@ namespace Tests.DataProvider
 					.Select(t => new { t.Field1, t.Field2 })
 					.ToList();
 
-				Assert.That(list.Count, Is.EqualTo(1));
-				Assert.That(list[0].Field1, Is.EqualTo(1));
-				Assert.That(list[0].Field2, Is.EqualTo("11"));
+				Assert.That(list, Has.Count.EqualTo(1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(list[0].Field1, Is.EqualTo(1));
+					Assert.That(list[0].Field2, Is.EqualTo("11"));
+				}
 			}
 		}
 
@@ -2229,7 +2110,7 @@ namespace Tests.DataProvider
 
 			provider.ReaderExpressions[new ReaderInfo { FieldType = typeof(decimal) }] = (Expression<Func<DbDataReader, int, decimal>>)((r,i) => GetDecimal(r, i));
 
-			using (var db = new DataConnection(provider, DataConnection.GetConnectionString(context)))
+			using (var db = new DataConnection(new DataOptions().UseConnectionString(provider, DataConnection.GetConnectionString(context))))
 			{
 				var list = db.GetTable<DecimalOverflow>().ToList();
 			}
@@ -2271,7 +2152,7 @@ namespace Tests.DataProvider
 		[Test]
 		public void OverflowTest2([IncludeDataSources(TestProvName.AllOracleManaged, TestProvName.AllOracleDevart)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var list = db.GetTable<DecimalOverflow2>().ToList();
 			}
@@ -2301,8 +2182,7 @@ namespace Tests.DataProvider
 			for (var i = 0; i < 100; i++)
 				data.Add(new UseAlternativeBulkCopy() { Id = i, Value = i });
 
-			using var _ = new OracleAlternativeBulkCopyMode(AlternativeBulkCopy.InsertInto);
-			using var db = GetDataConnection(context);
+			using var db = GetDataContext(context, o => o.UseOracle(o => o with { AlternativeBulkCopy = AlternativeBulkCopy.InsertInto }));
 			using var t = db.CreateLocalTable<UseAlternativeBulkCopy>();
 			db.BulkCopy(25, data);
 
@@ -2317,8 +2197,7 @@ namespace Tests.DataProvider
 			for (var i = 0; i < 100; i++)
 				data.Add(new UseAlternativeBulkCopy() { Id = i, Value = i });
 
-			using (new OracleAlternativeBulkCopyMode(AlternativeBulkCopy.InsertInto))
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context, o => o.UseOracle(o => o with { AlternativeBulkCopy = AlternativeBulkCopy.InsertInto })))
 			{
 				await db.CreateTableAsync<UseAlternativeBulkCopy>();
 				try
@@ -2342,8 +2221,7 @@ namespace Tests.DataProvider
 			for (var i = 0; i < 100; i++)
 				data.Add(new UseAlternativeBulkCopy() { Id = i, Value = i });
 
-			using (new OracleAlternativeBulkCopyMode(AlternativeBulkCopy.InsertDual))
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context, o => o.UseOracle(o => o with { AlternativeBulkCopy = AlternativeBulkCopy.InsertDual })))
 			{
 				db.CreateTable<UseAlternativeBulkCopy>();
 				try
@@ -2367,8 +2245,7 @@ namespace Tests.DataProvider
 			for (var i = 0; i < 100; i++)
 				data.Add(new UseAlternativeBulkCopy() { Id = i, Value = i });
 
-			using (new OracleAlternativeBulkCopyMode(AlternativeBulkCopy.InsertDual))
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context, o => o.UseOracle(o => o with { AlternativeBulkCopy = AlternativeBulkCopy.InsertDual })))
 			{
 				await db.CreateTableAsync<UseAlternativeBulkCopy>();
 				try
@@ -2421,7 +2298,7 @@ namespace Tests.DataProvider
 		[Test]
 		public void ClobTest1([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				try
 				{
@@ -2430,7 +2307,7 @@ namespace Tests.DataProvider
 					db.Insert(obj);
 
 					var selected = db.GetTable<ClobEntity>().First(_ => _.Id == 1);
-					Assert.AreEqual(obj, selected);
+					Assert.That(selected, Is.EqualTo(obj));
 				}
 				finally
 				{
@@ -2446,8 +2323,7 @@ namespace Tests.DataProvider
 		{
 			var data = new List<ClobEntity>(new[] { new ClobEntity(1), new ClobEntity(2) });
 
-			using (new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy))
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context, o => o.UseOracle(o => o with { AlternativeBulkCopy = useAlternativeBulkCopy })))
 			{
 				try
 				{
@@ -2472,8 +2348,7 @@ namespace Tests.DataProvider
 		{
 			var data = new List<ClobEntity>(new[] { new ClobEntity(1), new ClobEntity(2) });
 
-			using (new OracleAlternativeBulkCopyMode(useAlternativeBulkCopy))
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context, o => o.UseOracle(o => o with { AlternativeBulkCopy = useAlternativeBulkCopy })))
 			{
 				try
 				{
@@ -2508,7 +2383,7 @@ namespace Tests.DataProvider
 					var now = new DateTimeOffset(2000, 1, 1, 10, 11, 12, TimeSpan.FromHours(5));
 					db.CreateTable<DateTimeOffsetTable>();
 					db.Insert(new DateTimeOffsetTable() {DateTimeOffsetValue = now});
-					Assert.AreEqual(now, db.GetTable<DateTimeOffsetTable>().Select(_ => _.DateTimeOffsetValue).Single());
+					Assert.That(db.GetTable<DateTimeOffsetTable>().Select(_ => _.DateTimeOffsetValue).Single(), Is.EqualTo(now));
 				}
 				finally
 				{
@@ -2568,10 +2443,9 @@ namespace Tests.DataProvider
 					db.DropTable<DateTimeOffsetTable>();
 				}
 			}
-
 		}
 
-		public static IEnumerable<Person> PersonSelectByKey(DataConnection dataConnection, int id)
+		private static IEnumerable<Person> PersonSelectByKey(IDataContext dataConnection, int id)
 		{
 			return dataConnection.QueryProc<Person>("PERSON_SELECTBYKEY",
 				new DataParameter("pID", @id),
@@ -2581,7 +2455,7 @@ namespace Tests.DataProvider
 		[Test]
 		public void PersonSelectByKey([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				AreEqual(Person.Where(_ => _.ID == 1), PersonSelectByKey(db, 1));
 			}
@@ -2670,7 +2544,7 @@ namespace Tests.DataProvider
 				db.Execute($"ALTER USER {schema} quota unlimited on {tableSpace}");
 
 				db.CreateTable<Issue723Table>(schemaName: schema);
-				Assert.That(db.LastQuery!.Contains($"{schema}.ISSUE723TABLE"));
+				Assert.That(db.LastQuery!, Does.Contain($"{schema}.ISSUE723TABLE"));
 
 				try
 				{
@@ -2683,9 +2557,10 @@ namespace Tests.DataProvider
 					for (var i = 1; i < 3; i++)
 					{
 						var id = Convert.ToInt32(db.InsertWithIdentity(new Issue723Table() { StringValue = i.ToString() }));
-						Assert.AreEqual(i, id);
+						Assert.That(id, Is.EqualTo(i));
 					}
-					Assert.That(db.LastQuery.Contains($"{schema}.ISSUE723TABLE"));
+
+					Assert.That(db.LastQuery, Does.Contain($"{schema}.ISSUE723TABLE"));
 				}
 				finally
 				{
@@ -2701,11 +2576,8 @@ namespace Tests.DataProvider
 		[Test]
 		public void Issue723Test2([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var db = GetDataContext(context))
-			using (db.CreateLocalTable<Issue723Table>())
-			{
-				Assert.True(true);
-			}
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable<Issue723Table>();
 		}
 
 		public class Issue731Table
@@ -2738,12 +2610,14 @@ namespace Tests.DataProvider
 				db.Insert(origin);
 
 				var result = db.GetTable<Issue731Table>().First(_ => _.Id == 1);
-
-				Assert.AreEqual(origin.Id,         result.Id);
-				Assert.AreEqual(origin.Guid,       result.Guid);
-				Assert.AreEqual(origin.BinaryGuid, result.BinaryGuid);
-				Assert.AreEqual(origin.BlobValue,  result.BlobValue);
-				Assert.AreEqual(origin.RawValue,   result.RawValue);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result.Id, Is.EqualTo(origin.Id));
+					Assert.That(result.Guid, Is.EqualTo(origin.Guid));
+					Assert.That(result.BinaryGuid, Is.EqualTo(origin.BinaryGuid));
+					Assert.That(result.BlobValue, Is.EqualTo(origin.BlobValue));
+					Assert.That(result.RawValue, Is.EqualTo(origin.RawValue));
+				}
 			}
 		}
 
@@ -2829,7 +2703,7 @@ namespace Tests.DataProvider
 			ms.SetConverter<OracleTimeStampTZ,MyDate>(OracleTimeStampTZToMyDate);
 			ms.SetConverter<MyDate,OracleTimeStampTZ>(MyDateToOracleTimeStampTZ);
 
-			using (var db = GetDataContext(context, ms))
+			using (var db = GetDataContext(context, mappingSchema: ms))
 			{
 				var table = db.GetTable<MappingTest>();
 				var list  = table.ToList();
@@ -2953,13 +2827,11 @@ namespace Tests.DataProvider
 
 				public int GetHashCode(BooleanMapping obj)
 				{
-					unchecked
-					{
-						var hashCode = obj.Id;
-						hashCode = (hashCode * 397) ^ obj.BoolProp.GetHashCode();
-						hashCode = (hashCode * 397) ^ obj.NullableBoolProp.GetHashCode();
-						return hashCode;
-					}
+					return HashCode.Combine(
+						obj.Id,
+						obj.BoolProp,
+						obj.NullableBoolProp
+					);
 				}
 			}
 
@@ -2982,6 +2854,7 @@ namespace Tests.DataProvider
 				_ != null
 					? DataParameter.Char(null, _.HasValue && _.Value ? 'Y' : 'N')
 					: new DataParameter(null, DBNull.Value));
+			ms.AddScalarType(typeof(bool), new SqlDataType(new DbDataType(typeof(bool), DataType.Char).WithLength(1)));
 
 			var testData = new[]
 			{
@@ -3009,6 +2882,7 @@ namespace Tests.DataProvider
 				_ != null
 					? DataParameter.Char(null, _.HasValue && _.Value ? 'Y' : 'N')
 					: new DataParameter(null, DBNull.Value));
+			ms.AddScalarType(typeof(bool), new SqlDataType(new DbDataType(typeof(bool), DataType.Char).WithLength(1)));
 
 			var testData = new[]
 			{
@@ -3044,8 +2918,9 @@ namespace Tests.DataProvider
 		[Test]
 		public void TestLowercaseIdentifiersQuotation([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using (var db = GetDataContext(context))
+			using (var db = GetDataContext(context, o => o.UseDisableQueryCache(true)))
 			{
+				// TODO: don't modify default options from tests + investigate wether it is expected behavior to react to options change after context created
 				var initial = OracleOptions.Default;
 
 				try
@@ -3054,8 +2929,6 @@ namespace Tests.DataProvider
 
 					_ = db.GetTable<TestIdentifiersTable1>().ToList();
 					_ = db.GetTable<TestIdentifiersTable2>().ToList();
-
-					Query.ClearCaches();
 
 					OracleOptions.Default = OracleOptions.Default with { DontEscapeLowercaseIdentifiers = false };
 
@@ -3067,7 +2940,6 @@ namespace Tests.DataProvider
 				finally
 				{
 					OracleOptions.Default = initial;
-					Query.ClearCaches();
 				}
 			}
 		}
@@ -3126,58 +2998,61 @@ namespace Tests.DataProvider
 				};
 
 				db.ExecuteProc("ALLOUTPUTPARAMETERS", pms);
+				using (Assert.EnterMultipleScope())
+				{
+					// assert types converted
+					Assert.That(pms[0].Value!.GetType(), Is.EqualTo(typeof(decimal)));
+					Assert.That(pms[1].Value!.GetType(), Is.EqualTo(typeof(decimal)));
+					Assert.That(pms[2].Value!.GetType(), Is.EqualTo(typeof(decimal)));
+					Assert.That(pms[3].Value!.GetType(), Is.EqualTo(typeof(decimal)));
+					Assert.That(pms[4].Value!.GetType(), Is.EqualTo(typeof(decimal)));
+					Assert.That(pms[5].Value!.GetType(), Is.EqualTo(typeof(decimal)));
+					Assert.That(pms[6].Value!.GetType(), Is.EqualTo(typeof(decimal)));
+					Assert.That(pms[7].Value!.GetType(), Is.EqualTo(typeof(decimal)));
+					Assert.That(pms[8].Value!.GetType(), Is.EqualTo(typeof(decimal)));
+					Assert.That(pms[9].Value!.GetType(), Is.EqualTo(typeof(decimal)));
+					Assert.That(pms[10].Value!.GetType(), Is.EqualTo(borkenBinaryFloats ? typeof(int) : typeof(decimal)));
+					Assert.That(pms[11].Value!.GetType(), Is.EqualTo(borkenBinaryFloats ? typeof(int) : typeof(decimal)));
+					Assert.That(pms[12].Value!.GetType(), Is.EqualTo(typeof(DateTime)));
+					Assert.That(pms[13].Value!.GetType(), Is.EqualTo(typeof(DateTime)));
+					Assert.That(pms[14].Value, Is.TypeOf<DateTime>().Or.TypeOf<DateTimeOffset>());
+					Assert.That(pms[15].Value, Is.TypeOf<DateTime>().Or.TypeOf<DateTimeOffset>());
+					Assert.That(pms[16].Value!.GetType(), Is.EqualTo(typeof(string)));
+					// [17] is char20 which is not set now for some reason
+					Assert.That(pms[18].Value!.GetType(), Is.EqualTo(typeof(string)));
+					Assert.That(pms[19].Value!.GetType(), Is.EqualTo(typeof(string)));
+					Assert.That(pms[20].Value!.GetType(), Is.EqualTo(typeof(string)));
+					Assert.That(pms[21].Value!.GetType(), Is.EqualTo(typeof(string)));
+					Assert.That(pms[22].Value!.GetType(), Is.EqualTo(typeof(string)));
+					Assert.That(pms[23].Value!.GetType(), Is.EqualTo(typeof(byte[])));
+					Assert.That(pms[24].Value, Is.TypeOf<byte[]>().Or.TypeOf(((OracleDataProvider)db.DataProvider).Adapter.OracleBFileType));
+					Assert.That(pms[25].Value!.GetType(), Is.EqualTo(typeof(byte[])));
+					Assert.That(pms[26].Value!.GetType(), Is.EqualTo(typeof(string)));
 
-				// assert types converted
-				Assert.AreEqual(typeof(decimal)       , pms[0] .Value!.GetType());
-				Assert.AreEqual(typeof(decimal)       , pms[1] .Value!.GetType());
-				Assert.AreEqual(typeof(decimal)       , pms[2] .Value!.GetType());
-				Assert.AreEqual(typeof(decimal)       , pms[3] .Value!.GetType());
-				Assert.AreEqual(typeof(decimal)       , pms[4] .Value!.GetType());
-				Assert.AreEqual(typeof(decimal)       , pms[5] .Value!.GetType());
-				Assert.AreEqual(typeof(decimal)       , pms[6] .Value!.GetType());
-				Assert.AreEqual(typeof(decimal)       , pms[7] .Value!.GetType());
-				Assert.AreEqual(typeof(decimal)       , pms[8] .Value!.GetType());
-				Assert.AreEqual(typeof(decimal)       , pms[9] .Value!.GetType());
-				Assert.AreEqual(borkenBinaryFloats ? typeof(int) : typeof(decimal), pms[10].Value!.GetType());
-				Assert.AreEqual(borkenBinaryFloats ? typeof(int) : typeof(decimal), pms[11].Value!.GetType());
-				Assert.AreEqual(typeof(DateTime)      , pms[12].Value!.GetType());
-				Assert.AreEqual(typeof(DateTime)      , pms[13].Value!.GetType());
-				Assert.That(pms[14].Value, Is.TypeOf<DateTime>().Or.TypeOf<DateTimeOffset>());
-				Assert.That(pms[15].Value, Is.TypeOf<DateTime>().Or.TypeOf<DateTimeOffset>());
-				Assert.AreEqual(typeof(string)        , pms[16].Value!.GetType());
-				// [17] is char20 which is not set now for some reason
-				Assert.AreEqual(typeof(string)        , pms[18].Value!.GetType());
-				Assert.AreEqual(typeof(string)        , pms[19].Value!.GetType());
-				Assert.AreEqual(typeof(string)        , pms[20].Value!.GetType());
-				Assert.AreEqual(typeof(string)        , pms[21].Value!.GetType());
-				Assert.AreEqual(typeof(string)        , pms[22].Value!.GetType());
-				Assert.AreEqual(typeof(byte[])        , pms[23].Value!.GetType());
-				Assert.That(pms[24].Value, Is.TypeOf<byte[]>().Or.TypeOf(((OracleDataProvider)db.DataProvider).Adapter.OracleBFileType));
-				Assert.AreEqual(typeof(byte[])        , pms[25].Value!.GetType());
-				Assert.AreEqual(typeof(string)        , pms[26].Value!.GetType());
+					// assert values
+					Assert.That(pms[0].Value, Is.EqualTo(2));
+					Assert.That(pms[1].Value, Is.EqualTo(1000000));
+					Assert.That(pms[2].Value, Is.EqualTo(9999999));
+					Assert.That(pms[3].Value, Is.EqualTo(1));
+					Assert.That(pms[4].Value, Is.EqualTo(25555));
+					Assert.That(pms[5].Value, Is.EqualTo(2222222));
+					Assert.That(pms[6].Value, Is.EqualTo(100000));
+					Assert.That(pms[7].Value, Is.EqualTo(7777777));
+					Assert.That(pms[8].Value, Is.EqualTo(100));
+					Assert.That(pms[9].Value, Is.EqualTo(100000));
+					Assert.That(pms[10].Value, Is.EqualTo(borkenBinaryFloats ? 20 : 20.31));
+					Assert.That(pms[11].Value, Is.EqualTo(borkenBinaryFloats ? 16 : 16.2));
+					Assert.That(pms[12].Value, Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12)));
+					Assert.That(pms[13].Value, Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12, 12)));
+				}
 
-				// assert values
-				Assert.AreEqual(2                     , pms[0].Value);
-				Assert.AreEqual(1000000               , pms[1].Value);
-				Assert.AreEqual(9999999               , pms[2].Value);
-				Assert.AreEqual(1                     , pms[3].Value);
-				Assert.AreEqual(25555                 , pms[4].Value);
-				Assert.AreEqual(2222222               , pms[5].Value);
-				Assert.AreEqual(100000                , pms[6].Value);
-				Assert.AreEqual(7777777               , pms[7].Value);
-				Assert.AreEqual(100                   , pms[8].Value);
-				Assert.AreEqual(100000                , pms[9].Value);
-				Assert.AreEqual(borkenBinaryFloats ? 20 : 20.31, pms[10].Value);
-				Assert.AreEqual(borkenBinaryFloats ? 16 : 16.2 , pms[11].Value);
-				Assert.AreEqual(new DateTime(2012, 12, 12, 12, 12, 12), pms[12].Value);
-				Assert.AreEqual(new DateTime(2012, 12, 12, 12, 12, 12, 12), pms[13].Value);
 				if (context.IsAnyOf(TestProvName.AllOracleDevart))
-					Assert.AreEqual(new DateTime(2012, 12, 12, 12, 12, 12, 12), pms[14].Value);
+					Assert.That(pms[14].Value, Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12, 12)));
 				else
-					Assert.AreEqual(new DateTimeOffset(2012, 12, 12, 12, 12, 12, isNative ? 0 : 12, TimeSpan.FromHours(-5)), pms[14].Value);
+					Assert.That(pms[14].Value, Is.EqualTo(new DateTimeOffset(2012, 12, 12, 12, 12, 12, isNative ? 0 : 12, TimeSpan.FromHours(-5))));
 
 				if (context.IsAnyOf(TestProvName.AllOracleDevart))
-					Assert.AreEqual(new DateTime(2012, 12, 12, 12, 12, 12, 12), pms[15].Value);
+					Assert.That(pms[15].Value, Is.EqualTo(new DateTime(2012, 12, 12, 12, 12, 12, 12)));
 				// TODO: fix timezones handling
 				//if (!context.IsAnyOf(TestProvName.AllOracleNative))
 				else
@@ -3189,53 +3064,63 @@ namespace Tests.DataProvider
 						Or.EqualTo(new DateTimeOffset(2012, 12, 12, 12, 12, 12, isNative ? 0 : 12, new TimeSpan(-5, 0, 0))));
 
 				if (context.IsAnyOf(TestProvName.AllOracleDevart))
-					Assert.AreEqual("1"               , pms[16].Value?.ToString()?.TrimEnd());
+					Assert.That(pms[16].Value?.ToString()?.TrimEnd(), Is.EqualTo("1"));
 				else
-					Assert.AreEqual("1"               , pms[16].Value);
-				Assert.IsNull(pms[17].Value);
-				Assert.AreEqual("234"                 , pms[18].Value);
-				Assert.AreEqual("567"                 , pms[19].Value);
+					Assert.That(pms[16].Value, Is.EqualTo("1"));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(pms[17].Value, Is.Null);
+					Assert.That(pms[18].Value, Is.EqualTo("234"));
+					Assert.That(pms[19].Value, Is.EqualTo("567"));
+				}
+
 				if (context.IsAnyOf(TestProvName.AllOracleDevart))
-					Assert.AreEqual("23233"           , pms[20].Value?.ToString()?.TrimEnd());
+					Assert.That(pms[20].Value?.ToString()?.TrimEnd(), Is.EqualTo("23233"));
 				else
-					Assert.AreEqual("23233"           , pms[20].Value);
-				Assert.AreEqual("3323"                , pms[21].Value);
-				Assert.AreEqual("111"                 , pms[22].Value);
+					Assert.That(pms[20].Value, Is.EqualTo("23233"));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(pms[21].Value, Is.EqualTo("3323"));
+					Assert.That(pms[22].Value, Is.EqualTo("111"));
+				}
+
 				if (context.IsAnyOf(TestProvName.AllOracleDevartDirect))
 					// this is not correct
-					Assert.AreEqual(new byte[] { 1, 2, 3 }, pms[23].Value);
+					Assert.That(pms[23].Value, Is.EqualTo(new byte[] { 1, 2, 3 }));
 				else
-					Assert.AreEqual(new byte[] { 0, 0xAA }, pms[23].Value);
+					Assert.That(pms[23].Value, Is.EqualTo(new byte[] { 0, 0xAA }));
 
 				// default converter for BFile missing intentionally
 				var bfile = pms[24].Output!.Value!;
 				if (isNative)
 				{
-#if NET472
+#if NETFRAMEWORK
 					using (var file = (Oracle.DataAccess.Types.OracleBFile)bfile)
 					{
 						file.OpenFile();
-						Assert.AreEqual(new byte[] { 0x31, 0x32, 0x33, 0x34, 0x35 }, file.Value);
+						Assert.That(file.Value, Is.EqualTo(new byte[] { 0x31, 0x32, 0x33, 0x34, 0x35 }));
 					}
 #endif
 				}
 				else if (context.IsAnyOf(TestProvName.AllOracleDevart))
-					Assert.AreEqual(new byte[] { 0x31, 0x32, 0x33, 0x34, 0x35 }, bfile);
+					Assert.That(bfile, Is.EqualTo(new byte[] { 0x31, 0x32, 0x33, 0x34, 0x35 }));
 				else
 				{
 					using (var file = (Oracle.ManagedDataAccess.Types.OracleBFile)bfile)
 					{
 						file.OpenFile();
-						Assert.AreEqual(new byte[] { 0x31, 0x32, 0x33, 0x34, 0x35 }, file.Value);
+						Assert.That(file.Value, Is.EqualTo(new byte[] { 0x31, 0x32, 0x33, 0x34, 0x35 }));
 					}
 				}
 
-				// guid is autogenerated
-				Assert.AreEqual(16                    , ((byte[])pms[25].Value!).Length);
+				using (Assert.EnterMultipleScope())
+				{
+					// guid is autogenerated
+					Assert.That(((byte[])pms[25].Value!), Has.Length.EqualTo(16));
 
-				Assert.AreEqual(
-					"<root><elementstrattr=\"strvalue\"intattr=\"12345\"/></root>",
-					pms[26].Value!.ToString()!.Replace(" ", "").Replace("\n", ""));
+					Assert.That(
+						pms[26].Value!.ToString()!.Replace(" ", "").Replace("\n", ""), Is.EqualTo("<root><elementstrattr=\"strvalue\"intattr=\"12345\"/></root>"));
+				}
 			}
 		}
 
@@ -3278,9 +3163,12 @@ namespace Tests.DataProvider
 						.Select(t => new { t.longDataType })
 						.ToArray();
 
-					Assert.That(items.Length, Is.GreaterThanOrEqualTo(2));
-					Assert.That(items[0].longDataType, Is.Null);
-					Assert.That(items[1].longDataType, Is.EqualTo("LONG"));
+					Assert.That(items, Has.Length.GreaterThanOrEqualTo(2));
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(items[0].longDataType, Is.Null);
+						Assert.That(items[1].longDataType, Is.EqualTo("LONG"));
+					}
 
 					var str = new string('A', 10000);
 
@@ -3300,7 +3188,7 @@ namespace Tests.DataProvider
 
 					var id2 = db.GetTable<AllTypes>().InsertWithDecimalIdentity(() => new AllTypes
 					{
-						longDataType = Sql.ToSql(str2),
+						longDataType = Sql.AsSql(str2),
 					});
 
 					var insertedItems2 = db.GetTable<AllTypes>()
@@ -3338,9 +3226,12 @@ namespace Tests.DataProvider
 					.Select(t => new { t.LONGRAWDATATYPE })
 					.ToArray();
 
-				Assert.That(items.Length, Is.EqualTo(2));
-				Assert.That(items[0].LONGRAWDATATYPE, Is.Null);
-				Assert.That(items[1].LONGRAWDATATYPE, Is.Not.Null);
+				Assert.That(items, Has.Length.EqualTo(2));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(items[0].LONGRAWDATATYPE, Is.Null);
+					Assert.That(items[1].LONGRAWDATATYPE, Is.Not.Null);
+				}
 
 				var bytes1 = Encoding.UTF8.GetBytes(new string('A', 10000));
 
@@ -3363,9 +3254,12 @@ namespace Tests.DataProvider
 					.Select(t => new { t.LONGRAWDATATYPE })
 					.ToArray();
 
-				Assert.That(insertedItems.Length, Is.EqualTo(2));
-				Assert.That(insertedItems[0].LONGRAWDATATYPE, Is.EqualTo(bytes1));
-				Assert.That(insertedItems[1].LONGRAWDATATYPE, Is.EqualTo(bytes2));
+				Assert.That(insertedItems, Has.Length.EqualTo(2));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(insertedItems[0].LONGRAWDATATYPE, Is.EqualTo(bytes1));
+					Assert.That(insertedItems[1].LONGRAWDATATYPE, Is.EqualTo(bytes2));
+				}
 			}
 		}
 
@@ -3410,13 +3304,15 @@ namespace Tests.DataProvider
 
 				var table = schema.Tables.Single(t => t.TableName == "TEST_IDENTITY_SCHEMA");
 
-				Assert.AreEqual(2, table.Columns.Count);
+				Assert.That(table.Columns, Has.Count.EqualTo(2));
 
 				var id    = table.Columns.Single(c => c.ColumnName == "ID");
 				var notid = table.Columns.Single(c => c.ColumnName == "NOT_ID");
-
-				Assert.True(id    .IsIdentity);
-				Assert.False(notid.IsIdentity);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(id.IsIdentity, Is.True);
+					Assert.That(notid.IsIdentity, Is.False);
+				}
 			}
 		}
 
@@ -3489,19 +3385,21 @@ namespace Tests.DataProvider
 
 				void assert()
 				{
-					Assert.AreEqual(1, results.Length);
-
-					Assert.AreEqual(new DateTime(2020, 1, 3), results[0].Date);
-					Assert.AreEqual(new DateTime(2020, 1, 3, 4, 5, 6, 789).AddTicks(1230), results[0].DateTime);
-					Assert.AreEqual(new DateTime(2020, 1, 3, 4, 5, 6), results[0].DateTime_);
-					Assert.AreEqual(new DateTime(2020, 1, 3, 4, 5, 6, 789).AddTicks(1230), results[0].DateTime2);
-					Assert.AreEqual(new DateTime(2020, 1, 3, 4, 5, 6, 0), results[0].DateTime2_0);
-					Assert.AreEqual(new DateTime(2020, 1, 3, 4, 5, 6, 700), results[0].DateTime2_1);
-					Assert.AreEqual(new DateTime(2020, 1, 3, 4, 5, 6, 789).AddTicks(1234), results[0].DateTime2_9);
-					Assert.AreEqual(new DateTimeOffset(2020, 1, 3, 4, 5, 6, 789, TimeSpan.FromMinutes(45)).AddTicks(1230), results[0].DateTimeOffset_);
-					Assert.AreEqual(new DateTimeOffset(2020, 1, 3, 4, 5, 6, 0, TimeSpan.FromMinutes(45)), results[0].DateTimeOffset_0);
-					Assert.AreEqual(new DateTimeOffset(2020, 1, 3, 4, 5, 6, 700, TimeSpan.FromMinutes(45)), results[0].DateTimeOffset_1);
-					Assert.AreEqual(new DateTimeOffset(2020, 1, 3, 4, 5, 6, 789, TimeSpan.FromMinutes(45)).AddTicks(1234), results[0].DateTimeOffset_9);
+					Assert.That(results, Has.Length.EqualTo(1));
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(results[0].Date, Is.EqualTo(new DateTime(2020, 1, 3)));
+						Assert.That(results[0].DateTime, Is.EqualTo(new DateTime(2020, 1, 3, 4, 5, 6, 789).AddTicks(1230)));
+						Assert.That(results[0].DateTime_, Is.EqualTo(new DateTime(2020, 1, 3, 4, 5, 6)));
+						Assert.That(results[0].DateTime2, Is.EqualTo(new DateTime(2020, 1, 3, 4, 5, 6, 789).AddTicks(1230)));
+						Assert.That(results[0].DateTime2_0, Is.EqualTo(new DateTime(2020, 1, 3, 4, 5, 6, 0)));
+						Assert.That(results[0].DateTime2_1, Is.EqualTo(new DateTime(2020, 1, 3, 4, 5, 6, 700)));
+						Assert.That(results[0].DateTime2_9, Is.EqualTo(new DateTime(2020, 1, 3, 4, 5, 6, 789).AddTicks(1234)));
+						Assert.That(results[0].DateTimeOffset_, Is.EqualTo(new DateTimeOffset(2020, 1, 3, 4, 5, 6, 789, TimeSpan.FromMinutes(45)).AddTicks(1230)));
+						Assert.That(results[0].DateTimeOffset_0, Is.EqualTo(new DateTimeOffset(2020, 1, 3, 4, 5, 6, 0, TimeSpan.FromMinutes(45))));
+						Assert.That(results[0].DateTimeOffset_1, Is.EqualTo(new DateTimeOffset(2020, 1, 3, 4, 5, 6, 700, TimeSpan.FromMinutes(45))));
+						Assert.That(results[0].DateTimeOffset_9, Is.EqualTo(new DateTimeOffset(2020, 1, 3, 4, 5, 6, 789, TimeSpan.FromMinutes(45)).AddTicks(1234)));
+					}
 				}
 			}
 		}
@@ -3514,17 +3412,17 @@ namespace Tests.DataProvider
 			using (var db    = GetDataConnection(context))
 			using (var table = db.CreateLocalTable<TestDateTimeTypes>())
 			{
-				Assert.True(db.LastQuery!.Contains("\"Date\"             date                        NOT NULL"));
-				Assert.True(db.LastQuery.Contains("\"DateTime\"         timestamp                   NOT NULL"));
-				Assert.True(db.LastQuery.Contains("\"DateTime_\"        date                        NOT NULL"));
-				Assert.True(db.LastQuery.Contains("\"DateTime2\"        timestamp                   NOT NULL"));
-				Assert.True(db.LastQuery.Contains("\"DateTime2_0\"      timestamp(0)                NOT NULL"));
-				Assert.True(db.LastQuery.Contains("\"DateTime2_1\"      timestamp(1)                NOT NULL"));
-				Assert.True(db.LastQuery.Contains("\"DateTime2_9\"      timestamp(9)                NOT NULL"));
-				Assert.True(db.LastQuery.Contains("\"DateTimeOffset_\"  timestamp with time zone    NOT NULL"));
-				Assert.True(db.LastQuery.Contains("\"DateTimeOffset_0\" timestamp(0) with time zone NOT NULL"));
-				Assert.True(db.LastQuery.Contains("\"DateTimeOffset_1\" timestamp(1) with time zone NOT NULL"));
-				Assert.True(db.LastQuery.Contains("\"DateTimeOffset_9\" timestamp(9) with time zone NOT NULL"));
+				Assert.That(db.LastQuery!, Does.Contain("\"Date\"             date                        NOT NULL"));
+				Assert.That(db.LastQuery, Does.Contain("\"DateTime\"         timestamp                   NOT NULL"));
+				Assert.That(db.LastQuery, Does.Contain("\"DateTime_\"        date                        NOT NULL"));
+				Assert.That(db.LastQuery, Does.Contain("\"DateTime2\"        timestamp                   NOT NULL"));
+				Assert.That(db.LastQuery, Does.Contain("\"DateTime2_0\"      timestamp(0)                NOT NULL"));
+				Assert.That(db.LastQuery, Does.Contain("\"DateTime2_1\"      timestamp(1)                NOT NULL"));
+				Assert.That(db.LastQuery, Does.Contain("\"DateTime2_9\"      timestamp(9)                NOT NULL"));
+				Assert.That(db.LastQuery, Does.Contain("\"DateTimeOffset_\"  timestamp with time zone    NOT NULL"));
+				Assert.That(db.LastQuery, Does.Contain("\"DateTimeOffset_0\" timestamp(0) with time zone NOT NULL"));
+				Assert.That(db.LastQuery, Does.Contain("\"DateTimeOffset_1\" timestamp(1) with time zone NOT NULL"));
+				Assert.That(db.LastQuery, Does.Contain("\"DateTimeOffset_9\" timestamp(9) with time zone NOT NULL"));
 
 				db.Insert(TestDateTimeTypes.Data[0]);
 
@@ -3569,22 +3467,24 @@ namespace Tests.DataProvider
 
 				void assert(string function)
 				{
-					Assert.AreEqual(1, results.Length);
-
-					Assert.AreEqual(new DateTime(2020, 1, 3), results[0].Date);
-					Assert.AreEqual(new DateTime(2020, 1, 3, 4, 5, 6, 789).AddTicks(1230), results[0].DateTime);
-					Assert.AreEqual(new DateTime(2020, 1, 3, 4, 5, 6), results[0].DateTime_);
-					Assert.AreEqual(new DateTime(2020, 1, 3, 4, 5, 6, 789).AddTicks(1230), results[0].DateTime2);
-					Assert.AreEqual(new DateTime(2020, 1, 3, 4, 5, 6, 0), results[0].DateTime2_0);
-					Assert.AreEqual(new DateTime(2020, 1, 3, 4, 5, 6, 700), results[0].DateTime2_1);
-					Assert.AreEqual(new DateTime(2020, 1, 3, 4, 5, 6, 789).AddTicks(1234), results[0].DateTime2_9);
-					Assert.AreEqual(new DateTimeOffset(2020, 1, 3, 4, 5, 6, 789, TimeSpan.FromMinutes(45)).AddTicks(1230), results[0].DateTimeOffset_);
-					Assert.AreEqual(new DateTimeOffset(2020, 1, 3, 4, 5, 6, 0, TimeSpan.FromMinutes(45)), results[0].DateTimeOffset_0);
-					Assert.AreEqual(new DateTimeOffset(2020, 1, 3, 4, 5, 6, 700, TimeSpan.FromMinutes(45)), results[0].DateTimeOffset_1);
-					Assert.AreEqual(new DateTimeOffset(2020, 1, 3, 4, 5, 6, 789, TimeSpan.FromMinutes(45)).AddTicks(1234), results[0].DateTimeOffset_9);
+					Assert.That(results, Has.Length.EqualTo(1));
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(results[0].Date, Is.EqualTo(new DateTime(2020, 1, 3)));
+						Assert.That(results[0].DateTime, Is.EqualTo(new DateTime(2020, 1, 3, 4, 5, 6, 789).AddTicks(1230)));
+						Assert.That(results[0].DateTime_, Is.EqualTo(new DateTime(2020, 1, 3, 4, 5, 6)));
+						Assert.That(results[0].DateTime2, Is.EqualTo(new DateTime(2020, 1, 3, 4, 5, 6, 789).AddTicks(1230)));
+						Assert.That(results[0].DateTime2_0, Is.EqualTo(new DateTime(2020, 1, 3, 4, 5, 6, 0)));
+						Assert.That(results[0].DateTime2_1, Is.EqualTo(new DateTime(2020, 1, 3, 4, 5, 6, 700)));
+						Assert.That(results[0].DateTime2_9, Is.EqualTo(new DateTime(2020, 1, 3, 4, 5, 6, 789).AddTicks(1234)));
+						Assert.That(results[0].DateTimeOffset_, Is.EqualTo(new DateTimeOffset(2020, 1, 3, 4, 5, 6, 789, TimeSpan.FromMinutes(45)).AddTicks(1230)));
+						Assert.That(results[0].DateTimeOffset_0, Is.EqualTo(new DateTimeOffset(2020, 1, 3, 4, 5, 6, 0, TimeSpan.FromMinutes(45))));
+						Assert.That(results[0].DateTimeOffset_1, Is.EqualTo(new DateTimeOffset(2020, 1, 3, 4, 5, 6, 700, TimeSpan.FromMinutes(45))));
+						Assert.That(results[0].DateTimeOffset_9, Is.EqualTo(new DateTimeOffset(2020, 1, 3, 4, 5, 6, 789, TimeSpan.FromMinutes(45)).AddTicks(1234)));
+					}
 
 					if (inlineParameters)
-						Assert.True(db.LastQuery.Contains(function));
+						Assert.That(db.LastQuery, Does.Contain(function));
 				}
 			}
 		}
@@ -3603,13 +3503,13 @@ namespace Tests.DataProvider
 					GetProcedures = true
 				});
 
-				Assert.AreEqual(11, schema.Procedures.Count);
+				Assert.That(schema.Procedures, Has.Count.EqualTo(11));
 
 				// This filter used by T4 generator
-				Assert.AreEqual(11, schema.Procedures.Where(
+				Assert.That(schema.Procedures.Where(
 					proc => proc.IsLoaded
 					|| proc.IsFunction && !proc.IsTableFunction
-					|| proc.IsTableFunction && proc.ResultException != null).Count());
+					|| proc.IsTableFunction && proc.ResultException != null).Count(), Is.EqualTo(11));
 			}
 		}
 
@@ -3637,8 +3537,8 @@ namespace Tests.DataProvider
 				});
 
 				var table = schema.Tables.SingleOrDefault(t => t.TableName == nameof(TypesTest).ToUpperInvariant())!;
-				Assert.IsNotNull(table);
-				Assert.AreEqual(5, table.Columns.Count);
+				Assert.That(table, Is.Not.Null);
+				Assert.That(table.Columns, Has.Count.EqualTo(5));
 
 				AssertColumn(nameof(TypesTest.Char10)      , "CHAR(10)"     , 10);
 				AssertColumn(nameof(TypesTest.NChar10)     , "NCHAR(10)"    , 10);
@@ -3650,9 +3550,12 @@ namespace Tests.DataProvider
 				{
 					var column = table.Columns.SingleOrDefault(c => c.ColumnName == name)!;
 
-					Assert.IsNotNull(column);
-					Assert.AreEqual(dbType, column.ColumnType);
-					Assert.AreEqual(length, column.Length);
+					Assert.That(column, Is.Not.Null);
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(column.ColumnType, Is.EqualTo(dbType));
+						Assert.That(column.Length, Is.EqualTo(length));
+					}
 				}
 			}
 		}
@@ -3673,26 +3576,25 @@ namespace Tests.DataProvider
 		public void BulkCopyWithSchemaName(
 			[IncludeDataSources(false, TestProvName.AllOracle)] string context, [Values] bool withSchema)
 		{
-			using var db    = GetDataConnection(context);
+			var trace = string.Empty;
+
+			using var db    = GetDataContext(context, o => o.UseTracing(ti =>
+			{
+				if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
+					trace = ti.SqlText;
+			}));
 			using var table = db.CreateLocalTable<BulkCopyTable>();
 			{
 				var schemaName = TestUtils.GetSchemaName(db, context);
-
-				var trace = string.Empty;
-				db.OnTraceConnection += ti =>
-				{
-					if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
-						trace = ti.SqlText;
-				};
 
 				table.BulkCopy(
 						new BulkCopyOptions() { BulkCopyType = BulkCopyType.ProviderSpecific, SchemaName = withSchema ? schemaName : null },
 						Enumerable.Range(1, 10).Select(id => new BulkCopyTable { Id = id }));
 
 				if (withSchema)
-					Assert.True(trace.Contains($"INSERT BULK {schemaName}.BULKCOPYTABLE"));
+					Assert.That(trace, Does.Contain($"INSERT BULK {schemaName}.BULKCOPYTABLE"));
 				else
-					Assert.True(trace.Contains("INSERT BULK BULKCOPYTABLE"));
+					Assert.That(trace, Does.Contain("INSERT BULK BULKCOPYTABLE"));
 			}
 		}
 
@@ -3700,26 +3602,25 @@ namespace Tests.DataProvider
 		public void BulkCopyWithServerName(
 			[IncludeDataSources(false, TestProvName.AllOracle)] string context, [Values] bool withServer)
 		{
-			using var db    = GetDataConnection(context);
+			var trace = string.Empty;
+
+			using var db    = GetDataContext(context, o => o.UseTracing(ti =>
+			{
+				if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
+					trace = ti.SqlText;
+			}));
 			using var table = db.CreateLocalTable<BulkCopyTable>();
 			{
 				var serverName = TestUtils.GetServerName(db, context);
-
-				var trace = string.Empty;
-				db.OnTraceConnection += ti =>
-				{
-					if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
-						trace = ti.SqlText;
-				};
 
 				table.BulkCopy(
 						new BulkCopyOptions() { BulkCopyType = BulkCopyType.ProviderSpecific, ServerName = withServer ? serverName : null },
 						Enumerable.Range(1, 10).Select(id => new BulkCopyTable { Id = id }));
 
 				if (withServer)
-					Assert.False(trace.Contains($"INSERT BULK"));
+					Assert.That(trace, Does.Not.Contain($"INSERT BULK"));
 				else
-					Assert.True(trace.Contains("INSERT BULK BULKCOPYTABLE"));
+					Assert.That(trace, Does.Contain("INSERT BULK BULKCOPYTABLE"));
 			}
 		}
 
@@ -3727,23 +3628,22 @@ namespace Tests.DataProvider
 		public void BulkCopyWithEscapedColumn(
 			[IncludeDataSources(false, TestProvName.AllOracle)] string context)
 		{
-			using var db    = GetDataConnection(context);
+			var trace = string.Empty;
+
+			using var db    = GetDataContext(context, o => o.UseTracing(ti =>
+			{
+				if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
+					trace = ti.SqlText;
+			}));
 			using var table = db.CreateLocalTable<BulkCopyTable2>();
 			{
 				var serverName = TestUtils.GetServerName(db, context);
-
-				var trace = string.Empty;
-				db.OnTraceConnection += ti =>
-				{
-					if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
-						trace = ti.SqlText;
-				};
 
 				table.BulkCopy(
 						new BulkCopyOptions() { BulkCopyType = BulkCopyType.ProviderSpecific },
 						Enumerable.Range(1, 10).Select(id => new BulkCopyTable2 { Id = id }));
 
-				Assert.False(trace.Contains($"INSERT BULK"));
+				Assert.That(trace, Does.Not.Contain($"INSERT BULK"));
 			}
 		}
 
@@ -3751,7 +3651,13 @@ namespace Tests.DataProvider
 		public void BulkCopyTransactionTest(
 			[IncludeDataSources(false, TestProvName.AllOracle)] string context, [Values] bool withTransaction, [Values] bool withInternalTransaction)
 		{
-			using var db    = GetDataConnection(context);
+			var trace = string.Empty;
+
+			using var db    = GetDataContext(context, o => o.UseTracing(ti =>
+			{
+				if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
+					trace = ti.SqlText;
+			}));
 			using var table = db.CreateLocalTable<BulkCopyTable>();
 			{
 				IDisposable? tr = null;
@@ -3760,13 +3666,6 @@ namespace Tests.DataProvider
 
 				try
 				{
-					var trace = string.Empty;
-					db.OnTraceConnection += ti =>
-					{
-						if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
-							trace = ti.SqlText;
-					};
-
 					// Another devart bug: explicit + internal transaction doesn't produce error...
 					if (withTransaction && withInternalTransaction && !context.IsAnyOf(TestProvName.AllOracleDevart))
 						Assert.Throws<InvalidOperationException>(() =>
@@ -3781,7 +3680,7 @@ namespace Tests.DataProvider
 							new BulkCopyOptions() { BulkCopyType = BulkCopyType.ProviderSpecific, UseInternalTransaction = withInternalTransaction },
 							Enumerable.Range(1, 10).Select(id => new BulkCopyTable { Id = id }));
 
-						Assert.True(trace.Contains($"INSERT BULK"));
+						Assert.That(trace, Does.Contain($"INSERT BULK"));
 					}
 				}
 				finally
@@ -3791,31 +3690,21 @@ namespace Tests.DataProvider
 			}
 		}
 
-#region Issue 2342
+		#region Issue 2342
 		[Test]
 		public void Issue2342Test([IncludeDataSources(false, TestProvName.AllOracle)] string context)
 		{
-			using (new OracleAlternativeBulkCopyMode(AlternativeBulkCopy.InsertInto))
+			using var db    = GetDataContext(context, o => o
+				.UseOracle(o => o with { AlternativeBulkCopy = AlternativeBulkCopy.InsertInto })
+				.UseFactory(connection => new DummyRetryPolicy()));
+			using var table = db.CreateLocalTable<Issue2342Entity>();
+
+			using (db.BeginTransaction())
 			{
-			try
-			{
-				Configuration.RetryPolicy.Factory  = connection => new DummyRetryPolicy();
-
-				using var db    = GetDataConnection(context);
-				using var table = db.CreateLocalTable<Issue2342Entity>();
-
-				using (db.BeginTransaction())
-				{
-					table.BulkCopy(Enumerable.Range(1, 10).Select(id => new Issue2342Entity { Id = id, Name = $"Name_{id}" }));
-				}
-
-				table.Truncate();
+				table.BulkCopy(Enumerable.Range(1, 10).Select(id => new Issue2342Entity { Id = id, Name = $"Name_{id}" }));
 			}
-			finally
-			{
-				Configuration.RetryPolicy.Factory  = null;
-			}
-		}
+
+			table.Truncate();
 		}
 
 		sealed class DummyRetryPolicy : IRetryPolicy
@@ -3850,30 +3739,33 @@ namespace Tests.DataProvider
 				var matView      = schema.Tables.FirstOrDefault(t => t.TableName == "SchemaTestMatView" && t.IsView)!;
 				var matViewTable = schema.Tables.FirstOrDefault(t => t.TableName == "SchemaTestMatView" && !t.IsView);
 
-				Assert.IsNotNull(table);
-				Assert.AreEqual("This is table", table.Description);
-				Assert.IsFalse(table.IsView);
+				Assert.That(table, Is.Not.Null);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(table.Description, Is.EqualTo("This is table"));
+					Assert.That(table.IsView, Is.False);
 
-				Assert.AreEqual(1, table.Columns.Count);
-				Assert.AreEqual("Id", table.Columns[0].ColumnName);
-				Assert.AreEqual("This is column", table.Columns[0].Description);
+					Assert.That(table.Columns, Has.Count.EqualTo(1));
+					Assert.That(table.Columns[0].ColumnName, Is.EqualTo("Id"));
+					Assert.That(table.Columns[0].Description, Is.EqualTo("This is column"));
 
-				Assert.IsNotNull(view);
-				Assert.IsNull(view.Description);
-				Assert.IsTrue(view.IsView);
+					Assert.That(view, Is.Not.Null);
+					Assert.That(view.Description, Is.Null);
+					Assert.That(view.IsView, Is.True);
 
-				Assert.AreEqual(1, view.Columns.Count);
-				Assert.AreEqual("Id", view.Columns[0].ColumnName);
-				Assert.AreEqual("This is view column", view.Columns[0].Description);
+					Assert.That(view.Columns, Has.Count.EqualTo(1));
+					Assert.That(view.Columns[0].ColumnName, Is.EqualTo("Id"));
+					Assert.That(view.Columns[0].Description, Is.EqualTo("This is view column"));
 
-				Assert.IsNotNull(matView);
-				Assert.AreEqual("This is matview", matView.Description);
+					Assert.That(matView, Is.Not.Null);
+					Assert.That(matView.Description, Is.EqualTo("This is matview"));
 
-				Assert.AreEqual(1, matView.Columns.Count);
-				Assert.AreEqual("Id", matView.Columns[0].ColumnName);
-				Assert.AreEqual("This is matview column", matView.Columns[0].Description);
+					Assert.That(matView.Columns, Has.Count.EqualTo(1));
+					Assert.That(matView.Columns[0].ColumnName, Is.EqualTo("Id"));
+					Assert.That(matView.Columns[0].Description, Is.EqualTo("This is matview column"));
 
-				Assert.IsNull(matViewTable);
+					Assert.That(matViewTable, Is.Null);
+				}
 			}
 		}
 
@@ -3881,7 +3773,7 @@ namespace Tests.DataProvider
 		[Test]
 		public async Task Issue2504Test([IncludeDataSources(false, TestProvName.AllOracle)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				try
 				{
@@ -3900,7 +3792,7 @@ CREATE TABLE ""TABLE_A""(
 						COLUMNB = 2
 					});
 
-					Assert.AreEqual(1, id);
+					Assert.That(id, Is.EqualTo(1));
 
 					id = await db.InsertWithInt64IdentityAsync(new Issue2504Table2()
 					{
@@ -3908,11 +3800,12 @@ CREATE TABLE ""TABLE_A""(
 						COLUMNB = 2
 					});
 
-					Assert.AreEqual(2, id);
+					Assert.That(id, Is.EqualTo(2));
 				}
 				finally
 				{
 					try { db.Execute("DROP SEQUENCE SEQ_A");    } catch { }
+
 					try { db.Execute("DROP TABLE \"TABLE_A\""); } catch { }
 				}
 			}
@@ -3984,7 +3877,7 @@ CREATE TABLE ""TABLE_A""(
 
 			using var tx = dc.BeginTransaction();
 
-			using var blob = new OracleBlob((OracleConnection)dc.Connection);
+			using var blob = new OracleBlob((OracleConnection)dc.OpenDbConnection());
 			blob.WriteByte(1);
 
 			db.GetTable<LinqDataTypesBlobs>().Insert(() => new LinqDataTypesBlobs { ID = -10, BinaryValue = blob });
@@ -3994,11 +3887,11 @@ CREATE TABLE ""TABLE_A""(
 				.GetTable<LinqDataTypesBlobs>()
 				.Where(x => x.ID.In(-10, -20))
 				.Select(x => Sql.Expr<int>("LENGTH(\"BinaryValue\")"))
-				.ToList();
+				.ToArray();
 
 			tx.Rollback();
 
-			inserted.Should().Equal(1, 1);
+			inserted.ShouldBeEquivalentTo(new int[] { 1, 1 });
 		}
 
 		[Table("LinqDataTypes", IsColumnAttributeRequired = false)]
@@ -4020,7 +3913,7 @@ CREATE TABLE ""TABLE_A""(
 
 			using var tx = dc.BeginTransaction();
 
-			using var blob = new DA.OracleLob((DA.OracleConnection)dc.Connection, DA.OracleDbType.Blob);
+			using var blob = new DA.OracleLob((DA.OracleConnection)dc.OpenDbConnection(), DA.OracleDbType.Blob);
 			blob.WriteByte(1);
 
 			db.GetTable<LinqDataTypesBlobsDevart>().Insert(() => new LinqDataTypesBlobsDevart { ID = -10, BinaryValue = blob });
@@ -4030,11 +3923,11 @@ CREATE TABLE ""TABLE_A""(
 				.GetTable<LinqDataTypesBlobsDevart>()
 				.Where(x => x.ID.In(-10, -20))
 				.Select(x => Sql.Expr<int>("LENGTH(\"BinaryValue\")"))
-				.ToList();
+				.ToArray();
 
 			tx.Rollback();
 
-			inserted.Should().Equal(1, 1);
+			inserted.ShouldBeEquivalentTo(new int[] { 1, 1 });
 		}
 
 #if NETFRAMEWORK
@@ -4057,7 +3950,7 @@ CREATE TABLE ""TABLE_A""(
 
 			using var tx = dc.BeginTransaction();
 
-			using var blob = new Oracle.DataAccess.Types.OracleBlob((Oracle.DataAccess.Client.OracleConnection)dc.Connection);
+			using var blob = new Oracle.DataAccess.Types.OracleBlob((Oracle.DataAccess.Client.OracleConnection)dc.OpenDbConnection());
 			blob.WriteByte(1);
 
 			db.GetTable<LinqDataTypesBlobsNative>().Insert(() => new LinqDataTypesBlobsNative { ID = -10, BinaryValue = blob });
@@ -4067,11 +3960,11 @@ CREATE TABLE ""TABLE_A""(
 				.GetTable<LinqDataTypesBlobsNative>()
 				.Where(x => x.ID.In(-10, -20))
 				.Select(x => Sql.Expr<int>("LENGTH(\"BinaryValue\")"))
-				.ToList();
+				.ToArray();
 
 			tx.Rollback();
 
-			inserted.Should().Equal(1, 1);
+			inserted.ShouldBeEquivalentTo(new int[] { 1, 1 });
 		}
 #endif
 
@@ -4099,8 +3992,7 @@ CREATE TABLE ""TABLE_A""(
 			if ((copyType == BulkCopyType.ProviderSpecific || copyType == BulkCopyType.Default) && !keepIdentity)
 				Assert.Inconclusive($"{nameof(BulkCopyType.ProviderSpecific)} doesn't support {nameof(BulkCopyOptions.KeepIdentity)} = false mode");
 
-			using (new OracleAlternativeBulkCopyMode(multipeRowsMode))
-			using (var db    = new DataConnection(context))
+			using (var db    = new DataConnection(new DataOptions().UseConfiguration(context).UseOracle(o => o with { AlternativeBulkCopy = multipeRowsMode })))
 			using (var table = db.CreateLocalTable<NativeIdentity>())
 			{
 				var ms = new MappingSchema();
@@ -4128,19 +4020,28 @@ CREATE TABLE ""TABLE_A""(
 
 				var insertedData = table.OrderBy(_ => _.Field).ToArray();
 
-				Assert.AreEqual(2, insertedData.Length);
-				Assert.AreEqual(11, insertedData[0].Field);
-				Assert.AreEqual(12, insertedData[1].Field);
+				Assert.That(insertedData, Has.Length.EqualTo(2));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(insertedData[0].Field, Is.EqualTo(11));
+					Assert.That(insertedData[1].Field, Is.EqualTo(12));
+				}
 
 				if (keepIdentity)
 				{
-					Assert.AreEqual(4, insertedData[0].Id);
-					Assert.AreEqual(8, insertedData[1].Id);
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(insertedData[0].Id, Is.EqualTo(4));
+						Assert.That(insertedData[1].Id, Is.EqualTo(8));
+					}
 				}
 				else
 				{
-					Assert.AreEqual(1, insertedData[0].Id);
-					Assert.AreEqual(2, insertedData[1].Id);
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(insertedData[0].Id, Is.EqualTo(1));
+						Assert.That(insertedData[1].Id, Is.EqualTo(2));
+					}
 				}
 			}
 		}
@@ -4148,7 +4049,7 @@ CREATE TABLE ""TABLE_A""(
 		[Test]
 		public void TestModule([IncludeDataSources(false, TestProvName.AllOracle)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var parameters = new []
 				{
@@ -4160,19 +4061,22 @@ CREATE TABLE ""TABLE_A""(
 				};
 
 				db.ExecuteProc("TEST_PROCEDURE", parameters);
-				Assert.AreEqual(4, parameters[1].Value);
+				Assert.That(parameters[1].Value, Is.EqualTo(4));
 				db.ExecuteProc("TEST_PACKAGE1.TEST_PROCEDURE", parameters);
-				Assert.AreEqual(2, parameters[1].Value);
+				Assert.That(parameters[1].Value, Is.EqualTo(2));
 				db.ExecuteProc("TEST_PACKAGE2.TEST_PROCEDURE", parameters);
-				Assert.AreEqual(3, parameters[1].Value);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(parameters[1].Value, Is.EqualTo(3));
 
-				Assert.AreEqual(4, db.Person.Select(p => OracleModuleFunctions.TestFunction(1)).First());
-				Assert.AreEqual(2, db.Person.Select(p => OracleModuleFunctions.TestFunctionP1(1)).First());
-				Assert.AreEqual(3, db.Person.Select(p => OracleModuleFunctions.TestFunctionP2(1)).First());
+					Assert.That(db.Person.Select(p => OracleModuleFunctions.TestFunction(1)).First(), Is.EqualTo(4));
+					Assert.That(db.Person.Select(p => OracleModuleFunctions.TestFunctionP1(1)).First(), Is.EqualTo(2));
+					Assert.That(db.Person.Select(p => OracleModuleFunctions.TestFunctionP2(1)).First(), Is.EqualTo(3));
 
-				Assert.AreEqual(4, OracleModuleFunctions.TestTableFunction(db, 1).Select(r => r.O).First());
-				Assert.AreEqual(2, OracleModuleFunctions.TestTableFunctionP1(db, 1).Select(r => r.O).First());
-				Assert.AreEqual(3, OracleModuleFunctions.TestTableFunctionP2(db, 1).Select(r => r.O).First());
+					Assert.That(OracleModuleFunctions.TestTableFunction(db, 1).Select(r => r.O).First(), Is.EqualTo(4));
+					Assert.That(OracleModuleFunctions.TestTableFunctionP1(db, 1).Select(r => r.O).First(), Is.EqualTo(2));
+					Assert.That(OracleModuleFunctions.TestTableFunctionP2(db, 1).Select(r => r.O).First(), Is.EqualTo(3));
+				}
 			}
 		}
 
@@ -4223,9 +4127,8 @@ CREATE TABLE ""TABLE_A""(
 		[Test]
 		public void Issue3732Test([IncludeDataSources(TestProvName.AllOracle)] string context)
 		{
-			using var db    = GetDataConnection(context);
+			using var db    = GetDataContext(context, o => o.UseOracle(o => o with { AlternativeBulkCopy = AlternativeBulkCopy.InsertInto }));
 			using var table = db.CreateLocalTable<BulkCopyTable>();
-			using var _     = new OracleAlternativeBulkCopyMode(AlternativeBulkCopy.InsertInto);
 
 			db.BulkCopy(Enumerable.Range(1, 10).Select(x => new BulkCopyTable() { Id = x }));
 
@@ -4236,7 +4139,7 @@ CREATE TABLE ""TABLE_A""(
 		[Test]
 		public void Issue3740Test1([IncludeDataSources(TestProvName.AllOracle12Plus)] string context)
 		{
-			using var db = GetDataConnection(context);
+			using var db = GetDataContext(context);
 
 			db.Execute("CREATE OR REPLACE FUNCTION ISSUE3742(myParameter IN VARCHAR2) RETURN BOOLEAN AS BEGIN RETURN TRUE; END;");
 			try
@@ -4257,7 +4160,7 @@ SELECT convert_bool(:p) FROM SYS.DUAL", new { p = "test" });
 		[Test]
 		public void Issue3740Test2([IncludeDataSources(TestProvName.AllOracle12Plus)] string context)
 		{
-			using var db = GetDataConnection(context);
+			using var db = GetDataContext(context);
 
 			db.Execute("CREATE OR REPLACE FUNCTION ISSUE3742(myParameter IN VARCHAR2) RETURN BOOLEAN AS BEGIN RETURN TRUE; END;");
 			try
@@ -4276,7 +4179,7 @@ END convert_bool;");
 		}
 
 		[Sql.Expression("convert_bool({0})", ServerSideOnly = true)]
-		public static bool Issue3742Function(string parameter) => throw new InvalidOperationException();
+		private static bool Issue3742Function(string parameter) => throw new InvalidOperationException();
 
 		#region Issue 4172
 
@@ -4284,6 +4187,13 @@ END convert_bool;");
 		sealed class ISSUE4172TABLE
 		{
 			[Column("ROLE"), Nullable] public Role ROLE { get; set; }
+
+			public static ISSUE4172TABLE[] TestData =
+			[
+				new ISSUE4172TABLE() { ROLE = Role.Unknown },
+				new ISSUE4172TABLE() { ROLE = Role.Unknown },
+				new ISSUE4172TABLE() { ROLE = Role.Role1 },
+			];
 		}
 
 		enum Role
@@ -4298,40 +4208,337 @@ END convert_bool;");
 			Role2
 		}
 
-		[Test]
-		public void Issue4172Test1([IncludeDataSources(TestProvName.Oracle12Managed)] string context)
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4172")]
+		public void Issue4172Test_Enum_Literal_Equal([IncludeDataSources(true, TestProvName.AllOracle)] string context)
 		{
-			using var db = GetDataConnection(context);
-			using var users = db.CreateLocalTable<ISSUE4172TABLE>();
+			using var db = GetDataContext(context);
+			using var users = db.CreateLocalTable(ISSUE4172TABLE.TestData);
 
-			users.Insert(() => new ISSUE4172TABLE { ROLE = Role.Role1, });
-
-			// Should return Unknown Role users
 			var data = (
 					from u in users
 					where u.ROLE == Role.Unknown
 					select u).ToList();
 
-			Assert.True(data.Count == 0, "Incorrect count");
+			Assert.That(data, Has.Count.EqualTo(2));
 		}
 
-		[Test]
-		public void Issue4172Test2([IncludeDataSources(TestProvName.Oracle12Managed)] string context)
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4172")]
+		public void Issue4172Test_Enum_Literal_NotEqual([IncludeDataSources(true, TestProvName.AllOracle)] string context)
 		{
-			using var db = GetDataConnection(context);
-			using var users = db.CreateLocalTable<ISSUE4172TABLE>();
+			using var db = GetDataContext(context);
+			using var users = db.CreateLocalTable(ISSUE4172TABLE.TestData);
 
-			users.Insert(() => new ISSUE4172TABLE { ROLE = Role.Role1, });
-
-			// Should return Known Role users
 			var data = (
 				 from u in users
 				 where u.ROLE != Role.Unknown
 				 select u).ToList();
 
-			Assert.True(data.Count == 1, "Incorrect count");
+			Assert.That(data, Has.Count.EqualTo(1));
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4172")]
+		public void Issue4172Test_Enum_Variable_Equal([IncludeDataSources(true, TestProvName.AllOracle)] string context, [Values] bool inline)
+		{
+			using var db = GetDataContext(context);
+			using var users = db.CreateLocalTable(ISSUE4172TABLE.TestData);
+
+			db.InlineParameters = inline;
+			var value = Role.Unknown;
+
+			var data = (
+					from u in users
+					where u.ROLE == value
+					select u).ToList();
+
+			Assert.That(data, Has.Count.EqualTo(2));
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4172")]
+		public void Issue4172Test_Enum_Variable_NotEqual([IncludeDataSources(true, TestProvName.AllOracle)] string context, [Values] bool inline)
+		{
+			using var db = GetDataContext(context);
+			using var users = db.CreateLocalTable(ISSUE4172TABLE.TestData);
+
+			db.InlineParameters = inline;
+			var value = Role.Unknown;
+
+			var data = (
+				 from u in users
+				 where u.ROLE != value
+				 select u).ToList();
+
+			Assert.That(data, Has.Count.EqualTo(1));
+		}
+
+		[Table(Name = "ISSUE4172TABLE")]
+		sealed class ISSUE4172TABLEx
+		{
+			[Column("ROLE"), Nullable] public string ROLE { get; set; } = null!;
+
+			public static ISSUE4172TABLEx[] TestData =
+			[
+				new ISSUE4172TABLEx() { ROLE = "" },
+				new ISSUE4172TABLEx() { ROLE = "" },
+				new ISSUE4172TABLEx() { ROLE = "1" },
+			];
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4172")]
+		public void Issue4172Test_String_Literal_Equal([IncludeDataSources(true, TestProvName.AllOracle)] string context)
+		{
+			using var db = GetDataContext(context);
+			using var users = db.CreateLocalTable(ISSUE4172TABLEx.TestData);
+
+			var data = (
+				 from u in users
+				 where u.ROLE == ""
+				 select u).ToList();
+
+			Assert.That(data, Has.Count.EqualTo(2));
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4172")]
+		public void Issue4172Test_String_Literal_NotEqual([IncludeDataSources(true, TestProvName.AllOracle)] string context)
+		{
+			using var db = GetDataContext(context);
+			using var users = db.CreateLocalTable(ISSUE4172TABLEx.TestData);
+
+			var data = (
+				 from u in users
+				 where u.ROLE != ""
+				 select u).ToList();
+
+			Assert.That(data, Has.Count.EqualTo(1));
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4172")]
+		public void Issue4172Test_String_Variable_Equal([IncludeDataSources(true, TestProvName.AllOracle)] string context, [Values] bool inline)
+		{
+			using var db = GetDataContext(context);
+			using var users = db.CreateLocalTable(ISSUE4172TABLEx.TestData);
+
+			db.InlineParameters = inline;
+			var value = "";
+
+			var data = (
+				 from u in users
+				 where u.ROLE == value
+				 select u).ToList();
+
+			Assert.That(data, Has.Count.EqualTo(2));
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4172")]
+		public void Issue4172Test_String_Variable_NotEqual([IncludeDataSources(true, TestProvName.AllOracle)] string context, [Values] bool inline)
+		{
+			using var db = GetDataContext(context);
+			using var users = db.CreateLocalTable(ISSUE4172TABLEx.TestData);
+
+			db.InlineParameters = inline;
+			var value = "";
+
+			var data = (
+				 from u in users
+				 where u.ROLE != value
+				 select u).ToList();
+
+			Assert.That(data, Has.Count.EqualTo(1));
 		}
 
 		#endregion
+
+		#region Issue 1999
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/1999")]
+		public void Issue1999Test1([IncludeDataSources(TestProvName.AllOracle)] string context)
+		{
+			using var db = GetDataContext(context);
+
+			var blob = new byte[40_000];
+			for (var i = 0; i < blob.Length; i++) blob[i] = (byte)(i % 256);
+
+			var pIn = new DataParameter("pIn", blob, DataType.Blob);
+			var pOut = new DataParameter("pOut", null, DataType.Blob) { Direction = ParameterDirection.Output };
+
+			db.Execute("CREATE OR REPLACE PROCEDURE ISSUE1999(pIn IN BLOB, pOut OUT BLOB) AS BEGIN pOut := pIn; END;");
+
+			try
+			{
+				db.ExecuteProc("ISSUE1999", pIn, pOut);
+
+				Assert.That(pOut.Value, Is.EqualTo(blob));
+			}
+			finally
+			{
+				db.Execute("DROP PROCEDURE ISSUE1999");
+			}
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/1999")]
+		public void Issue1999Test2([IncludeDataSources(TestProvName.AllOracle)] string context)
+		{
+			using var db = GetDataContext(context);
+
+			var blob = new byte[40_000];
+			for (var i = 0; i < blob.Length; i++) blob[i] = (byte)(i % 256);
+
+			var pIn = new DataParameter("pIn", blob, "BLOB");
+			var pOut = new DataParameter("pOut", null, DataType.Blob) { Direction = ParameterDirection.Output };
+
+			db.Execute("CREATE OR REPLACE PROCEDURE ISSUE1999(pIn IN BLOB, pOut OUT BLOB) AS BEGIN pOut := pIn; END;");
+
+			try
+			{
+				db.ExecuteProc("ISSUE1999", pIn, pOut);
+
+				Assert.That(pOut.Value, Is.EqualTo(blob));
+			}
+			finally
+			{
+				db.Execute("DROP PROCEDURE ISSUE1999");
+			}
+		}
+		#endregion
+
+		[ActiveIssue]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/2365")]
+		public void Issue2365Test([IncludeDataSources(TestProvName.AllOracle)] string context)
+		{
+			using var db = GetDataConnection(context);
+
+			var table = db.DataProvider.GetSchemaProvider().GetSchema(db).Tables.Single(t => t.TableName == "AllTypes");
+			using (Assert.EnterMultipleScope())
+			{
+				foreach (var column in table.Columns)
+				{
+					if (column.ColumnName is "charDataType")
+					{
+						Assert.That(column.Length, Is.EqualTo(1));
+					}
+					else if (column.ColumnName is "char20DataType" or "varcharDataType" or "ncharDataType" or "nvarcharDataType")
+					{
+						Assert.That(column.Length, Is.EqualTo(20));
+					}
+					else if (column.ColumnName is "guidDataType")
+					{
+						Assert.That(column.Length, Is.EqualTo(16));
+					}
+					else
+					{
+						Assert.That(column.Length, Is.Null);
+					}
+				}
+			}
+		}
+
+		[ActiveIssue(Details = "https://github.com/linq2db/linq2db/issues/1645")]
+		[Test]
+		public void TestInParameter([IncludeDataSources(TestProvName.AllOracle)] string context)
+		{
+			using var db = GetDataContext(context);
+
+			int[] ids = [1, 2, 3];
+
+			var res = db.Person.Where(p => IsIn(p.ID, ids)).ToList();
+
+			Assert.That(res, Has.Count.EqualTo(3));
+		}
+
+		[Sql.Extension("{field} IN {values}", ServerSideOnly = true, IsPredicate = true)]
+		static bool IsIn<T>([ExprParameter] T field, [ExprParameter] T[] values) => throw new ServerSideOnlyException(nameof(IsIn));
+
+		sealed class BlobsTable
+		{
+			[PrimaryKey] public int Id { get; set; }
+
+			[Column(DataType = DataType.NText)                   ] public string? NClob { get; set; }
+			[Column(DataType = DataType.Text)                    ] public string? Clob  { get; set; }
+			[Column(DataType = DataType.Binary)                  ] public byte[]? Blob  { get; set; }
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4661")]
+		public void BlobLiteralsLimit([IncludeDataSources(TestProvName.AllOracle)] string context, [Values] bool inline)
+		{
+			using var _  = new DisableBaseline("big sad sql");
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable<BlobsTable>();
+
+			const int blobLimit  = 2000;
+			const int clobLimit  = 4000;
+			const int nclobLimit = 2000;
+
+			db.InlineParameters = inline;
+
+			var blob = new byte[blobLimit + 1];
+
+			for (var i = 0; i < blob.Length; i++)
+				blob[i] = (byte)(i % 256);
+
+			var clob = new string(Enumerable.Range(0, clobLimit + 1).Select(i => (char)('a' + i % 28)).ToArray());
+			var nclob = new string(Enumerable.Range(0, nclobLimit + 1).Select(i => (char)('а' + i % 33)).ToArray());
+
+			var records = new BlobsTable[]
+			{
+				new BlobsTable()
+				{
+					Id    = 1,
+					NClob = nclob,
+					Clob  = clob,
+					Blob  = blob,
+				},
+				new BlobsTable()
+				{
+					Id    = 2,
+					NClob = nclob.Substring(0, nclobLimit),
+					Clob  = clob.Substring(0, clobLimit),
+					Blob  = blob.Take(blobLimit).ToArray(),
+				}
+			};
+
+			db.BulkCopy(new BulkCopyOptions(BulkCopyType: BulkCopyType.RowByRow), records);
+			AssertRecord();
+
+			db.BulkCopy(new BulkCopyOptions(BulkCopyType: BulkCopyType.MultipleRows), records);
+			AssertRecord();
+
+			db.BulkCopy(new BulkCopyOptions(BulkCopyType: BulkCopyType.ProviderSpecific), records);
+			AssertRecord();
+
+			using (var db1 = GetDataContext(context, o => o.UseOracle(o => o with { AlternativeBulkCopy = AlternativeBulkCopy.InsertAll })))
+			{
+				db1.BulkCopy(new BulkCopyOptions(BulkCopyType: BulkCopyType.MultipleRows), records);
+				AssertRecord();
+			}
+
+			using (var db1 = GetDataContext(context, o => o.UseOracle(o => o with { AlternativeBulkCopy = AlternativeBulkCopy.InsertDual })))
+			{
+				db1.BulkCopy(new BulkCopyOptions(BulkCopyType: BulkCopyType.MultipleRows), records);
+				AssertRecord();
+			}
+
+			using (var db1 = GetDataContext(context, o => o.UseOracle(o => o with { AlternativeBulkCopy = AlternativeBulkCopy.InsertInto })))
+			{
+				db1.BulkCopy(new BulkCopyOptions(BulkCopyType: BulkCopyType.MultipleRows), records);
+				AssertRecord();
+			}
+
+			tb.Merge().Using(records).OnTargetKey().InsertWhenNotMatched().Merge();
+			AssertRecord();
+
+			void AssertRecord()
+			{
+				var results = tb.OrderBy(r => r.Id).ToArray();
+				tb.Delete();
+
+				Assert.That(results, Has.Length.EqualTo(2));
+
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(results[0].Blob, Is.EqualTo(blob));
+					Assert.That(results[0].Clob, Is.EqualTo(clob));
+					Assert.That(results[0].NClob, Is.EqualTo(nclob));
+				}
+
+			}
+		}
 	}
 }

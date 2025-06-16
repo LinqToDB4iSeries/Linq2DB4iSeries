@@ -3,10 +3,11 @@ using System.Linq;
 using System.Threading.Tasks;
 
 using LinqToDB;
+using LinqToDB.Async;
 using LinqToDB.Data;
-using LinqToDB.Mapping;
-using LinqToDB.SqlQuery;
 using LinqToDB.Extensions;
+using LinqToDB.Internal.SqlQuery;
+using LinqToDB.Mapping;
 
 using NUnit.Framework;
 
@@ -17,7 +18,7 @@ namespace Tests.Samples
 	{
 		sealed class InterceptDataConnection : DataConnection
 		{
-			public InterceptDataConnection(string providerName, string connectionString) : base(providerName, connectionString)
+			public InterceptDataConnection(string providerName, string connectionString) : base(new DataOptions().UseConnectionString(providerName, connectionString))
 			{
 			}
 
@@ -37,10 +38,21 @@ namespace Tests.Samples
 				return clone;
 			}
 
+			static SqlTable? GetUpdateTable(SqlUpdateStatement updateStatement)
+			{
+				var tableToUpdate = updateStatement.Update.Table;
+
+				tableToUpdate ??= QueryHelper.EnumerateAccessibleSources(updateStatement.SelectQuery)
+					.OfType<SqlTable>()
+					.FirstOrDefault();
+
+				return tableToUpdate;
+			}
+
 			static SqlTable? GetUpdateTable(SqlStatement statement)
 			{
 				if (statement is SqlUpdateStatement update)
-					return QueryHelper.GetUpdateTable(update);
+					return GetUpdateTable(update);
 
 				if (statement.SelectQuery == null)
 					return null;
@@ -106,7 +118,6 @@ namespace Tests.Samples
 
 					if (rowVersion == null)
 						return statement;
-
 
 					var newInsertStatement = Clone(statement);
 					var insertClause       = newInsertStatement.RequireInsertClause();
@@ -183,10 +194,10 @@ namespace Tests.Samples
 
 				var result = db.Update(row);
 
-				Assert.AreEqual(1, result);
+				Assert.That(result, Is.EqualTo(1));
 
 				var updated = table.First(t => t.ID == 1);
-				Assert.AreEqual(row.RowVer + 1, updated.RowVer);
+				Assert.That(updated.RowVer, Is.EqualTo(row.RowVer + 1));
 			}
 		}
 
@@ -204,14 +215,14 @@ namespace Tests.Samples
 
 			var result = db.Update(row1);
 
-			Assert.AreEqual(1, result);
+			Assert.That(result, Is.EqualTo(1));
 
 			// 2nd change will fail as the version number is different to the one sent with the update
 			row2.Description = "Another change";
 
 			result = db.Update(row1);
 
-			Assert.AreEqual(0, result);
+			Assert.That(result, Is.Zero);
 		}
 
 		[Test]
@@ -225,16 +236,20 @@ namespace Tests.Samples
 
 			var obj1000 = table.First(_ => _.ID == 1000);
 			var obj1001 = table.First(_ => _.ID == 1001);
-
-			Assert.IsNotNull(obj1000);
-			Assert.IsNotNull(obj1001);
-			Assert.AreEqual(1, obj1000.RowVer);
-			Assert.AreEqual(1, obj1001.RowVer);
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(obj1000, Is.Not.Null);
+				Assert.That(obj1001, Is.Not.Null);
+				Assert.That(obj1000.RowVer, Is.EqualTo(1));
+				Assert.That(obj1001.RowVer, Is.EqualTo(1));
+			}
 
 			db.Update(obj1000);
-
-			Assert.AreEqual(0, db.Delete(obj1000));
-			Assert.AreEqual(1, db.Delete(obj1001));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(db.Delete(obj1000), Is.Zero);
+				Assert.That(db.Delete(obj1001), Is.EqualTo(1));
+			}
 		}
 
 		[Test]
@@ -248,16 +263,20 @@ namespace Tests.Samples
 
 			var obj2000 = await table.FirstAsync(_ => _.ID == 2000);
 			var obj2001 = await table.FirstAsync(_ => _.ID == 2001);
-
-			Assert.IsNotNull(obj2000);
-			Assert.IsNotNull(obj2001);
-			Assert.AreEqual(1, obj2000.RowVer);
-			Assert.AreEqual(1, obj2001.RowVer);
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(obj2000, Is.Not.Null);
+				Assert.That(obj2001, Is.Not.Null);
+				Assert.That(obj2000.RowVer, Is.EqualTo(1));
+				Assert.That(obj2001.RowVer, Is.EqualTo(1));
+			}
 
 			await db.UpdateAsync(obj2000);
-
-			Assert.AreEqual(0, await db.DeleteAsync(obj2000));
-			Assert.AreEqual(1, await db.DeleteAsync(obj2001));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(await db.DeleteAsync(obj2000), Is.Zero);
+				Assert.That(await db.DeleteAsync(obj2001), Is.EqualTo(1));
+			}
 		}
 
 		[Test]
@@ -267,17 +286,22 @@ namespace Tests.Samples
 			var table  = db.GetTable<TestTable>();
 
 			var result = db.InsertOrReplace(new TestTable {ID = 3, Description = "Row 3"});
-
-			Assert.AreEqual(1, result);
-			Assert.AreEqual(3, table.Count());
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(result, Is.EqualTo(1));
+				Assert.That(table.Count(), Is.EqualTo(3));
+			}
 
 			var newval = table.First(t => t.ID == 3);
 
 			newval.Description = "Row 3 New description";
 
 			result = db.InsertOrReplace(newval);
-			Assert.AreEqual(1, result);
-			Assert.AreEqual(3, table.Count());
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(result, Is.EqualTo(1));
+				Assert.That(table.Count(), Is.EqualTo(3));
+			}
 		}
 	}
 }

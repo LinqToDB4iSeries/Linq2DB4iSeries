@@ -1,8 +1,10 @@
 ﻿using System.Linq;
+
 using LinqToDB;
 using LinqToDB.Data;
+using LinqToDB.Internal.SqlQuery;
 using LinqToDB.Mapping;
-using LinqToDB.SqlQuery;
+
 using NUnit.Framework;
 
 namespace Tests.Linq
@@ -32,10 +34,12 @@ namespace Tests.Linq
 					};
 
 				var result = query.First();
-
-				Assert.That(result.FieldIdName1,  Is.EqualTo("[id]"));
-				Assert.That(result.FieldIdName2,  Is.EqualTo("[id]"));
-				Assert.That(result.FieldIdNameNQ, Is.EqualTo("id"));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result.FieldIdName1, Is.EqualTo("[id]"));
+					Assert.That(result.FieldIdName2, Is.EqualTo("[id]"));
+					Assert.That(result.FieldIdNameNQ, Is.EqualTo("id"));
+				}
 			}
 		}
 
@@ -54,19 +58,21 @@ namespace Tests.Linq
 					};
 
 				var result = query.First();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result.FieldIdName1, Is.EqualTo("[id]"));
+					Assert.That(result.FieldIdName2, Is.EqualTo("[id]"));
+					Assert.That(result.FieldIdNameNQ, Is.EqualTo("id"));
 
-				Assert.That(result.FieldIdName1,  Is.EqualTo("[id]"));
-				Assert.That(result.FieldIdName2,  Is.EqualTo("[id]"));
-				Assert.That(result.FieldIdNameNQ, Is.EqualTo("id"));
-
-				Assert.That(Sql.FieldName(table, _ => _.Value),        Is.EqualTo("[value]"));
-				Assert.That(Sql.FieldName(table, _ => _.Value, true),  Is.EqualTo("[value]"));
-				Assert.That(Sql.FieldName(table, _ => _.Value, false), Is.EqualTo("value"));
+					Assert.That(Sql.FieldName(table, _ => _.Value), Is.EqualTo("[value]"));
+					Assert.That(Sql.FieldName(table, _ => _.Value, true), Is.EqualTo("[value]"));
+					Assert.That(Sql.FieldName(table, _ => _.Value, false), Is.EqualTo("value"));
+				}
 			}
 		}
 
 		[Test]
-		public void TableNameTests1([IncludeDataSources(true, TestProvName.AllSqlServer2012)] string context)
+		public void TableNameTests1([IncludeDataSources(true, TestProvName.AllSqlServer2012Plus)] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (var table = db.CreateLocalTable<SampleClass>("sample_table_temp", new[]{new SampleClass{Id = 1, Value = 2} }))
@@ -85,18 +91,20 @@ namespace Tests.Linq
 					};
 
 				var result = query.First();
-
-				Assert.That(result.TableName1,  Is.EqualTo("[database].[schema].[table_name]"));
-				Assert.That(result.TableName2,  Is.EqualTo("[database].[schema].[table_name]"));
-				Assert.That(result.TableName3,  Is.EqualTo("[table_name]"));
-				Assert.That(result.TableName4,  Is.EqualTo("table_name"));
-				Assert.That(result.TableName_Schema,   Is.EqualTo("[schema].[table_name]"));
-				Assert.That(result.TableName_Database, Is.EqualTo("[database]..[table_name]"));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result.TableName1, Is.EqualTo("[database].[schema].[table_name]"));
+					Assert.That(result.TableName2, Is.EqualTo("[database].[schema].[table_name]"));
+					Assert.That(result.TableName3, Is.EqualTo("[table_name]"));
+					Assert.That(result.TableName4, Is.EqualTo("table_name"));
+					Assert.That(result.TableName_Schema, Is.EqualTo("[schema].[table_name]"));
+					Assert.That(result.TableName_Database, Is.EqualTo("[database]..[table_name]"));
+				}
 			}
 		}
 
 		[Test]
-		public void TableNameTests2([IncludeDataSources(true, TestProvName.AllSqlServer2012)] string context)
+		public void TableNameTests2([IncludeDataSources(true, TestProvName.AllSqlServer2012Plus)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -113,7 +121,7 @@ namespace Tests.Linq
 						TableName_Database = Sql.TableName(t, Sql.TableQualification.DatabaseName),
 					};
 
-				TestContext.WriteLine(query.ToString());
+				BaselinesManager.LogQuery(query.ToSqlQuery().Sql);
 
 				var ast = query.GetSelectQuery();
 
@@ -122,16 +130,20 @@ namespace Tests.Linq
 					return (string)((SqlValue)ast.Select.Columns[index].Expression).Value!;
 				}
 
-				Assert.That(GetColumnValue(0), Is.EqualTo("[database].[schema].[table_name]"));
-				Assert.That(GetColumnValue(1), Is.EqualTo("[table_name]"));
-				Assert.That(GetColumnValue(2), Is.EqualTo("table_name"));
-				Assert.That(GetColumnValue(3), Is.EqualTo("[schema].[table_name]"));
-				Assert.That(GetColumnValue(4), Is.EqualTo("[database]..[table_name]"));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(GetColumnValue(0), Is.EqualTo("[database].[schema].[table_name]"));
+					Assert.That(GetColumnValue(1), Is.EqualTo("[database].[schema].[table_name]"));
+					Assert.That(GetColumnValue(2), Is.EqualTo("[table_name]"));
+					Assert.That(GetColumnValue(3), Is.EqualTo("table_name"));
+					Assert.That(GetColumnValue(4), Is.EqualTo("[schema].[table_name]"));
+					Assert.That(GetColumnValue(5), Is.EqualTo("[database]..[table_name]"));
+				}
 			}
 		}
 
 		[Test]
-		public void TableExprTests1([IncludeDataSources(true, TestProvName.AllSqlServer2012)] string context)
+		public void TableExprTests1([IncludeDataSources(true, TestProvName.AllSqlServer2012Plus)] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (var table = db.CreateLocalTable<SampleClass>("sample_table_temp", new[]{new SampleClass{Id = 1, Value = 2} }))
@@ -150,18 +162,20 @@ namespace Tests.Linq
 					};
 
 				var result = query.First();
-
-				Assert.That(result.TableName1,  Is.EqualTo("[database].[schema].[table_name]"));
-				Assert.That(result.TableName2,  Is.EqualTo("[database].[schema].[table_name]"));
-				Assert.That(result.TableName3,  Is.EqualTo("[table_name]"));
-				Assert.That(result.TableName4,  Is.EqualTo("table_name"));
-				Assert.That(result.TableName_Schema,   Is.EqualTo("[schema].[table_name]"));
-				Assert.That(result.TableName_Database, Is.EqualTo("[database]..[table_name]"));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result.TableName1, Is.EqualTo("[database].[schema].[table_name]"));
+					Assert.That(result.TableName2, Is.EqualTo("[database].[schema].[table_name]"));
+					Assert.That(result.TableName3, Is.EqualTo("[table_name]"));
+					Assert.That(result.TableName4, Is.EqualTo("table_name"));
+					Assert.That(result.TableName_Schema, Is.EqualTo("[schema].[table_name]"));
+					Assert.That(result.TableName_Database, Is.EqualTo("[database]..[table_name]"));
+				}
 			}
 		}
 
 		[Test]
-		public void TableExprTests2([IncludeDataSources(true, TestProvName.AllSqlServer2012)] string context)
+		public void TableExprTests2([IncludeDataSources(true, TestProvName.AllSqlServer2012Plus)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -178,20 +192,24 @@ namespace Tests.Linq
 						TableName_Database = Sql.TableExpr(t, Sql.TableQualification.DatabaseName),
 					};
 
-				TestContext.WriteLine(query.ToString());
+				BaselinesManager.LogQuery(query.ToSqlQuery().Sql);
 
 				var ast = query.GetSelectQuery();
 
 				string GetColumnValue(int index)
 				{
-					return ((SqlExpression)ast.Select.Columns[index].Expression).Expr;
+					return ((SqlFragment)ast.Select.Columns[index].Expression).Expr;
 				}
 
-				Assert.That(GetColumnValue(0), Is.EqualTo("[database].[schema].[table_name]"));
-				Assert.That(GetColumnValue(1), Is.EqualTo("[table_name]"));
-				Assert.That(GetColumnValue(2), Is.EqualTo("table_name"));
-				Assert.That(GetColumnValue(3), Is.EqualTo("[schema].[table_name]"));
-				Assert.That(GetColumnValue(4), Is.EqualTo("[database]..[table_name]"));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(GetColumnValue(0), Is.EqualTo("[database].[schema].[table_name]"));
+					Assert.That(GetColumnValue(1), Is.EqualTo("[database].[schema].[table_name]"));
+					Assert.That(GetColumnValue(2), Is.EqualTo("[table_name]"));
+					Assert.That(GetColumnValue(3), Is.EqualTo("table_name"));
+					Assert.That(GetColumnValue(4), Is.EqualTo("[schema].[table_name]"));
+					Assert.That(GetColumnValue(5), Is.EqualTo("[database]..[table_name]"));
+				}
 			}
 		}
 
@@ -224,7 +242,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void FreeTextTableTest([IncludeDataSources(true, TestProvName.AllSqlServer2012)] string context)
+		public void FreeTextTableTest([IncludeDataSources(true, TestProvName.AllSqlServer2012Plus)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -238,9 +256,9 @@ namespace Tests.Linq
 						.InnerJoin(ft => ft.Key == t.Id)
 					select t;
 
-				var query1Str = query1.ToString();
+				var query1Str = query1.ToSqlQuery().Sql;
 
-				TestContext.WriteLine(query1Str);
+				BaselinesManager.LogQuery(query1Str);
 
 				var query2 = from t in table
 					from ft in db.FromSql<FreeTextKey<int>>(
@@ -248,21 +266,22 @@ namespace Tests.Linq
 						.InnerJoin(ft => ft.Key == t.Id)
 					select t;
 
-				var query2Str = query2.ToString();
+				var query2Str = query2.ToSqlQuery().Sql;
 
-				TestContext.WriteLine(query2Str);
-
+				BaselinesManager.LogQuery(query2Str);
 
 				var query3 = db.FromSql<FreeTextKey<int>>(
 					$"FREETEXTTABLE({Sql.TableExpr(table)}, {Sql.FieldExpr(table, t => t.Value)}, {queryText})");
 
-				var query3Str = query3.ToString();
+				var query3Str = query3.ToSqlQuery().Sql;
 
-				TestContext.WriteLine(query3Str);
-
-				StringAssert.Contains("FREETEXTTABLE([database].[schema].[table_name], [value],", query1Str);
-				StringAssert.Contains("FREETEXTTABLE([database].[schema].[table_name], [value],", query2Str);
-				StringAssert.Contains("FREETEXTTABLE([database].[schema].[table_name], [value],", query3Str);
+				BaselinesManager.LogQuery(query3Str);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(query1Str, Does.Contain("FREETEXTTABLE([database].[schema].[table_name], [value],"));
+					Assert.That(query2Str, Does.Contain("FREETEXTTABLE([database].[schema].[table_name], [value],"));
+					Assert.That(query3Str, Does.Contain("FREETEXTTABLE([database].[schema].[table_name], [value],"));
+				}
 			}
 		}
 
@@ -270,6 +289,7 @@ namespace Tests.Linq
 		public void TestSqlCollate1(
 			[DataSources(
 				ProviderName.SqlCe,
+				ProviderName.Ydb,
 				TestProvName.AllClickHouse,
 				TestProvName.AllAccess,
 				TestProvName.AllSapHana,
@@ -290,6 +310,7 @@ namespace Tests.Linq
 		public void TestSqlCollate2(
 			[DataSources(
 				ProviderName.SqlCe,
+			ProviderName.Ydb,
 				TestProvName.AllClickHouse,
 				TestProvName.AllAccess,
 				TestProvName.AllSapHana,

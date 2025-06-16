@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 using LinqToDB;
@@ -14,12 +14,12 @@ namespace Tests.xUpdate
 	[TestFixture]
 	public class UpdateWithOutputTests : TestBase
 	{
-		private const string FeatureUpdateOutputWithOldSingle                      = $"{TestProvName.AllSqlServer},{TestProvName.AllFirebird}";
-		private const string FeatureUpdateOutputWithOldSingleNoAlternateRewrite    = $"{TestProvName.AllSqlServer}";
-		private const string FeatureUpdateOutputWithOldMultiple                    = $"{TestProvName.AllSqlServer}";
-		private const string FeatureUpdateOutputWithoutOldSingle                   = $"{TestProvName.AllSqlServer},{TestProvName.AllFirebird},{TestProvName.AllPostgreSQL},{TestProvName.AllSQLite}";
-		private const string FeatureUpdateOutputWithoutOldSingleNoAlternateRewrite = $"{TestProvName.AllSqlServer},{TestProvName.AllPostgreSQL}";
-		private const string FeatureUpdateOutputWithoutOldMultiple                 = $"{TestProvName.AllSqlServer},{TestProvName.AllPostgreSQL},{TestProvName.AllSQLite}";
+		private const string FeatureUpdateOutputWithOldSingle                      = $"{TestProvName.AllSqlServer},{TestProvName.AllFirebirdLess5},{TestProvName.AllPostgreSQL18Plus}";
+		private const string FeatureUpdateOutputWithOldSingleNoAlternateRewrite    = $"{TestProvName.AllSqlServer},{TestProvName.AllPostgreSQL18Plus}";
+		private const string FeatureUpdateOutputWithOldMultiple                    = $"{TestProvName.AllSqlServer},{TestProvName.AllFirebird5Plus},{TestProvName.AllPostgreSQL18Plus}";
+		private const string FeatureUpdateOutputWithoutOldSingle                   = $"{TestProvName.AllSqlServer},{TestProvName.AllFirebirdLess5},{TestProvName.AllPostgreSQL},{TestProvName.AllSQLite},{ProviderName.Ydb}";
+		private const string FeatureUpdateOutputWithoutOldSingleNoAlternateRewrite = $"{TestProvName.AllSqlServer},{TestProvName.AllPostgreSQL},{ProviderName.Ydb}";
+		private const string FeatureUpdateOutputWithoutOldMultiple                 = $"{TestProvName.AllSqlServer},{TestProvName.AllFirebird5Plus},{TestProvName.AllPostgreSQL},{TestProvName.AllSQLite},{ProviderName.Ydb}";
 		private const string FeatureUpdateOutputInto                               = $"{TestProvName.AllSqlServer}";
 
 		sealed class UpdateOutputComparer<T> : IEqualityComparer<UpdateOutput<T>>
@@ -37,7 +37,7 @@ namespace Tests.xUpdate
 		[Table]
 		sealed record TableWithData
 		{
-			[Column]              public int     Id       { get; set; }
+			[PrimaryKey]          public int     Id       { get; set; }
 			[Column]              public int     Value    { get; set; }
 			[Column(Length = 50)] public string? ValueStr { get; set; }
 		}
@@ -45,7 +45,7 @@ namespace Tests.xUpdate
 		[Table(Schema = "TestSchema")]
 		sealed record TableWithDataAndSchema
 		{
-			[Column]              public int     Id       { get; set; }
+			[PrimaryKey]          public int     Id       { get; set; }
 			[Column]              public int     Value    { get; set; }
 			[Column(Length = 50)] public string? ValueStr { get; set; }
 		}
@@ -53,7 +53,7 @@ namespace Tests.xUpdate
 		[Table]
 		sealed record DestinationTable
 		{
-			[Column]              public int     Id       { get; set; }
+			[PrimaryKey]          public int     Id       { get; set; }
 			[Column]              public int     Value    { get; set; }
 			[Column(Length = 50)] public string? ValueStr { get; set; }
 		}
@@ -148,11 +148,12 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
-					.UpdateWithOutputAsync(
-						target,
-						s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, });
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
+						.UpdateWithOutputAsync(
+							target,
+							s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, }));
 
 				AreEqual(
 					expected,
@@ -179,12 +180,13 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
-					.Where(_ => _.s.Id == 3)
-					.UpdateWithOutputAsync(
-						target,
-						s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, });
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
+						.Where(_ => _.s.Id == 3)
+						.UpdateWithOutputAsync(
+							target,
+							s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, }));
 
 				AreEqual(
 					expected,
@@ -392,7 +394,7 @@ namespace Tests.xUpdate
 					.Where(_ => _.s.Id == 3)
 					.UpdateWithOutput(
 						target,
-						s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
+						s => new DestinationTable { Value = s.s.Value, ValueStr = s.s.ValueStr, },
 						(source, deleted, inserted) => new
 						{
 							InsertedValue = inserted.Value,
@@ -423,17 +425,18 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
-					.UpdateWithOutputAsync(
-						target,
-						s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
-						(source, deleted, inserted) => new
-						{
-							SourceStr = source.s.ValueStr,
-							DeletedValue = deleted.Value,
-							InsertedValue = inserted.Value,
-						});
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
+						.UpdateWithOutputAsync(
+							target,
+							s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
+							(source, deleted, inserted) => new
+							{
+								SourceStr = source.s.ValueStr,
+								DeletedValue = deleted.Value,
+								InsertedValue = inserted.Value,
+							}));
 
 				AreEqual(
 					expected,
@@ -458,16 +461,17 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
-					.UpdateWithOutputAsync(
-						target,
-						s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
-						(source, deleted, inserted) => new
-						{
-							DeletedValue = deleted.Value,
-							InsertedValue = inserted.Value,
-						});
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
+						.UpdateWithOutputAsync(
+							target,
+							s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
+							(source, deleted, inserted) => new
+							{
+								DeletedValue = deleted.Value,
+								InsertedValue = inserted.Value,
+							}));
 
 				AreEqual(
 					expected,
@@ -493,17 +497,18 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
-					.Where(_ => _.s.Id == 3)
-					.UpdateWithOutputAsync(
-						target,
-						s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
-						(source, deleted, inserted) => new
-						{
-							DeletedValue = deleted.Value,
-							InsertedValue = inserted.Value,
-						});
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
+						.Where(_ => _.s.Id == 3)
+						.UpdateWithOutputAsync(
+							target,
+							s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
+							(source, deleted, inserted) => new
+							{
+								DeletedValue = deleted.Value,
+								InsertedValue = inserted.Value,
+							}));
 
 				AreEqual(
 					expected,
@@ -528,16 +533,17 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
-					.UpdateWithOutputAsync(
-						target,
-						s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
-						(source, deleted, inserted) => new
-						{
-							SourceStr     = source.s.ValueStr,
-							InsertedValue = inserted.Value,
-						});
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
+						.UpdateWithOutputAsync(
+							target,
+							s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
+							(source, deleted, inserted) => new
+							{
+								SourceStr     = source.s.ValueStr,
+								InsertedValue = inserted.Value,
+							}));
 
 				AreEqual(
 					expected,
@@ -561,15 +567,16 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
-					.UpdateWithOutputAsync(
-						target,
-						s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
-						(source, deleted, inserted) => new
-						{
-							InsertedValue = inserted.Value,
-						});
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
+						.UpdateWithOutputAsync(
+							target,
+							s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
+							(source, deleted, inserted) => new
+							{
+								InsertedValue = inserted.Value,
+							}));
 
 				AreEqual(
 					expected,
@@ -594,16 +601,17 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
-					.Where(_ => _.s.Id == 3)
-					.UpdateWithOutputAsync(
-						target,
-						s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
-						(source, deleted, inserted) => new
-						{
-							InsertedValue = inserted.Value,
-						});
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
+						.Where(_ => _.s.Id == 3)
+						.UpdateWithOutputAsync(
+							target,
+							s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
+							(source, deleted, inserted) => new
+							{
+								InsertedValue = inserted.Value,
+							}));
 
 				AreEqual(
 					expected,
@@ -928,11 +936,12 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
-					.UpdateWithOutputAsync(
-						s => s.t,
-						s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, });
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
+						.UpdateWithOutputAsync(
+							s => s.t,
+							s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, }));
 
 				AreEqual(
 					expected,
@@ -959,12 +968,13 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
-					.Where(_ => _.s.Id == 3)
-					.UpdateWithOutputAsync(
-						s => s.t,
-						s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, });
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
+						.Where(_ => _.s.Id == 3)
+						.UpdateWithOutputAsync(
+							s => s.t,
+							s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, }));
 
 				AreEqual(
 					expected,
@@ -1203,17 +1213,18 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
-					.UpdateWithOutputAsync(
-						s => s.t,
-						s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
-						(source, deleted, inserted) => new
-						{
-							SourceStr = source.s.ValueStr,
-							DeletedValue = deleted.Value,
-							InsertedValue = inserted.Value,
-						});
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
+						.UpdateWithOutputAsync(
+							s => s.t,
+							s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
+							(source, deleted, inserted) => new
+							{
+								SourceStr = source.s.ValueStr,
+								DeletedValue = deleted.Value,
+								InsertedValue = inserted.Value,
+							}));
 
 				AreEqual(
 					expected,
@@ -1238,16 +1249,17 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
-					.UpdateWithOutputAsync(
-						s => s.t,
-						s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
-						(source, deleted, inserted) => new
-						{
-							DeletedValue = deleted.Value,
-							InsertedValue = inserted.Value,
-						});
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
+						.UpdateWithOutputAsync(
+							s => s.t,
+							s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
+							(source, deleted, inserted) => new
+							{
+								DeletedValue = deleted.Value,
+								InsertedValue = inserted.Value,
+							}));
 
 				AreEqual(
 					expected,
@@ -1273,17 +1285,18 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
-					.Where(_ => _.s.Id == 3)
-					.UpdateWithOutputAsync(
-						s => s.t,
-						s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
-						(source, deleted, inserted) => new
-						{
-							DeletedValue = deleted.Value,
-							InsertedValue = inserted.Value,
-						});
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
+						.Where(_ => _.s.Id == 3)
+						.UpdateWithOutputAsync(
+							s => s.t,
+							s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
+							(source, deleted, inserted) => new
+							{
+								DeletedValue = deleted.Value,
+								InsertedValue = inserted.Value,
+							}));
 
 				AreEqual(
 					expected,
@@ -1308,16 +1321,17 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
-					.UpdateWithOutputAsync(
-						s => s.t,
-						s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
-						(source, deleted, inserted) => new
-						{
-							SourceStr     = source.s.ValueStr,
-							InsertedValue = inserted.Value,
-						});
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
+						.UpdateWithOutputAsync(
+							s => s.t,
+							s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
+							(source, deleted, inserted) => new
+							{
+								SourceStr     = source.s.ValueStr,
+								InsertedValue = inserted.Value,
+							}));
 
 				AreEqual(
 					expected,
@@ -1341,15 +1355,16 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
-					.UpdateWithOutputAsync(
-						s => s.t,
-						s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
-						(source, deleted, inserted) => new
-						{
-							InsertedValue = inserted.Value,
-						});
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
+						.UpdateWithOutputAsync(
+							s => s.t,
+							s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
+							(source, deleted, inserted) => new
+							{
+								InsertedValue = inserted.Value,
+							}));
 
 				AreEqual(
 					expected,
@@ -1374,16 +1389,17 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
-					.Where(_ => _.s.Id == 3)
-					.UpdateWithOutputAsync(
-						s => s.t,
-						s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
-						(source, deleted, inserted) => new
-						{
-							InsertedValue = inserted.Value,
-						});
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.SelectMany(s => target.Where(t => t.Id == s.Id), (s, t) => new { s, t, })
+						.Where(_ => _.s.Id == 3)
+						.UpdateWithOutputAsync(
+							s => s.t,
+							s => new DestinationTable { Id = s.s.Id, Value = s.s.Value, ValueStr = s.s.ValueStr, },
+							(source, deleted, inserted) => new
+							{
+								InsertedValue = inserted.Value,
+							}));
 
 				AreEqual(
 					expected,
@@ -1707,9 +1723,10 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.Where(s => s.Id > 3)
-					.UpdateWithOutputAsync(s => new TableWithData { Id = s.Id, Value = s.Value + 1, ValueStr = s.ValueStr + "Upd", });
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.Where(s => s.Id > 3)
+						.UpdateWithOutputAsync(s => new TableWithData { Id = s.Id, Value = s.Value + 1, ValueStr = s.ValueStr + "Upd", }));
 
 				AreEqual(
 					expected,
@@ -1734,9 +1751,10 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.Where(s => s.Id == 3)
-					.UpdateWithOutputAsync(s => new TableWithData { Id = s.Id, Value = s.Value + 1, ValueStr = s.ValueStr + "Upd", });
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.Where(s => s.Id == 3)
+						.UpdateWithOutputAsync(s => new TableWithData { Id = s.Id, Value = s.Value + 1, ValueStr = s.ValueStr + "Upd", }));
 
 				AreEqual(
 					expected,
@@ -1821,7 +1839,7 @@ namespace Tests.xUpdate
 				var output = source
 					.Where(s => s.Id > 3)
 					.UpdateWithOutput(
-						s => new TableWithData { Id = s.Id, Value = s.Value + 1, ValueStr = s.ValueStr + "Upd", },
+						s => new TableWithData { Value = s.Value + 1, ValueStr = s.ValueStr + "Upd", },
 						(deleted, inserted) => new { InsertedValue = inserted.Value, })
 					.ToArray();
 
@@ -1849,7 +1867,7 @@ namespace Tests.xUpdate
 				var output = source
 					.Where(s => s.Id == 3)
 					.UpdateWithOutput(
-						s => new TableWithData { Id = s.Id, Value = s.Value + 1, ValueStr = s.ValueStr + "Upd", },
+						s => new TableWithData { Value = s.Value + 1, ValueStr = s.ValueStr + "Upd", },
 						(deleted, inserted) => new { InsertedValue = inserted.Value, })
 					.ToArray();
 
@@ -1875,11 +1893,12 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.Where(s => s.Id > 3)
-					.UpdateWithOutputAsync(
-						s => new TableWithData { Id = s.Id, Value = s.Value + 1, ValueStr = s.ValueStr + "Upd", },
-						(deleted, inserted) => new { DeletedValue = deleted.Value, InsertedValue = inserted.Value, });
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.Where(s => s.Id > 3)
+						.UpdateWithOutputAsync(
+							s => new TableWithData { Id = s.Id, Value = s.Value + 1, ValueStr = s.ValueStr + "Upd", },
+							(deleted, inserted) => new { DeletedValue = deleted.Value, InsertedValue = inserted.Value, }));
 
 				AreEqual(
 					expected,
@@ -1903,11 +1922,12 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.Where(s => s.Id == 3)
-					.UpdateWithOutputAsync(
-						s => new TableWithData { Id = s.Id, Value = s.Value + 1, ValueStr = s.ValueStr + "Upd", },
-						(deleted, inserted) => new { DeletedValue = deleted.Value, InsertedValue = inserted.Value, });
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.Where(s => s.Id == 3)
+						.UpdateWithOutputAsync(
+							s => new TableWithData { Id = s.Id, Value = s.Value + 1, ValueStr = s.ValueStr + "Upd", },
+							(deleted, inserted) => new { DeletedValue = deleted.Value, InsertedValue = inserted.Value, }));
 
 				AreEqual(
 					expected,
@@ -1930,11 +1950,12 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.Where(s => s.Id > 3)
-					.UpdateWithOutputAsync(
-						s => new TableWithData { Id = s.Id, Value = s.Value + 1, ValueStr = s.ValueStr + "Upd", },
-						(deleted, inserted) => new { InsertedValue = inserted.Value, });
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.Where(s => s.Id > 3)
+						.UpdateWithOutputAsync(
+							s => new TableWithData { Value = s.Value + 1, ValueStr = s.ValueStr + "Upd", },
+							(deleted, inserted) => new { InsertedValue = inserted.Value, }));
 
 				AreEqual(
 					expected,
@@ -1957,11 +1978,12 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.Where(s => s.Id == 3)
-					.UpdateWithOutputAsync(
-						s => new TableWithData { Id = s.Id, Value = s.Value + 1, ValueStr = s.ValueStr + "Upd", },
-						(deleted, inserted) => new { InsertedValue = inserted.Value, });
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.Where(s => s.Id == 3)
+						.UpdateWithOutputAsync(
+							s => new TableWithData { Value = s.Value + 1, ValueStr = s.ValueStr + "Upd", },
+							(deleted, inserted) => new { InsertedValue = inserted.Value, }));
 
 				AreEqual(
 					expected,
@@ -2271,12 +2293,13 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.Where(s => s.Id > 3)
-					.AsUpdatable()
-					.Set(s => s.Value, s => s.Value + 1)
-					.Set(s => s.ValueStr, s => s.ValueStr + "Upd")
-					.UpdateWithOutputAsync();
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.Where(s => s.Id > 3)
+						.AsUpdatable()
+						.Set(s => s.Value, s => s.Value + 1)
+						.Set(s => s.ValueStr, s => s.ValueStr + "Upd")
+						.UpdateWithOutputAsync());
 
 				AreEqual(
 					expected,
@@ -2301,12 +2324,13 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.Where(s => s.Id == 3)
-					.AsUpdatable()
-					.Set(s => s.Value, s => s.Value + 1)
-					.Set(s => s.ValueStr, s => s.ValueStr + "Upd")
-					.UpdateWithOutputAsync();
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.Where(s => s.Id == 3)
+						.AsUpdatable()
+						.Set(s => s.Value, s => s.Value + 1)
+						.Set(s => s.ValueStr, s => s.ValueStr + "Upd")
+						.UpdateWithOutputAsync());
 
 				AreEqual(
 					expected,
@@ -2453,13 +2477,14 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.Where(s => s.Id > 3)
-					.AsUpdatable()
-					.Set(s => s.Value, s => s.Value + 1)
-					.Set(s => s.ValueStr, s => s.ValueStr + "Upd")
-					.UpdateWithOutputAsync(
-						(deleted, inserted) => new { DeletedValue = deleted.Value, InsertedValue = inserted.Value, });
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.Where(s => s.Id > 3)
+						.AsUpdatable()
+						.Set(s => s.Value, s => s.Value + 1)
+						.Set(s => s.ValueStr, s => s.ValueStr + "Upd")
+						.UpdateWithOutputAsync(
+							(deleted, inserted) => new { DeletedValue = deleted.Value, InsertedValue = inserted.Value, }));
 
 				AreEqual(
 					expected,
@@ -2483,13 +2508,14 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.Where(s => s.Id == 3)
-					.AsUpdatable()
-					.Set(s => s.Value, s => s.Value + 1)
-					.Set(s => s.ValueStr, s => s.ValueStr + "Upd")
-					.UpdateWithOutputAsync(
-						(deleted, inserted) => new { DeletedValue = deleted.Value, InsertedValue = inserted.Value, });
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.Where(s => s.Id == 3)
+						.AsUpdatable()
+						.Set(s => s.Value, s => s.Value + 1)
+						.Set(s => s.ValueStr, s => s.ValueStr + "Upd")
+						.UpdateWithOutputAsync(
+							(deleted, inserted) => new { DeletedValue = deleted.Value, InsertedValue = inserted.Value, }));
 
 				AreEqual(
 					expected,
@@ -2512,13 +2538,14 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.Where(s => s.Id > 3)
-					.AsUpdatable()
-					.Set(s => s.Value, s => s.Value + 1)
-					.Set(s => s.ValueStr, s => s.ValueStr + "Upd")
-					.UpdateWithOutputAsync(
-						(deleted, inserted) => new { InsertedValue = inserted.Value, });
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.Where(s => s.Id > 3)
+						.AsUpdatable()
+						.Set(s => s.Value, s => s.Value + 1)
+						.Set(s => s.ValueStr, s => s.ValueStr + "Upd")
+						.UpdateWithOutputAsync(
+							(deleted, inserted) => new { InsertedValue = inserted.Value, }));
 
 				AreEqual(
 					expected,
@@ -2541,13 +2568,14 @@ namespace Tests.xUpdate
 					})
 					.ToArray();
 
-				var output = await source
-					.Where(s => s.Id == 3)
-					.AsUpdatable()
-					.Set(s => s.Value, s => s.Value + 1)
-					.Set(s => s.ValueStr, s => s.ValueStr + "Upd")
-					.UpdateWithOutputAsync(
-						(deleted, inserted) => new { InsertedValue = inserted.Value, });
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.Where(s => s.Id == 3)
+						.AsUpdatable()
+						.Set(s => s.Value, s => s.Value + 1)
+						.Set(s => s.ValueStr, s => s.ValueStr + "Upd")
+						.UpdateWithOutputAsync(
+							(deleted, inserted) => new { InsertedValue = inserted.Value, }));
 
 				AreEqual(
 					expected,
@@ -2854,18 +2882,18 @@ namespace Tests.xUpdate
 			using var source = db.CreateLocalTable(sourceData);
 
 			var output = source
-				.Where(i => i.Id >= 7)
+				.Where(i => i.Id == 7)
 				.OrderBy(i => i.Id)
 				.Take(1)
-				.UpdateWithOutput(x => new TableWithData { Id = 20, ValueStr = x.ValueStr });
+				.UpdateWithOutput(x => new TableWithData { Value = 20, ValueStr = x.ValueStr });
 
 			AreEqual(
 				new[]
 				{
 					new UpdateOutput<TableWithData>
 					{
-						Deleted  = sourceData[6] with { Value = default },
-						Inserted = sourceData[6] with { Id = 20, Value = default },
+						Deleted  = sourceData[6],
+						Inserted = sourceData[6] with { Value = 20 },
 					}
 				},
 				output,
@@ -2907,11 +2935,11 @@ namespace Tests.xUpdate
 			using (var source = db.CreateLocalTable(sourceData))
 			{
 				var output = source
-					.Where(i => i.Id >= 7)
+					.Where(i => i.Id == 7)
 					.OrderBy(i => i.Id)
 					.Take(1)
 					.AsCte()
-					.UpdateWithOutput(x => new TableWithData { Id = 20, Value = x.Value, ValueStr = x.ValueStr });
+					.UpdateWithOutput(x => new TableWithData { Value = 20, ValueStr = x.ValueStr });
 
 				AreEqual(
 					new[]
@@ -2919,7 +2947,7 @@ namespace Tests.xUpdate
 						new UpdateOutput<TableWithData>
 						{
 							Deleted = sourceData[6],
-							Inserted = sourceData[6] with { Id = 20 },
+							Inserted = sourceData[6] with { Value = 20 },
 						}
 					},
 					output,
@@ -2944,6 +2972,7 @@ namespace Tests.xUpdate
 			[Column              ] public int TestId { get; set; }
 		}
 
+		[YdbIntoValuesNotImplemented]
 		[Test]
 		public void Issue3697Test([IncludeDataSources(true, FeatureUpdateOutputWithoutOldSingle)] string context)
 		{
@@ -2956,15 +2985,152 @@ namespace Tests.xUpdate
 				.UpdateWithOutput(a => new Test3697Item() { Value = 1 }, (d, i) => i.Id)
 				.ToArray();
 
-			Assert.AreEqual(1, result.Length);
-			Assert.AreEqual(1, result[0]);
+			Assert.That(result, Has.Length.EqualTo(1));
+			Assert.That(result[0], Is.EqualTo(1));
 
 			result = records.InnerJoin(items, (a, b) => a.Id == b.TestId, (a, b) => b)
 				.UpdateWithOutput(a => new Test3697Item() { Value = 1 }, (d, i) => i.Id)
 				.ToArray();
 
-			Assert.AreEqual(1, result.Length);
-			Assert.AreEqual(1, result[0]);
+			Assert.That(result, Has.Length.EqualTo(1));
+			Assert.That(result[0], Is.EqualTo(1));
+		}
+
+		sealed class Issue4135Table
+		{
+			[PrimaryKey] public int     Id          { get; set; }
+			[Column    ] public string? Name        { get; set; }
+			[Column    ] public bool    NeedsUpdate { get; set; }
+		}
+
+		[Test]
+		public void Issue4135Test([IncludeDataSources(true, FeatureUpdateOutputWithOldSingle)] string context)
+		{
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable(
+			[
+				new Issue4135Table() { Id = 1, Name = "name1", NeedsUpdate = true },
+				new Issue4135Table() { Id = 2, Name = "name2", NeedsUpdate = false },
+			]);
+
+			var people = tb
+				.Where(e => e.NeedsUpdate)
+				.OrderBy(e => e.Id)
+				.Take(4)
+				.UpdateWithOutput(e => new Issue4135Table()
+				{
+					NeedsUpdate = false
+				}, (d, _) => new Issue4135Table()
+				{
+					Id           = d.Id,
+					Name         = d.Name,
+					NeedsUpdate  = d.NeedsUpdate
+				})
+				.ToArray();
+
+			Assert.That(people, Has.Length.EqualTo(1));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(people[0].Id, Is.EqualTo(1));
+				Assert.That(people[0].Name, Is.EqualTo("name1"));
+				Assert.That(people[0].NeedsUpdate, Is.True);
+			}
+		}
+
+		[Table]
+		sealed class Issue4193Person
+		{
+			[PrimaryKey] public int Id { get; set; }
+			[Column(CanBeNull = false)] public string Name { get; set; } = null!;
+			[Column] public int? EmployeeId { get; set; }
+
+			[Association(ThisKey = nameof(EmployeeId), OtherKey = nameof(Issue4193Employee.Id))]
+			public Issue4193Employee? Employee { get; set; }
+		}
+
+		[Table]
+		sealed class Issue4193Employee
+		{
+			[Column] public int SalaryId { get; set; }
+			[PrimaryKey] public int Id { get; set; }
+
+			[Association(CanBeNull = false, ThisKey = nameof(SalaryId), OtherKey = nameof(Issue4193Salary.Id))]
+			public Issue4193Salary Salary { get; set; } = null!;
+
+			[Association(ThisKey = nameof(Id), OtherKey = nameof(Issue4193Person.EmployeeId))]
+			public IEnumerable<Issue4193Person> People { get; set; } = null!;
+		}
+
+		[Table]
+		sealed class Issue4193Salary
+		{
+			[PrimaryKey] public int Id { get; set; }
+			[Column] public int? Amount { get; set; }
+
+			[Association(ThisKey = nameof(Id), OtherKey = nameof(Issue4193Employee.SalaryId))]
+			public IEnumerable<Issue4193Employee> Employees { get; set; } = null!;
+		}
+
+		[YdbMemberNotFound]
+		[Test]
+		public void Issue4193Test([IncludeDataSources(true, FeatureUpdateOutputWithoutOldSingle)] string context)
+		{
+			using var db = GetDataContext(context);
+			using var t1 = db.CreateLocalTable([new Issue4193Person() { Id = 1, EmployeeId = 1, Name = "foo" }]);
+			using var t2 = db.CreateLocalTable([new Issue4193Employee() { Id = 1, SalaryId = 1 }]);
+			using var t3 = db.CreateLocalTable([new Issue4193Salary { Id = 1, Amount = 10 }]);
+
+			var salary = t1.Where(e => e.Name == "foo").Select(e => e.Employee!.Salary);
+			var newAmount = salary.UpdateWithOutput(
+				s => new Issue4193Salary { Amount = s.Amount + 15 },
+				(_, inserted) => inserted.Amount)
+				.Single();
+
+			Assert.That(newAmount, Is.EqualTo(25));
+		}
+
+		[YdbUnexpectedSqlQuery]
+		[Test]
+		public void Issue4414Test([IncludeDataSources(true, FeatureUpdateOutputWithoutOldSingle)] string context)
+		{
+			using var db = GetDataContext(context);
+			using var t1 = db.CreateLocalTable([new Issue4193Person() { EmployeeId = 1, Name = "foo" }]);
+
+			var result = t1
+				.Where(x => x.EmployeeId == 1)
+				.OrderBy(x => x.EmployeeId)
+				.Take(3)
+				.UpdateWithOutput(
+					_ => new Issue4193Person() { Name = "new_name" },
+					(d, i) => new { i.EmployeeId, i.Name })
+				.ToArray();
+
+			Assert.That(result, Has.Length.EqualTo(1));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(result[0].EmployeeId, Is.EqualTo(1));
+				Assert.That(result[0].Name, Is.EqualTo("new_name"));
+			}
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4253")]
+		public void Issue4253Test([IncludeDataSources(true, FeatureUpdateOutputWithoutOldSingle)] string context)
+		{
+			using var db = GetDataContext(context);
+			using var t1 = db.CreateLocalTable([new Issue4193Person() { EmployeeId = 1, Name = "foo" }]);
+			using var t2 = db.CreateLocalTable([new Issue4193Employee() { Id = 1, SalaryId = 1 }]);
+			using var t3 = db.CreateLocalTable([new Issue4193Salary { Id = 1, Amount = 10 }]);
+
+			var result = t1
+					.Join(t2, SqlJoinType.Inner,
+						(p, r) => p.EmployeeId == r.Id,
+						(p, r) => Tuple.Create(p, r))
+					.Set(tup => tup.Item1.Name, tup => tup.Item1.Name + tup.Item2.SalaryId)
+					.UpdateWithOutput((_, tup) => tup.Item1.EmployeeId)
+					.ToArray();
+
+			Assert.That(result, Has.Length.EqualTo(1));
+			Assert.That(result[0], Is.EqualTo(1));
 		}
 		#endregion
 	}

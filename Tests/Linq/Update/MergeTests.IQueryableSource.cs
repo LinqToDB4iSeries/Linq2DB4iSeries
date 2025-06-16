@@ -1,11 +1,11 @@
 ﻿using System.Linq;
 
+using LinqToDB;
+
 using NUnit.Framework;
 
 namespace Tests.xUpdate
 {
-	using LinqToDB;
-
 	// tests for iqueryable targets (cte, non-cte)
 	public partial class MergeTests
 	{
@@ -29,7 +29,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(2, rows, context);
 
-				Assert.AreEqual(6, result.Count);
+				Assert.That(result, Has.Count.EqualTo(6));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -41,21 +41,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		[ActiveIssue(3015, Configurations = new[]
-		{
-			TestProvName.AllAccess,
-			ProviderName.DB2,
-			TestProvName.AllFirebird,
-			TestProvName.AllInformix,
-			TestProvName.AllMySql,
-			TestProvName.AllOracle,
-			TestProvName.AllPostgreSQL,
-			ProviderName.SqlCe,
-			TestProvName.AllSQLite,
-			TestProvName.AllSapHana,
-			TestProvName.AllSybase,
-		})]
-		public void MergeIntoCte([MergeDataContextSource] string context)
+		public void MergeIntoCte([IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -73,7 +59,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(2, rows, context);
 
-				Assert.AreEqual(6, result.Count);
+				Assert.That(result, Has.Count.EqualTo(6));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -85,21 +71,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		[ActiveIssue(3015, Configurations = new[]
-		{
-			TestProvName.AllAccess,
-			ProviderName.DB2,
-			TestProvName.AllFirebird,
-			TestProvName.AllInformix,
-			TestProvName.AllMySql,
-			TestProvName.AllOracle,
-			TestProvName.AllPostgreSQL,
-			ProviderName.SqlCe,
-			TestProvName.AllSQLite,
-			TestProvName.AllSapHana,
-			TestProvName.AllSybase,
-		})]
-		public void MergeIntoCteIssue4107([MergeDataContextSource] string context)
+		public void MergeIntoCteIssue4107([IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
 		{
 			using var db = GetDataContext(context);
 
@@ -134,7 +106,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(2, rows, context);
 
-				Assert.AreEqual(6, result.Count);
+				Assert.That(result, Has.Count.EqualTo(6));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -146,21 +118,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		[ActiveIssue(3015, Configurations = new[]
-		{
-			TestProvName.AllAccess,
-			ProviderName.DB2,
-			TestProvName.AllFirebird,
-			TestProvName.AllInformix,
-			TestProvName.AllMySql,
-			TestProvName.AllOracle,
-			TestProvName.AllPostgreSQL,
-			ProviderName.SqlCe,
-			TestProvName.AllSQLite,
-			TestProvName.AllSapHana,
-			TestProvName.AllSybase,
-		})]
-		public void MergeFromCte([MergeDataContextSource] string context)
+		public void MergeFromCte([IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -168,17 +126,17 @@ namespace Tests.xUpdate
 
 				var table = GetTarget(db);
 
-				var rows = table.Where(_ => _.Id >= 1).AsCte()
+				var rows = table.Where(s => s.Id >= 1).AsCte()
 					.Merge().Using(GetSource1(db))
 					.OnTargetKey()
 					.InsertWhenNotMatched()
 					.Merge();
 
-				var result = table.OrderBy(_ => _.Id).ToList();
+				var result = table.OrderBy(t => t.Id).ToList();
 
 				AssertRowCount(2, rows, context);
 
-				Assert.AreEqual(6, result.Count);
+				Assert.That(result, Has.Count.EqualTo(6));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -192,18 +150,13 @@ namespace Tests.xUpdate
 		[Test]
 		[ActiveIssue(3015, Configurations = new[]
 		{
-			TestProvName.AllAccess,
 			ProviderName.DB2,
 			TestProvName.AllFirebird,
 			TestProvName.AllInformix,
-			TestProvName.AllMySql,
 			TestProvName.AllOracle,
-			ProviderName.SqlCe,
-			TestProvName.AllSQLite,
-			TestProvName.AllSapHana,
-			TestProvName.AllSybase,
+			TestProvName.AllSapHana
 		})]
-		public void MergeUsingCteJoin([MergeDataContextSource] string context)
+		public void MergeUsingCteJoin([MergeDataContextSource(TestProvName.AllSybase)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -221,7 +174,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(2, rows, context);
 
-				Assert.AreEqual(6, result.Count);
+				Assert.That(result, Has.Count.EqualTo(6));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -235,18 +188,13 @@ namespace Tests.xUpdate
 		[Test]
 		[ActiveIssue(3015, Configurations = new[]
 		{
-			TestProvName.AllAccess,
 			ProviderName.DB2,
 			TestProvName.AllFirebird,
 			TestProvName.AllInformix,
-			TestProvName.AllMySql,
 			TestProvName.AllOracle,
-			ProviderName.SqlCe,
-			TestProvName.AllSQLite,
-			TestProvName.AllSapHana,
-			TestProvName.AllSybase,
+			TestProvName.AllSapHana
 		})]
-		public void MergeUsingCteWhere([MergeDataContextSource] string context)
+		public void MergeUsingCteWhere([MergeDataContextSource(TestProvName.AllSybase)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -264,7 +212,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(2, rows, context);
 
-				Assert.AreEqual(6, result.Count);
+				Assert.That(result, Has.Count.EqualTo(6));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);

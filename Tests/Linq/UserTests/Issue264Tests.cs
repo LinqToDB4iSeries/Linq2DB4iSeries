@@ -2,7 +2,6 @@
 using System.Linq;
 
 using LinqToDB;
-using LinqToDB.Data;
 
 using NUnit.Framework;
 
@@ -16,7 +15,7 @@ namespace Tests.UserTests
 		[Test]
 		public void Test1([IncludeDataSources(TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var actualCount = db.GetTable<LinqDataTypes>()
 					.GroupBy(_ => new { month = ByMonth(_.DateTimeValue), year = ByYear(_.DateTimeValue) })
@@ -26,14 +25,14 @@ namespace Tests.UserTests
 					.GroupBy(_ => new { month = ByMonth(_.DateTimeValue), year = ByYear(_.DateTimeValue) })
 					.Count();
 
-				Assert.AreEqual(expectedCount, actualCount);
+				Assert.That(actualCount, Is.EqualTo(expectedCount));
 			}
 		}
 
 		[Test]
 		public void Test2([IncludeDataSources(TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var actual = db.GetTable<LinqDataTypes>()
 					.GroupBy(_ => new { month = ByMonth(_.DateTimeValue), year = ByYear(_.DateTimeValue) })
@@ -50,7 +49,7 @@ namespace Tests.UserTests
 		[Test]
 		public void Test3([IncludeDataSources(TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var actual = db.GetTable<LinqDataTypes>()
 					.GroupBy(_ => ByMonth(_.DateTimeValue))
@@ -67,7 +66,7 @@ namespace Tests.UserTests
 		[Test]
 		public void TestWorkaround([IncludeDataSources(TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var actualCount = db.GetTable<LinqDataTypes>()
 					.GroupBy(_ => new { month = ByMonth(_.DateTimeValue), year = ByYear(_.DateTimeValue) })
@@ -77,7 +76,7 @@ namespace Tests.UserTests
 					.GroupBy(_ => new { month = ByMonth(_.DateTimeValue), year = ByYear(_.DateTimeValue) })
 					.Count();
 
-				Assert.AreEqual(expectedCount, actualCount);
+				Assert.That(actualCount, Is.EqualTo(expectedCount));
 
 				var actual = db.GetTable<LinqDataTypes>()
 					.GroupBy(_ => new { month = ByMonth(_.DateTimeValue), year = ByYear(_.DateTimeValue) })
@@ -92,13 +91,13 @@ namespace Tests.UserTests
 		}
 
 		[Sql.Expression("MONTH({0})", ServerSideOnly = true)]
-		public static int ByMonth(DateTime date)
+		private static int ByMonth(DateTime date)
 		{
 			return date.Month;
 		}
 
 		[Sql.Expression("YEAR({0})", ServerSideOnly = true)]
-		public static int ByYear(DateTime date)
+		private static int ByYear(DateTime date)
 		{
 			return date.Year;
 		}

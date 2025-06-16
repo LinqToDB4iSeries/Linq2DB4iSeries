@@ -1,5 +1,7 @@
 ﻿using System.Linq;
-using LinqToDB;
+
+using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -9,12 +11,11 @@ namespace Tests.UserTests
 	{
 		public class T1351Model
 		{
-			public int ID { get; set; }
+			[PrimaryKey] public int ID { get; set; }
 			public sbyte TestField { get; set; }
 			public sbyte? TestNullable { get; set; }
 		}
 
-		[ActiveIssue("CreateTable(sbyte) support missing", Configuration = ProviderName.DB2)]
 		[Test]
 		public void TestSByteQuery([DataSources(false)] string context)
 		{

@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
@@ -31,12 +28,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			else if (DateTime.TryParseExact(value, "HH.mm.ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out result))
 				return new DateTime(1, 1, 1, result.Hour, result.Minute, result.Second);
 			else
-				return DateTime.Parse(value);
+				return DateTime.Parse(value, CultureInfo.InvariantCulture);
 		}
 
 		public static TimeSpan ParseTimeSpan(string value)
 		{
-			if (TimeSpan.TryParse(value, out var res))
+			if (TimeSpan.TryParse(value, CultureInfo.InvariantCulture, out var res))
 				return res;
 			else
 				return TimeSpan.ParseExact(value, parseTimeFormats, CultureInfo.InvariantCulture, TimeSpanStyles.None);

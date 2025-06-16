@@ -1,15 +1,18 @@
 ﻿#pragma warning disable IDE1006 // Naming Styles to accomodate iDB2 prefix
+using System;
+using System.Data;
+using System.Data.Common;
+using System.Linq.Expressions;
+
+using LinqToDB.Common;
+using LinqToDB.Data;
+using LinqToDB.Internal.DataProvider;
+using LinqToDB.Internal.Expressions;
+using LinqToDB.Internal.Expressions.Types;
+using LinqToDB.Mapping;
+
 namespace LinqToDB.DataProvider.DB2iSeries
 {
-	using System;
-	using System.Data;
-	using System.Data.Common;
-	using System.Linq.Expressions;
-	using LinqToDB.Data;
-	using LinqToDB.DataProvider;
-	using LinqToDB.Expressions;
-	using LinqToDB.Mapping;
-
 	internal class DB2iSeriesAccessClientProviderAdapter : IDynamicProviderAdapter
 	{
 		public const string AssemblyName = "IBM.Data.DB2.iSeries";
@@ -18,9 +21,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		private DB2iSeriesAccessClientProviderAdapter()
 		{
-			var assembly = Common.Tools.TryLoadAssembly(AssemblyName, ProviderFactoryName);
-			if (assembly == null)
-				throw new InvalidOperationException($"Cannot load assembly {AssemblyName}");
+			var assembly = Internal.Common.Tools.TryLoadAssembly(AssemblyName, ProviderFactoryName) 
+				?? throw new InvalidOperationException($"Cannot load assembly {AssemblyName}");
 
 			ConnectionType = assembly.GetType($"{ClientNamespace}.iDB2Connection", true);
 			ParameterType = assembly.GetType($"{ClientNamespace}.iDB2Parameter", true);
@@ -71,10 +73,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetDbType = dbTypeBuilder.BuildSetter<IDbDataParameter>();
 			GetDbType = dbTypeBuilder.BuildGetter<IDbDataParameter>();
 
-			
-			CreateConnection = typeMapper.BuildWrappedFactory((string connectionString) => new iDB2Connection(connectionString));
+			CreateConnection = typeMapper.BuildTypedFactory<string, iDB2Connection, DbConnection>((string connectionString) => new iDB2Connection(connectionString));
 			GetLibraryList = typeMapper.BuildFunc<DbConnection, string>(typeMapper.MapLambda((iDB2Connection conn) => conn.LibraryList));
 			GetNamingConvention = typeMapper.BuildFunc<DbConnection, iDB2NamingConvention>(typeMapper.MapLambda((iDB2Connection conn) => conn.Naming));
+
+			ConnectionWrapper = typeMapper.Wrap<iDB2Connection>;
 
 			DeriveParameters = buildActionInvoker(CommandType, "DeriveParameters");
 			AddBatch = buildActionInvoker(CommandType, "AddBatch");
@@ -87,14 +90,14 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				var cmdParameter = Expression.Parameter(typeof(DbCommand), "cmd");
 				var expression = Expression.Call(Expression.Convert(cmdParameter, type), method);
 				var lambda = Expression.Lambda<Action<DbCommand>>(expression, cmdParameter);
-				return lambda.Compile();
+				return lambda.CompileExpression();
 			}
 
 			Type loadType(string typeName, DataType dataType)
 			{
 				var type = assembly.GetType($"{ClientNamespace}.{typeName}", true);
 
-				var getNullValue = Expression.Lambda<Func<object>>(Expression.Convert(ExpressionHelper.Field(type, "Null"), typeof(object))).Compile();
+				var getNullValue = Expression.Lambda<Func<object>>(Expression.Convert(ExpressionHelper.Field(type, "Null"), typeof(object))).CompileExpression();
 				MappingSchema.AddScalarType(type, getNullValue(), true, dataType);
 
 				return type;
@@ -166,7 +169,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public Action<DbParameter, iDB2DbType> SetDbType { get; }
 		public Func<DbParameter, iDB2DbType> GetDbType { get; }
 
-		public Func<string, iDB2Connection> CreateConnection { get; }
+		public Func<string, DbConnection> CreateConnection { get; }
+		internal Func<DbConnection, iDB2Connection> ConnectionWrapper { get; }
 
 		public Func<DbConnection, string> GetLibraryList { get; }
 		public Func<DbConnection, iDB2NamingConvention> GetNamingConvention { get; }
@@ -211,14 +215,17 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			};
 		}
 
+		DbConnection IDynamicProviderAdapter.CreateConnection(string connectionString)
+			 => CreateConnection(connectionString);
+		
 		#region Wrappers
 
 		[Wrapper]
 		public class iDB2Connection : TypeWrapper, IDisposable
 		{
 			private static LambdaExpression[] Wrappers { get; }
-				= new LambdaExpression[]
-			{
+				=
+			[
 				// [0]: get ServerVersion
 				(Expression<Func<iDB2Connection, string>>)((iDB2Connection this_) => this_.ServerVersion),
 				// [1]: get LibraryList
@@ -231,7 +238,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				(Expression<Action<iDB2Connection>>)((iDB2Connection this_) => this_.Dispose()),
 				// [5]: Naming
 				(Expression<Func<iDB2Connection, iDB2NamingConvention>>)((iDB2Connection this_) => this_.Naming),
-			};
+			];
 
 			public iDB2Connection(object instance, Delegate[] wrappers) : base(instance, wrappers)
 			{

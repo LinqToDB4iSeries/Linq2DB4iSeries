@@ -15,7 +15,7 @@ namespace Tests.UserTests
 	{
 		public class Topic
 		{
-			public int Id { get; set; }
+			[PrimaryKey] public int Id { get; set; }
 
 			public string? Title { get; set; }
 
@@ -41,7 +41,7 @@ namespace Tests.UserTests
 
 		public class Message
 		{
-			public int Id { get; set; }
+			[PrimaryKey] public int Id { get; set; }
 
 			public int TopicId { get; set; }
 
@@ -218,8 +218,8 @@ namespace Tests.UserTests
 							MessagesIds = x.MessagesF3.Select(t => t.Id).ToList()
 						}).FirstOrDefault()!;
 
-					Assert.IsNotNull(result);
-					Assert.AreEqual(60, result.MessagesIds.Single());
+					Assert.That(result, Is.Not.Null);
+					Assert.That(result.MessagesIds.Single(), Is.EqualTo(60));
 				}
 			}
 		}
@@ -260,12 +260,14 @@ namespace Tests.UserTests
 							Topic = x,
 							MessagesIds = x.MessagesF3.Select(t => t.Id).ToList()
 						}).FirstOrDefault()!;
-
-					Assert.That(result,           Is.Not.Null);
-					Assert.That(topic.Id,         Is.EqualTo(result.Topic.Id));
-					Assert.That(topic.Text,       Is.EqualTo(result.Topic.Text));
-					Assert.That(topic.Title,      Is.EqualTo(result.Topic.Title));
-					Assert.That(new[] { 60 }, Is.EqualTo(result.MessagesIds));
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(result, Is.Not.Null);
+						Assert.That(topic.Id, Is.EqualTo(result.Topic.Id));
+						Assert.That(topic.Text, Is.EqualTo(result.Topic.Text));
+						Assert.That(topic.Title, Is.EqualTo(result.Topic.Title));
+						Assert.That(new[] { 60 }, Is.EqualTo(result.MessagesIds));
+					}
 				}
 			}
 		}

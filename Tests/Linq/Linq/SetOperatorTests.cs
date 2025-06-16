@@ -1,7 +1,11 @@
 ﻿using System.Linq;
+using System.Threading.Tasks;
+
 using LinqToDB;
+using LinqToDB.Async;
 using LinqToDB.Mapping;
 using LinqToDB.Tools.Comparers;
+
 using NUnit.Framework;
 
 namespace Tests.Linq
@@ -20,6 +24,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
+		[YdbMemberNotFound]
 		public void TestExcept([DataSources] string context)
 		{
 			var isDistinct = !context.IsAnyOf(TestProvName.AllClickHouse);
@@ -48,6 +53,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
+		[YdbMemberNotFound]
 		public void TestExceptAll([DataSources(TestProvName.AllClickHouse)] string context)
 		{
 			var testData = GenerateTestData();
@@ -65,12 +71,14 @@ namespace Tests.Linq
 				var expected = e1.Where(e => !e2.Contains(e, ComparerBuilder.GetEqualityComparer<SampleData>())).ToArray();
 				var actual = query.ToArray();
 
-				if (!context.IsAnyOf(TestProvName.AllPostgreSQL)) // postgres has a bug?
+				// TODO: emulation is not correct, but pgsql and mysql native implementation working properly
+				if (!context.IsAnyOf(TestProvName.AllPostgreSQL, TestProvName.AllMySql8Plus))
 					AreEqual(expected, actual, ComparerBuilder.GetEqualityComparer<SampleData>());
 			}
 		}
 
 		[Test]
+		[YdbMemberNotFound]
 		public void TestIntersectAll([DataSources(TestProvName.AllClickHouse)] string context)
 		{
 			var testData = GenerateTestData();
@@ -88,12 +96,14 @@ namespace Tests.Linq
 				var expected = e1.Where(e => e2.Contains(e, ComparerBuilder.GetEqualityComparer<SampleData>())).ToArray();
 				var actual = query.ToArray();
 
-				if (!context.IsAnyOf(TestProvName.AllPostgreSQL)) // postgres has a bug?
+				// TODO: emulation is not correct, but pgsql and mysql native implementation working properly
+				if (!context.IsAnyOf(TestProvName.AllPostgreSQL, TestProvName.AllMySql8Plus))
 					AreEqual(expected, actual, ComparerBuilder.GetEqualityComparer<SampleData>());
 			}
 		}
 
 		[Test]
+		[YdbMemberNotFound]
 		public void TestExceptProjection([DataSources] string context)
 		{
 			var testData = GenerateTestData();
@@ -118,6 +128,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
+		[YdbMemberNotFound]
 		public void TestIntersect([DataSources] string context)
 		{
 			var isDistinct = !context.IsAnyOf(TestProvName.AllClickHouse);
@@ -186,8 +197,6 @@ namespace Tests.Linq
 			}
 		}
 
-
-
 		private SampleData[] GenerateTestData()
 		{
 			return Enumerable.Range(1, 10)
@@ -199,6 +208,29 @@ namespace Tests.Linq
 					Value3 = i * 1000
 				})
 				.ToArray();
+		}
+
+		[Test]
+		public async Task Issue3132Test([DataSources] string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var query1 = db.Person
+					.Where(x => x.MiddleName != null)
+					.GroupBy(x => x.MiddleName)
+					.Select(grp => new
+					{
+						grp.Key,
+						Count = grp.Count()
+					});
+
+				var unionResult = await query1
+					.UnionAll(query1).UnionAll(query1).UnionAll(query1).UnionAll(query1).UnionAll(query1)
+					.UnionAll(query1).UnionAll(query1).UnionAll(query1).UnionAll(query1).UnionAll(query1)
+					.UnionAll(query1).UnionAll(query1).UnionAll(query1).UnionAll(query1).UnionAll(query1)
+					.UnionAll(query1).UnionAll(query1).UnionAll(query1).UnionAll(query1).UnionAll(query1)
+					.ToArrayAsync();
+			}
 		}
 	}
 }

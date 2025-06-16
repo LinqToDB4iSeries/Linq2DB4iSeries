@@ -1,6 +1,8 @@
 ﻿using System.Linq;
+
 using LinqToDB;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -11,7 +13,7 @@ namespace Tests.UserTests
 		[Table]
 		sealed class SampleClass
 		{
-			[Column] public int Id    { get; set; }
+			[PrimaryKey] public int Id    { get; set; }
 			[Column] public int? NullValue { get; set; }
 		}
 

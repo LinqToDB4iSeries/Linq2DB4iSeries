@@ -1,10 +1,10 @@
-﻿using NUnit.Framework;
+﻿using LinqToDB;
+using LinqToDB.Mapping;
+
+using NUnit.Framework;
 
 namespace Tests.UserTests
 {
-	using LinqToDB;
-	using LinqToDB.Mapping;
-
 	[TestFixture]
 	public class Issue1128Tests : TestBase
 	{
@@ -53,10 +53,13 @@ namespace Tests.UserTests
 			var ed2 = ms.GetEntityDescriptor(typeof(FluentDerived));
 			var ed3 = ms.GetEntityDescriptor(typeof(AttributeBase));
 			var ed4 = ms.GetEntityDescriptor(typeof(AttributeBase));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ed2.TableName, Is.EqualTo(ed1.TableName));
+				Assert.That(ed4.TableName, Is.EqualTo(ed3.TableName));
+			}
 
-			Assert.AreEqual(ed1.Name.Name, ed2.Name.Name);
-			Assert.AreEqual(ed3.Name.Name, ed4.Name.Name);
-			Assert.AreEqual(ed1.Name.Name, ed4.Name.Name);
+			Assert.That(ed4.TableName, Is.EqualTo(ed1.TableName));
 		}
 
 		[Test]
@@ -68,8 +71,8 @@ namespace Tests.UserTests
 			using (db.CreateLocalTable<FluentBase>())
 			{
 				var res = db.Insert<FluentBase>(new FluentDerived { Id = 1 });
-				if (!context.IsAnyOf(TestProvName.AllClickHouse))
-					Assert.AreEqual(1, res);
+				if (context.SupportsRowcount())
+					Assert.That(res, Is.EqualTo(1));
 			}
 		}
 
@@ -82,8 +85,8 @@ namespace Tests.UserTests
 			using (db.CreateLocalTable<AttributeBase>())
 			{
 				var res = db.Insert<AttributeBase>(new AttributeDerived { Id = 1 });
-				if (!context.IsAnyOf(TestProvName.AllClickHouse))
-					Assert.AreEqual(1, res);
+				if (context.SupportsRowcount())
+					Assert.That(res, Is.EqualTo(1));
 			}
 		}
 	}

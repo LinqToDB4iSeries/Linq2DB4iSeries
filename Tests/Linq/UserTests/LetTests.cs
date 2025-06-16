@@ -1,20 +1,19 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
+using LinqToDB;
 using LinqToDB.Mapping;
 
 using NUnit.Framework;
 
 namespace Tests.UserTests
 {
-	using LinqToDB;
-	using LinqToDB.Data;
-
 	[TestFixture]
 	public class LetTests : TestBase
 	{
 		sealed class Table1
 		{
+			[PrimaryKey] public int  Id;
 			public int  Field3;
 			public int? Field5;
 
@@ -27,6 +26,8 @@ namespace Tests.UserTests
 
 		sealed class Table2
 		{
+			[PrimaryKey] public int  Id;
+
 			public int? Field6;
 
 			[Association(ThisKey = "Field6", OtherKey = "Field6", CanBeNull = true)]
@@ -35,6 +36,8 @@ namespace Tests.UserTests
 
 		sealed class Table3
 		{
+			[PrimaryKey] public int  Id;
+
 			public int? Field6;
 			public int  Field3;
 			public int  Field4;
@@ -51,18 +54,24 @@ namespace Tests.UserTests
 
 		sealed class Table7
 		{
+			[PrimaryKey] public int  Id;
+
 			public int     Field4;
 			public string? Field8;
 		}
 
 		[Test]
-		public void LetTest1()
+		public void LetTest1([DataSources(TestProvName.AllAccess)] string context)
 		{
-			using (var repository = new DataConnection())
-			{
-				var q =
-					from t1 in repository.GetTable<Table2>()
-					from t2 in 
+			using var db = GetDataContext(context, o => o.OmitUnsupportedCompareNulls(context));
+			using var tb1 = db.CreateLocalTable<Table1>();
+			using var tb2 = db.CreateLocalTable<Table2>();
+			using var tb3 = db.CreateLocalTable<Table3>();
+			using var tb7 = db.CreateLocalTable<Table7>();
+
+			var q =
+					from t1 in db.GetTable<Table2>()
+					from t2 in
 						from t5 in t1.Ref3!.Ref4!.Ref1!.Ref2
 						let  t3 = t1.Ref3
 						where t3.Ref5!.Field8 == t5.Ref5!.Field8
@@ -70,18 +79,21 @@ namespace Tests.UserTests
 						select t4
 					select t1;
 
-				var linqResult = q.ToString();
-			}
+			q.ToArray();
 		}
 
 		[Test]
-		public void LetTest2()
+		public void LetTest2([DataSources(TestProvName.AllAccess)] string context)
 		{
-			using (var repository = new DataConnection())
-			{
-				var q =
-					from t1 in repository.GetTable<Table2>()
-					from t2 in 
+			using var db = GetDataContext(context, o => o.OmitUnsupportedCompareNulls(context));
+			using var tb1 = db.CreateLocalTable<Table1>();
+			using var tb2 = db.CreateLocalTable<Table2>();
+			using var tb3 = db.CreateLocalTable<Table3>();
+			using var tb7 = db.CreateLocalTable<Table7>();
+
+			var q =
+					from t1 in db.GetTable<Table2>()
+					from t2 in
 						from t5 in t1.Ref3!.Ref4!.Ref1!.Ref2
 						let  t3 = t1.Ref3
 						where t3.Ref5 == t5.Ref5
@@ -89,8 +101,7 @@ namespace Tests.UserTests
 						select t4
 					select t1;
 
-				var linqResult = q.ToString();
-			}
+			q.ToArray();
 		}
 	}
 }

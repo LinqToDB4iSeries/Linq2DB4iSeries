@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -11,17 +10,20 @@ using LinqToDB.Mapping;
 
 using NUnit.Framework;
 
+using Shouldly;
+
+using Tests.Model;
+
 namespace Tests.Linq
 {
-	using Model;
-
 	[TestFixture]
 	public class IssueTests : TestBase
 	{
 		// https://github.com/linq2db/linq2db/issues/38
 		//
 		[Test]
-		public void Issue38Test([DataSources(false, TestProvName.AllClickHouse)] string context)
+		[ThrowsRequiresCorrelatedSubquery]
+		public void Issue38Test([DataSources(false)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -34,20 +36,19 @@ namespace Tests.Linq
 				var sql = ((TestDataConnection)db).LastQuery;
 
 				Assert.That(sql, Is.Not.Contains("INNER JOIN"));
-
-				Debug.WriteLine(sql);
 			}
 		}
 
 		// https://github.com/linq2db/linq2db/issues/42
 		//
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void Issue42Test([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
-				var t1 = db.Types2.Where(r => r.ID == 1).First();
+				var saved = db.Types2.First(r => r.ID == 1);
+
+				var t1 = db.Types2.First(r => r.ID == 1);
 
 				t1.BoolValue = !t1.BoolValue;
 
@@ -60,6 +61,11 @@ namespace Tests.Linq
 				t1.BoolValue = !t1.BoolValue;
 
 				db.Update(t1);
+
+				var current = db.Types2.First(r => r.ID == 1);
+
+				// If this test fails, Data for MathFunctionsTests will be corrupted.
+				current.ShouldBe(saved);
 			}
 		}
 
@@ -88,7 +94,8 @@ namespace Tests.Linq
 		// https://github.com/linq2db/linq2db/issues/67
 		//
 		[Test]
-		public void Issue67Test([DataSources(TestProvName.AllClickHouse)] string context)
+		[ThrowsRequiresCorrelatedSubquery]
+		public void Issue67Test([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -106,8 +113,9 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test()]
-		public void Issue75Test([DataSources(TestProvName.AllClickHouse)] string context)
+		[Test]
+		[ThrowsRequiresCorrelatedSubquery]
+		public void Issue75Test([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -184,41 +192,28 @@ namespace Tests.Linq
 			}
 		}
 
-
 		[Test]
 		public void Issue424Test1([DataSources] string context)
 		{
-			using (var db = GetDataContext(context))
-			{
-				AreEqual(
-					   Parent.Distinct().OrderBy(_ => _.ParentID).Take(1),
-					db.Parent.Distinct().OrderBy(_ => _.ParentID).Take(1)
-					);
-			}
+			using var db = GetDataContext(context);
+
+			AssertQuery(db.Parent.Distinct().OrderBy(_ => _.ParentID).Take(1));
 		}
 
 		[Test]
 		public void Issue424Test2([DataSources] string context)
 		{
-			using (var db = GetDataContext(context))
-			{
-				AreEqual(
-					   Parent.Distinct().OrderBy(_ => _.ParentID).Skip(1).Take(1),
-					db.Parent.Distinct().OrderBy(_ => _.ParentID).Skip(1).Take(1)
-					);
-			}
+			using var db = GetDataContext(context);
+
+			AssertQuery(db.Parent.Distinct().OrderBy(_ => _.ParentID).Skip(1).Take(1));
 		}
 
 		[Test]
 		public void Issue424Test3([DataSources] string context)
 		{
-			using (var db = GetDataContext(context))
-			{
-				AreEqual(
-					   Parent.Distinct().OrderByDescending(_ => _.ParentID).Skip(1).Take(1),
-					db.Parent.Distinct().OrderByDescending(_ => _.ParentID).Skip(1).Take(1)
-				);
-			}
+			using var db = GetDataContext(context);
+
+			AssertQuery(db.Parent.Distinct().OrderByDescending(_ => _.ParentID).Skip(1).Take(1));
 		}
 
 		// https://github.com/linq2db/linq2db/issues/498
@@ -226,8 +221,7 @@ namespace Tests.Linq
 		[Test()]
 		public void Issue498Test([DataSources] string context)
 		{
-			using (new WithoutJoinOptimization())
-			using (var db = GetDataContext(context))
+			using (var db = GetDataContext(context, o => o.UseOptimizeJoins(false)))
 			{
 				var q = from x in db.Child
 					//join y in db.GrandChild on new { x.ParentID, x.ChildID } equals new { ParentID = (int)y.ParentID, ChildID = (int)y.ChildID }
@@ -250,18 +244,16 @@ namespace Tests.Linq
 
 				AreEqual(rr, r);
 
-				var sql = r.ToString()!;
-				Assert.Less(0, sql.IndexOf("INNER", 1), sql);
+				var sql = r.ToSqlQuery().Sql;
+				Assert.That(sql, Does.Contain("INNER"));
 			}
 		}
-
 
 		[Test]
 		public void Issue528Test1([DataSources] string context)
 		{
 			//using (new AllowMultipleQuery())
-			using (new GuardGrouping(false))
-			using (var db = GetDataContext(context))
+			using (var db = GetDataContext(context, o => o.UseGuardGrouping(false)))
 			{
 				var expected =    Person.GroupBy(_ => _.FirstName).Select(_ => new { _.Key, Data = _.ToList() });
 				var result   = db.Person.GroupBy(_ => _.FirstName).Select(_ => new { _.Key, Data = _.ToList() });
@@ -279,8 +271,7 @@ namespace Tests.Linq
 		public void Issue528Test2([DataSources] string context)
 		{
 			//using (new AllowMultipleQuery())
-			using (new GuardGrouping(false))
-			using (var db = GetDataContext(context))
+			using (var db = GetDataContext(context, o => o.UseGuardGrouping(false)))
 			{
 				var expected =    Person.GroupBy(_ => _.FirstName).Select(_ => new { _.Key, Data = _.ToList() }).ToList();
 				var result   = db.Person.GroupBy(_ => _.FirstName).Select(_ => new { _.Key, Data = _.ToList() }).ToList();
@@ -298,8 +289,7 @@ namespace Tests.Linq
 		public void Issue528Test3([DataSources] string context)
 		{
 			//using (new AllowMultipleQuery())
-			using (new GuardGrouping(false))
-			using (var db = GetDataContext(context))
+			using (var db = GetDataContext(context, o => o.UseGuardGrouping(false)))
 			{
 				var expected =    Person.GroupBy(_ => _.FirstName).Select(_ => new { _.Key, Data = _ });
 				var result   = db.Person.GroupBy(_ => _.FirstName).Select(_ => new { _.Key, Data = _ });
@@ -368,7 +358,7 @@ namespace Tests.Linq
 					where p.ID == 1 || p.SecondName == "fail"
 					select p;
 
-				Assert.IsNotNull(q.FirstOrDefault());
+				Assert.That(q.FirstOrDefault(), Is.Not.Null);
 			}
 		}
 
@@ -401,7 +391,6 @@ namespace Tests.Linq
 			Client
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56", Configurations = new[] { ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void Issue535Test2([DataSources(TestProvName.AllSybase)] string context)
 		{
@@ -427,7 +416,6 @@ namespace Tests.Linq
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56", Configurations = new[] { ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void Issue535Test3([DataSources(TestProvName.AllSybase)] string context)
 		{
@@ -458,7 +446,6 @@ namespace Tests.Linq
 			[NotNull] public string LastName = null!;
 			[Nullable] public string? MiddleName;
 
-
 			[Association(ThisKey = nameof(ID), OtherKey = nameof(Model.Doctor.PersonID), CanBeNull = true)]
 			public Doctor? Doctor { get; set; }
 		}
@@ -478,13 +465,13 @@ namespace Tests.Linq
 		}
 
 		[ExpressionMethod("MapToDtoExpr1")]
-		public static PersonDto MapToDto(Person376 person)
+		private static PersonDto MapToDto(Person376 person)
 		{
 			return MapToDtoExpr1().CompileExpression()(person);
 		}
 
 		[ExpressionMethod("MapToDtoExpr2")]
-		public static DoctorDto MapToDto(Doctor doctor)
+		private static DoctorDto MapToDto(Doctor doctor)
 		{
 			return MapToDtoExpr2().CompileExpression()(doctor);
 		}
@@ -519,12 +506,14 @@ namespace Tests.Linq
 					.Where(_ => _.Doctor!.Taxonomy.Length >= 0 || _.Doctor.Taxonomy == null)
 					.Select(_ => MapToDto(_)).ToList();
 
-				Assert.IsNotEmpty(l);
-				Assert.IsNotEmpty(l.Where(_ => _.Doc == null));
-				Assert.IsNotEmpty(l.Where(_ => _.Doc != null));
+				Assert.That(l, Is.Not.Empty);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(l.Where(_ => _.Doc == null), Is.Not.Empty);
+					Assert.That(l.Where(_ => _.Doc != null), Is.Not.Empty);
+				}
 			}
 		}
-
 
 		[Table("Person", IsColumnAttributeRequired = false)]
 		public class Person88
@@ -558,15 +547,16 @@ namespace Tests.Linq
 				var lrp = db
 					.GetTable<Person88>()
 					.Where(_ => _.ID == 1 && gender == _.Gender);
-
-				Assert.IsNotEmpty(llc);
-				Assert.IsNotEmpty(lrc);
-				Assert.IsNotEmpty(llp);
-				Assert.IsNotEmpty(lrp);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(llc, Is.Not.Empty);
+					Assert.That(lrc, Is.Not.Empty);
+					Assert.That(llp, Is.Not.Empty);
+					Assert.That(lrp, Is.Not.Empty);
+				}
 			}
 
 		}
-
 
 		[Test]
 		public void Issue173([DataSources] string context)
@@ -623,6 +613,8 @@ namespace Tests.Linq
 				AssertQuery(query);
 			}
 		}
+
+		[YdbMemberNotFound]
 		[Test]
 		public void Issue909Subquery([DataSources(TestProvName.AllClickHouse)] string context)
 		{
@@ -646,45 +638,65 @@ namespace Tests.Linq
 			}
 		}
 
-		[Table("AllTypes")]
-		[Table("ALLTYPES", Configuration = ProviderName.DB2)]
+		[Table]
 		private sealed class InsertIssueTest
 		{
-			[Column("smallintDataType")]
-			[Column("SMALLINTDATATYPE", Configuration = ProviderName.DB2)]
-			public short ID;
+			[PrimaryKey] public int Pk { get; set; }
+			[Column] public short ID;
 
-			[Column]
-			[Column("INTDATATYPE", Configuration = ProviderName.DB2)]
-			public int? intDataType;
+			[Column] public int? intDataType;
 
 			[Association(ThisKey = nameof(ID), OtherKey = nameof(intDataType), CanBeNull = true)]
 			public IQueryable<InsertIssueTest> Association => throw new InvalidOperationException();
+
+			public static InsertIssueTest[] TestData =
+			[
+				new InsertIssueTest() { Pk = 1, ID = 0, intDataType = 0 },
+				new InsertIssueTest() { Pk = 2, ID = 0, intDataType = 0 },
+				new InsertIssueTest() { Pk = 3, ID = 1234, intDataType = 1234 },
+				new InsertIssueTest() { Pk = 4, ID = 1234, intDataType = 1234 },
+			];
 		}
 
 		[Test]
 		public void InsertFromSelectWithNullableFilter([DataSources] string context)
 		{
-			using (var db = GetDataContext(context))
-			{
-				Query(true);
-				Query(false);
+			using var _ = context.IsAnyOf(ProviderName.SqlCe) ? new DisableBaseline("TODO: https://github.com/linq2db/linq2db/issues/5169") : null;
 
-				void Query(bool isNull)
-				{
-					db.GetTable<InsertIssueTest>()
-						.Where(_ => _.ID == GetId(isNull))
-						.SelectMany(_ => _.Association)
-						.Select(_ => _.ID)
-						.Distinct()
-						.Insert(
-							db.GetTable<InsertIssueTest>(),
-							_ => new InsertIssueTest()
-							{
-								ID = 123,
-								intDataType = _
-							});
-				}
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable(InsertIssueTest.TestData);
+
+			Query(true);
+
+			Query(false);
+
+			var data = tb.ToArray();
+			Assert.That(data, Has.Length.EqualTo(5));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(data.Count(r => r.ID == 0 && r.intDataType == 0), Is.EqualTo(2));
+				Assert.That(data.Count(r => r.ID == 123 && r.intDataType == 1234), Is.EqualTo(1));
+				Assert.That(data.Count(r => r.ID == 1234 && r.intDataType == 1234), Is.EqualTo(2));
+			}
+
+			void Query(bool isNull)
+			{
+				var rows = db.GetTable<InsertIssueTest>()
+					.Where(_ => _.ID == GetId(isNull))
+					.SelectMany(_ => _.Association)
+					.Select(_ => _.ID)
+					.Distinct()
+					.Insert(
+						db.GetTable<InsertIssueTest>(),
+						_ => new InsertIssueTest()
+						{
+							Pk = _,
+							ID = 123,
+							intDataType = _
+						});
+
+				if (context.SupportsRowcount())
+					Assert.That(rows, Is.EqualTo(isNull ? 0 : 1));
 			}
 		}
 
@@ -699,12 +711,23 @@ namespace Tests.Linq
 			using(var db    = (DataConnection)GetDataContext(context))
 			using(var table = db.CreateLocalTable<TableWithGuid>())
 			{
-				Assert.True(db.LastQuery!.Contains("\"Default\"  CHAR(16) CHARACTER SET OCTETS"));
-				Assert.True(db.LastQuery!.Contains("\"Binary\"   CHAR(16) CHARACTER SET OCTETS"));
-				Assert.True(db.LastQuery!.Contains("\"String\"   CHAR(38)"));
-				Assert.True(db.LastQuery!.Contains("\"DefaultN\" CHAR(16) CHARACTER SET OCTETS"));
-				Assert.True(db.LastQuery!.Contains("\"BinaryN\"  CHAR(16) CHARACTER SET OCTETS"));
-				Assert.True(db.LastQuery!.Contains("\"StringN\"  CHAR(38)"));
+				Assert.That(db.LastQuery!, Does.Contain("\"String\"   CHAR(38)"));
+				Assert.That(db.LastQuery!, Does.Contain("\"StringN\"  CHAR(38)"));
+
+				if (context.IsAnyOf(TestProvName.AllFirebirdLess4))
+				{
+					Assert.That(db.LastQuery!, Does.Contain("\"Default\"  CHAR(16) CHARACTER SET OCTETS"));
+					Assert.That(db.LastQuery!, Does.Contain("\"Binary\"   CHAR(16) CHARACTER SET OCTETS"));
+					Assert.That(db.LastQuery!, Does.Contain("\"DefaultN\" CHAR(16) CHARACTER SET OCTETS"));
+					Assert.That(db.LastQuery!, Does.Contain("\"BinaryN\"  CHAR(16) CHARACTER SET OCTETS"));
+				}
+				else
+				{
+					Assert.That(db.LastQuery!, Does.Contain("\"Default\"  BINARY(16)"));
+					Assert.That(db.LastQuery!, Does.Contain("\"Binary\"   BINARY(16)"));
+					Assert.That(db.LastQuery!, Does.Contain("\"DefaultN\" BINARY(16)"));
+					Assert.That(db.LastQuery!, Does.Contain("\"BinaryN\"  BINARY(16)"));
+				}
 
 				db.InlineParameters = inlineParameters;
 
@@ -714,20 +737,23 @@ namespace Tests.Linq
 				});
 				
 				var data = table.ToArray();
-				Assert.AreEqual(1, data.Length);
-				Assert.AreEqual(TestData.Guid1, data[0].Default);
-				Assert.AreEqual(TestData.Guid2, data[0].Binary);
-				Assert.AreEqual(TestData.Guid3, data[0].String);
-				Assert.AreEqual(TestData.Guid4, data[0].DefaultN);
-				Assert.AreEqual(TestData.Guid5, data[0].BinaryN);
-				Assert.AreEqual(TestData.Guid6, data[0].StringN);
+				Assert.That(data, Has.Length.EqualTo(1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(data[0].Default, Is.EqualTo(TestData.Guid1));
+					Assert.That(data[0].Binary, Is.EqualTo(TestData.Guid2));
+					Assert.That(data[0].String, Is.EqualTo(TestData.Guid3));
+					Assert.That(data[0].DefaultN, Is.EqualTo(TestData.Guid4));
+					Assert.That(data[0].BinaryN, Is.EqualTo(TestData.Guid5));
+					Assert.That(data[0].StringN, Is.EqualTo(TestData.Guid6));
 
-				Assert.AreEqual(1, table.Where(x => x.Default  == TestData.Guid1).Count());
-				Assert.AreEqual(1, table.Where(x => x.Binary   == TestData.Guid2).Count());
-				Assert.AreEqual(1, table.Where(x => x.String   == TestData.Guid3).Count());
-				Assert.AreEqual(1, table.Where(x => x.DefaultN == TestData.Guid4).Count());
-				Assert.AreEqual(1, table.Where(x => x.BinaryN  == TestData.Guid5).Count());
-				Assert.AreEqual(1, table.Where(x => x.StringN  == TestData.Guid6).Count());
+					Assert.That(table.Where(x => x.Default == TestData.Guid1).Count(), Is.EqualTo(1));
+					Assert.That(table.Where(x => x.Binary == TestData.Guid2).Count(), Is.EqualTo(1));
+					Assert.That(table.Where(x => x.String == TestData.Guid3).Count(), Is.EqualTo(1));
+					Assert.That(table.Where(x => x.DefaultN == TestData.Guid4).Count(), Is.EqualTo(1));
+					Assert.That(table.Where(x => x.BinaryN == TestData.Guid5).Count(), Is.EqualTo(1));
+					Assert.That(table.Where(x => x.StringN == TestData.Guid6).Count(), Is.EqualTo(1));
+				}
 			}
 		}
 
@@ -742,5 +768,177 @@ namespace Tests.Linq
 			[Column(DataType = DataType.Guid) ] public Guid? BinaryN  { get; set; }
 			[Column(DataType = DataType.NChar)] public Guid? StringN  { get; set; }
 		}
+
+		#region StackOverflow in ExpressionBuilder
+
+		public class StackOverflowTable1
+		{
+			[PrimaryKey]
+			public int Id { get; set; }
+			public int FK { get; set; }
+
+			[Association(ThisKey = nameof(FK), OtherKey = nameof(StackOverflowTable2.Id), CanBeNull = false)]
+			public StackOverflowTable2 Table2 { get; } = null!;
+		}
+
+		public class StackOverflowTable2
+		{
+			[PrimaryKey]
+			public int Id { get; set; }
+		}
+
+		public class StackOverflowTable3
+		{
+			[PrimaryKey]
+			public int Id { get; set; }
+			public int Value2 { get; set; }
+			public int Value { get; set; }
+		}
+
+		public class StackOverflowTable4
+		{
+			[PrimaryKey]
+			public int Id { get; set; }
+			public int? Value { get; set; }
+		}
+
+		public class StackOverflowTable5
+		{
+			[PrimaryKey]
+			public int Id { get; set; }
+			public int Value { get; set; }
+		}
+
+		private sealed record StackOverflowCteRecord(int Id);
+
+		[Test]
+		public void ExpressionBuilder_StackOverflow([IncludeDataSources(false, TestProvName.AllSqlServer)] string context)
+		{
+			using var db = GetDataContext(context);
+			using var t1 = db.CreateLocalTable<StackOverflowTable1>();
+			using var t2 = db.CreateLocalTable<StackOverflowTable2>();
+			using var t3 = db.CreateLocalTable<StackOverflowTable3>();
+			using var t4 = db.CreateLocalTable<StackOverflowTable4>();
+			using var t5 = db.CreateLocalTable<StackOverflowTable5>();
+
+			var cte = db.GetCte<StackOverflowCteRecord>(cte =>
+			{
+				return t1.Select(s => new StackOverflowCteRecord(s.Table2.Id))
+					.Concat(
+						from c in cte
+						join r3 in t3 on c.Id equals r3.Value2
+						select new StackOverflowCteRecord(r3.Value));
+			});
+
+			var query =
+				from c in cte
+				join r4 in t4 on c.Id equals r4.Id into records4
+				from r3 in records4.DefaultIfEmpty()
+				where r3.Value != null
+				select new
+				{
+					Values = t5
+						.Where(a => a.Value == c.Id)
+						.ToArray()
+				};
+
+			query.ToArray();
+		}
+		#endregion
+
+		#region Nesting Issue
+		[Table]
+		public sealed class Transition
+		{
+			[PrimaryKey]                public int      ThingId        { get; set; }
+			[PrimaryKey]                public DateTime CreatedDate    { get; set; }
+			[Column(CanBeNull = false)] public string   TransitionType { get; set; } = null!;
+		}
+
+		[Table]
+		public sealed class ThingState
+		{
+			[PrimaryKey] public int       ThingId            { get; set; }
+			[Column]     public DateTime? LastTransitionDate { get; set; }
+		}
+
+		[Table]
+		public sealed class Thing
+		{
+			[PrimaryKey] public int Id { get; set; }
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/5193")]
+		[ThrowsRequiresCorrelatedSubquery]
+		[ThrowsRequiredOuterJoins(TestProvName.AllAccess, TestProvName.AllSybase, TestProvName.AllSQLite, TestProvName.AllInformix, TestProvName.AllMariaDB, TestProvName.AllFirebirdLess4, TestProvName.AllDB2, TestProvName.AllMySql57, TestProvName.AllOracle11)]
+		public void IncorrectNesting([DataSources] string context)
+		{
+			using var db = GetDataContext(context);
+			using var t1 = db.CreateLocalTable<Transition>();
+			using var t2 = db.CreateLocalTable<ThingState>();
+			using var t3 = db.CreateLocalTable<Thing>();
+
+			Expression<Func<Transition?, bool?, bool>> fitsUndeletedStatusFilter =
+			(transition, filter) =>
+				filter == null || filter == (transition == null || transition.TransitionType != "Delete");
+
+			Expression<Func<ThingState?, bool?, bool>> stateFitsUndeletedStatusFilter =
+			(state, filter) =>
+				state != null
+					? fitsUndeletedStatusFilter.Compile()(
+						t1.SingleOrDefault(t =>
+							t.ThingId == state.ThingId &&
+							t.CreatedDate == state.LastTransitionDate),
+						filter)
+					: fitsUndeletedStatusFilter.Compile()(null, filter);
+
+			Expression<Func<Thing, bool?, bool>> thingFitsUndeletedStatusFilter =
+			(thing, filter) => stateFitsUndeletedStatusFilter.Compile()(
+				t2.SingleOrDefault(s => s.ThingId == thing.Id), filter);
+
+			var filterQuery = t3.Where(thing => thingFitsUndeletedStatusFilter.Compile()(thing, true));
+			filterQuery.Select(thing => thing.Id).ToList();
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/5193")]
+		[ThrowsRequiresCorrelatedSubquery]
+		[ThrowsRequiredOuterJoins(TestProvName.AllAccess, TestProvName.AllSybase, TestProvName.AllSQLite, TestProvName.AllInformix, TestProvName.AllMariaDB, TestProvName.AllFirebirdLess4, TestProvName.AllDB2, TestProvName.AllMySql57, TestProvName.AllOracle11)]
+		public void IncorrectNesting_Merged([DataSources] string context)
+		{
+			using var db = GetDataContext(context);
+			using var t1 = db.CreateLocalTable<Transition>();
+			using var t2 = db.CreateLocalTable<ThingState>();
+			using var t3 = db.CreateLocalTable<Thing>();
+
+			var filterQuery = t3.Where(thing => t2.SingleOrDefault(s => s.ThingId == thing.Id) != null
+					? t1.SingleOrDefault(t =>
+							t.ThingId == t2.SingleOrDefault(s => s.ThingId == thing.Id)!.ThingId
+							&& t.CreatedDate == t2.SingleOrDefault(s => s.ThingId == thing.Id)!.LastTransitionDate) == null
+							|| t1.SingleOrDefault(t => t.ThingId == t2.SingleOrDefault(s => s.ThingId == thing.Id)!.ThingId &&
+							t.CreatedDate == t2.SingleOrDefault(s => s.ThingId == thing.Id)!.LastTransitionDate)!.TransitionType != "Delete"
+					: true);
+			filterQuery.Select(thing => thing.Id).ToList();
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/5193")]
+		public void IncorrectNesting_Workaround([DataSources] string context)
+		{
+			using var db = GetDataContext(context);
+			using var t1 = db.CreateLocalTable<Transition>();
+			using var t2 = db.CreateLocalTable<ThingState>();
+			using var t3 = db.CreateLocalTable<Thing>();
+
+			Expression<Func<Thing, bool>> thingHasDeletedState =
+			thing => t2
+				.Where(state => state.ThingId == thing.Id)
+				.SelectMany(state => t1
+					.Where(t => t.ThingId == state.ThingId && t.CreatedDate == state.LastTransitionDate))
+				.Any(transition => transition.TransitionType == "Delete");
+			var filterQuery = t3.Where(thing => !thingHasDeletedState.Compile()(thing));
+
+			filterQuery.Select(thing => thing.Id).ToList();
+		}
+
+		#endregion
 	}
 }

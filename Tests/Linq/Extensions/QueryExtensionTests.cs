@@ -1,11 +1,9 @@
-﻿using System;
-using System.Diagnostics;
-using System.Linq;
+﻿using System.Linq;
 
 using LinqToDB;
 using LinqToDB.DataProvider.Access;
-using LinqToDB.DataProvider.Oracle;
 using LinqToDB.DataProvider.MySql;
+using LinqToDB.DataProvider.Oracle;
 using LinqToDB.DataProvider.PostgreSQL;
 using LinqToDB.DataProvider.SqlCe;
 using LinqToDB.DataProvider.SQLite;
@@ -13,11 +11,12 @@ using LinqToDB.DataProvider.SqlServer;
 
 using NUnit.Framework;
 
+using Tests.Linq;
+
+using Tests.Model;
+
 namespace Tests.Extensions
 {
-	using Linq;
-	using Model;
-
 	[TestFixture]
 	public class QueryExtensionTests : TestBase
 	{
@@ -32,15 +31,16 @@ namespace Tests.Extensions
 					on p.Id equals a.Id //PK column
 				select p;
 
-			Console.WriteLine(query);
+			BaselinesManager.LogQuery(query.ToSqlQuery().Sql);
 
-			Assert.AreEqual(1, query.GetTableSource().Joins.Count);
+			Assert.That(query.GetTableSource().Joins, Has.Count.EqualTo(1));
 		}
 
 		[Test]
-		public void SelfJoinWithDifferentHintTest2([NorthwindDataContext] string context)
+		public void SelfJoinWithDifferentHintTest2([NorthwindDataContext(true)] string context)
 		{
 			using var db = new NorthwindDB(context);
+			using var tb = db.CreateLocalTable<JoinOptimizeTests.AdressEntity>();
 
 			var query =
 				from p in db.GetTable<JoinOptimizeTests.AdressEntity>().TableHint("NOLOCK")
@@ -48,9 +48,9 @@ namespace Tests.Extensions
 					on p.Id equals a.Id //PK column
 				select p;
 
-			Debug.WriteLine(query);
+			query.ToArray();
 
-			Assert.AreEqual(1, query.GetTableSource().Joins.Count);
+			Assert.That(query.GetTableSource().Joins, Has.Count.EqualTo(1));
 		}
 
 		[Test]

@@ -1,68 +1,38 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-	<Import Project="..\..\Build\linq2db.TestProjects.props" />
+	<Import Project="..\linq2db.TestProjects.props" />
 
 	<PropertyGroup>
 		<AssemblyName>linq2db.Tests</AssemblyName>
+
+		<MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB3277</MSBuildWarningsAsMessages>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\VisualBasic\Tests.VisualBasic.vbproj" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net462' ">
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<!-- T4 support -->
 		<Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
 
-		<ProjectReference Include="..\VisualBasic\Tests.VisualBasic.vbproj" />
-		<None Update="Extensions\MySqlTests.tt">
-			<LastGenOutput>MySqlTests.generated.cs</LastGenOutput>
-			<Generator>TextTemplatingFileGenerator</Generator>
-		</None>
-		<Compile Update="Extensions\MySqlTests.generated.cs">
-			<DependentUpon>MySqlTests.tt</DependentUpon>
-			<DesignTime>True</DesignTime>
-			<AutoGen>True</AutoGen>
-		</Compile>
+		<None Update="Extensions\MySqlTests.tt" Generator="TextTemplatingFileGenerator" LastGenOutput="MySqlTests.generated.cs" />
+		<Compile Update="Extensions\MySqlTests.generated.cs" DesignTime="True" AutoGen="True" DependentUpon="MySqlTests.tt" />
 
-		<None Update="Extensions\PostgreSQLTests.tt">
-			<LastGenOutput>PostgreSQLTests.generated.cs</LastGenOutput>
-			<Generator>TextTemplatingFileGenerator</Generator>
-		</None>
-		<Compile Update="Extensions\PostgreSQLTests.generated.cs">
-			<DependentUpon>PostgreSQLTests.tt</DependentUpon>
-			<DesignTime>True</DesignTime>
-			<AutoGen>True</AutoGen>
-		</Compile>
+		<None Update="Extensions\PostgreSQLTests.tt" Generator="TextTemplatingFileGenerator" LastGenOutput="PostgreSQLTests.generated.cs" />
+		<Compile Update="Extensions\PostgreSQLTests.generated.cs" DesignTime="True" AutoGen="True" DependentUpon="PostgreSQLTests.tt" />
 
-		<None Update="Extensions\OracleTests.tt">
-			<LastGenOutput>OracleTests.generated.cs</LastGenOutput>
-			<Generator>TextTemplatingFileGenerator</Generator>
-		</None>
-		<Compile Update="Extensions\OracleTests.generated.cs">
-			<DependentUpon>OracleTests.tt</DependentUpon>
-			<DesignTime>True</DesignTime>
-			<AutoGen>True</AutoGen>
-		</Compile>
+		<None Update="Extensions\OracleTests.tt" Generator="TextTemplatingFileGenerator" LastGenOutput="OracleTests.generated.cs" />
+		<Compile Update="Extensions\OracleTests.generated.cs" DesignTime="True" AutoGen="True" DependentUpon="OracleTests.tt" />
 
-		<None Update="Extensions\SqlServerTests.tt">
-			<LastGenOutput>SqlServerTests.generated.cs</LastGenOutput>
-			<Generator>TextTemplatingFileGenerator</Generator>
-		</None>
-		<Compile Update="Extensions\SqlServerTests.generated.cs">
-			<DependentUpon>SqlServerTests.tt</DependentUpon>
-			<DesignTime>True</DesignTime>
-			<AutoGen>True</AutoGen>
-		</Compile>
+		<None Update="Extensions\SqlServerTests.tt" Generator="TextTemplatingFileGenerator" LastGenOutput="SqlServerTests.generated.cs" />
+		<Compile Update="Extensions\SqlServerTests.generated.cs" DesignTime="True" AutoGen="True" DependentUpon="SqlServerTests.tt" />
 
-		<None Update="Extensions\SqlCeTests.tt">
-			<LastGenOutput>SqlCeTests.generated.cs</LastGenOutput>
-			<Generator>TextTemplatingFileGenerator</Generator>
-		</None>
-		<Compile Update="Extensions\SqlCeTests.generated.cs">
-			<DesignTime>True</DesignTime>
-			<AutoGen>True</AutoGen>
-			<DependentUpon>SqlCeTests.tt</DependentUpon>
-		</Compile>
-	</ItemGroup>
-
-	<ItemGroup Condition=" '$(TargetFramework)' != 'net472' ">
-		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+		<None Update="Extensions\SqlCeTests.tt" Generator="TextTemplatingFileGenerator" LastGenOutput="SqlCeTests.generated.cs" />
+		<Compile Update="Extensions\SqlCeTests.generated.cs" DesignTime="True" AutoGen="True" DependentUpon="SqlCeTests.tt" />
 	</ItemGroup>
 
 	<ItemGroup Condition=" '$(TargetFramework)' == 'net472' ">
@@ -74,12 +44,18 @@
 		<Compile Remove="DataProvider\**" />
 		<EmbeddedResource Remove="DataProvider\**" />
 		<None Remove="DataProvider\**" />
-	</ItemGroup>
+		<Compile Include="DataProvider\MySqlTestUtils.cs" />
 
-	<ItemGroup>
+		<Compile Remove="Scaffold\**" />
+
 		<Compile Remove="Data\MiniProfilerTests.cs" />
 		<Compile Remove="Data\DataConnectionTests.cs" />
 		<Compile Remove="Data\DataExtensionsTests.cs" />
+		<Compile Remove="Linq\DataContextTests.cs" />
+
+		<!--Window Functions in v6 are hidden until fully implemented-->
+		<Compile Remove="Linq\WindowFunctionsTests.*" />
 	</ItemGroup>
 
 </Project>
+

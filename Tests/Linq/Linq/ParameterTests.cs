@@ -3,14 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using FluentAssertions;
+
 using LinqToDB;
 using LinqToDB.Data;
-using LinqToDB.Linq;
+using LinqToDB.Internal.SqlQuery;
 using LinqToDB.Mapping;
-using Tests.Model;
 
 using NUnit.Framework;
+
+using Shouldly;
+
+using Tests.Model;
 
 namespace Tests.Linq
 {
@@ -40,10 +43,10 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 			{
 				int? id = null;
-				Assert.AreEqual(0, db.Person.Where(_ => _.ID == id).Count());
+				Assert.That(db.Person.Where(_ => _.ID == id).Count(), Is.Zero);
 
 				id = 1;
-				Assert.AreEqual(1, db.Person.Where(_ => _.ID == id).Count());
+				Assert.That(db.Person.Where(_ => _.ID == id).Count(), Is.EqualTo(1));
 			}
 		}
 
@@ -53,7 +56,7 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 			{
 				var id = 1;
-				Assert.AreEqual(1, db.Person.Where(_ => _.ID == id || _.ID <= id || _.ID == id).Count());
+				Assert.That(db.Person.Where(_ => _.ID == id || _.ID <= id || _.ID == id).Count(), Is.EqualTo(1));
 			}
 		}
 
@@ -68,68 +71,103 @@ namespace Tests.Linq
 					select t;
 
 				var queryInlined = query.InlineParameters();
-
-#pragma warning disable CS0618 // Type or member is obsolete
-				Assert.That(query.GetStatement().CollectParameters().Length,        Is.EqualTo(1));
-				Assert.That(queryInlined.GetStatement().CollectParameters().Length, Is.EqualTo(0));
-#pragma warning restore CS0618 // Type or member is obsolete
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(query.GetStatement().CollectParameters(), Has.Length.EqualTo(1));
+					Assert.That(queryInlined.GetStatement().CollectParameters(), Is.Empty);
+				}
 			}
 		}
 
+		[Test]
+		public void InlineWithSkipTake([IncludeDataSources(TestProvName.AllSqlServer)] string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var id = 1;
+				var query = from t in db.Person
+					where t.ID == id
+					select t;
+
+				var queryInlined = query.InlineParameters().Skip(1).Take(2);
+				query = query.Skip(1).Take(2);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(query.GetStatement().CollectParameters(), Has.Length.EqualTo(3));
+					Assert.That(queryInlined.GetStatement().CollectParameters(), Is.Empty);
+				}
+			}
+		}
+
+		[ActiveIssue(
+			@"Sybase providers explicitly cut string value if it contains 0x00 character and the only way to send it to database is to use literals.
+			But here we test parameters.
+			For reference: https://github.com/DataAction/AdoNetCore.AseClient/issues/51#issuecomment-417981677",
+			Configuration = TestProvName.AllSybase)]
 		[Test]
 		public void CharAsSqlParameter1(
 			[DataSources(
 				ProviderName.SqlCe,
 				TestProvName.AllSQLite,
 				TestProvName.AllPostgreSQL,
+				TestProvName.AllOracleDevartOCI,
 				TestProvName.AllInformix,
-				ProviderName.DB2,
 				TestProvName.AllSapHana)]
 			string context)
 		{
 			using (var  db = GetDataContext(context))
 			{
 				var s1 = "0 \x0 ' 0";
-				var s2 = db.Select(() => Sql.ToSql(s1));
+				var s2 = db.Select(() => Sql.AsSql(s1));
 
 				Assert.That(s2, Is.EqualTo(s1));
 			}
 		}
 
+		[ActiveIssue(
+			@"Sybase providers explicitly cut string value if it contains 0x00 character and the only way to send it to database is to use literals.
+			But here we test parameters.
+			For reference: https://github.com/DataAction/AdoNetCore.AseClient/issues/51#issuecomment-417981677",
+			Configuration = TestProvName.AllSybase)]
 		[Test]
 		public void CharAsSqlParameter2(
 			[DataSources(
 				ProviderName.SqlCe,
 				TestProvName.AllSQLite,
 				TestProvName.AllPostgreSQL,
+				TestProvName.AllOracleDevartOCI,
 				TestProvName.AllInformix,
-				ProviderName.DB2,
 				TestProvName.AllSapHana)]
 			string context)
 		{
 			using (var  db = GetDataContext(context))
 			{
 				var s1 = "\x0 \x0 ' \x0";
-				var s2 = db.Select(() => Sql.ToSql(s1));
+				var s2 = db.Select(() => Sql.AsSql(s1));
 
 				Assert.That(s2, Is.EqualTo(s1));
 			}
 		}
 
+		[ActiveIssue(
+			@"Sybase providers explicitly cut string value if it contains 0x00 character and the only way to send it to database is to use literals.
+			But here we test parameters.
+			For reference: https://github.com/DataAction/AdoNetCore.AseClient/issues/51#issuecomment-417981677",
+			Configuration = TestProvName.AllSybase)]
 		[Test]
 		public void CharAsSqlParameter3(
 			[DataSources(
 				ProviderName.SqlCe,
 				TestProvName.AllPostgreSQL,
+				TestProvName.AllOracleDevartOCI,
 				TestProvName.AllInformix,
-				ProviderName.DB2,
 				TestProvName.AllSapHana)]
 			string context)
 		{
 			using (var  db = GetDataContext(context))
 			{
 				var s1 = "\x0";
-				var s2 = db.Select(() => Sql.ToSql(s1));
+				var s2 = db.Select(() => Sql.AsSql(s1));
 
 				Assert.That(s2, Is.EqualTo(s1));
 			}
@@ -141,24 +179,28 @@ namespace Tests.Linq
 			using (var  db = GetDataContext(context))
 			{
 				var s1 = "\x1-\x2-\x3";
-				var s2 = db.Select(() => Sql.ToSql(s1));
+				var s2 = db.Select(() => Sql.AsSql(s1));
 
 				Assert.That(s2, Is.EqualTo(s1));
 			}
 		}
 
+		[ActiveIssue(
+			@"Sybase providers explicitly cut string value if it contains 0x00 character and the only way to send it to database is to use literals.
+			But here we test parameters.
+			For reference: https://github.com/DataAction/AdoNetCore.AseClient/issues/51#issuecomment-417981677",
+			Configuration = TestProvName.AllSybase)]
 		[Test]
 		public void CharAsSqlParameter5(
 			[DataSources(
 				TestProvName.AllPostgreSQL,
-				TestProvName.AllInformix,
-				ProviderName.DB2)]
+				TestProvName.AllInformix)]
 			string context)
 		{
 			using (var  db = GetDataContext(context))
 			{
 				var s1 = '\x0';
-				var s2 = db.Select(() => Sql.ToSql(s1));
+				var s2 = db.Select(() => Sql.AsSql(s1));
 
 				Assert.That(s2, Is.EqualTo(s1));
 			}
@@ -173,31 +215,33 @@ namespace Tests.Linq
 			public string? VarcharDataType;
 		}
 
-		// Excluded providers inline such parameter
+		// Excluded providers inline such parameter or miss mappings
 		[Test]
-		public void ExposeSqlDecimalParameter([DataSources(false, ProviderName.DB2, TestProvName.AllInformix, TestProvName.AllClickHouse)] string context)
+		[YdbMemberNotFound]
+		public void ExposeSqlDecimalParameter([DataSources(false, ProviderName.SqlCe, TestProvName.AllSybase, TestProvName.AllSapHana, TestProvName.AllPostgreSQL, TestProvName.AllOracle, TestProvName.AllDB2, TestProvName.AllFirebird, TestProvName.AllInformix, TestProvName.AllClickHouse)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var p   = 123.456m;
-				var sql = db.GetTable<AllTypes>().Where(t => t.DecimalDataType == p).ToString();
+				db.GetTable<AllTypes>().Where(t => t.DecimalDataType == p).ToArray();
 
-				TestContext.WriteLine(sql);
+				var sql = GetCurrentBaselines();
 
 				Assert.That(sql, Contains.Substring("(6, 3)"));
 			}
 		}
 
-		// DB2: see DB2SqlOptimizer.SetQueryParameter - binary parameters inlined for DB2
+		// Excluded providers inline such parameter or miss mappings
 		[Test]
-		public void ExposeSqlBinaryParameter([DataSources(false, ProviderName.DB2, TestProvName.AllClickHouse)] string context)
+		[YdbMemberNotFound]
+		public void ExposeSqlBinaryParameter([DataSources(false, ProviderName.SqlCe, TestProvName.AllSybase, TestProvName.AllDB2, TestProvName.AllSapHana, TestProvName.AllPostgreSQL, TestProvName.AllOracle, TestProvName.AllInformix, TestProvName.AllFirebird, TestProvName.AllClickHouse)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var p   = new byte[] { 0, 1, 2 };
-				var sql = db.GetTable<AllTypes>().Where(t => t.BinaryDataType == p).ToString();
+				db.GetTable<AllTypes>().Where(t => t.BinaryDataType == p).ToArray();
 
-				TestContext.WriteLine(sql);
+				var sql = GetCurrentBaselines();
 
 				Assert.That(sql, Contains.Substring("(3)").Or.Contains("Blob").Or.Contains("(8000)"));
 			}
@@ -213,7 +257,7 @@ namespace Tests.Linq
 				if (context.IsAnyOf(TestProvName.AllInformix))
 					dt = new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, dt.Second);
 
-				var _ = db.Types.Where(t => t.DateTimeValue == Sql.ToSql(dt)).ToList();
+				var _ = db.Types.Where(t => t.DateTimeValue == Sql.AsSql(dt)).ToList();
 			}
 		}
 
@@ -231,7 +275,6 @@ namespace Tests.Linq
 				Assert.That(parent1.ParentID, Is.Not.EqualTo(parent2.ParentID));
 			}
 		}
-
 
 		static class AdditionalSql
 		{
@@ -272,6 +315,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
+		[YdbCteAsSource]
 		public void TestQueryableCall([DataSources(TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
@@ -281,26 +325,23 @@ namespace Tests.Linq
 		}
 
 		[Test]
+		[YdbCteAsSource]
 		public void TestQueryableCallWithParameters([DataSources(TestProvName.AllClickHouse)] string context)
 		{
 			// baselines could be affected by cache
-			Query.ClearCaches();
-
-			using var db = GetDataContext(context);
+			using var db = GetDataContext(context, o => o.UseDisableQueryCache(true));
 			db.Parent.Where(p => GetChildrenFiltered(db, c => c.ChildID != 5).Select(c => c.ParentID).Contains(p.ParentID)).ToList();
 		}
 
 		[Test]
+		[YdbCteAsSource]
 		public void TestQueryableCallWithParametersWorkaround([DataSources(TestProvName.AllClickHouse)] string context)
 		{
 			// baselines could be affected by cache
-			Query.ClearCaches();
-
-			using var db = GetDataContext(context);
+			using var db = GetDataContext(context, o => o.UseDisableQueryCache(true));
 			db.Parent.Where(p => GetChildrenFiltered(db, ChildFilter).Select(c => c.ParentID).Contains(p.ParentID)).ToList();
 		}
 
-		[ActiveIssue(Configuration = TestProvName.AllSybase, Details = "CI: sybase image needs utf-8 enabled")]
 		[Test]
 		public void TestInternationalParamName([DataSources] string context)
 		{
@@ -317,9 +358,8 @@ namespace Tests.Linq
 			}
 		}
 
-		// sequence evaluation fails in GetChildrenFiltered2
-		[ActiveIssue("Unable to cast object of type 'System.Linq.Expressions.FieldExpression' to type 'System.Linq.Expressions.LambdaExpression'.")]
 		[Test]
+		[YdbCteAsSource]
 		public void TestQueryableCallWithParametersWorkaround2([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
@@ -335,7 +375,7 @@ namespace Tests.Linq
 			{
 				// we use external parameter p in GetChildrenFiltered parameter expression
 				// Sequence 'GetChildrenFiltered(value(Tests.Linq.ParameterTests+<>c__DisplayClass18_0).db, c => (c.ChildID != p.ParentID))' cannot be converted to SQL.
-				Assert.Throws<LinqException>(()
+				Assert.Throws<LinqToDBException>(()
 					=> db.Parent.Where(p => GetChildrenFiltered(db, c => c.ChildID != p.ParentID).Select(c => c.ParentID).Contains(p.ParentID)).ToList());
 			}
 		}
@@ -369,7 +409,7 @@ namespace Tests.Linq
 		[Table]
 		sealed class Table404One
 		{
-			[Column] public int Id { get; set; }
+			[PrimaryKey] public int Id { get; set; }
 
 			public static readonly Table404One[] Data = new[]
 			{
@@ -381,7 +421,7 @@ namespace Tests.Linq
 		[Table]
 		sealed class Table404Two
 		{
-			[Column] public int Id { get; set; }
+			[PrimaryKey] public int Id { get; set; }
 
 			[Column] public Issue404 Usage { get; set; }
 
@@ -420,25 +460,34 @@ namespace Tests.Linq
 					Issue404? usage = null;
 					var allUsages = !usage.HasValue;
 					var res1 = Test()!;
-					Assert.AreEqual(1, res1.Id);
-					Assert.AreEqual(3, res1.Values!.Count);
-					Assert.AreEqual(3, res1.Values.Where(v => v.FirstTableId == 1).Count());
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(res1.Id, Is.EqualTo(1));
+						Assert.That(res1.Values!, Has.Count.EqualTo(3));
+						Assert.That(res1.Values!.Where(v => v.FirstTableId == 1).Count(), Is.EqualTo(3));
+					}
 
 					usage = Issue404.Value1;
 					allUsages = false;
 					var res2 = Test()!;
-					Assert.AreEqual(1, res2.Id);
-					Assert.AreEqual(2, res2.Values!.Count);
-					Assert.AreEqual(2, res2.Values.Where(v => v.Usage == usage).Count());
-					Assert.AreEqual(2, res2.Values.Where(v => v.FirstTableId == 1).Count());
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(res2.Id, Is.EqualTo(1));
+						Assert.That(res2.Values!, Has.Count.EqualTo(2));
+						Assert.That(res2.Values!.Where(v => v.Usage == usage).Count(), Is.EqualTo(2));
+						Assert.That(res2.Values!.Where(v => v.FirstTableId == 1).Count(), Is.EqualTo(2));
+					}
 
 					usage = Issue404.Value2;
 					allUsages = false;
 					var res3 = Test()!;
-					Assert.AreEqual(1, res2.Id);
-					Assert.AreEqual(1, res3.Values!.Count);
-					Assert.AreEqual(1, res3.Values.Where(v => v.Usage == usage).Count());
-					Assert.AreEqual(1, res3.Values.Where(v => v.FirstTableId == 1).Count());
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(res2.Id, Is.EqualTo(1));
+						Assert.That(res3.Values!, Has.Count.EqualTo(1));
+						Assert.That(res3.Values!.Where(v => v.Usage == usage).Count(), Is.EqualTo(1));
+						Assert.That(res3.Values!.Where(v => v.FirstTableId == 1).Count(), Is.EqualTo(1));
+					}
 
 					FirstTable? Test()
 					{
@@ -468,21 +517,20 @@ namespace Tests.Linq
 			}
 		}
 
-		[ActiveIssue("SQL0418N", Configuration = ProviderName.DB2)]
 		[Test]
 		public void Issue1189Test([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (var table = db.CreateLocalTable<Issue1189Customer>())
 			{
-				table.Where(k => k.ToDelete <= TestData.DateTime).ToList();
+				table.Where(k => k.ToDelete <= TestData.NonReadonlyDateTime).ToList();
 			}
 		}
 
 		[Table]
 		sealed class TestEqualsTable1
 		{
-			[Column]
+			[PrimaryKey]
 			public int Id { get; set; }
 
 			[Association(ThisKey = nameof(Id), OtherKey = nameof(TestEqualsTable2.FK), CanBeNull = true)]
@@ -492,7 +540,7 @@ namespace Tests.Linq
 		[Table]
 		sealed class TestEqualsTable2
 		{
-			[Column]
+			[PrimaryKey]
 			public int Id { get; set; }
 
 			[Column]
@@ -512,6 +560,69 @@ namespace Tests.Linq
 					.Select(__ => __.Id)
 					.Any(__ => __.Equals(param)))
 				.ToList();
+			}
+		}
+
+		IQueryable<Person> GetPersons(ITestDataContext db, int personId)
+		{
+			return db.Person.Where(p => p.ID == personId);
+		}
+
+		IQueryable<Person> GetPersons2(ITestDataContext db, int? personId)
+		{
+			return db.Person.Where(p => p.ID == personId!.Value);
+		}
+
+		[Test]
+		public void TestParametersByEquality([DataSources(TestProvName.AllSQLite)] string context, [Values(1, 2)] int iteration)
+		{
+			using var db = GetDataContext(context);
+
+			// Tho identical for translator query, but they are different by parameteter values
+			{
+				int personId = 1;
+
+				var ctn = new { personId = 1 };
+
+				var query =
+					from p in GetPersons(db, personId)
+					from p2 in GetPersons2(db, personId).Where(p2 => p2.ID == p.ID)
+					where p.ID == ctn.personId
+					select new { p, p2 };
+
+				var cacheMiss = query.GetCacheMissCount();
+
+				query.ToList().Count.ShouldBe(1);
+
+				if (iteration > 1)
+					query.GetCacheMissCount().ShouldBe(cacheMiss);
+
+				var parameters = new List<SqlParameter>();
+				query.GetSelectQuery().CollectParameters(parameters);
+				parameters.Distinct().Count().ShouldBe(2);
+			}
+
+			{
+				int personId = 1;
+
+				var ctn = new { personId = 2 };
+
+				var query =
+					from p in GetPersons(db, personId)
+					from p2 in GetPersons2(db, personId).Where(p2 => p2.ID == p.ID)
+					where p.ID == ctn.personId
+					select new { p, p2 };
+
+				var cacheMiss = query.GetCacheMissCount();
+
+				query.ToList().Count.ShouldBe(0);
+
+				if (iteration > 1)
+					query.GetCacheMissCount().ShouldBe(cacheMiss);
+
+				var parameters = new List<SqlParameter>();
+				query.GetSelectQuery().CollectParameters(parameters);
+				parameters.Distinct().Count().ShouldBe(2);
 			}
 		}
 
@@ -561,17 +672,17 @@ namespace Tests.Linq
 					String3 = str3,
 				});
 
-				var cacheMiss = Query<ParameterDeduplication>.CacheMissCount;
+				var cacheMiss = table.GetCacheMissCount();
 				var sql       = db.LastQuery!;
 
-				sql.Should().Contain("@id");
-				sql.Should().Contain("@int1");
-				sql.Should().Contain("@int2");
-				sql.Should().Contain("@intN1");
-				sql.Should().Contain("@intN2");
-				sql.Should().Contain("@str1");
-				sql.Should().Contain("@str2");
-				sql.Should().Contain("@str3");
+				sql.ShouldContain("@id");
+				sql.ShouldContain("@int1");
+				sql.ShouldContain("@int2");
+				sql.ShouldContain("@intN1");
+				sql.ShouldContain("@intN2");
+				sql.ShouldContain("@str1");
+				sql.ShouldContain("@str2");
+				sql.ShouldContain("@str3");
 
 				id    = 2;
 				int1  = 3;
@@ -594,39 +705,39 @@ namespace Tests.Linq
 					String3 = str3,
 				});
 
-				Query<ParameterDeduplication>.CacheMissCount.Should().Be(cacheMiss);
+				table.GetCacheMissCount().ShouldBe(cacheMiss);
 				sql = db.LastQuery!;
 
-				sql.Should().Contain("@id");
-				sql.Should().Contain("@int1");
-				sql.Should().Contain("@int2");
-				sql.Should().Contain("@intN1");
-				sql.Should().Contain("@intN2");
-				sql.Should().Contain("@str1");
-				sql.Should().Contain("@str2");
-				sql.Should().Contain("@str3");
+				sql.ShouldContain("@id");
+				sql.ShouldContain("@int1");
+				sql.ShouldContain("@int2");
+				sql.ShouldContain("@intN1");
+				sql.ShouldContain("@intN2");
+				sql.ShouldContain("@str1");
+				sql.ShouldContain("@str2");
+				sql.ShouldContain("@str3");
 
 				var res = table.OrderBy(_ => _.Id).ToArray();
 
-				res.Should().HaveCount(2);
+				res.Length.ShouldBe(2);
 
-				res[0].Id.Should().Be(1);
-				res[0].Int1.Should().Be(2);
-				res[0].Int2.Should().Be(2);
-				res[0].IntN1.Should().Be(2);
-				res[0].IntN2.Should().Be(2);
-				res[0].String1.Should().Be("str");
-				res[0].String2.Should().Be("str");
-				res[0].String3.Should().Be("str");
+				res[0].Id.ShouldBe(1);
+				res[0].Int1.ShouldBe(2);
+				res[0].Int2.ShouldBe(2);
+				res[0].IntN1.ShouldBe(2);
+				res[0].IntN2.ShouldBe(2);
+				res[0].String1.ShouldBe("str");
+				res[0].String2.ShouldBe("str");
+				res[0].String3.ShouldBe("str");
 
-				res[1].Id.Should().Be(2);
-				res[1].Int1.Should().Be(3);
-				res[1].Int2.Should().Be(4);
-				res[1].IntN1.Should().Be(5);
-				res[1].IntN2.Should().Be(6);
-				res[1].String1.Should().Be("str1");
-				res[1].String2.Should().Be("str2");
-				res[1].String3.Should().Be("str3");
+				res[1].Id.ShouldBe(2);
+				res[1].Int1.ShouldBe(3);
+				res[1].Int2.ShouldBe(4);
+				res[1].IntN1.ShouldBe(5);
+				res[1].IntN2.ShouldBe(6);
+				res[1].String1.ShouldBe("str1");
+				res[1].String2.ShouldBe("str2");
+				res[1].String3.ShouldBe("str3");
 			}
 		}
 
@@ -648,17 +759,17 @@ namespace Tests.Linq
 					String3 = "str",
 				});
 
-				var cacheMiss = Query<ParameterDeduplication>.CacheMissCount;
+				var cacheMiss = table.GetCacheMissCount();
 				var sql       = db.LastQuery!;
 
-				sql.Should().Contain("@Id");
-				sql.Should().Contain("@Int1");
-				sql.Should().Contain("@Int2");
-				sql.Should().Contain("@IntN1");
-				sql.Should().Contain("@IntN2");
-				sql.Should().Contain("@String1");
-				sql.Should().Contain("@String2");
-				sql.Should().Contain("@String3");
+				sql.ShouldContain("@Id");
+				sql.ShouldContain("@Int1");
+				sql.ShouldContain("@Int2");
+				sql.ShouldContain("@IntN1");
+				sql.ShouldContain("@IntN2");
+				sql.ShouldContain("@String1");
+				sql.ShouldContain("@String2");
+				sql.ShouldContain("@String3");
 
 				db.Insert(new ParameterDeduplication()
 				{
@@ -672,39 +783,39 @@ namespace Tests.Linq
 					String3 = "str3",
 				});
 
-				Query<ParameterDeduplication>.CacheMissCount.Should().Be(cacheMiss);
+				table.GetCacheMissCount().ShouldBe(cacheMiss);
 				sql = db.LastQuery!;
 
-				sql.Should().Contain("@Id");
-				sql.Should().Contain("@Int1");
-				sql.Should().Contain("@Int2");
-				sql.Should().Contain("@IntN1");
-				sql.Should().Contain("@IntN2");
-				sql.Should().Contain("@String1");
-				sql.Should().Contain("@String2");
-				sql.Should().Contain("@String3");
+				sql.ShouldContain("@Id");
+				sql.ShouldContain("@Int1");
+				sql.ShouldContain("@Int2");
+				sql.ShouldContain("@IntN1");
+				sql.ShouldContain("@IntN2");
+				sql.ShouldContain("@String1");
+				sql.ShouldContain("@String2");
+				sql.ShouldContain("@String3");
 
 				var res = table.OrderBy(_ => _.Id).ToArray();
 
-				res.Should().HaveCount(2);
+				res.Length.ShouldBe(2);
 
-				res[0].Id.Should().Be(1);
-				res[0].Int1.Should().Be(2);
-				res[0].Int2.Should().Be(2);
-				res[0].IntN1.Should().Be(2);
-				res[0].IntN2.Should().Be(2);
-				res[0].String1.Should().Be("str");
-				res[0].String2.Should().Be("str");
-				res[0].String3.Should().Be("str");
+				res[0].Id.ShouldBe(1);
+				res[0].Int1.ShouldBe(2);
+				res[0].Int2.ShouldBe(2);
+				res[0].IntN1.ShouldBe(2);
+				res[0].IntN2.ShouldBe(2);
+				res[0].String1.ShouldBe("str");
+				res[0].String2.ShouldBe("str");
+				res[0].String3.ShouldBe("str");
 
-				res[1].Id.Should().Be(2);
-				res[1].Int1.Should().Be(3);
-				res[1].Int2.Should().Be(4);
-				res[1].IntN1.Should().Be(5);
-				res[1].IntN2.Should().Be(6);
-				res[1].String1.Should().Be("str1");
-				res[1].String2.Should().Be("str2");
-				res[1].String3.Should().Be("str3");
+				res[1].Id.ShouldBe(2);
+				res[1].Int1.ShouldBe(3);
+				res[1].Int2.ShouldBe(4);
+				res[1].IntN1.ShouldBe(5);
+				res[1].IntN2.ShouldBe(6);
+				res[1].String1.ShouldBe("str1");
+				res[1].String2.ShouldBe("str2");
+				res[1].String3.ShouldBe("str3");
 			}
 		}
 
@@ -725,17 +836,17 @@ namespace Tests.Linq
 					.Value(_ => _.String3, "str")
 					.Insert();
 
-				var cacheMiss = Query<ParameterDeduplication>.CacheMissCount;
+				var cacheMiss = table.GetCacheMissCount();
 				var sql       = db.LastQuery!;
 
-				sql.Should().Contain("@Id");
-				sql.Should().Contain("@Int1");
-				sql.Should().Contain("@Int2");
-				sql.Should().Contain("@IntN1");
-				sql.Should().Contain("@IntN2");
-				sql.Should().Contain("@String1");
-				sql.Should().Contain("@String2");
-				sql.Should().Contain("@String3");
+				sql.ShouldContain("@Id");
+				sql.ShouldContain("@Int1");
+				sql.ShouldContain("@Int2");
+				sql.ShouldContain("@IntN1");
+				sql.ShouldContain("@IntN2");
+				sql.ShouldContain("@String1");
+				sql.ShouldContain("@String2");
+				sql.ShouldContain("@String3");
 
 				table
 					.Value(_ => _.Id     , 2)
@@ -748,39 +859,39 @@ namespace Tests.Linq
 					.Value(_ => _.String3, "str3")
 					.Insert();
 
-				Query<ParameterDeduplication>.CacheMissCount.Should().Be(cacheMiss);
+				table.GetCacheMissCount().ShouldBe(cacheMiss);
 				sql = db.LastQuery!;
 
-				sql.Should().Contain("@Id");
-				sql.Should().Contain("@Int1");
-				sql.Should().Contain("@Int2");
-				sql.Should().Contain("@IntN1");
-				sql.Should().Contain("@IntN2");
-				sql.Should().Contain("@String1");
-				sql.Should().Contain("@String2");
-				sql.Should().Contain("@String3");
+				sql.ShouldContain("@Id");
+				sql.ShouldContain("@Int1");
+				sql.ShouldContain("@Int2");
+				sql.ShouldContain("@IntN1");
+				sql.ShouldContain("@IntN2");
+				sql.ShouldContain("@String1");
+				sql.ShouldContain("@String2");
+				sql.ShouldContain("@String3");
 
 				var res = table.OrderBy(_ => _.Id).ToArray();
 
-				res.Should().HaveCount(2);
+				res.Length.ShouldBe(2);
 
-				res[0].Id.Should().Be(1);
-				res[0].Int1.Should().Be(2);
-				res[0].Int2.Should().Be(2);
-				res[0].IntN1.Should().Be(2);
-				res[0].IntN2.Should().Be(2);
-				res[0].String1.Should().Be("str");
-				res[0].String2.Should().Be("str");
-				res[0].String3.Should().Be("str");
+				res[0].Id.ShouldBe(1);
+				res[0].Int1.ShouldBe(2);
+				res[0].Int2.ShouldBe(2);
+				res[0].IntN1.ShouldBe(2);
+				res[0].IntN2.ShouldBe(2);
+				res[0].String1.ShouldBe("str");
+				res[0].String2.ShouldBe("str");
+				res[0].String3.ShouldBe("str");
 
-				res[1].Id.Should().Be(2);
-				res[1].Int1.Should().Be(3);
-				res[1].Int2.Should().Be(4);
-				res[1].IntN1.Should().Be(5);
-				res[1].IntN2.Should().Be(6);
-				res[1].String1.Should().Be("str1");
-				res[1].String2.Should().Be("str2");
-				res[1].String3.Should().Be("str3");
+				res[1].Id.ShouldBe(2);
+				res[1].Int1.ShouldBe(3);
+				res[1].Int2.ShouldBe(4);
+				res[1].IntN1.ShouldBe(5);
+				res[1].IntN2.ShouldBe(6);
+				res[1].String1.ShouldBe("str1");
+				res[1].String2.ShouldBe("str2");
+				res[1].String3.ShouldBe("str3");
 			}
 		}
 
@@ -810,17 +921,17 @@ namespace Tests.Linq
 					.Value(_ => _.String3, () => str3)
 					.Insert();
 
-				var cacheMiss = Query<ParameterDeduplication>.CacheMissCount;
+				var cacheMiss = table.GetCacheMissCount();
 				var sql       = db.LastQuery!;
 
-				sql.Should().Contain("@id");
-				sql.Should().Contain("@int1");
-				sql.Should().Contain("@int2");
-				sql.Should().Contain("@intN1");
-				sql.Should().Contain("@intN2");
-				sql.Should().Contain("@str1");
-				sql.Should().Contain("@str2");
-				sql.Should().Contain("@str3");
+				sql.ShouldContain("@id");
+				sql.ShouldContain("@int1");
+				sql.ShouldContain("@int2");
+				sql.ShouldContain("@intN1");
+				sql.ShouldContain("@intN2");
+				sql.ShouldContain("@str1");
+				sql.ShouldContain("@str2");
+				sql.ShouldContain("@str3");
 
 				id    = 2;
 				int1  = 3;
@@ -842,40 +953,40 @@ namespace Tests.Linq
 					.Value(_ => _.String3, () => str3)
 					.Insert();
 
-				Query<ParameterDeduplication>.CacheMissCount.Should().Be(cacheMiss);
+				table.GetCacheMissCount().ShouldBe(cacheMiss);
 
 				sql = db.LastQuery!;
 
-				sql.Should().Contain("@id");
-				sql.Should().Contain("@int1");
-				sql.Should().Contain("@int2");
-				sql.Should().Contain("@intN1");
-				sql.Should().Contain("@intN2");
-				sql.Should().Contain("@str1");
-				sql.Should().Contain("@str2");
-				sql.Should().Contain("@str3");
+				sql.ShouldContain("@id");
+				sql.ShouldContain("@int1");
+				sql.ShouldContain("@int2");
+				sql.ShouldContain("@intN1");
+				sql.ShouldContain("@intN2");
+				sql.ShouldContain("@str1");
+				sql.ShouldContain("@str2");
+				sql.ShouldContain("@str3");
 
 				var res = table.OrderBy(_ => _.Id).ToArray();
 
-				res.Should().HaveCount(2);
+				res.Length.ShouldBe(2);
 
-				res[0].Id.Should().Be(1);
-				res[0].Int1.Should().Be(2);
-				res[0].Int2.Should().Be(2);
-				res[0].IntN1.Should().Be(2);
-				res[0].IntN2.Should().Be(2);
-				res[0].String1.Should().Be("str");
-				res[0].String2.Should().Be("str");
-				res[0].String3.Should().Be("str");
+				res[0].Id.ShouldBe(1);
+				res[0].Int1.ShouldBe(2);
+				res[0].Int2.ShouldBe(2);
+				res[0].IntN1.ShouldBe(2);
+				res[0].IntN2.ShouldBe(2);
+				res[0].String1.ShouldBe("str");
+				res[0].String2.ShouldBe("str");
+				res[0].String3.ShouldBe("str");
 
-				res[1].Id.Should().Be(2);
-				res[1].Int1.Should().Be(3);
-				res[1].Int2.Should().Be(4);
-				res[1].IntN1.Should().Be(5);
-				res[1].IntN2.Should().Be(6);
-				res[1].String1.Should().Be("str1");
-				res[1].String2.Should().Be("str2");
-				res[1].String3.Should().Be("str3");
+				res[1].Id.ShouldBe(2);
+				res[1].Int1.ShouldBe(3);
+				res[1].Int2.ShouldBe(4);
+				res[1].IntN1.ShouldBe(5);
+				res[1].IntN2.ShouldBe(6);
+				res[1].String1.ShouldBe("str1");
+				res[1].String2.ShouldBe("str2");
+				res[1].String3.ShouldBe("str3");
 			}
 		}
 
@@ -906,17 +1017,17 @@ namespace Tests.Linq
 						String3 = str3,
 					});
 
-				var cacheMiss = Query<ParameterDeduplication>.CacheMissCount;
+				var cacheMiss = table.GetCacheMissCount();
 				var sql       = db.LastQuery!;
 
-				sql.Should().Contain("@id");
-				sql.Should().Contain("@int1");
-				sql.Should().Contain("@int2");
-				sql.Should().Contain("@intN1");
-				sql.Should().Contain("@intN2");
-				sql.Should().Contain("@str1");
-				sql.Should().Contain("@str2");
-				sql.Should().Contain("@str3");
+				sql.ShouldContain("@id");
+				sql.ShouldContain("@int1");
+				sql.ShouldContain("@int2");
+				sql.ShouldContain("@intN1");
+				sql.ShouldContain("@intN2");
+				sql.ShouldContain("@str1");
+				sql.ShouldContain("@str2");
+				sql.ShouldContain("@str3");
 
 				id    = 2;
 				int1  = 3;
@@ -939,39 +1050,39 @@ namespace Tests.Linq
 						String3 = str3,
 					});
 
-				Query<ParameterDeduplication>.CacheMissCount.Should().Be(cacheMiss);
+				table.GetCacheMissCount().ShouldBe(cacheMiss);
 				sql = db.LastQuery!;
 
-				sql.Should().Contain("@id");
-				sql.Should().Contain("@int1");
-				sql.Should().Contain("@int2");
-				sql.Should().Contain("@intN1");
-				sql.Should().Contain("@intN2");
-				sql.Should().Contain("@str1");
-				sql.Should().Contain("@str2");
-				sql.Should().Contain("@str3");
+				sql.ShouldContain("@id");
+				sql.ShouldContain("@int1");
+				sql.ShouldContain("@int2");
+				sql.ShouldContain("@intN1");
+				sql.ShouldContain("@intN2");
+				sql.ShouldContain("@str1");
+				sql.ShouldContain("@str2");
+				sql.ShouldContain("@str3");
 
 				var res = table.OrderBy(_ => _.Id).ToArray();
 
-				res.Should().HaveCount(2);
+				res.Length.ShouldBe(2);
 
-				res[0].Id.Should().Be(1);
-				res[0].Int1.Should().Be(2);
-				res[0].Int2.Should().Be(2);
-				res[0].IntN1.Should().Be(2);
-				res[0].IntN2.Should().Be(2);
-				res[0].String1.Should().Be("str");
-				res[0].String2.Should().Be("str");
-				res[0].String3.Should().Be("str");
+				res[0].Id.ShouldBe(1);
+				res[0].Int1.ShouldBe(2);
+				res[0].Int2.ShouldBe(2);
+				res[0].IntN1.ShouldBe(2);
+				res[0].IntN2.ShouldBe(2);
+				res[0].String1.ShouldBe("str");
+				res[0].String2.ShouldBe("str");
+				res[0].String3.ShouldBe("str");
 
-				res[1].Id.Should().Be(2);
-				res[1].Int1.Should().Be(3);
-				res[1].Int2.Should().Be(4);
-				res[1].IntN1.Should().Be(5);
-				res[1].IntN2.Should().Be(6);
-				res[1].String1.Should().Be("str1");
-				res[1].String2.Should().Be("str2");
-				res[1].String3.Should().Be("str3");
+				res[1].Id.ShouldBe(2);
+				res[1].Int1.ShouldBe(3);
+				res[1].Int2.ShouldBe(4);
+				res[1].IntN1.ShouldBe(5);
+				res[1].IntN2.ShouldBe(6);
+				res[1].String1.ShouldBe("str1");
+				res[1].String2.ShouldBe("str2");
+				res[1].String3.ShouldBe("str3");
 			}
 		}
 
@@ -993,17 +1104,17 @@ namespace Tests.Linq
 					String3 = "str",
 				});
 
-				var cacheMiss = Query<ParameterDeduplication>.CacheMissCount;
+				var cacheMiss = table.GetCacheMissCount();
 				var sql       = db.LastQuery!;
 
-				sql.Should().Contain("@Id");
-				sql.Should().Contain("@Int1");
-				sql.Should().Contain("@Int2");
-				sql.Should().Contain("@IntN1");
-				sql.Should().Contain("@IntN2");
-				sql.Should().Contain("@String1");
-				sql.Should().Contain("@String2");
-				sql.Should().Contain("@String3");
+				sql.ShouldContain("@Id");
+				sql.ShouldContain("@Int1");
+				sql.ShouldContain("@Int2");
+				sql.ShouldContain("@IntN1");
+				sql.ShouldContain("@IntN2");
+				sql.ShouldContain("@String1");
+				sql.ShouldContain("@String2");
+				sql.ShouldContain("@String3");
 
 				db.Update(new ParameterDeduplication()
 				{
@@ -1017,39 +1128,39 @@ namespace Tests.Linq
 					String3 = "str3",
 				});
 
-				Query<ParameterDeduplication>.CacheMissCount.Should().Be(cacheMiss);
+				table.GetCacheMissCount().ShouldBe(cacheMiss);
 				sql = db.LastQuery!;
 
-				sql.Should().Contain("@Id");
-				sql.Should().Contain("@Int1");
-				sql.Should().Contain("@Int2");
-				sql.Should().Contain("@IntN1");
-				sql.Should().Contain("@IntN2");
-				sql.Should().Contain("@String1");
-				sql.Should().Contain("@String2");
-				sql.Should().Contain("@String3");
+				sql.ShouldContain("@Id");
+				sql.ShouldContain("@Int1");
+				sql.ShouldContain("@Int2");
+				sql.ShouldContain("@IntN1");
+				sql.ShouldContain("@IntN2");
+				sql.ShouldContain("@String1");
+				sql.ShouldContain("@String2");
+				sql.ShouldContain("@String3");
 
 				var res = table.OrderBy(_ => _.Id).ToArray();
 
-				res.Should().HaveCount(2);
+				res.Length.ShouldBe(2);
 
-				res[0].Id.Should().Be(1);
-				res[0].Int1.Should().Be(2);
-				res[0].Int2.Should().Be(2);
-				res[0].IntN1.Should().Be(2);
-				res[0].IntN2.Should().Be(2);
-				res[0].String1.Should().Be("str");
-				res[0].String2.Should().Be("str");
-				res[0].String3.Should().Be("str");
+				res[0].Id.ShouldBe(1);
+				res[0].Int1.ShouldBe(2);
+				res[0].Int2.ShouldBe(2);
+				res[0].IntN1.ShouldBe(2);
+				res[0].IntN2.ShouldBe(2);
+				res[0].String1.ShouldBe("str");
+				res[0].String2.ShouldBe("str");
+				res[0].String3.ShouldBe("str");
 
-				res[1].Id.Should().Be(2);
-				res[1].Int1.Should().Be(3);
-				res[1].Int2.Should().Be(4);
-				res[1].IntN1.Should().Be(5);
-				res[1].IntN2.Should().Be(6);
-				res[1].String1.Should().Be("str1");
-				res[1].String2.Should().Be("str2");
-				res[1].String3.Should().Be("str3");
+				res[1].Id.ShouldBe(2);
+				res[1].Int1.ShouldBe(3);
+				res[1].Int2.ShouldBe(4);
+				res[1].IntN1.ShouldBe(5);
+				res[1].IntN2.ShouldBe(6);
+				res[1].String1.ShouldBe("str1");
+				res[1].String2.ShouldBe("str2");
+				res[1].String3.ShouldBe("str3");
 			}
 		}
 
@@ -1070,17 +1181,17 @@ namespace Tests.Linq
 					.Set(_ => _.String3, "str")
 					.Update();
 
-				var cacheMiss = Query<ParameterDeduplication>.CacheMissCount;
+				var cacheMiss = table.GetCacheMissCount();
 				var sql       = db.LastQuery!;
 
-				sql.Should().Contain("@id");
-				sql.Should().Contain("@Int1");
-				sql.Should().Contain("@Int2");
-				sql.Should().Contain("@IntN1");
-				sql.Should().Contain("@IntN2");
-				sql.Should().Contain("@String1");
-				sql.Should().Contain("@String2");
-				sql.Should().Contain("@String3");
+				sql.ShouldContain("@id");
+				sql.ShouldContain("@Int1");
+				sql.ShouldContain("@Int2");
+				sql.ShouldContain("@IntN1");
+				sql.ShouldContain("@IntN2");
+				sql.ShouldContain("@String1");
+				sql.ShouldContain("@String2");
+				sql.ShouldContain("@String3");
 
 				id = 2;
 				table.Where(_ => _.Id == id)
@@ -1093,39 +1204,39 @@ namespace Tests.Linq
 					.Set(_ => _.String3, "str3")
 					.Update();
 
-				Query<ParameterDeduplication>.CacheMissCount.Should().Be(cacheMiss);
+				table.GetCacheMissCount().ShouldBe(cacheMiss);
 				sql = db.LastQuery!;
 
-				sql.Should().Contain("@id");
-				sql.Should().Contain("@Int1");
-				sql.Should().Contain("@Int2");
-				sql.Should().Contain("@IntN1");
-				sql.Should().Contain("@IntN2");
-				sql.Should().Contain("@String1");
-				sql.Should().Contain("@String2");
-				sql.Should().Contain("@String3");
+				sql.ShouldContain("@id");
+				sql.ShouldContain("@Int1");
+				sql.ShouldContain("@Int2");
+				sql.ShouldContain("@IntN1");
+				sql.ShouldContain("@IntN2");
+				sql.ShouldContain("@String1");
+				sql.ShouldContain("@String2");
+				sql.ShouldContain("@String3");
 
 				var res = table.OrderBy(_ => _.Id).ToArray();
 
-				res.Should().HaveCount(2);
+				res.Length.ShouldBe(2);
 
-				res[0].Id.Should().Be(1);
-				res[0].Int1.Should().Be(2);
-				res[0].Int2.Should().Be(2);
-				res[0].IntN1.Should().Be(2);
-				res[0].IntN2.Should().Be(2);
-				res[0].String1.Should().Be("str");
-				res[0].String2.Should().Be("str");
-				res[0].String3.Should().Be("str");
+				res[0].Id.ShouldBe(1);
+				res[0].Int1.ShouldBe(2);
+				res[0].Int2.ShouldBe(2);
+				res[0].IntN1.ShouldBe(2);
+				res[0].IntN2.ShouldBe(2);
+				res[0].String1.ShouldBe("str");
+				res[0].String2.ShouldBe("str");
+				res[0].String3.ShouldBe("str");
 
-				res[1].Id.Should().Be(2);
-				res[1].Int1.Should().Be(3);
-				res[1].Int2.Should().Be(4);
-				res[1].IntN1.Should().Be(5);
-				res[1].IntN2.Should().Be(6);
-				res[1].String1.Should().Be("str1");
-				res[1].String2.Should().Be("str2");
-				res[1].String3.Should().Be("str3");
+				res[1].Id.ShouldBe(2);
+				res[1].Int1.ShouldBe(3);
+				res[1].Int2.ShouldBe(4);
+				res[1].IntN1.ShouldBe(5);
+				res[1].IntN2.ShouldBe(6);
+				res[1].String1.ShouldBe("str1");
+				res[1].String2.ShouldBe("str2");
+				res[1].String3.ShouldBe("str3");
 			}
 		}
 
@@ -1154,17 +1265,17 @@ namespace Tests.Linq
 					.Set(_ => _.String3, () => str3)
 					.Update();
 
-				var cacheMiss = Query<ParameterDeduplication>.CacheMissCount;
+				var cacheMiss = table.GetCacheMissCount();
 				var sql       = db.LastQuery!;
 
-				sql.Should().Contain("@id");
-				sql.Should().Contain("@int1");
-				sql.Should().Contain("@int2");
-				sql.Should().Contain("@intN1");
-				sql.Should().Contain("@intN2");
-				sql.Should().Contain("@str1");
-				sql.Should().Contain("@str2");
-				sql.Should().Contain("@str3");
+				sql.ShouldContain("@id");
+				sql.ShouldContain("@int1");
+				sql.ShouldContain("@int2");
+				sql.ShouldContain("@intN1");
+				sql.ShouldContain("@intN2");
+				sql.ShouldContain("@str1");
+				sql.ShouldContain("@str2");
+				sql.ShouldContain("@str3");
 
 				id    = 2;
 				int1  = 3;
@@ -1185,40 +1296,40 @@ namespace Tests.Linq
 					.Set(_ => _.String3, () => str3)
 					.Update();
 
-				Query<ParameterDeduplication>.CacheMissCount.Should().Be(cacheMiss);
+				table.GetCacheMissCount().ShouldBe(cacheMiss);
 
 				sql = db.LastQuery!;
 
-				sql.Should().Contain("@id");
-				sql.Should().Contain("@int1");
-				sql.Should().Contain("@int2");
-				sql.Should().Contain("@intN1");
-				sql.Should().Contain("@intN2");
-				sql.Should().Contain("@str1");
-				sql.Should().Contain("@str2");
-				sql.Should().Contain("@str3");
+				sql.ShouldContain("@id");
+				sql.ShouldContain("@int1");
+				sql.ShouldContain("@int2");
+				sql.ShouldContain("@intN1");
+				sql.ShouldContain("@intN2");
+				sql.ShouldContain("@str1");
+				sql.ShouldContain("@str2");
+				sql.ShouldContain("@str3");
 
 				var res = table.OrderBy(_ => _.Id).ToArray();
 
-				res.Should().HaveCount(2);
+				res.Length.ShouldBe(2);
 
-				res[0].Id.Should().Be(1);
-				res[0].Int1.Should().Be(2);
-				res[0].Int2.Should().Be(2);
-				res[0].IntN1.Should().Be(2);
-				res[0].IntN2.Should().Be(2);
-				res[0].String1.Should().Be("str");
-				res[0].String2.Should().Be("str");
-				res[0].String3.Should().Be("str");
+				res[0].Id.ShouldBe(1);
+				res[0].Int1.ShouldBe(2);
+				res[0].Int2.ShouldBe(2);
+				res[0].IntN1.ShouldBe(2);
+				res[0].IntN2.ShouldBe(2);
+				res[0].String1.ShouldBe("str");
+				res[0].String2.ShouldBe("str");
+				res[0].String3.ShouldBe("str");
 
-				res[1].Id.Should().Be(2);
-				res[1].Int1.Should().Be(3);
-				res[1].Int2.Should().Be(4);
-				res[1].IntN1.Should().Be(5);
-				res[1].IntN2.Should().Be(6);
-				res[1].String1.Should().Be("str1");
-				res[1].String2.Should().Be("str2");
-				res[1].String3.Should().Be("str3");
+				res[1].Id.ShouldBe(2);
+				res[1].Int1.ShouldBe(3);
+				res[1].Int2.ShouldBe(4);
+				res[1].IntN1.ShouldBe(5);
+				res[1].IntN2.ShouldBe(6);
+				res[1].String1.ShouldBe("str1");
+				res[1].String2.ShouldBe("str2");
+				res[1].String3.ShouldBe("str3");
 			}
 		}
 
@@ -1229,10 +1340,11 @@ namespace Tests.Linq
 		private int _param;
 
 		[Test(Description = "https://github.com/linq2db/linq2db/issues/3450")]
+		[YdbCteAsSource]
 		public void TestIQueryableParameterEvaluation([DataSources(TestProvName.AllClickHouse)] string context)
 		{
 			// cached queries affect cnt values due to extra comparisons in cache
-			LinqToDB.Linq.Query.ClearCaches();
+			LinqToDB.Internal.Linq.Query.ClearCaches();
 
 			using (var db = GetDataContext(context))
 			{
@@ -1242,11 +1354,14 @@ namespace Tests.Linq
 				_param      = 1;
 				var persons = Query(db);
 
-				Assert.AreEqual(1, persons.Count);
-				Assert.AreEqual(1, persons[0].ID);
-				Assert.AreEqual(1, _cnt1);
-				Assert.AreEqual(1, _cnt2);
-				Assert.AreEqual(1, _cnt3);
+				Assert.That(persons, Has.Count.EqualTo(1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(persons[0].ID, Is.EqualTo(1));
+					Assert.That(_cnt1, Is.EqualTo(1));
+					Assert.That(_cnt2, Is.EqualTo(1));
+					Assert.That(_cnt3, Is.EqualTo(1));
+				}
 
 				_cnt1   = 0;
 				_cnt2   = 0;
@@ -1254,13 +1369,16 @@ namespace Tests.Linq
 				_param  = 2;
 				persons = Query(db);
 
-				Assert.AreEqual(3, persons.Count);
-				Assert.AreEqual(1, persons.Count(_ => _.ID == 1));
-				Assert.AreEqual(1, persons.Count(_ => _.ID == 2));
-				Assert.AreEqual(1, persons.Count(_ => _.ID == 4));
-				Assert.AreEqual(3, _cnt1);
-				Assert.AreEqual(1, _cnt2);
-				Assert.AreEqual(1, _cnt3);
+				Assert.That(persons, Has.Count.EqualTo(3));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(persons.Count(_ => _.ID == 1), Is.EqualTo(1));
+					Assert.That(persons.Count(_ => _.ID == 2), Is.EqualTo(1));
+					Assert.That(persons.Count(_ => _.ID == 4), Is.EqualTo(1));
+					Assert.That(_cnt1, Is.EqualTo(1));
+					Assert.That(_cnt2, Is.EqualTo(1));
+					Assert.That(_cnt3, Is.EqualTo(1));
+				}
 
 				_cnt1   = 0;
 				_cnt2   = 0;
@@ -1268,12 +1386,15 @@ namespace Tests.Linq
 				_param  = 3;
 				persons = Query(db);
 
-				Assert.AreEqual(2, persons.Count);
-				Assert.AreEqual(1, persons.Count(_ => _.ID == 2));
-				Assert.AreEqual(1, persons.Count(_ => _.ID == 3));
-				Assert.AreEqual(5, _cnt1);
-				Assert.AreEqual(3, _cnt2);
-				Assert.AreEqual(1, _cnt3);
+				Assert.That(persons, Has.Count.EqualTo(2));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(persons.Count(_ => _.ID == 2), Is.EqualTo(1));
+					Assert.That(persons.Count(_ => _.ID == 3), Is.EqualTo(1));
+					Assert.That(_cnt1, Is.EqualTo(1));
+					Assert.That(_cnt2, Is.EqualTo(1));
+					Assert.That(_cnt3, Is.EqualTo(1));
+				}
 
 				_cnt1   = 0;
 				_cnt2   = 0;
@@ -1281,11 +1402,14 @@ namespace Tests.Linq
 				_param  = 1;
 				persons = Query(db);
 
-				Assert.AreEqual(1, persons.Count);
-				Assert.AreEqual(1, persons[0].ID);
-				Assert.AreEqual(4, _cnt1);
-				Assert.AreEqual(2, _cnt2);
-				Assert.AreEqual(2, _cnt3);
+				Assert.That(persons, Has.Count.EqualTo(1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(persons[0].ID, Is.EqualTo(1));
+					Assert.That(_cnt1, Is.EqualTo(1));
+					Assert.That(_cnt2, Is.EqualTo(1));
+					Assert.That(_cnt3, Is.EqualTo(1));
+				}
 
 				_cnt1   = 0;
 				_cnt2   = 0;
@@ -1293,12 +1417,15 @@ namespace Tests.Linq
 				_param  = 3;
 				persons = Query(db);
 
-				Assert.AreEqual(2, persons.Count);
-				Assert.AreEqual(1, persons.Count(_ => _.ID == 2));
-				Assert.AreEqual(1, persons.Count(_ => _.ID == 3));
-				Assert.AreEqual(2, _cnt1);
-				Assert.AreEqual(2, _cnt2);
-				Assert.AreEqual(2, _cnt3);
+				Assert.That(persons, Has.Count.EqualTo(2));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(persons.Count(_ => _.ID == 2), Is.EqualTo(1));
+					Assert.That(persons.Count(_ => _.ID == 3), Is.EqualTo(1));
+					Assert.That(_cnt1, Is.EqualTo(1));
+					Assert.That(_cnt2, Is.EqualTo(1));
+					Assert.That(_cnt3, Is.EqualTo(1));
+				}
 
 				_cnt1   = 0;
 				_cnt2   = 0;
@@ -1306,13 +1433,16 @@ namespace Tests.Linq
 				_param  = 2;
 				persons = Query(db);
 
-				Assert.AreEqual(3, persons.Count);
-				Assert.AreEqual(1, persons.Count(_ => _.ID == 1));
-				Assert.AreEqual(1, persons.Count(_ => _.ID == 2));
-				Assert.AreEqual(1, persons.Count(_ => _.ID == 4));
-				Assert.AreEqual(4, _cnt1);
-				Assert.AreEqual(3, _cnt2);
-				Assert.AreEqual(2, _cnt3);
+				Assert.That(persons, Has.Count.EqualTo(3));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(persons.Count(_ => _.ID == 1), Is.EqualTo(1));
+					Assert.That(persons.Count(_ => _.ID == 2), Is.EqualTo(1));
+					Assert.That(persons.Count(_ => _.ID == 4), Is.EqualTo(1));
+					Assert.That(_cnt1, Is.EqualTo(1));
+					Assert.That(_cnt2, Is.EqualTo(1));
+					Assert.That(_cnt3, Is.EqualTo(1));
+				}
 			}
 
 			List<Person> Query(ITestDataContext db)
@@ -1357,6 +1487,7 @@ namespace Tests.Linq
 		}
 
 		[Test(Description = "https://github.com/linq2db/linq2db/issues/3450")]
+		[YdbCteAsSource]
 		public void TestIQueryableParameterEvaluationCaching([DataSources(TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
@@ -1365,40 +1496,40 @@ namespace Tests.Linq
 				_param      = 1;
 				var persons = Query(db);
 
-				Assert.AreEqual(1, persons.Count);
-				Assert.AreEqual(1, persons[0].ID);
+				Assert.That(persons, Has.Count.EqualTo(1));
+				Assert.That(persons[0].ID, Is.EqualTo(1));
 				//Assert.AreEqual(1, _cnt1);
 
 				_cnt1   = 0;
 				_param  = 2;
 				persons = Query(db);
 
-				Assert.AreEqual(1, persons.Count);
-				Assert.AreEqual(2, persons[0].ID);
+				Assert.That(persons, Has.Count.EqualTo(1));
+				Assert.That(persons[0].ID, Is.EqualTo(2));
 				//Assert.AreEqual(1, _cnt1);
 
 				_cnt1   = 0;
 				_param  = 3;
 				persons = Query(db);
 
-				Assert.AreEqual(1, persons.Count);
-				Assert.AreEqual(3, persons[0].ID);
+				Assert.That(persons, Has.Count.EqualTo(1));
+				Assert.That(persons[0].ID, Is.EqualTo(3));
 				//Assert.AreEqual(1, _cnt1);
 
 				_cnt1   = 0;
 				_param  = 4;
 				persons = Query(db);
 
-				Assert.AreEqual(1, persons.Count);
-				Assert.AreEqual(4, persons[0].ID);
+				Assert.That(persons, Has.Count.EqualTo(1));
+				Assert.That(persons[0].ID, Is.EqualTo(4));
 				//Assert.AreEqual(1, _cnt1);
 
 				_cnt1   = 0;
 				_param  = 1;
 				persons = Query(db);
 
-				Assert.AreEqual(1, persons.Count);
-				Assert.AreEqual(1, persons[0].ID);
+				Assert.That(persons, Has.Count.EqualTo(1));
+				Assert.That(persons[0].ID, Is.EqualTo(1));
 				//Assert.AreEqual(1, _cnt1);
 			}
 
@@ -1435,62 +1566,63 @@ namespace Tests.Linq
 			Task.WaitAll(tasks);
 		}
 
-		public void TestRunner(string context, int thread)
+		private void TestRunner(string context, int thread)
 		{
-			using (var db = GetDataContext(context))
-			{
-				_params[thread] = 1;
-				var persons = Query(db, thread);
+			// don't use Assert.Multiple in multi-threading tests
+#pragma warning disable NUnit2045 // Use Assert.Multiple
+			using var db = GetDataContext(context);
+			_params[thread] = 1;
+			var persons = Query(db, thread);
 
-				Assert.AreEqual(1, persons.Count);
-				Assert.AreEqual(1, persons[0].ID);
+			Assert.That(persons, Has.Count.EqualTo(1));
+			Assert.That(persons[0].ID, Is.EqualTo(1));
 
-				_params[thread] = 2;
-				persons = Query(db, thread);
+			_params[thread] = 2;
+			persons = Query(db, thread);
 
-				Assert.AreEqual(3, persons.Count);
-				Assert.AreEqual(1, persons.Count(_ => _.ID == 1));
-				Assert.AreEqual(1, persons.Count(_ => _.ID == 2));
-				Assert.AreEqual(1, persons.Count(_ => _.ID == 4));
+			Assert.That(persons, Has.Count.EqualTo(3));
+			Assert.That(persons.Count(_ => _.ID == 1), Is.EqualTo(1));
+			Assert.That(persons.Count(_ => _.ID == 2), Is.EqualTo(1));
+			Assert.That(persons.Count(_ => _.ID == 4), Is.EqualTo(1));
 
-				_params[thread] = 3;
-				persons = Query(db, thread);
+			_params[thread] = 3;
+			persons = Query(db, thread);
 
-				Assert.AreEqual(2, persons.Count);
-				Assert.AreEqual(1, persons.Count(_ => _.ID == 2));
-				Assert.AreEqual(1, persons.Count(_ => _.ID == 3));
+			Assert.That(persons, Has.Count.EqualTo(2));
+			Assert.That(persons.Count(_ => _.ID == 2), Is.EqualTo(1));
+			Assert.That(persons.Count(_ => _.ID == 3), Is.EqualTo(1));
 
-				_params[thread] = 1;
-				persons = Query(db, thread);
+			_params[thread] = 1;
+			persons = Query(db, thread);
 
-				Assert.AreEqual(1, persons.Count);
-				Assert.AreEqual(1, persons[0].ID);
+			Assert.That(persons, Has.Count.EqualTo(1));
+			Assert.That(persons[0].ID, Is.EqualTo(1));
 
-				_params[thread] = 3;
-				persons = Query(db, thread);
+			_params[thread] = 3;
+			persons = Query(db, thread);
 
-				Assert.AreEqual(2, persons.Count);
-				Assert.AreEqual(1, persons.Count(_ => _.ID == 2));
-				Assert.AreEqual(1, persons.Count(_ => _.ID == 3));
+			Assert.That(persons, Has.Count.EqualTo(2));
+			Assert.That(persons.Count(_ => _.ID == 2), Is.EqualTo(1));
+			Assert.That(persons.Count(_ => _.ID == 3), Is.EqualTo(1));
 
-				_params[thread] = 2;
-				persons = Query(db, thread);
+			_params[thread] = 2;
+			persons = Query(db, thread);
 
-				Assert.AreEqual(3, persons.Count);
-				Assert.AreEqual(1, persons.Count(_ => _.ID == 1));
-				Assert.AreEqual(1, persons.Count(_ => _.ID == 2));
-				Assert.AreEqual(1, persons.Count(_ => _.ID == 4));
-			}
+			Assert.That(persons, Has.Count.EqualTo(3));
+			Assert.That(persons.Count(_ => _.ID == 1), Is.EqualTo(1));
+			Assert.That(persons.Count(_ => _.ID == 2), Is.EqualTo(1));
+			Assert.That(persons.Count(_ => _.ID == 4), Is.EqualTo(1));
 
 			List<Person> Query(ITestDataContext db, int thread)
 			{
 				return db.Person
-					.Where(_ => 
+					.Where(_ =>
 					 GetQueryT1(db, thread).Select(p => p.ID).Contains(_.ID) &&
 					(GetQueryT2(db, thread).Select(p => p.ID).Contains(_.ID) ||
 					 GetQueryT3(db, thread).Select(p => p.ID).Contains(_.ID)))
 					.ToList();
 			}
+#pragma warning restore NUnit2045 // Use Assert.Multiple
 		}
 
 		private IQueryable<Person> GetQueryT1(ITestDataContext db, int thread)
@@ -1532,17 +1664,23 @@ namespace Tests.Linq
 				_param      = 1;
 				var persons = Query(db);
 
-				Assert.AreEqual(3, persons.Count);
-				Assert.True(persons.All(p => p.ID != _param));
-				Assert.AreEqual(1, _cnt);
+				Assert.That(persons, Has.Count.EqualTo(3));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(persons.All(p => p.ID != _param), Is.True);
+					Assert.That(_cnt, Is.EqualTo(1));
+				}
 
 				_cnt    = 0;
 				_param  = 2;
 				persons = Query(db);
 
-				Assert.AreEqual(3, persons.Count);
-				Assert.True(persons.All(p => p.ID != _param));
-				Assert.AreEqual(1, _cnt);
+				Assert.That(persons, Has.Count.EqualTo(3));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(persons.All(p => p.ID != _param), Is.True);
+					Assert.That(_cnt, Is.EqualTo(1));
+				}
 			}
 
 			List<Person> Query(ITestDataContext db)
@@ -1573,26 +1711,57 @@ namespace Tests.Linq
 						  select c).ToList();
 		}
 
-		[Table]
-		public sealed class Issue4371Table
+		int GetId(int id, int increment)
 		{
-#if NET6_0_OR_GREATER
-			[Column(DataType = DataType.VarChar)] public DateOnly?       ColumnDO  { get; set; }
-#endif
-			[Column(DataType = DataType.VarChar)] public DateTime?       ColumnDT  { get; set; }
-			[Column(DataType = DataType.VarChar)] public DateTimeOffset? ColumnDTO { get; set; }
-			[Column(DataType = DataType.VarChar)] public TimeSpan?       ColumnTS  { get; set; }
+			return id + increment;
 		}
 
-#if NET6_0_OR_GREATER
+		/// <summary>
+		/// Tests that we do not have cache hit for similar parameters
+		/// </summary>
+		/// <param name="context"></param>
+		[Test]
+		public void Caching([DataSources] string context)
+		{
+			using var db = GetDataContext(context);
+			var id = 1;
+
+			var query1  = db.Parent.Where(x => x.ParentID == GetId(id, 0) || x.ParentID == GetId(id, 0));
+			AssertQuery(query1);
+
+			// check only one parameter generated
+			if(!context.IsAnyOf(TestProvName.AllClickHouse))
+				Assert.That(query1.ToSqlQuery().Parameters, Has.Count.EqualTo(1));
+
+			id = 2;
+
+			var query2  = db.Parent.Where(x => x.ParentID == GetId(id, 1) || x.ParentID == GetId(id, 0));
+			AssertQuery(query2);
+
+			id = 1;
+			query1  = db.Parent.Where(x => x.ParentID == GetId(id, 0) || x.ParentID == GetId(id, 0));
+			AssertQuery(query1);
+
+			// check only one parameter generated (1+2+1=4)
+			if (!context.IsAnyOf(TestProvName.AllClickHouse))
+				Assert.That(query1.ToSqlQuery().Parameters, Has.Count.EqualTo(2));
+		}
+
+#if SUPPORTS_DATEONLY
+		[Table]
+		public sealed class Issue4371Table2
+		{
+			[Column(DataType = DataType.VarChar)] public DateOnly?       ColumnDO  { get; set; }
+		}
+
 		[Test]
 		public void Issue4371TestDateOnly([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
 		{
 			using var db = GetDataContext(context);
-			using var tb = db.CreateLocalTable<Issue4371Table>();
+			using var tb = db.CreateLocalTable<Issue4371Table2>();
 
 			var dt = TestData.DateOnly;
-			db.Insert(new Issue4371Table() { ColumnDO = dt });
+			db.Insert(new Issue4371Table2() { ColumnDO = dt });
 
 			using var _ = new CultureRegion("fa-IR");
 			Assert.That(tb.Where(r => r.ColumnDO == dt).Count(), Is.EqualTo(1));
@@ -1602,15 +1771,23 @@ namespace Tests.Linq
 		public void Issue4371TestDateOnlyCrash([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
 		{
 			using var db = GetDataContext(context);
-			using var tb = db.CreateLocalTable<Issue4371Table>();
+			using var tb = db.CreateLocalTable<Issue4371Table2>();
 
 			var dt = DateOnly.FromDateTime(new DateTime(50284592391540000));
-			db.Insert(new Issue4371Table() { ColumnDO = dt });
+			db.Insert(new Issue4371Table2() { ColumnDO = dt });
 
 			using var _ = new CultureRegion("fa-IR");
 			Assert.That(tb.Where(r => r.ColumnDO == dt).Count(), Is.EqualTo(1));
 		}
 #endif
+
+		[Table]
+		public sealed class Issue4371Table
+		{
+			[Column(DataType = DataType.VarChar)] public DateTime?       ColumnDT  { get; set; }
+			[Column(DataType = DataType.VarChar)] public DateTimeOffset? ColumnDTO { get; set; }
+			[Column(DataType = DataType.VarChar)] public TimeSpan?       ColumnTS  { get; set; }
+		}
 
 		[Test]
 		public void Issue4371TestDateTimeOffset([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
@@ -1683,6 +1860,179 @@ namespace Tests.Linq
 			{
 				return db.Person.Where(p => p.FirstName == Parameter).SingleOrDefault();
 			}
+		}
+
+		sealed class TestBool
+		{
+			[PrimaryKey] public int Id { get; set; }
+			[Column(Configuration = ProviderName.Sybase, CanBeNull = false)]
+			public bool? Value { get; set; }
+		}
+
+		[Test]
+		public void Issue_BooleanNullPreserved([DataSources] string context, [Values] bool inline, [Values] bool? value)
+		{
+			if (value == null && context.IsAnyOf(TestProvName.AllAccess, TestProvName.AllSybase))
+				Assert.Ignore("Database doesn't support NULL as boolean");
+
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable<TestBool>();
+
+			db.InlineParameters = inline;
+
+			// test parameter
+			tb.Insert(() => new TestBool()
+			{
+				Id = 1,
+				Value = !value
+			});
+
+			var record = tb.Single();
+
+			Assert.That(record.Value, Is.EqualTo(!value));
+
+			// test field
+			tb.Update(r => new TestBool()
+			{
+				Value = !r.Value
+			});
+
+			record = tb.Single();
+
+			Assert.That(record.Value, Is.EqualTo(value));
+
+			// disabled temporary due to
+			// https://github.com/ClickHouse/ClickHouse/issues/73934
+			if (!context.IsAnyOf(TestProvName.AllClickHouse))
+			{
+				// test parameter in update
+				tb.Update(r => new TestBool()
+				{
+					Id = 1,
+					Value = !value
+				});
+
+				record = tb.Single();
+
+				Assert.That(record.Value, Is.EqualTo(!value));
+			}
+		}
+
+		[ActiveIssue]
+		[Test]
+		public void Issue_NRE_InAccessor([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		{
+			using var db = GetDataContext(context);
+
+			Assert.That(db.Select(() => Sql.AsSql(Sql.PadLeft(null, 1, '.'))), Is.Null);
+		}
+
+		sealed class IssueDedup
+		{
+			public int Id { get; set; }
+			public bool? Value1 { get; set; }
+			public bool? Value2 { get; set; }
+			public bool? Value3 { get; set; }
+			public bool? Value4 { get; set; }
+			public bool? Value5 { get; set; }
+		}
+
+		[Test]
+		public void DedupOfParameters([IncludeDataSources(true, TestProvName.AllSQLite)] string context, [Values(1, 2)] int iteration)
+		{
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable([new IssueDedup()]);
+
+			Test(new Wrap<bool>(true), new Wrap<bool>(false), new Wrap<bool>(true), new Wrap<bool>(false), new Wrap<bool>(false));
+			Test(new Wrap<bool>(true), new Wrap<bool>(false), new Wrap<bool>(false), new Wrap<bool>(true), new Wrap<bool>(false));
+			Test(new Wrap<bool>(false), new Wrap<bool>(true), new Wrap<bool>(false), new Wrap<bool>(true), new Wrap<bool>(false));
+			Test(new Wrap<bool>(true), new Wrap<bool>(true), new Wrap<bool>(false), new Wrap<bool>(true), new Wrap<bool>(true));
+
+			void Test(Wrap<bool> f1, Wrap<bool> f2, Wrap<bool> f3, Wrap<bool> f4, Wrap<bool> f5)
+			{
+				var cacheMissCount = tb.GetCacheMissCount();
+
+				tb
+					.Set(r => r.Value1, r => f1.Value)
+					.Set(r => r.Value2, r => f2.Value)
+					.Set(r => r.Value3, r => f3.Value)
+					.Set(r => r.Value4, r => f4.Value)
+					.Set(r => r.Value5, r => f5.Value)
+					.Update();
+
+				if (iteration > 1)
+				{
+					Assert.That(tb.GetCacheMissCount(), Is.EqualTo(cacheMissCount));
+				}
+
+				var record = tb.Single();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(record.Value1, Is.EqualTo(f1.Value));
+					Assert.That(record.Value2, Is.EqualTo(f2.Value));
+					Assert.That(record.Value3, Is.EqualTo(f3.Value));
+					Assert.That(record.Value4, Is.EqualTo(f4.Value));
+					Assert.That(record.Value5, Is.EqualTo(f5.Value));
+				}
+			}
+		}
+
+		readonly struct Wrap<TValue>
+		{
+			public Wrap(TValue? value)
+			{
+				Value = value;
+			}
+
+			public TValue? Value { get; }
+		}
+
+		[Test]
+		public void LambdaParameterTest([DataSources] string context)
+		{
+			using var db = GetDataContext(context);
+
+			var valueGetter = () => 1;
+
+			AssertQuery(db.Parent.Where(r => r.ParentID == valueGetter()));
+		}
+
+		[Test]
+		public void LambdaBodyInQuery([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		{
+			using var db = GetDataContext(context);
+
+			Expression<Func<Parent, int>> valueGetter = p => p.ParentID;
+
+			var query = db.Parent
+				.Select(p => (valueGetter.Body as MemberExpression)!.Member.Name);
+
+			AssertQuery(query);
+		}
+
+		sealed class Issue4963Table
+		{
+			[PrimaryKey] public int Id { get; set; }
+			public byte Field { get; set; }
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4963")]
+		public void Issue4963([DataSources] string context, [Values] bool inline)
+		{
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable(new[] { new Issue4963Table() { Id = 1, Field = 2 } });
+
+			db.InlineParameters = inline;
+			var offset = -1;
+
+			tb.Update(r => new Issue4963Table()
+			{
+				Field = (byte)(r.Field + offset)
+			});
+
+			var record = tb.Single();
+
+			Assert.That(record.Field, Is.EqualTo(1));
 		}
 	}
 }

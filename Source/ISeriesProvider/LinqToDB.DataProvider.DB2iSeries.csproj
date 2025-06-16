@@ -1,25 +1,20 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-	<Import Project="..\..\Build\linq2db.Source.props" />
-
+	
 	<PropertyGroup>
 		<PackageId>linq2db4iSeries</PackageId>
 	</PropertyGroup>
 	
-	<PropertyGroup>
-		<Nullable>disable</Nullable>
-	</PropertyGroup>
-	
-	<ItemGroup Condition=" '$(TargetFramework)' == 'net45' OR '$(TargetFramework)' == 'net472' ">
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net462' ">
 		<Reference Include="System.Data.Linq" />
 		<Reference Include="System.Data.DataSetExtensions" />
 	</ItemGroup>
 	
-	<ItemGroup Condition=" '$(TargetFramework)' != 'net45' AND '$(TargetFramework)' != 'net472' ">
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net462' ">
 		<Compile Remove="DB2iSeriesAccessClientProviderAdapter.cs" />
 		<Compile Remove="DB2iSeriesBulkCopy.AccessClient.cs" />
 	</ItemGroup>
 
-	<ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'net472' ">
+	<ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'net462' ">
 		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
 	</ItemGroup>
 

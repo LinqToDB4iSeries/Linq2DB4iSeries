@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-using FluentAssertions;
+
 using LinqToDB;
+using LinqToDB.Internal.SqlQuery;
 using LinqToDB.Mapping;
-using LinqToDB.SqlQuery;
+
 using NUnit.Framework;
+
+using Shouldly;
 
 namespace Tests.UserTests
 {
@@ -68,7 +70,6 @@ namespace Tests.UserTests
 
 			public List<DIALOG_CATEGORY> Categories { get; set; } = null!;
 		}
-
 
 		private static EntityMappingBuilder<T> MapDataObject<T>(FluentMappingBuilder builder, string tableName)
 			where T : GuidDataObject
@@ -134,7 +135,7 @@ namespace Tests.UserTests
 				var selectQuery = query.GetSelectQuery();
 
 				selectQuery.Select.Columns.Any(c =>
-					(c.Expression is SqlField field) && field.Name == "TelegramBotName").Should().BeTrue();
+					(c.Expression is SqlField field) && field.Name == "TelegramBotName").ShouldBeTrue();
 			}
 		}
 	}

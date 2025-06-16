@@ -1,7 +1,7 @@
-﻿namespace LinqToDB.DataProvider.DB2iSeries
-{
-	using SqlProvider;
+﻿using LinqToDB.Internal.SqlProvider;
 
+namespace LinqToDB.DataProvider.DB2iSeries
+{
 	internal class DB2iSeriesSqlProviderFlags
 	{
 		public DB2iSeriesSqlProviderFlags(
@@ -39,22 +39,14 @@
 		}
 
 		public DB2iSeriesSqlProviderFlags(DB2iSeriesProviderOptions options)
-			: this(
-				 options.SupportsOffsetClause,
-				 options.SupportsTruncateTable,
-				 supportsNamedParameters: options.ProviderType.IsIBM(),
-				 supportsMergeStatement: options.SupportsMergeStatement,
-				 supportsNCharTypes: options.SupportsNCharTypes,
-				 supportsDropTableIfExists: options.SupportsDropIfExists,
-				 supportsArbitraryTimeStampPrecision: options.SupportsArbitraryTimeStampPrecision,
-				 suppotsTrimCharacters: options.SupportsTrimCharacters)
+			: this(options.ProviderType, options.Version)
 		{
 
 		}
 
 		public DB2iSeriesSqlProviderFlags(
-			DB2iSeriesVersion version,
-			DB2iSeriesProviderType providerType)
+			DB2iSeriesProviderType providerType,
+			DB2iSeriesVersion version)
 			: this(
 				 supportsOffsetClause: version >= DB2iSeriesVersion.V7_3,
 				 supportsTruncateTable: version >= DB2iSeriesVersion.V7_2 && !providerType.IsOdbc(),

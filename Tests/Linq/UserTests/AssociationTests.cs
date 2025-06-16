@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 
 using LinqToDB;
 using LinqToDB.Mapping;
@@ -21,7 +20,7 @@ namespace Tests.UserTests
 		[Table]
 		class DisTable
 		{
-			[Column, NotNull] public DisTypeCode DisTypeID { get; set; }
+			[Column, PrimaryKey, NotNull] public DisTypeCode DisTypeID { get; set; }
 
 			[Association(ThisKey = nameof(DisTypeID), OtherKey = nameof(DisTypeTable .DisTypeID), CanBeNull = false)]
 			public DisTypeTable DisType { get; set; } = null!;

@@ -1,10 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using FluentAssertions;
+
 using LinqToDB;
 using LinqToDB.Mapping;
-using LinqToDB.Tools;
+
 using NUnit.Framework;
+
+using Shouldly;
 
 namespace Tests.UserTests
 {
@@ -66,9 +68,14 @@ namespace Tests.UserTests
 		[Test]
 		public void TestColumnsOptimization([IncludeDataSources(TestProvName.AllSqlServer2008Plus)] string context)
 		{
-			using (var db = GetDataContext(context))
-			{
-				var query = db.GetTable<Properties>()
+			using var db = GetDataContext(context);
+			using var t1 = db.CreateLocalTable<Properties>();
+			using var t2 = db.CreateLocalTable<CaseLog>();
+			using var t3 = db.CreateLocalTable<CaseLogProperty>();
+			using var t4 = db.CreateLocalTable<Incident>();
+			using var t5 = db.CreateLocalTable<IncidentProperty>();
+
+			var query = db.GetTable<Properties>()
 					.Where(x => x.Id.In(1, 2))
 					.Select(x => new
 					{
@@ -76,10 +83,9 @@ namespace Tests.UserTests
 						IncidentNumber = x.IncidentProperties.FirstOrDefault()!.Incident.EventNumber
 					});
 
-				TestContext.WriteLine(query.ToString());
+			query.GetSelectQuery().Select.Columns.Count.ShouldBe(2);
 
-				query.GetSelectQuery().Select.Columns.Should().HaveCount(4);
-			}
+			query.ToArray();
 		}
 
 		[Table]
@@ -113,9 +119,12 @@ namespace Tests.UserTests
 		[Test]
 		public void TestColumnsOptimization3487([IncludeDataSources(TestProvName.AllSqlServer2008Plus)] string context)
 		{
-			using (var db = GetDataContext(context))
-			{
-				var query = db.GetTable<Root>()
+			using var db = GetDataContext(context);
+			using var t1 = db.CreateLocalTable<Root>();
+			using var t2 = db.CreateLocalTable<Draft1>();
+			using var t3 = db.CreateLocalTable<Draft2>();
+
+			var query = db.GetTable<Root>()
 					.Select(x => new
 					{
 						NarrativeDraft = x.SomeDrafts
@@ -134,10 +143,8 @@ namespace Tests.UserTests
 							.FirstOrDefault()
 					});
 
-				TestContext.WriteLine(query.ToString());
-
-				query.GetSelectQuery().Select.Columns.Should().HaveCount(6);
-			}
+			query.GetSelectQuery().Select.Columns.Count.ShouldBe(6);
+			query.ToArray();
 		}
 	}
 }

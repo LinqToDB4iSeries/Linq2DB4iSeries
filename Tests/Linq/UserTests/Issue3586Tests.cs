@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Linq;
+
 using LinqToDB;
 using LinqToDB.Data;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -92,7 +94,6 @@ namespace Tests.UserTests
 			[Column] public Guid ResourcePointID { get; set; }
 		}
 
-		[ActiveIssue("Reservations field causes error")]
 		[Test]
 		public void ComplexWhereWithAny([IncludeDataSources(TestProvName.AllSQLite)] string context)
 		{

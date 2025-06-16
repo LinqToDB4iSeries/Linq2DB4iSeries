@@ -5,9 +5,11 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
-using LinqToDB;
+
 using LinqToDB.Common;
-using LinqToDB.Expressions;
+using LinqToDB.Internal.Expressions;
+using LinqToDB.Internal.Expressions.Types;
+
 using NUnit.Framework;
 
 namespace Tests.TypeMapping
@@ -55,13 +57,19 @@ namespace Tests.TypeMapping
 
 				if (withHandlers)
 				{
-					Assert.AreEqual("event1", strResult);
-					Assert.AreEqual(this, thisResult);
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(strResult, Is.EqualTo("event1"));
+						Assert.That(thisResult, Is.EqualTo(this));
+					}
 				}
 				else
 				{
-					Assert.IsNull(strResult);
-					Assert.IsNull(thisResult);
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(strResult, Is.Null);
+						Assert.That(thisResult, Is.Null);
+					}
 				}
 			}
 
@@ -175,7 +183,7 @@ namespace Tests.TypeMapping
 				return expression.Type == typeof(string);
 			}
 
-			Expression ICustomMapper.Map(Expression expression)
+			Expression ICustomMapper.Map(TypeMapper mapper, Expression expression)
 			{
 				return Expression.Property(expression, "Length");
 			}
@@ -187,48 +195,45 @@ namespace Tests.TypeMapping
 				= new object[]
 			{
 				// [0]: get Id
-				(Expression<Func<SampleClass, int>>)((SampleClass this_) => this_.Id),
+				(Expression<Func<SampleClass, int>>)(this_ => this_.Id),
 				// [1]: get Value
-				(Expression<Func<SampleClass, int>>)((SampleClass this_) => this_.Value),
+				(Expression<Func<SampleClass, int>>)(this_ => this_.Value),
 				// [2]: GetOtherAnother
-				(Expression<Func<SampleClass, int, OtherClass>>)((SampleClass this_, int idx) => this_.GetOtherAnother(idx)),
+				(Expression<Func<SampleClass, int, OtherClass>>)((this_, idx) => this_.GetOtherAnother(idx)),
 				// [3]: SomeAction
-				(Expression<Action<SampleClass>>)((SampleClass this_) => this_.SomeAction()),
+				(Expression<Action<SampleClass>>)(this_ => this_.SomeAction()),
 				// [4]: GetRegularEnum1
-				(Expression<Func<SampleClass, int, RegularEnum1>>)((SampleClass this_, int raw) => this_.GetRegularEnum1(raw)),
+				(Expression<Func<SampleClass, int, RegularEnum1>>)((this_, raw) => this_.GetRegularEnum1(raw)),
 				// [5]: GetFlagsEnum
-				(Expression<Func<SampleClass, int, FlagsEnum>>)((SampleClass this_, int raw) => this_.GetFlagsEnum(raw)),
+				(Expression<Func<SampleClass, int, FlagsEnum>>)((this_, raw) => this_.GetFlagsEnum(raw)),
 				// [6]: SetRegularEnum1
-				(Expression<Func<SampleClass, RegularEnum1, int>>)((SampleClass this_, RegularEnum1 val) => this_.SetRegularEnum1(val)),
+				(Expression<Func<SampleClass, RegularEnum1, int>>)((this_, val) => this_.SetRegularEnum1(val)),
 				// [7]: SetFlagsEnum
-				(Expression<Func<SampleClass, FlagsEnum, int>>)((SampleClass this_, FlagsEnum val) => this_.SetFlagsEnum(val)),
+				(Expression<Func<SampleClass, FlagsEnum, int>>)((this_, val) => this_.SetFlagsEnum(val)),
 				// [8]: get RegularEnum1Property
-				(Expression<Func<SampleClass, RegularEnum1>>)((SampleClass this_) => this_.RegularEnum1Property),
+				(Expression<Func<SampleClass, RegularEnum1>>)(this_ => this_.RegularEnum1Property),
 				// [9]: get FlagsEnumProperty
-				(Expression<Func<SampleClass, FlagsEnum>>)((SampleClass this_) => this_.FlagsEnumProperty),
+				(Expression<Func<SampleClass, FlagsEnum>>)(this_ => this_.FlagsEnumProperty),
 				// [10]: Fire
-				(Expression<Action<SampleClass, bool>>)((SampleClass this_,bool withHandlers) => this_.Fire(withHandlers)),
+				(Expression<Action<SampleClass, bool>>)((this_,withHandlers) => this_.Fire(withHandlers)),
 				// [11]: set RegularEnum1Property
 				PropertySetter((SampleClass this_) => this_.RegularEnum1Property),
 				// [12]: set FlagsEnumProperty
 				PropertySetter((SampleClass this_) => this_.FlagsEnumProperty),
 				// [13]: GetRegularEnum2
-				(Expression<Func<SampleClass, int, RegularEnum2>>)((SampleClass this_, int raw) => this_.GetRegularEnum2(raw)),
+				(Expression<Func<SampleClass, int, RegularEnum2>>)((this_, raw) => this_.GetRegularEnum2(raw)),
 				// [14]: SetRegularEnum2
-				(Expression<Func<SampleClass, RegularEnum2, int>>)((SampleClass this_, RegularEnum2 val) => this_.SetRegularEnum2(val)),
+				(Expression<Func<SampleClass, RegularEnum2, int>>)((this_, val) => this_.SetRegularEnum2(val)),
 				// [15]: get RegularEnum2Property
-				(Expression<Func<SampleClass, RegularEnum2>>)((SampleClass this_) => this_.RegularEnum2Property),
+				(Expression<Func<SampleClass, RegularEnum2>>)(this_ => this_.RegularEnum2Property),
 				// [16]: set RegularEnum2Property
 				PropertySetter((SampleClass this_) => this_.RegularEnum2Property),
 				// [17]: set MethodWithRemappedName
-				new Tuple<LambdaExpression, bool>
-					((Expression<Func<SampleClass, string, string>>     )((SampleClass this_, string value) => this_.MethodWithRemappedName2(value)), true),
+				new Tuple<LambdaExpression, bool>((Expression<Func<SampleClass, string, string>>)((this_, value) => this_.MethodWithRemappedName2(value)), true),
 				// [18]: set MethodWithWrongReturnType
-				new Tuple<LambdaExpression, bool>
-					((Expression<Func<SampleClass, string, string>>     )((SampleClass this_, string value) => this_.MethodWithWrongReturnType(value)), true),
+				new Tuple<LambdaExpression, bool>((Expression<Func<SampleClass, string, string>>)((this_, value) => this_.MethodWithWrongReturnType(value)), true),
 				// [19]: set ReturnTypeMapper
-				new Tuple<LambdaExpression, bool>
-					((Expression<Func<SampleClass, string, int>>        )((SampleClass this_, string value) => this_.ReturnTypeMapper(value)), true),
+				new Tuple<LambdaExpression, bool>((Expression<Func<SampleClass, string, int>>)((this_, value) => this_.ReturnTypeMapper(value)), true),
 			};
 
 			private static string[] Events { get; }
@@ -335,7 +340,7 @@ namespace Tests.TypeMapping
 				= new LambdaExpression[]
 			{
 				// [0]: get OtherStrProp
-				(Expression<Func<OtherClass, string>>)((OtherClass this_) => this_.OtherStrProp),
+				(Expression<Func<OtherClass, string>>)(this_ => this_.OtherStrProp),
 			};
 
 			public string OtherStrProp => ((Func<OtherClass, string>)CompiledWrappers[0])(this);
@@ -351,7 +356,7 @@ namespace Tests.TypeMapping
 				= new LambdaExpression[]
 			{
 				// [0]: Add
-				(Expression<Func<CollectionSample, SampleClass, SampleClass>>)((CollectionSample this_, SampleClass item) => this_.Add(item)),
+				(Expression<Func<CollectionSample, SampleClass, SampleClass>>)((this_, item) => this_.Add(item)),
 			};
 
 			public CollectionSample()
@@ -380,9 +385,9 @@ namespace Tests.TypeMapping
 				= new LambdaExpression[]
 			{
 				// [0]: GetEnumerator
-				(Expression<Func<SqlErrorCollection, IEnumerator>>)((SqlErrorCollection this_) => this_.GetEnumerator()),
+				(Expression<Func<SqlErrorCollection, IEnumerator>>)(this_ => this_.GetEnumerator()),
 				// [1]: SqlError wrapper
-				(Expression<Func<object, SqlError>>)((object error) => (SqlError)error),
+				(Expression<Func<object, SqlError>>)(error => (SqlError)error),
 			};
 
 			public SqlErrorCollection()
@@ -472,16 +477,17 @@ namespace Tests.TypeMapping
 				var l3 = typeMapper.MapLambda((SampleClass s, int i) => s.GetOther(i));
 				var l4 = typeMapper.MapLambda((SampleClass s, int i) => s.GetOther(i).OtherStrProp);
 
-
 				var cl1 = (Func<Dynamic.SampleClass, int>)l1.CompileExpression();
 				var cl2 = (Func<Dynamic.SampleClass, int>)l2.CompileExpression();
 				var cl3 = (Func<Dynamic.SampleClass, int, Dynamic.OtherClass>)l3.CompileExpression();
 				var cl4 = (Func<Dynamic.SampleClass, int, string>)l4.CompileExpression();
-
-				Assert.That(cl1(concrete), Is.EqualTo(33));
-				Assert.That(cl2(concrete), Is.EqualTo(1));
-				Assert.That(cl3(concrete, 11).OtherStrProp, Is.EqualTo("OtherStrValue11"));
-				Assert.That(cl4(concrete, 22), Is.EqualTo("OtherStrValue22"));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(cl1(concrete), Is.EqualTo(33));
+					Assert.That(cl2(concrete), Is.EqualTo(1));
+					Assert.That(cl3(concrete, 11).OtherStrProp, Is.EqualTo("OtherStrValue11"));
+					Assert.That(cl4(concrete, 22), Is.EqualTo("OtherStrValue22"));
+				}
 
 				var dynamicInstance = (object)concrete;
 
@@ -501,9 +507,11 @@ namespace Tests.TypeMapping
 				var newExpression = typeMapper.MapExpression(() => new SampleClass(55, 77));
 				var newLambda     = Expression.Lambda<Func<Dynamic.SampleClass>>(newExpression);
 				var instance      = newLambda.CompileExpression()();
-
-				Assert.That(instance.Id   , Is.EqualTo(55));
-				Assert.That(instance.Value, Is.EqualTo(77));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(instance.Id, Is.EqualTo(55));
+					Assert.That(instance.Value, Is.EqualTo(77));
+				}
 			}
 
 			[Test]
@@ -515,10 +523,12 @@ namespace Tests.TypeMapping
 				var memberInitLambda = Expression.Lambda<Func<Dynamic.SampleClass>>(newMemberInit);
 
 				var instance = memberInitLambda.CompileExpression()();
-
-				Assert.That(instance.Id      , Is.EqualTo(55));
-				Assert.That(instance.Value   , Is.EqualTo(77));
-				Assert.That(instance.StrValue, Is.EqualTo("Str"));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(instance.Id, Is.EqualTo(55));
+					Assert.That(instance.Value, Is.EqualTo(77));
+					Assert.That(instance.StrValue, Is.EqualTo("Str"));
+				}
 			}
 
 			[Test]
@@ -530,14 +540,16 @@ namespace Tests.TypeMapping
 				var pToken    = Expression.Parameter(typeof(CancellationToken));
 
 				var asyncCall = Expression.Lambda<Func<Dynamic.ISampleClass, CancellationToken, Task<SampleClass>>>(
-					typeMapper.MapExpression((Dynamic.ISampleClass instance, CancellationToken cancellationToken) => typeMapper.WrapTask<SampleClass>(((SampleClass)(object)instance).GetSelfAsync(cancellationToken), typeof(Dynamic.SampleClass), cancellationToken), pInstance, pToken),
+					typeMapper.MapExpression((Dynamic.ISampleClass instance, CancellationToken cancellationToken) => typeMapper.WrapTask<SampleClass>(((SampleClass)(object)instance).GetSelfAsync(cancellationToken)), pInstance, pToken),
 					pInstance, pToken);
 
 				var instance = await asyncCall.CompileExpression()(new Dynamic.SampleClass(55, 77) {StrValue = "Str"}, default);
-
-				Assert.That(instance.Id      , Is.EqualTo(55));
-				Assert.That(instance.Value   , Is.EqualTo(77));
-				Assert.That(instance.StrValue, Is.Null);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(instance.Id, Is.EqualTo(55));
+					Assert.That(instance.Value, Is.EqualTo(77));
+					Assert.That(instance.StrValue, Is.Null);
+				}
 			}
 
 			[Test]
@@ -549,10 +561,12 @@ namespace Tests.TypeMapping
 				var func          = typeMapper.BuildFunc<byte, object>(newMemberInit);
 				
 				var instance = (Dynamic.SampleClass)func(1);
-
-				Assert.That(instance.Id      , Is.EqualTo(56));
-				Assert.That(instance.Value   , Is.EqualTo(78));
-				Assert.That(instance.StrValue, Is.EqualTo("Str"));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(instance.Id, Is.EqualTo(56));
+					Assert.That(instance.Value, Is.EqualTo(78));
+					Assert.That(instance.StrValue, Is.EqualTo("Str"));
+				}
 			}
 
 			[Test]
@@ -575,9 +589,11 @@ namespace Tests.TypeMapping
 				var obj        = typeMapper.BuildWrappedFactory(() => new SampleClass(1, 2))();
 
 				var same = collection.Add(obj);
-
-				Assert.That(same.Id   , Is.EqualTo(1));
-				Assert.That(same.Value, Is.EqualTo(2));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(same.Id, Is.EqualTo(1));
+					Assert.That(same.Value, Is.EqualTo(2));
+				}
 			}
 
 			[Test]
@@ -598,10 +614,11 @@ namespace Tests.TypeMapping
 				wrapper.ReturningDelegateEvent                 += handler3;
 				wrapper.ReturningDelegateWithMappingEvent      += handler4;
 				wrapper.Fire(true);
-
-				Assert.AreEqual("param1", strValue1);
-				Assert.AreEqual(5, ((Dynamic.SampleClass)thisValue1!.instance_).Id);
-
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(strValue1, Is.EqualTo("param1"));
+					Assert.That(((Dynamic.SampleClass)thisValue1!.instance_).Id, Is.EqualTo(5));
+				}
 
 				wrapper.SimpleDelegateEvent                    -= handler1;
 				wrapper.SimpleDelegateWithMappingEvent         -= handler2;
@@ -632,48 +649,58 @@ namespace Tests.TypeMapping
 				var typeMapper = CreateTypeMapper();
 
 				var wrapper  = typeMapper.BuildWrappedFactory(() => new SampleClass(1, 2))();
+				using (Assert.EnterMultipleScope())
+				{
+					// test in methods
+					//
+					// non-flags enum mapping
+					Assert.That(wrapper.GetRegularEnum1(1), Is.EqualTo(RegularEnum1.One));
+					Assert.That(wrapper.GetRegularEnum1(2), Is.EqualTo(RegularEnum1.Two));
+					Assert.That(wrapper.GetRegularEnum1(3), Is.EqualTo(RegularEnum1.Three));
+					Assert.That(wrapper.GetRegularEnum2(1), Is.EqualTo(RegularEnum2.One));
+					Assert.That(wrapper.GetRegularEnum2(2), Is.EqualTo(RegularEnum2.Two));
+					Assert.That(wrapper.GetRegularEnum2(3), Is.EqualTo(RegularEnum2.Three));
+					Assert.That(wrapper.SetRegularEnum1(RegularEnum1.One), Is.EqualTo(1));
+					Assert.That(wrapper.SetRegularEnum1(RegularEnum1.Two), Is.EqualTo(2));
+					Assert.That(wrapper.SetRegularEnum1(RegularEnum1.Three), Is.EqualTo(3));
+					Assert.That(wrapper.SetRegularEnum2(RegularEnum2.One), Is.EqualTo(1));
+					Assert.That(wrapper.SetRegularEnum2(RegularEnum2.Two), Is.EqualTo(2));
+					Assert.That(wrapper.SetRegularEnum2(RegularEnum2.Three), Is.EqualTo(3));
 
-				// test in methods
-				//
-				// non-flags enum mapping
-				Assert.AreEqual(RegularEnum1.One,   wrapper.GetRegularEnum1(1));
-				Assert.AreEqual(RegularEnum1.Two,   wrapper.GetRegularEnum1(2));
-				Assert.AreEqual(RegularEnum1.Three, wrapper.GetRegularEnum1(3));
-				Assert.AreEqual(RegularEnum2.One,   wrapper.GetRegularEnum2(1));
-				Assert.AreEqual(RegularEnum2.Two,   wrapper.GetRegularEnum2(2));
-				Assert.AreEqual(RegularEnum2.Three, wrapper.GetRegularEnum2(3));
-				Assert.AreEqual(1, wrapper.SetRegularEnum1(RegularEnum1.One));
-				Assert.AreEqual(2, wrapper.SetRegularEnum1(RegularEnum1.Two));
-				Assert.AreEqual(3, wrapper.SetRegularEnum1(RegularEnum1.Three));
-				Assert.AreEqual(1, wrapper.SetRegularEnum2(RegularEnum2.One));
-				Assert.AreEqual(2, wrapper.SetRegularEnum2(RegularEnum2.Two));
-				Assert.AreEqual(3, wrapper.SetRegularEnum2(RegularEnum2.Three));
+					// flags enum mapping
+					Assert.That(wrapper.GetFlagsEnum(1), Is.EqualTo(FlagsEnum.Bit1));
+					Assert.That(wrapper.GetFlagsEnum(4), Is.EqualTo(FlagsEnum.Bit3));
+					Assert.That(wrapper.GetFlagsEnum(10), Is.EqualTo(FlagsEnum.Bits24));
+					Assert.That(wrapper.GetFlagsEnum(5), Is.EqualTo(FlagsEnum.Bit1 | FlagsEnum.Bit3));
+					Assert.That(wrapper.SetFlagsEnum(FlagsEnum.Bit1), Is.EqualTo(1));
+					Assert.That(wrapper.SetFlagsEnum(FlagsEnum.Bit3), Is.EqualTo(4));
+					Assert.That(wrapper.SetFlagsEnum(FlagsEnum.Bits24), Is.EqualTo(10));
+					Assert.That(wrapper.SetFlagsEnum(FlagsEnum.Bit1 | FlagsEnum.Bit3), Is.EqualTo(5));
 
-				// flags enum mapping
-				Assert.AreEqual(FlagsEnum.Bit1,                  wrapper.GetFlagsEnum(1));
-				Assert.AreEqual(FlagsEnum.Bit3,                  wrapper.GetFlagsEnum(4));
-				Assert.AreEqual(FlagsEnum.Bits24,                wrapper.GetFlagsEnum(10));
-				Assert.AreEqual(FlagsEnum.Bit1 | FlagsEnum.Bit3, wrapper.GetFlagsEnum(5));
-				Assert.AreEqual(1,  wrapper.SetFlagsEnum(FlagsEnum.Bit1));
-				Assert.AreEqual(4,  wrapper.SetFlagsEnum(FlagsEnum.Bit3));
-				Assert.AreEqual(10, wrapper.SetFlagsEnum(FlagsEnum.Bits24));
-				Assert.AreEqual(5,  wrapper.SetFlagsEnum(FlagsEnum.Bit1 | FlagsEnum.Bit3));
+					// test in properties
+					//
+					// non-flags enum mapping
+					Assert.That(wrapper.RegularEnum1Property, Is.EqualTo(RegularEnum1.Two));
+				}
 
-
-				// test in properties
-				//
-				// non-flags enum mapping
-				Assert.AreEqual(RegularEnum1.Two, wrapper.RegularEnum1Property);
 				wrapper.RegularEnum1Property = RegularEnum1.One;
-				Assert.AreEqual(RegularEnum1.One, wrapper.RegularEnum1Property);
-				Assert.AreEqual(RegularEnum2.Two, wrapper.RegularEnum2Property);
-				wrapper.RegularEnum2Property = RegularEnum2.One;
-				Assert.AreEqual(RegularEnum2.One, wrapper.RegularEnum2Property);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(wrapper.RegularEnum1Property, Is.EqualTo(RegularEnum1.One));
+					Assert.That(wrapper.RegularEnum2Property, Is.EqualTo(RegularEnum2.Two));
+				}
 
-				// flags enum mapping
-				Assert.AreEqual(FlagsEnum.Bit3, wrapper.FlagsEnumProperty);
+				wrapper.RegularEnum2Property = RegularEnum2.One;
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(wrapper.RegularEnum2Property, Is.EqualTo(RegularEnum2.One));
+
+					// flags enum mapping
+					Assert.That(wrapper.FlagsEnumProperty, Is.EqualTo(FlagsEnum.Bit3));
+				}
+
 				wrapper.FlagsEnumProperty = FlagsEnum.Bits24;
-				Assert.AreEqual(FlagsEnum.Bits24, wrapper.FlagsEnumProperty);
+				Assert.That(wrapper.FlagsEnumProperty, Is.EqualTo(FlagsEnum.Bits24));
 
 				// using setters/getters
 				var typeBuilder         = typeMapper.Type<SampleClass>();
@@ -694,17 +721,25 @@ namespace Tests.TypeMapping
 				var instance = (Dynamic.SampleClass)wrapper.instance_;
 
 				// non-flags enum mapping
-				Assert.AreEqual(RegularEnum1.Two, regular1Getter(instance));
+				Assert.That(regular1Getter(instance), Is.EqualTo(RegularEnum1.Two));
 				regular1Setter(instance, RegularEnum1.One);
-				Assert.AreEqual(RegularEnum1.One, regular1Getter(instance));
-				Assert.AreEqual(RegularEnum2.Two, regular2Getter(instance));
-				regular2Setter(instance, RegularEnum2.One);
-				Assert.AreEqual(RegularEnum2.One, regular2Getter(instance));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(regular1Getter(instance), Is.EqualTo(RegularEnum1.One));
+					Assert.That(regular2Getter(instance), Is.EqualTo(RegularEnum2.Two));
+				}
 
-				// flags enum mapping
-				Assert.AreEqual(FlagsEnum.Bit3, flagsGetter(instance));
+				regular2Setter(instance, RegularEnum2.One);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(regular2Getter(instance), Is.EqualTo(RegularEnum2.One));
+
+					// flags enum mapping
+					Assert.That(flagsGetter(instance), Is.EqualTo(FlagsEnum.Bit3));
+				}
+
 				flagsSetter(instance, FlagsEnum.Bits24);
-				Assert.AreEqual(FlagsEnum.Bits24, flagsGetter(instance));
+				Assert.That(flagsGetter(instance), Is.EqualTo(FlagsEnum.Bits24));
 			}
 
 			[Test]
@@ -715,7 +750,7 @@ namespace Tests.TypeMapping
 				var wrapped = typeMapper.BuildWrappedFactory(() => new SqlErrorCollection())();
 				var errors  = wrapped.Errors.ToArray();
 
-				Assert.AreEqual(2, errors.Length);
+				Assert.That(errors, Has.Length.EqualTo(2));
 			}
 
 			[Test]
@@ -726,7 +761,7 @@ namespace Tests.TypeMapping
 				var wrapped = typeMapper.BuildWrappedFactory(() => new SampleClass(1, 2))();
 				var res = wrapped.MethodWithRemappedName2("value");
 
-				Assert.AreEqual("value", res);
+				Assert.That(res, Is.EqualTo("value"));
 			}
 
 			[Test]
@@ -736,7 +771,7 @@ namespace Tests.TypeMapping
 
 				var wrapped = typeMapper.BuildWrappedFactory(() => new SampleClass(1, 2))();
 
-				Assert.False(wrapped.HasMethodWithWrongReturnType);
+				Assert.That(wrapped.HasMethodWithWrongReturnType, Is.False);
 			}
 
 			[Test]
@@ -746,7 +781,7 @@ namespace Tests.TypeMapping
 
 				var wrapped = typeMapper.BuildWrappedFactory(() => new SampleClass(1, 2))();
 
-				Assert.AreEqual(4, wrapped.ReturnTypeMapper("test"));
+				Assert.That(wrapped.ReturnTypeMapper("test"), Is.EqualTo(4));
 			}
 
 			[Test]
@@ -754,10 +789,12 @@ namespace Tests.TypeMapping
 			{
 				var taskExpression = Expression.Constant(new ValueTask<long>());
 				var mapper         = new ValueTaskToTaskMapper();
-				var result         = ((ICustomMapper)mapper).Map(taskExpression);
-
-				Assert.AreEqual(typeof(Task<long>), result.Type);
-				Assert.True(typeof(Task<long>).IsAssignableFrom(result.EvaluateExpression()!.GetType()));
+				var result         = ((ICustomMapper)mapper).Map(null!, taskExpression);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result.Type, Is.EqualTo(typeof(Task<long>)));
+					Assert.That(typeof(Task<long>).IsAssignableFrom(result.EvaluateExpression()!.GetType()), Is.True);
+				}
 			}
 
 			[Test]
@@ -765,10 +802,12 @@ namespace Tests.TypeMapping
 			{
 				var taskExpression = Expression.Constant(new ValueTask());
 				var mapper         = new ValueTaskToTaskMapper();
-				var result         = ((ICustomMapper)mapper).Map(taskExpression);
-
-				Assert.AreEqual(typeof(Task), result.Type);
-				Assert.True(typeof(Task).IsAssignableFrom(result.EvaluateExpression()!.GetType()));
+				var result         = ((ICustomMapper)mapper).Map(null!, taskExpression);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result.Type, Is.EqualTo(typeof(Task)));
+					Assert.That(typeof(Task).IsAssignableFrom(result.EvaluateExpression()!.GetType()), Is.True);
+				}
 			}
 
 			[Test]
@@ -777,7 +816,7 @@ namespace Tests.TypeMapping
 				var taskExpression = Expression.Constant(0);
 				var mapper         = new ValueTaskToTaskMapper();
 
-				Assert.False(((ICustomMapper)mapper).CanMap(taskExpression));
+				Assert.That(((ICustomMapper)mapper).CanMap(taskExpression), Is.False);
 			}
 		}
 	}

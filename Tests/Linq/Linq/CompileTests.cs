@@ -5,13 +5,16 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 using LinqToDB;
+using LinqToDB.Async;
+using LinqToDB.Mapping;
+using LinqToDB.Tools.EntityServices;
 
 using NUnit.Framework;
 
+using Tests.Model;
+
 namespace Tests.Linq
 {
-	using Model;
-
 	[TestFixture]
 	public class CompileTests : TestBase
 	{
@@ -23,8 +26,11 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 			{
-				Assert.AreEqual("11", query(db, "1", 1));
-				Assert.AreEqual("22", query(db, "2", 2));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(query(db, "1", 1), Is.EqualTo("11"));
+					Assert.That(query(db, "2", 2), Is.EqualTo("22"));
+				}
 			}
 		}
 
@@ -36,8 +42,11 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 			{
-				Assert.AreEqual(1, query(db, 1).ToList().Count);
-				Assert.AreEqual(2, query(db, 2).ToList().Count);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(query(db, 1).ToList(), Has.Count.EqualTo(1));
+					Assert.That(query(db, 2).ToList(), Has.Count.EqualTo(2));
+				}
 			}
 		}
 
@@ -49,8 +58,11 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 			{
-				Assert.AreEqual(1, query(db, 1).ToList().Count);
-				Assert.AreEqual(2, query(db, 2).ToList().Count);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(query(db, 1).ToList(), Has.Count.EqualTo(1));
+					Assert.That(query(db, 2).ToList(), Has.Count.EqualTo(2));
+				}
 			}
 		}
 
@@ -62,8 +74,11 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 			{
-				Assert.AreEqual(1, (await query(db, 1)).Count);
-				Assert.AreEqual(2, (await query(db, 2)).Count);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That((await query(db, 1)), Has.Count.EqualTo(1));
+					Assert.That((await query(db, 2)), Has.Count.EqualTo(2));
+				}
 			}
 		}
 
@@ -74,7 +89,7 @@ namespace Tests.Linq
 				db.GetTable<Child>().Where(c => n.Contains(c.ParentID)));
 
 			using (var db = GetDataContext(context))
-				Assert.AreEqual(3, query(db, new[] { 1, 2 }).ToList().Count);
+				Assert.That(query(db, new[] { 1, 2 }).ToList(), Has.Count.EqualTo(3));
 		}
 
 		[Test]
@@ -85,8 +100,11 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 			{
-				Assert.AreEqual(1, query(db, new object[] { 1, 1     }).ToList().Count);
-				Assert.AreEqual(1, query(db, new object?[] { 2, null }).ToList().Count);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(query(db, new object[] { 1, 1 }).ToList(), Has.Count.EqualTo(1));
+					Assert.That(query(db, new object?[] { 2, null }).ToList(), Has.Count.EqualTo(1));
+				}
 			}
 		}
 
@@ -113,7 +131,7 @@ namespace Tests.Linq
 		}
 
 		[Test, Order(100)]
-		public void ConcurrentTest1([IncludeDataSources(TestProvName.AllSQLite, TestProvName.AllClickHouse)] string context)
+		public void ConcurrentTest1([IncludeDataSources(TestProvName.AllSQLite)] string context)
 		{
 			using (new DisableBaseline("Multi-threading"))
 			{
@@ -143,7 +161,7 @@ namespace Tests.Linq
 				Task.WaitAll(threads);
 
 				for (var i = 0; i < count; i++)
-					Assert.AreEqual(results[i, 0], results[i, 1]);
+					Assert.That(results[i, 1], Is.EqualTo(results[i, 0]));
 			}
 		}
 
@@ -178,7 +196,7 @@ namespace Tests.Linq
 				Task.WaitAll(threads);
 
 				for (var i = 0; i < count; i++)
-					Assert.AreEqual(results[i, 0], results[i, 1]);
+					Assert.That(results[i, 1], Is.EqualTo(results[i, 0]));
 			}
 		}
 
@@ -208,7 +226,7 @@ namespace Tests.Linq
 				Task.WaitAll(threads);
 
 				for (var i = 0; i < 100; i++)
-					Assert.AreEqual(results[i, 0], results[i, 1]);
+					Assert.That(results[i, 1], Is.EqualTo(results[i, 0]));
 			}
 		}
 
@@ -240,7 +258,7 @@ namespace Tests.Linq
 				Task.WaitAll(threads);
 
 				for (var i = 0; i < threadCount; i++)
-					Assert.AreEqual(results[i, 0], results[i, 1]);
+					Assert.That(results[i, 1], Is.EqualTo(results[i, 0]));
 			}
 		}
 
@@ -257,7 +275,7 @@ namespace Tests.Linq
 				});
 
 			using (var db = GetDataContext(context))
-				Assert.AreEqual(2, query(db, 2).ToList().Count);
+				Assert.That(query(db, 2).ToList(), Has.Count.EqualTo(2));
 		}
 
 		[Test]
@@ -268,8 +286,11 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 			{
-				Assert.AreEqual(1, query(db, 1).ParentID);
-				Assert.AreEqual(2, query(db, 2).ParentID);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(query(db, 1).ParentID, Is.EqualTo(1));
+					Assert.That(query(db, 2).ParentID, Is.EqualTo(2));
+				}
 			}
 		}
 
@@ -281,8 +302,11 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 			{
-				Assert.AreEqual(1, (await query(db, 1)).ParentID);
-				Assert.AreEqual(2, (await query(db, 2)).ParentID);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That((await query(db, 1)).ParentID, Is.EqualTo(1));
+					Assert.That((await query(db, 2)).ParentID, Is.EqualTo(2));
+				}
 			}
 		}
 
@@ -294,8 +318,11 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 			{
-				Assert.AreEqual(1, (await query(db, 1)).ParentID);
-				Assert.AreEqual(2, (await query(db, 2)).ParentID);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That((await query(db, 1)).ParentID, Is.EqualTo(1));
+					Assert.That((await query(db, 2)).ParentID, Is.EqualTo(2));
+				}
 			}
 		}
 
@@ -322,7 +349,7 @@ namespace Tests.Linq
 		}
 
 		[ExpressionMethod(nameof(FilterExpression))]
-		public static IQueryable<Parent> Filter(ITestDataContext db, int date)
+		private static IQueryable<Parent> Filter(ITestDataContext db, int date)
 		{
 			throw new NotImplementedException();
 		}
@@ -336,7 +363,7 @@ namespace Tests.Linq
 				select x;
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
+		[YdbCteAsSource]
 		[Test]
 		public void ContainsTest([DataSources] string context)
 		{
@@ -345,12 +372,15 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 			{
-				Assert.IsTrue (query(db,  1));
-				Assert.IsFalse(query(db, -1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(query(db, 1), Is.True);
+					Assert.That(query(db, -1), Is.False);
+				}
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
+		[YdbCteAsSource]
 		[Test]
 		public async Task ContainsTestAsync([DataSources] string context)
 		{
@@ -359,12 +389,14 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 			{
-				Assert.IsTrue (await query(db,  1));
-				Assert.IsFalse(await query(db, -1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(await query(db, 1), Is.True);
+					Assert.That(await query(db, -1), Is.False);
+				}
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void AnyTest([DataSources] string context)
 		{
@@ -373,12 +405,14 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 			{
-				Assert.IsTrue (query(db,  1));
-				Assert.IsFalse(query(db, -1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(query(db, 1), Is.True);
+					Assert.That(query(db, -1), Is.False);
+				}
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public async Task AnyTestAsync([DataSources] string context)
 		{
@@ -387,12 +421,14 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 			{
-				Assert.IsTrue (await query(db,  1));
-				Assert.IsFalse(await query(db, -1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(await query(db, 1), Is.True);
+					Assert.That(await query(db, -1), Is.False);
+				}
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void AnyTest2([DataSources] string context)
 		{
@@ -401,12 +437,14 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 			{
-				Assert.IsTrue (query(db,  1));
-				Assert.IsFalse(query(db, -1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(query(db, 1), Is.True);
+					Assert.That(query(db, -1), Is.False);
+				}
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public async Task AnyTestAsync2([DataSources] string context)
 		{
@@ -415,8 +453,11 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 			{
-				Assert.IsTrue (await query(db,  1));
-				Assert.IsFalse(await query(db, -1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(await query(db, 1), Is.True);
+					Assert.That(await query(db, -1), Is.False);
+				}
 			}
 		}
 
@@ -428,8 +469,11 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 			{
-				Assert.That(query(db,  1), Is.EqualTo(1));
-				Assert.That(query(db, -1), Is.EqualTo(0));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(query(db, 1), Is.EqualTo(1));
+					Assert.That(query(db, -1), Is.Zero);
+				}
 			}
 		}
 
@@ -441,8 +485,11 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 			{
-				Assert.That(await query(db,  1), Is.EqualTo(1L));
-				Assert.That(await query(db, -1), Is.EqualTo(0L));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(await query(db, 1), Is.EqualTo(1L));
+					Assert.That(await query(db, -1), Is.Zero);
+				}
 			}
 		}
 
@@ -454,8 +501,11 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 			{
-				Assert.That(query(db,  1), Is.EqualTo(1));
-				Assert.That(query(db, -1), Is.EqualTo(0));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(query(db, 1), Is.EqualTo(1));
+					Assert.That(query(db, -1), Is.Zero);
+				}
 			}
 		}
 
@@ -467,8 +517,11 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 			{
-				Assert.That(await query(db,  1), Is.EqualTo(1));
-				Assert.That(await query(db, -1), Is.EqualTo(0));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(await query(db, 1), Is.EqualTo(1));
+					Assert.That(await query(db, -1), Is.Zero);
+				}
 			}
 		}
 
@@ -480,8 +533,11 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 			{
-				Assert.That(query(db,  1), Is.EqualTo(1));
-				Assert.That(query(db, -1), Is.EqualTo(null));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(query(db, 1), Is.EqualTo(1));
+					Assert.That(query(db, -1), Is.Null);
+				}
 			}
 		}
 
@@ -493,8 +549,11 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 			{
-				Assert.That(await query(db,  1), Is.EqualTo(1));
-				Assert.That(await query(db, -1), Is.EqualTo(null));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(await query(db, 1), Is.EqualTo(1));
+					Assert.That(await query(db, -1), Is.Null);
+				}
 			}
 		}
 
@@ -506,8 +565,11 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 			{
-				Assert.That(query(db,  1), Is.EqualTo(1));
-				Assert.That(query(db, -1), Is.EqualTo(null));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(query(db, 1), Is.EqualTo(1));
+					Assert.That(query(db, -1), Is.Null);
+				}
 			}
 		}
 
@@ -519,9 +581,71 @@ namespace Tests.Linq
 
 			using (var db = GetDataContext(context))
 			{
-				Assert.That(await query(db,  1), Is.EqualTo(1));
-				Assert.That(await query(db, -1), Is.EqualTo(null));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(await query(db, 1), Is.EqualTo(1));
+					Assert.That(await query(db, -1), Is.Null);
+				}
 			}
+		}
+
+		[ActiveIssue]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4365")]
+		public void IDataContext_CompiledQueryTest_AsList([DataSources(false)] string context)
+		{
+			using var db  = new TestDataConnection(context);
+			using var map = new IdentityMap(db);
+
+			var query = CompiledQuery.Compile(static (TestDataConnection db) => db.Person.Where(p => p.ID == 1).ToList());
+
+			var result1 = query(db);
+			var result2 = query(db);
+
+			Assert.That(result2[0], Is.SameAs(result1[0]));
+		}
+
+		[ActiveIssue]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4365")]
+		public void CustomContext_CompiledQueryCustomTest_AsList([DataSources(false)] string context)
+		{
+			using var db  = new TestDataCustomConnection(context);
+			using var map = new IdentityMap(db);
+
+			var query = CompiledQuery.Compile(static (TestDataCustomConnection db) => db.Person.Where(p => p.ID == 1).ToList());
+
+			var result1 = query(db);
+			var result2 = query(db);
+
+			Assert.That(result2[0], Is.SameAs(result1[0]));
+		}
+
+		[Test]
+		public void IDataContext_CompiledQueryTest([DataSources(false)] string context)
+		{
+			using var db  = new TestDataConnection(context);
+			using var map = new IdentityMap(db);
+
+			var query = CompiledQuery.Compile(static (TestDataConnection db) => db.Person.Where(p => p.ID == 1));
+
+			var result1 = query(db).ToList();
+			var result2 = query(db).ToList();
+
+			Assert.That(result2[0], Is.SameAs(result1[0]));
+		}
+
+		[ActiveIssue]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4365")]
+		public void CustomContext_CompiledQueryCustomTest([DataSources(false)] string context)
+		{
+			using var db  = new TestDataCustomConnection(context);
+			using var map = new IdentityMap(db);
+
+			var query = CompiledQuery.Compile(static (TestDataCustomConnection db) => db.Person.Where(p => p.ID == 1));
+
+			var result1 = query(db).ToList();
+			var result2 = query(db).ToList();
+
+			Assert.That(result2[0], Is.SameAs(result1[0]));
 		}
 	}
 }

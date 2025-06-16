@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Linq;
 using System.Linq.Expressions;
+
 using LinqToDB;
 using LinqToDB.Data;
 using LinqToDB.Linq;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -67,12 +69,12 @@ namespace Tests.UserTests
 			}
 		}
 
-		public static void MapEnumToString<T>() where T : struct
+		private static void MapEnumToString<T>() where T : struct
 		{
 			MapEnumToString(typeof(T));
 		}
 
-		public static void MapEnumToString(Type type)
+		private static void MapEnumToString(Type type)
 		{
 			var param  = Expression.Parameter(type, "enum");
 			var values = Enum.GetValues(type);
@@ -92,7 +94,6 @@ namespace Tests.UserTests
 
 			Expressions.MapMember(type, toStringMethod, lambda);
 		}
-
 
 		static Issue2468Tests()
 		{
@@ -125,7 +126,7 @@ namespace Tests.UserTests
 					)
 					.ToList();
 
-				Assert.That(list.Count, Is.EqualTo(1));
+				Assert.That(list, Has.Count.EqualTo(1));
 			}
 		}
 	}

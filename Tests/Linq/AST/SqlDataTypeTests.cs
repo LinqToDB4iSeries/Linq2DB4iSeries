@@ -1,5 +1,6 @@
 ﻿using LinqToDB;
 using LinqToDB.SqlQuery;
+
 using NUnit.Framework;
 
 namespace Tests.AST
@@ -11,7 +12,7 @@ namespace Tests.AST
 		[Test]
 		public void TestSystemType()
 		{
-			Assert.AreEqual(typeof(bool), SqlDataType.GetDataType(DataType.Boolean).SystemType);
+			Assert.That(SqlDataType.GetDataType(DataType.Boolean).SystemType, Is.EqualTo(typeof(bool)));
 		}
 	}
 }

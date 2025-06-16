@@ -3,14 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 
 using LinqToDB;
+using LinqToDB.Async;
 using LinqToDB.Data;
 
 using NUnit.Framework;
 
+using Tests.Model;
+
 namespace Tests.UserTests
 {
-	using Model;
-
 	[TestFixture]
 	public class Issue445Tests : TestBase
 	{
@@ -25,22 +26,21 @@ namespace Tests.UserTests
 		[Test]
 		public void ConnectionClosed1([IssueContextSource] string context)
 		{
-			for   (var i = 0; i < 1000; i++)
-			using (var db = GetDataContext(context))
-			{
-				AreEqual(Person.Where(_ => _.ID == 1), db.Person.Where(_ => _.ID == 1));
-			}
+			for (var i = 0; i < 1000; i++)
+				using (var db = GetDataContext(context))
+				{
+					AreEqual(Person.Where(_ => _.ID == 1), db.Person.Where(_ => _.ID == 1));
+				}
 		}
 
 		[Test]
 		public void ConnectionClosed2([IssueContextSource(false)] string context)
 		{
-			for   (var i = 0; i < 1000; i++)
-			using (var db = (DataConnection)GetDataContext(context))
-			{
-				AreEqual(Person.Where(_ => _.ID == 1), db.GetTable<Person>().Where(_ => _.ID == 1));
-			}
-
+			for (var i = 0; i < 1000; i++)
+				using (var db = (DataConnection)GetDataContext(context))
+				{
+					AreEqual(Person.Where(_ => _.ID == 1), db.GetTable<Person>().Where(_ => _.ID == 1));
+				}
 		}
 
 		[Test]
@@ -58,12 +58,11 @@ namespace Tests.UserTests
 		[Test]
 		public void ConnectionClosed2Async([IssueContextSource(false)] string context)
 		{
-			for   (var i = 0; i < 1000; i++)
-			using (var db = (DataConnection)GetDataContext(context))
-			{
-				AreEqual(Person.Where(_ => _.ID == 1), db.GetTable<Person>().Where(_ => _.ID == 1).ToArrayAsync().Result);
-			}
-
+			for (var i = 0; i < 1000; i++)
+				using (var db = (DataConnection)GetDataContext(context))
+				{
+					AreEqual(Person.Where(_ => _.ID == 1), db.GetTable<Person>().Where(_ => _.ID == 1).ToArrayAsync().Result);
+				}
 		}
 
 		[Test]
@@ -116,12 +115,13 @@ namespace Tests.UserTests
 
 		// no u can't
 		//[Test]
-		public void CanDisposeDataContext([IssueContextSource(false)] string context)
-		{
-			AreEqual(Person.Where(_ => _.ID == 1), GetPersonsFromDisposed2(context));
-		}
+		//public void CanDisposeDataContext([IssueContextSource(false)] string context)
+		//{
+		//	AreEqual(Person.Where(_ => _.ID == 1), GetPersonsFromDisposed2(context));
+		//}
 
 		[Test]
+		[Explicit("Too slow")]
 		public void ConnectionPoolException1([IncludeDataSources(TestProvName.AllSqlServer2008Plus)] string context)
 		{
 			using (new DisableBaseline("Output depends on pool size"))
