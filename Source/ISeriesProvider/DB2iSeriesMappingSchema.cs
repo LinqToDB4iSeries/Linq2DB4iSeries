@@ -1,12 +1,16 @@
 ﻿using System;
+using System.Data.Linq;
+using System.IO;
+
+using static LinqToDB.DataProvider.DB2iSeries.DB2iSeriesSqlBuilder;
+
+using LinqToDB.Internal.Mapping;
+using LinqToDB.Mapping;
+using LinqToDB.SqlQuery;
+
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
-	using Mapping;
-	using SqlQuery;
-	using System.Data.Linq;
-	using static DB2iSeriesSqlBuilder;
-
 	internal sealed class DB2iSeriesMappingSchemaBase : LockedMappingSchema
 	{
 		public static DB2iSeriesMappingSchemaBase Instance { get; } = new();
@@ -25,10 +29,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetValueToSqlConverter(typeof(TimeSpan), (sb, _, v) => ConvertTimeToSql(sb, (TimeSpan)v));
 			SetValueToSqlConverter(typeof(DateTime), (sb, dt, v) => ConvertDateTimeToSql(sb, dt.Type.DataType, (DateTime)v, precision: dt.Type.Precision));
 
-			
-
 			// set reader conversions from literals
 			SetConverter<string, DateTime>(SqlDateTimeParser.ParseDateTime);
+			SetConverter<byte[], Stream>(b => new MemoryStream(b));
 
 #if NET6_0_OR_GREATER
 			SetValueToSqlConverter(typeof(DateOnly), (sb, _, _, v) => ConvertDateOnlyToSql(sb, (DateOnly)v));

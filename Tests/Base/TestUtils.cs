@@ -1,22 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 
 using LinqToDB;
 using LinqToDB.Data;
 using LinqToDB.DataProvider.Firebird;
+using LinqToDB.Internal.DataProvider.Firebird;
+
+using NUnit.Framework;
+
+using Tests.Model;
+
+#if NETFRAMEWORK
+using Tests.Model.Remote.Wcf;
+#else
+using Tests.Model.Remote.Grpc;
+#endif
 
 namespace Tests
 {
-	using Model;
-#if NETFRAMEWORK
-	using Model.Remote.Wcf;
-#else
-	using Model.Remote.Grpc;
-#endif
-
 	public static class TestUtils
 	{
 		private static int _cnt;
@@ -35,15 +41,9 @@ namespace Tests
 			return Interlocked.Increment(ref _cnt);
 		}
 
+		public const string NO_SERVER_NAME   = "UNUSED_SERVER";
 		public const string NO_SCHEMA_NAME   = "UNUSED_SCHEMA";
 		public const string NO_DATABASE_NAME = "UNUSED_DB";
-		public const string NO_SERVER_NAME   = "UNUSED_SERVER";
-
-		[Sql.Function("VERSION", ServerSideOnly = true)]
-		private static string MySqlVersion()
-		{
-			throw new InvalidOperationException();
-		}
 
 		[Sql.Function("DBINFO", ServerSideOnly = true)]
 		private static string DbInfo(string property)
@@ -89,6 +89,8 @@ namespace Tests
 		{
 			switch (context)
 			{
+				case string when context.IsAnyOf(ProviderName.Ydb)          :
+					return "test/fqn/names";
 				case string when context.IsAnyOf(TestProvName.AllInformix)  :
 				case string when context.IsAnyOf(TestProvName.AllOracle)    :
 				case string when context.IsAnyOf(TestProvName.AllPostgreSQL):
@@ -133,7 +135,7 @@ namespace Tests
 					return "LINKED_DB";
 			}
 
-			return NO_SCHEMA_NAME;
+			return NO_SERVER_NAME;
 		}
 
 		/// <summary>
@@ -144,11 +146,12 @@ namespace Tests
 		{
 			return context switch
 			{
-				string when context.IsAnyOf(TestProvName.AllSQLite)   => "main",
+				string when context.IsAnyOf(ProviderName.Ydb)            => "local",
+				string when context.IsAnyOf(TestProvName.AllSQLite)      => "main",
 				// Access adds extension automatically to database name, but if there are
 				// dots in name, extension not added as dot treated as extension separator by Access
-				string when context.IsAnyOf(ProviderName.Access)      => "Database\\TestData",
-				string when context.IsAnyOf(ProviderName.AccessOdbc)  => "Database\\TestData.ODBC.mdb",
+				string when context.IsAnyOf(TestProvName.AllAccessOleDb) => "Database\\TestData",
+				string when context.IsAnyOf(TestProvName.AllAccessOdbc)  => "Database\\TestData.ODBC.mdb",
 				string when context.IsAnyOf(
 					TestProvName.AllMySql,
 					TestProvName.AllClickHouse,
@@ -163,20 +166,7 @@ namespace Tests
 
 		public static bool ProviderNeedsTimeFix(this IDataContext db, string context)
 		{
-			if (context.IsAnyOf(TestProvName.AllMySql55))
-			{
-				// MySql versions prior to 5.6.4 do not store fractional seconds so we need to trim
-				// them from expected data too
-				var version = db.GetTable<LinqDataTypes>().Select(_ => MySqlVersion()).First();
-				var match = new Regex(@"^\d+\.\d+.\d+").Match(version);
-				if (match.Success)
-				{
-					var versionParts = match.Value.Split('.').Select(int.Parse).ToArray();
-
-					return (versionParts[0] * 10000 + versionParts[1] * 100 + versionParts[2] < 50604);
-				}
-			}
-			else if (context.IsAnyOf(ProviderName.AccessOdbc))
+			if (context.IsAnyOf(TestProvName.AllAccessOdbc))
 			{
 				// ODBC driver strips milliseconds from values on both save and load
 				return true;
@@ -191,11 +181,11 @@ namespace Tests
 			return fix ? new DateTime(value.Year, value.Month, value.Day, value.Hour, value.Minute, value.Second) : value;
 		}
 
-		sealed class FirebirdTempTable<T> : TempTable<T>
+		sealed class FirebirdTempTable<T> : TestTempTable<T>
 			where T : notnull
 		{
-			public FirebirdTempTable(IDataContext db, string? tableName = null, string? databaseName = null, string? schemaName = null, TableOptions tableOptions = TableOptions.NotSet)
-				: base(db, tableName, databaseName, schemaName, tableOptions : tableOptions)
+			public FirebirdTempTable(IDataContext db, string? tableName = null, string? databaseName = null, string? schemaName = null, string? serverName = null, TableOptions tableOptions = TableOptions.NotSet)
+				: base(db, tableName, databaseName, schemaName, serverName, tableOptions : tableOptions)
 			{
 			}
 
@@ -210,17 +200,51 @@ namespace Tests
 				FirebirdTools.ClearAllPools();
 				base.Dispose();
 			}
+
+			public override ValueTask DisposeAsync()
+			{
+				if (DataContext is DataConnection dc && dc.DataProvider.Name.Contains(ProviderName.Firebird))
+				{
+					FirebirdTools.ClearAllPools();
+				}
+
+				DataContext.CloseAsync();
+				FirebirdTools.ClearAllPools();
+
+				return base.DisposeAsync();
+			}
 		}
 
-		static TempTable<T> CreateTable<T>(IDataContext db, string? tableName, TableOptions tableOptions = TableOptions.NotSet)
+		class TestTempTable<T> : TempTable<T>
+			where T : notnull
+		{
+			public TestTempTable(IDataContext db, string? tableName = null, string? databaseName = null, string? schemaName = null, string? serverName = null, TableOptions tableOptions = TableOptions.NotSet)
+				: base(db, tableName: tableName, databaseName: databaseName, schemaName: schemaName, serverName: serverName, tableOptions: tableOptions)
+			{
+			}
+
+			public override void Dispose()
+			{
+				using var _ = new DisableBaseline("Test setup");
+				base.Dispose();
+			}
+
+			public override async ValueTask DisposeAsync()
+			{
+				using var _ = new DisableBaseline("Test setup");
+				await base.DisposeAsync();
+			}
+		}
+
+		static TempTable<T> CreateTable<T>(IDataContext db, string? tableName, string? schemaName = null, string? databaseName = null, string? serverName = null, TableOptions tableOptions = TableOptions.NotSet)
 			where T : notnull =>
-			db.CreateSqlProvider() is FirebirdSqlBuilder ?
-				new FirebirdTempTable<T>(db, tableName, tableOptions : tableOptions) :
-				new         TempTable<T>(db, tableName, tableOptions : tableOptions);
+			db.ConfigurationString?.IsAnyOf(TestProvName.AllFirebird) == true ?
+				new FirebirdTempTable<T>(db, tableName, schemaName: schemaName, databaseName: databaseName, serverName: serverName, tableOptions : tableOptions) :
+				new     TestTempTable<T>(db, tableName, schemaName: schemaName, databaseName: databaseName, serverName: serverName, tableOptions : tableOptions);
 
 		static void ClearDataContext(IDataContext db)
 		{
-			if (db.CreateSqlProvider() is FirebirdSqlBuilder)
+			if (db.ConfigurationString?.IsAnyOf(TestProvName.AllFirebird) == true)
 			{
 				db.Close();
 				FirebirdTools.ClearAllPools();
@@ -229,39 +253,36 @@ namespace Tests
 
 		public static Version GetSqliteVersion(DataConnection db)
 		{
-			using (var cmd = db.CreateCommand())
-			{
-				cmd.CommandText = "select sqlite_version();";
-				var version     = (string)cmd.ExecuteScalar()!;
-
-				return new Version(version);
-			}
+			var version = db.Execute<string>("select sqlite_version();");
+			return new Version(version);
 		}
 
-		public static TempTable<T> CreateLocalTable<T>(this IDataContext db, string? tableName = null, TableOptions tableOptions = TableOptions.CheckExistence)
+		public static TempTable<T> CreateLocalTable<T>(this IDataContext db, string? tableName = null, string? schemaName = null, string? databaseName = null, string? serverName = null, TableOptions tableOptions = TableOptions.CheckExistence)
 			where T : notnull
 		{
+			using var _ = new DisableBaseline("Test setup");
 			try
 			{
 				if ((tableOptions & TableOptions.CheckExistence) == TableOptions.CheckExistence)
-					db.DropTable<T>(tableName, tableOptions:tableOptions);
-				return CreateTable<T>(db, tableName, tableOptions);
+					db.DropTable<T>(tableName, schemaName: schemaName, databaseName: databaseName, serverName: serverName, tableOptions:tableOptions);
+				return CreateTable<T>(db, tableName, schemaName: schemaName, databaseName: databaseName, serverName: serverName, tableOptions: tableOptions);
 			}
 			catch
 			{
 				ClearDataContext(db);
-				db.DropTable<T>(tableName, throwExceptionIfNotExists:false);
-				return CreateTable<T>(db, tableName, tableOptions);
+				db.DropTable<T>(tableName, schemaName: schemaName, databaseName: databaseName, serverName: serverName, throwExceptionIfNotExists:false);
+				return CreateTable<T>(db, tableName, schemaName: schemaName, databaseName: databaseName, serverName: serverName, tableOptions: tableOptions);
 			}
 		}
 
 		public static TempTable<T> CreateLocalTable<T>(this IDataContext db, string? tableName, IEnumerable<T> items, bool insertInTransaction = false)
 			where T : notnull
 		{
-			var table = CreateLocalTable<T>(db, tableName, TableOptions.CheckExistence);
-
+			using var _ = new DisableBaseline("Test setup");
 			using (new DisableLogging())
 			{
+				var table = CreateLocalTable<T>(db, tableName, tableOptions: TableOptions.CheckExistence);
+
 				if (db is DataConnection dc)
 				{
 					// apply transaction only on insert, as not all dbs support DDL within transaction
@@ -276,14 +297,15 @@ namespace Tests
 				else
 					foreach (var item in items)
 						db.Insert(item, table.TableName);
-			}
 
-			return table;
+				return table;
+			}
 		}
 
 		public static TempTable<T> CreateLocalTable<T>(this IDataContext db, IEnumerable<T> items, bool insertInTransaction = false)
 			where T : notnull
 		{
+			using var _ = new DisableBaseline("Test setup");
 			return CreateLocalTable(db, null, items, insertInTransaction);
 		}
 
@@ -298,10 +320,11 @@ namespace Tests
 				string when providerName.IsAnyOf(TestProvName.AllFirebird)     => "UNICODE_FSS",
 				string when providerName.IsAnyOf(TestProvName.AllMySql)        => "utf8_bin",
 				string when providerName.IsAnyOf(TestProvName.AllSqlServer)    => "Albanian_CI_AS",
-				_                                                              => "whatever"
+				_                                                              => "what-ever"
 			};
 		}
 
+		[return: NotNullIfNotNull(nameof(s))]
 		public static string? Clean(this string? s)
 		{
 			return s?
@@ -310,6 +333,52 @@ namespace Tests
 				.Replace("\r", "")
 				.Replace("\n", "")
 				;
+		}
+
+		internal static string GetConfigName()
+		{
+#if NETFRAMEWORK
+			return "NETFX";
+#elif NET8_0
+			return "NET80";
+#elif NET9_0
+			return "NET90";
+#elif NET10_0
+			return "NET100";
+#else
+#error Unknown framework
+#endif
+		}
+
+		public static void Log(Exception ex)
+		{
+			Log($"Exception: {ex.Message}");
+			Log(ex.StackTrace);
+		}
+
+		public static void Log(string? message)
+		{
+			var path = Path.GetTempPath();
+			File.AppendAllText(path + "linq2db.Tests." + GetConfigName() + ".log", (message ?? "") + Environment.NewLine);
+		}
+
+		public static void DeleteTestCases()
+		{
+			var fileName = GetTestFilePath();
+
+			if (File.Exists(fileName))
+				File.Delete(fileName);
+		}
+
+		// sync logic with ExpressionTestGenerator.GetTestFilePath
+		static string GetTestFilePath()
+		{
+			var dir = Path.Combine(Path.GetTempPath(), "linq2db");
+
+			if (!Directory.Exists(dir))
+				Directory.CreateDirectory(dir);
+
+			return Path.Combine(dir, FormattableString.Invariant($"ExpressionTest.0.cs"));
 		}
 	}
 }

@@ -6,23 +6,26 @@ using System.Linq.Expressions;
 
 using LinqToDB;
 using LinqToDB.Data;
-using LinqToDB.Expressions;
+using LinqToDB.Internal.SqlQuery;
+using LinqToDB.SqlQuery;
+using LinqToDB.Mapping;
 
 using NUnit.Framework;
 
+using Tests.DataProvider;
+
+using Tests.Model;
+
 namespace Tests.Linq
 {
-	using DataProvider;
-	using Model;
-
 	public class CachingTests: TestBase
 	{
 		sealed class AggregateFuncBuilder : Sql.IExtensionCallBuilder
 		{
-			public void Build(Sql.ISqExtensionBuilder builder)
+			public void Build(Sql.ISqlExtensionBuilder builder)
 			{
-				builder.AddExpression("funcName",  builder.GetValue<string>("funcName"));
-				builder.AddExpression("fieldName", builder.GetValue<string>("fieldName"));
+				builder.AddFragment("funcName",  builder.GetValue<string>("funcName"));
+				builder.AddFragment("fieldName", builder.GetValue<string>("fieldName"));
 			}
 		}
 
@@ -34,6 +37,7 @@ namespace Tests.Linq
 
 		[Test]
 		public void TestSqlQueryDependent(
+			[IncludeDataSources(ProviderName.SQLiteClassic)] string context,
 			[Values(
 				"MIN",
 				"MAX",
@@ -45,16 +49,11 @@ namespace Tests.Linq
 				nameof(ALLTYPE.BIGINTDATATYPE),
 				nameof(ALLTYPE.SMALLINTDATATYPE),
 				nameof(ALLTYPE.DECIMALDATATYPE),
-				nameof(ALLTYPE.DECFLOATDATATYPE),
 				nameof(ALLTYPE.INTDATATYPE),
-				nameof(ALLTYPE.REALDATATYPE),
-				nameof(ALLTYPE.TIMEDATATYPE)
+				nameof(ALLTYPE.REALDATATYPE)
 			)] string fieldName)
 		{
-			if (!UserProviders.Contains(ProviderName.SQLiteClassic))
-				return;
-
-			using (var db = GetDataContext(ProviderName.SQLiteClassic))
+			using (var db = GetDataContext(context))
 			{
 				var query =
 					from t in db.GetTable<ALLTYPE>()
@@ -64,8 +63,69 @@ namespace Tests.Linq
 						Aggregate = AggregateFunc(funcName, fieldName)
 					};
 
-				var sql = query.ToString();
-				TestContext.WriteLine(sql);
+				query.ToArray();
+				var sql = query.ToSqlQuery().Sql;
+
+				Assert.That(sql, Contains.Substring(funcName).And.Contains(fieldName));
+			}
+		}
+
+		[Test]
+		public void TestSqlQueryDependent_DecFloat(
+			[IncludeDataSources(TestProvName.AllDB2)] string context,
+			[Values(
+				"MIN",
+				"MAX",
+				"AVG",
+				"COUNT"
+			)] string funcName,
+			[Values(
+				nameof(ALLTYPE.DECFLOATDATATYPE)
+			)] string fieldName)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var query =
+					from t in db.GetTable<ALLTYPE>()
+					from c in db.GetTable<Child>()
+					select new
+					{
+						Aggregate = AggregateFunc(funcName, fieldName)
+					};
+
+				query.ToArray();
+				var sql = query.ToSqlQuery().Sql;
+
+				Assert.That(sql, Contains.Substring(funcName).And.Contains(fieldName));
+			}
+		}
+
+		[Test]
+		public void TestSqlQueryDependent_Time(
+			[IncludeDataSources(TestProvName.AllSqlServer2008Plus)] string context,
+			[Values(
+				"MIN",
+				"MAX",
+				// SQL Server doesn't support AVG(time)
+				//"AVG",
+				"COUNT"
+			)] string funcName,
+			[Values(
+				nameof(ALLTYPE.TIMEDATATYPE)
+			)] string fieldName)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var query =
+					from t in db.GetTable<ALLTYPE>()
+					from c in db.GetTable<Child>()
+					select new
+					{
+						Aggregate = AggregateFunc(funcName, fieldName)
+					};
+
+				query.ToArray();
+				var sql = query.ToSqlQuery().Sql;
 
 				Assert.That(sql, Contains.Substring(funcName).And.Contains(fieldName));
 			}
@@ -117,12 +177,14 @@ namespace Tests.Linq
 					)
 					select cc;
 
-				var sql = query.ToString()!;
-				TestContext.WriteLine(sql);
-
-				Assert.That(CountOccurrences(sql, tableName),    Is.EqualTo(2));
-				Assert.That(CountOccurrences(sql, databaseName), Is.EqualTo(2));
-				Assert.That(CountOccurrences(sql, schemaName),   Is.EqualTo(2));
+				var sql = query.ToSqlQuery().Sql;
+				BaselinesManager.LogQuery(sql);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(CountOccurrences(sql, tableName), Is.EqualTo(2));
+					Assert.That(CountOccurrences(sql, databaseName), Is.EqualTo(2));
+					Assert.That(CountOccurrences(sql, schemaName), Is.EqualTo(2));
+				}
 			}
 		}
 
@@ -146,12 +208,14 @@ namespace Tests.Linq
 					)
 					select cc;
 
-				var sql = query.ToString()!;
-				TestContext.WriteLine(sql);
-
-				Assert.That(CountOccurrences(sql, tableName),    Is.EqualTo(2));
-				Assert.That(CountOccurrences(sql, databaseName), Is.EqualTo(2));
-				Assert.That(CountOccurrences(sql, schemaName),   Is.EqualTo(2));
+				var sql = query.ToSqlQuery().Sql;
+				BaselinesManager.LogQuery(sql);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(CountOccurrences(sql, tableName), Is.EqualTo(2));
+					Assert.That(CountOccurrences(sql, databaseName), Is.EqualTo(2));
+					Assert.That(CountOccurrences(sql, schemaName), Is.EqualTo(2));
+				}
 			}
 		}
 
@@ -167,11 +231,11 @@ namespace Tests.Linq
 			{
 				var query =
 					from c1 in db.Child
-					from c2 in db.Child.Take(10, takeHint)
+					from c2 in db.Child.OrderBy(r => r.ParentID).Take(10, takeHint)
 					select new {c1, c2};
 
-				var sql = query.ToString();
-				TestContext.WriteLine(sql);
+				query.ToArray();
+				var sql = query.ToSqlQuery().Sql;
 
 				if (takeHint.HasFlag(TakeHints.Percent))
 					Assert.That(sql, Contains.Substring("PERCENT"));
@@ -181,11 +245,11 @@ namespace Tests.Linq
 			}
 		}
 
-		[ActiveIssue(4266)]
-		[Test]
-		public void TestExtensionCollectionParameterSameQuery([IncludeDataSources(TestProvName.AllSqlServer)] string context)
+		[ActiveIssue]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4266")]
+		public void TestExtensionCollectionParameterSameQuery([IncludeDataSources(TestProvName.AllSqlServer2008Plus)] string context)
 		{
-			using var db = GetDataConnection(context);
+			using var db = GetDataContext(context);
 
 			db.Execute("IF EXISTS (SELECT * FROM sys.types WHERE name = 'IntTableType') DROP TYPE IntTableType");
 			db.Execute("CREATE TYPE IntTableType AS TABLE(Id INT)");
@@ -198,14 +262,19 @@ namespace Tests.Linq
 							orderby p.ID
 							select p.ID;
 
+				var currentMiss = query.GetCacheMissCount();
+
 				var result =  query.ToList();
 				AreEqual(persons, result);
+				Assert.That(query.GetCacheMissCount(), Is.EqualTo(currentMiss + 1));
 
 				persons.AddRange(new int[] { 3, 4 });
 
 				result = query.ToList();
 
 				AreEqual(persons, result);
+				// cache miss
+				Assert.That(query.GetCacheMissCount(), Is.EqualTo(currentMiss + 2));
 			}
 			finally
 			{
@@ -213,11 +282,11 @@ namespace Tests.Linq
 			}
 		}
 
-		[ActiveIssue(4266)]
-		[Test]
-		public void TestExtensionCollectionParameterEqualQuery([IncludeDataSources(TestProvName.AllSqlServer)] string context)
+		[ActiveIssue]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4266")]
+		public void TestExtensionCollectionParameterEqualQuery([IncludeDataSources(TestProvName.AllSqlServer2008Plus)] string context)
 		{
-			using var db = GetDataConnection(context);
+			using var db = GetDataContext(context);
 
 			db.Execute("IF EXISTS (SELECT * FROM sys.types WHERE name = 'IntTableType') DROP TYPE IntTableType");
 			db.Execute("CREATE TYPE IntTableType AS TABLE(Id INT)");
@@ -230,8 +299,12 @@ namespace Tests.Linq
 							orderby p.ID
 							select p.ID;
 
+				var currentMiss = query.GetCacheMissCount();
+
 				var result =  query.ToList();
+
 				AreEqual(persons, result);
+				Assert.That(query.GetCacheMissCount(), Is.EqualTo(currentMiss + 1));
 
 				persons.AddRange(new int[] { 3, 4 });
 
@@ -243,6 +316,8 @@ namespace Tests.Linq
 				result = query.ToList();
 
 				AreEqual(persons, result);
+				// cache miss
+				Assert.That(query.GetCacheMissCount(), Is.EqualTo(currentMiss + 2));
 			}
 			finally
 			{
@@ -251,14 +326,14 @@ namespace Tests.Linq
 		}
 
 		[Sql.Extension("{field} IN (select * from {values})", IsPredicate = true, BuilderType = typeof(InExtExpressionItemBuilder), ServerSideOnly = true)]
-		public static bool InExt<T>([ExprParameter] T field, [SqlQueryDependent] IEnumerable<T> values) where T : struct, IEquatable<int>
+		private static bool InExt<T>([ExprParameter] T field, [SqlQueryDependent] IEnumerable<T> values) where T : struct, IEquatable<int>
 		{
 			throw new NotImplementedException();
 		}
 
 		public sealed class InExtExpressionItemBuilder : Sql.IExtensionCallBuilder
 		{
-			public void Build(Sql.ISqExtensionBuilder builder)
+			public void Build(Sql.ISqlExtensionBuilder builder)
 			{
 				var parameterName = (builder.Arguments[1] as MemberExpression)?.Member.Name ?? "p";
 
@@ -266,7 +341,9 @@ namespace Tests.Linq
 
 				if (values == null)
 				{
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly
 					throw new ArgumentNullException("values", "Values for \"In/Any\" operation should not be empty");
+#pragma warning restore CA2208 // Instantiate argument exceptions correctly
 				}
 
 				using var dataTable = new DataTable("IntTableType");
@@ -280,10 +357,140 @@ namespace Tests.Linq
 
 				dataTable.AcceptChanges();
 
-				var param = new LinqToDB.SqlQuery.SqlParameter(new LinqToDB.Common.DbDataType(dataTable.GetType() ?? typeof(object), "IntTableType"), parameterName, dataTable);
+				var param = new SqlParameter(new DbDataType(dataTable.GetType() ?? typeof(object), "IntTableType"), parameterName, dataTable);
 
 				builder.AddParameter("values", param);
 			}
+		}
+
+		[Sql.Extension("{field} IN (select * from {values})", IsPredicate = true, ServerSideOnly = true)]
+		private static bool InExtClass<T>([ExprParameter] T field, [ExprParameter] IntArrayClass values) where T : struct, IEquatable<int> => throw new NotImplementedException();
+
+		[Sql.Extension("{field} IN (select * from {values})", IsPredicate = true, ServerSideOnly = true)]
+		private static bool InExtStruct<T>([ExprParameter] T field, [ExprParameter] IntArrayStruct values) where T : struct, IEquatable<int> => throw new NotImplementedException();
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4266")]
+		public void Issue4266Test_Class([IncludeDataSources(TestProvName.AllSqlServer2008Plus)] string context)
+		{
+			var ms = new MappingSchema();
+			ms.SetConverter<IntArrayClass, DataParameter>(v => v.CreateParameter());
+			ms.AddScalarType(typeof(IntArrayClass), new SqlDataType(IntArrayClass.Type));
+
+			using var db = GetDataContext(context, ms);
+
+			db.Execute("IF EXISTS (SELECT * FROM sys.types WHERE name = 'IntTableType') DROP TYPE IntTableType");
+			db.Execute("CREATE TYPE IntTableType AS TABLE(Id INT)");
+
+			try
+			{
+				var persons = new List<int>() { 1, 2 };
+				var query = from p in db.GetTable<Person>()
+							where InExtClass(p.ID, persons) && InExtClass(p.ID, new IntArrayClass(persons))
+							orderby p.ID
+							select p.ID;
+
+				var currentMiss = query.GetCacheMissCount();
+
+				var result =  query.ToList();
+				AreEqual(persons, result);
+				Assert.That(query.GetCacheMissCount(), Is.EqualTo(currentMiss + 1));
+
+				persons.AddRange(new int[] { 3, 4 });
+
+				result = query.ToList();
+
+				AreEqual(persons, result);
+				Assert.That(query.GetCacheMissCount(), Is.EqualTo(currentMiss + 1));
+			}
+			finally
+			{
+				db.Execute("IF EXISTS (SELECT * FROM sys.types WHERE name = 'IntTableType') DROP TYPE IntTableType");
+			}
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4266")]
+		public void Issue4266Test_Struct([IncludeDataSources(TestProvName.AllSqlServer2008Plus)] string context)
+		{
+			var ms = new MappingSchema();
+			ms.SetConverter<IntArrayStruct, DataParameter>(v => v.CreateParameter());
+			ms.SetDataType(typeof(IntArrayStruct), new SqlDataType(IntArrayStruct.Type));
+
+			using var db = GetDataContext(context, ms);
+
+			db.Execute("IF EXISTS (SELECT * FROM sys.types WHERE name = 'IntTableType') DROP TYPE IntTableType");
+			db.Execute("CREATE TYPE IntTableType AS TABLE(Id INT)");
+
+			try
+			{
+				var persons = new List<int>() { 1, 2 };
+				var query = from p in db.GetTable<Person>()
+							where InExtStruct(p.ID, persons) && InExtStruct(p.ID, new IntArrayStruct(persons))
+							orderby p.ID
+							select p.ID;
+
+				var currentMiss = query.GetCacheMissCount();
+
+				var result =  query.ToList();
+				AreEqual(persons, result);
+				Assert.That(query.GetCacheMissCount(), Is.EqualTo(currentMiss + 1));
+
+				persons.AddRange(new int[] { 3, 4 });
+
+				result = query.ToList();
+
+				AreEqual(persons, result);
+				Assert.That(query.GetCacheMissCount(), Is.EqualTo(currentMiss + 1));
+			}
+			finally
+			{
+				db.Execute("IF EXISTS (SELECT * FROM sys.types WHERE name = 'IntTableType') DROP TYPE IntTableType");
+			}
+		}
+
+		sealed class IntArrayClass(IEnumerable<int> values)
+		{
+			public static readonly DbDataType Type = new DbDataType(typeof(DataTable), "IntTableType");
+
+			public DataParameter CreateParameter()
+			{
+				using var dataTable = new DataTable("IntTableType");
+				dataTable.Columns.Add("Id", typeof(int));
+
+				foreach (var x in values.Distinct())
+				{
+					var newRow = dataTable.Rows.Add();
+					newRow[0] = x;
+				}
+
+				dataTable.AcceptChanges();
+
+				return new DataParameter(null, dataTable);
+			}
+
+			public static implicit operator IntArrayClass(List<int> values) => new(values);
+		}
+
+		struct IntArrayStruct(IEnumerable<int> values)
+		{
+			public static readonly DbDataType Type = new DbDataType(typeof(DataTable), "IntTableType");
+
+			public DataParameter CreateParameter()
+			{
+				using var dataTable = new DataTable("IntTableType");
+				dataTable.Columns.Add("Id", typeof(int));
+
+				foreach (var x in values.Distinct())
+				{
+					var newRow = dataTable.Rows.Add();
+					newRow[0] = x;
+				}
+
+				dataTable.AcceptChanges();
+
+				return new DataParameter(null, dataTable);
+			}
+
+			public static implicit operator IntArrayStruct(List<int> values) => new(values);
 		}
 	}
 }

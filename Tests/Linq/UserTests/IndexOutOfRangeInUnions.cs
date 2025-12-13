@@ -1,5 +1,8 @@
 ﻿using System.Linq;
+
 using LinqToDB;
+using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -31,15 +34,13 @@ namespace Tests.UserTests
 					query = query?.Union(innerQuery) ?? innerQuery;
 				}
 
-				Assert.DoesNotThrow(() => TestContext.WriteLine(query?.ToString()));
-
 				query!.ToList();
 			}
 		}
 
 		public class ClassTypeOne
 		{
-			public int     DocEntry    { get; set; }
+			[PrimaryKey] public int     DocEntry    { get; set; }
 			public int     BplId       { get; set; }
 			public string? ChaveAcesso { get; set; }
 			public string? DocStatus   { get; set; }

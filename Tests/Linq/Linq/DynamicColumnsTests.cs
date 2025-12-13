@@ -1,17 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Text.Json;
 
 using LinqToDB;
+using LinqToDB.Async;
 using LinqToDB.DataProvider.Firebird;
+using LinqToDB.Internal.Mapping;
 using LinqToDB.Mapping;
+using LinqToDB.Metadata;
 
 using NUnit.Framework;
 
+using Tests.Model;
+
 namespace Tests.Linq
 {
-	using Model;
-
 	[TestFixture]
 	public class DynamicColumnsTests : TestBase
 	{
@@ -29,8 +34,8 @@ namespace Tests.Linq
 					.Where(x => Sql.Property<int>(x, IDColumn) == 1)
 					.ToList();
 
-				Assert.AreEqual(1, result.Count);
-				Assert.AreEqual("John", result.Single().FirstName);
+				Assert.That(result, Has.Count.EqualTo(1));
+				Assert.That(result.Single().FirstName, Is.EqualTo("John"));
 			}
 		}
 
@@ -44,8 +49,8 @@ namespace Tests.Linq
 								"Hallucination with Paranoid Bugs\' Delirium of Persecution")
 					.ToList();
 
-				Assert.AreEqual(1, result.Count);
-				Assert.AreEqual("Tester", result.Single().FirstName);
+				Assert.That(result, Has.Count.EqualTo(1));
+				Assert.That(result.Single().FirstName, Is.EqualTo("Tester"));
 			}
 		}
 
@@ -59,8 +64,8 @@ namespace Tests.Linq
 								"Hallucination with Paranoid Bugs\' Delirium of Persecution")
 					.ToList();
 
-				Assert.AreEqual(1, result.Count);
-				Assert.AreEqual("Tester", result.Single().FirstName);
+				Assert.That(result, Has.Count.EqualTo(1));
+				Assert.That(result.Single().FirstName, Is.EqualTo("Tester"));
 			}
 		}
 
@@ -74,8 +79,8 @@ namespace Tests.Linq
 								"Hallucination with Paranoid Bugs\' Delirium of Persecution")
 					.ToList();
 
-				Assert.AreEqual(1, result.Count);
-				Assert.AreEqual("Tester", result.Single().FirstName);
+				Assert.That(result, Has.Count.EqualTo(1));
+				Assert.That(result.Single().FirstName, Is.EqualTo("Tester"));
 			}
 		}
 
@@ -89,7 +94,7 @@ namespace Tests.Linq
 					.Select(x => Sql.Property<object>(Sql.Property<object>(x, PatientColumn), DiagnosisColumn))
 					.ToList();
 
-				Assert.IsTrue(result.OrderBy(_ => _ as string).SequenceEqual(expected.OrderBy(_ => _)));
+				Assert.That(result.OrderBy(_ => _ as string).SequenceEqual(expected.OrderBy(_ => _)), Is.True);
 			}
 		}
 
@@ -102,8 +107,8 @@ namespace Tests.Linq
 					.Where(x => Sql.Property<string>(x, "FirstName") == "John")
 					.ToList();
 
-				Assert.AreEqual(1, result.Count);
-				Assert.AreEqual(1, result.Single().ID);
+				Assert.That(result, Has.Count.EqualTo(1));
+				Assert.That(result.Single().ID, Is.EqualTo(1));
 			}
 		}
 
@@ -117,8 +122,8 @@ namespace Tests.Linq
 								"Hallucination with Paranoid Bugs\' Delirium of Persecution")
 					.ToList();
 
-				Assert.AreEqual(1, result.Count);
-				Assert.AreEqual(2, result.Single().ID);
+				Assert.That(result, Has.Count.EqualTo(1));
+				Assert.That(result.Single().ID, Is.EqualTo(2));
 			}
 		}
 
@@ -130,7 +135,7 @@ namespace Tests.Linq
 				var expected = Person.Select(p => p.FirstName).ToList();
 				var result = db.GetTable<PersonWithDynamicStore>().ToList().Select(p => p.ExtendedProperties["FirstName"]).ToList();
 
-				Assert.IsTrue(result.SequenceEqual(expected));
+				Assert.That(result.SequenceEqual(expected), Is.True);
 			}
 		}
 
@@ -144,7 +149,7 @@ namespace Tests.Linq
 					.Select(x => Sql.Property<string>(x, "FirstName"))
 					.ToList();
 
-				Assert.IsTrue(result.SequenceEqual(expected));
+				Assert.That(result.SequenceEqual(expected), Is.True);
 			}
 		}
 
@@ -167,7 +172,7 @@ namespace Tests.Linq
 					})
 					.ToList();
 
-				Assert.IsTrue(result.SequenceEqual(expected));
+				Assert.That(result.SequenceEqual(expected), Is.True);
 			}
 		}
 
@@ -182,7 +187,7 @@ namespace Tests.Linq
 					.Select(x => Sql.Property<string>(Sql.Property<Patient>(x, PatientColumn), DiagnosisColumn))
 					.ToList();
 
-				Assert.IsTrue(result.OrderBy(_ => _).SequenceEqual(expected.OrderBy(_ => _)));
+				Assert.That(result.OrderBy(_ => _).SequenceEqual(expected.OrderBy(_ => _)), Is.True);
 			}
 		}
 
@@ -197,7 +202,7 @@ namespace Tests.Linq
 					.Select(x => x.ID)
 					.ToList();
 
-				Assert.IsTrue(result.SequenceEqual(expected));
+				Assert.That(result.SequenceEqual(expected), Is.True);
 			}
 		}
 
@@ -212,7 +217,7 @@ namespace Tests.Linq
 					.Select(x => x.ID)
 					.ToList();
 
-				Assert.IsTrue(result.SequenceEqual(expected));
+				Assert.That(result.SequenceEqual(expected), Is.True);
 			}
 		}
 
@@ -227,7 +232,7 @@ namespace Tests.Linq
 					.Select(x => x.ID)
 					.ToList();
 
-				Assert.IsTrue(result.SequenceEqual(expected));
+				Assert.That(result.SequenceEqual(expected), Is.True);
 			}
 		}
 
@@ -242,7 +247,7 @@ namespace Tests.Linq
 					.Select(x => x.ID)
 					.ToList();
 
-				Assert.IsTrue(result.OrderBy(_ => _).SequenceEqual(expected.OrderBy(_ => _)));
+				Assert.That(result.OrderBy(_ => _).SequenceEqual(expected.OrderBy(_ => _)), Is.True);
 			}
 		}
 
@@ -257,7 +262,7 @@ namespace Tests.Linq
 					.Select(p => new {p.Key, Count = p.Count()})
 					.ToList();
 
-				Assert.IsTrue(result.OrderBy(_ => _.Key).SequenceEqual(expected.OrderBy(_ => _.Key)));
+				Assert.That(result.OrderBy(_ => _.Key).SequenceEqual(expected.OrderBy(_ => _.Key)), Is.True);
 			}
 		}
 
@@ -272,7 +277,7 @@ namespace Tests.Linq
 					.Select(p => new { p.Key, Count = p.Count() })
 					.ToList();
 
-				Assert.IsTrue(result.OrderBy(_ => _.Key).SequenceEqual(expected.OrderBy(_ => _.Key)));
+				Assert.That(result.OrderBy(_ => _.Key).SequenceEqual(expected.OrderBy(_ => _.Key)), Is.True);
 			}
 		}
 
@@ -291,7 +296,7 @@ namespace Tests.Linq
 					join pa in db.Patient on Sql.Property<string>(p, "FirstName") equals Sql.Property<string>(pa, DiagnosisColumn)
 					select p;
 
-				Assert.IsTrue(result.ToList().SequenceEqual(expected.ToList()));
+				Assert.That(result.ToList().SequenceEqual(expected.ToList()), Is.True);
 			}
 		}
 
@@ -307,7 +312,7 @@ namespace Tests.Linq
 					.Select(p => ((Patient)p.ExtendedProperties[PatientColumn])?.Diagnosis)
 					.ToList();
 
-				Assert.IsTrue(result.OrderBy(_ => _).SequenceEqual(expected.OrderBy(_ => _)));
+				Assert.That(result.OrderBy(_ => _).SequenceEqual(expected.OrderBy(_ => _)), Is.True);
 			}
 		}
 
@@ -368,10 +373,9 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void SqlPropertyNoStoreNonIdentifier([DataSources] string context)
+		public void SqlPropertyNoStoreNonIdentifier([IncludeDataSources(TestProvName.AllFirebird)] string context)
 		{
-			using (new FirebirdQuoteMode(FirebirdIdentifierQuoteMode.Auto))
-			using (var db = GetDataContext(context))
+			using (var db = GetDataContext(context, o => o.UseFirebird(o => o with { IdentifierQuoteMode = FirebirdIdentifierQuoteMode.Auto })))
 			using (db.CreateLocalTable(new []
 			{
 				new DynamicTablePrototype { NotIdentifier = 77 }
@@ -386,15 +390,14 @@ namespace Tests.Linq
 
 				var result = query.ToArray();
 
-				Assert.AreEqual(77, result[0].NI);
+				Assert.That(result[0].NI, Is.EqualTo(77));
 			}
 		}
 
 		[Test]
-		public void SqlPropertyNoStoreNonIdentifierGrouping([DataSources] string context)
+		public void SqlPropertyNoStoreNonIdentifierGrouping([IncludeDataSources(TestProvName.AllFirebird)] string context)
 		{
-			using (new FirebirdQuoteMode(FirebirdIdentifierQuoteMode.Auto))
-			using (var db = GetDataContext(context))
+			using (var db = GetDataContext(context, o => o.UseFirebird(o => o with { IdentifierQuoteMode = FirebirdIdentifierQuoteMode.Auto })))
 			using (db.CreateLocalTable(new []
 			{
 				new DynamicTablePrototype { NotIdentifier = 77, Value = 5 },
@@ -413,10 +416,13 @@ namespace Tests.Linq
 					};
 
 				var result = query.ToArray();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[0].NI, Is.EqualTo(77));
+					Assert.That(result[0].Count, Is.EqualTo(2));
+				}
 
-				Assert.AreEqual(77, result[0].NI);
-				Assert.AreEqual(2,  result[0].Count);
-				Assert.AreEqual(10, result[0].Sum);
+				Assert.That(result[0].Sum, Is.EqualTo(10));
 			}
 		}
 
@@ -508,7 +514,7 @@ namespace Tests.Linq
 					}
 
 					return CompareValues(x.ExtendedProperties, y.ExtendedProperties) &&
-					       CompareValues(y.ExtendedProperties, x.ExtendedProperties);
+						   CompareValues(y.ExtendedProperties, x.ExtendedProperties);
 				}
 
 				public int GetHashCode(SomeClassWithDynamic obj)
@@ -579,14 +585,14 @@ namespace Tests.Linq
 				db.GetTable<BananaTable>().Insert(() => new BananaTable() { Id = 1, Property = "test1" });
 
 				var res = db.GetTable<BananaTable>().ToList();
-				Assert.AreEqual(1, res.Count);
-				Assert.AreEqual("test1", res[0].Property);
+				Assert.That(res, Has.Count.EqualTo(1));
+				Assert.That(res[0].Property, Is.EqualTo("test1"));
 
 				Test(nameof(BananaTable), nameof(BananaTable.Id), nameof(BananaTable.Property), 1, "banana");
 
 				res = db.GetTable<BananaTable>().ToList();
-				Assert.AreEqual(1, res.Count);
-				Assert.AreEqual("banana", res[0].Property);
+				Assert.That(res, Has.Count.EqualTo(1));
+				Assert.That(res[0].Property, Is.EqualTo("banana"));
 
 				void Test(string entity, string filterProperty, string changedProperty, object filter, object value)
 				{
@@ -608,14 +614,14 @@ namespace Tests.Linq
 				db.GetTable<BananaTable>().Insert(() => new BananaTable() { Id = 1, Property = "test1" });
 
 				var res = db.GetTable<BananaTable>().ToList();
-				Assert.AreEqual(1, res.Count);
-				Assert.AreEqual("test1", res[0].Property);
+				Assert.That(res, Has.Count.EqualTo(1));
+				Assert.That(res[0].Property, Is.EqualTo("test1"));
 
 				Test<BananaTable>(nameof(BananaTable), nameof(BananaTable.Id), nameof(BananaTable.Property), 1, "banana");
 
 				res = db.GetTable<BananaTable>().ToList();
-				Assert.AreEqual(1, res.Count);
-				Assert.AreEqual("banana", res[0].Property);
+				Assert.That(res, Has.Count.EqualTo(1));
+				Assert.That(res[0].Property, Is.EqualTo("banana"));
 
 				void Test<TEntity>(string entity, string filterProperty, string changedProperty, object filter, object value)
 					where TEntity : class
@@ -643,5 +649,257 @@ namespace Tests.Linq
 				});
 			}
 		}
+
+		#region Issue 4483
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4483")]
+		public void Issue4483Test1([IncludeDataSources(TestProvName.AllSqlServer2016Plus)] string context)
+		{
+			var ms = new MappingSchema();
+			var fm = new FluentMappingBuilder(ms);
+
+			const int readColCount = 5;
+			foreach (var col in Enumerable.Range(0, readColCount))
+			{
+				var colExpr = $"JSON_VALUE({nameof(TestJsonWrite.JsonData)}, '$.\"{col}\"') AS '{col}'";
+				fm.Entity<TestJsonRead>()
+					.Property(x => Sql.Property<float?>(x, col.ToString()))
+					.IsExpression(row => Sql.Expr<float?>(colExpr), isColumn: true)
+					;
+			}
+
+			fm.Build();
+
+			var id = 0;
+
+			var testData = Enumerable.Range(0, 100)
+					.Select
+					(
+						f =>
+						{
+							var map = Enumerable.Range(0, 1000)
+								.Select(p => new KeyValuePair<string, int>(p.ToString(), p))
+								.ToDictionary(f => f.Key, f => f.Value);
+							return new TestJsonWrite
+							{
+								Id = id++,
+								JsonData = JsonSerializer.Serialize(map)
+							};
+						}
+					)
+					.ToDictionary(f => f.Id);
+
+			using var db = GetDataContext(context, ms);
+			using var tb = db.CreateLocalTable(testData.Values);
+
+			var testRows = db.GetTable<TestJsonRead>().ToArray();
+			foreach (var testRow in testRows)
+			{
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(testData, Does.ContainKey(testRow.Id));
+					Assert.That(testRow.Values, Has.Count.EqualTo(readColCount));
+				}
+			}
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4483")]
+		public void Issue4483Test2([IncludeDataSources(TestProvName.AllSqlServer2016Plus)] string context)
+		{
+			var ms = new MappingSchema();
+			var fm = new FluentMappingBuilder(ms);
+
+			const int readColCount = 5;
+			foreach (var col in Enumerable.Range(0, readColCount))
+			{
+				var colExpr = $"JSON_VALUE({nameof(TestJsonWrite.JsonData)}, '$.\"{col}\"') AS '{col}'";
+				fm.Entity<TestJsonRead>()
+					.Property(x => Sql.Property<string?>(x, col.ToString()))
+					.IsExpression(row => Sql.Expr<string?>(colExpr), isColumn: true)
+					;
+			}
+
+			fm.Build();
+
+			var id = 0;
+
+			var testData = Enumerable.Range(0, 100)
+					.Select
+					(
+						f =>
+						{
+							var map = Enumerable.Range(0, 1000)
+								.Select(p => new KeyValuePair<string, int>(p.ToString(), p))
+								.ToDictionary(f => f.Key, f => f.Value);
+							return new TestJsonWrite
+							{
+								Id = id++,
+								JsonData = JsonSerializer.Serialize(map)
+							};
+						}
+					)
+					.ToDictionary(f => f.Id);
+
+			using var db = GetDataContext(context, ms);
+			using var tb = db.CreateLocalTable(testData.Values);
+
+			var testRows = db.GetTable<TestJsonRead>().ToArray();
+			foreach (var testRow in testRows)
+			{
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(testData, Does.ContainKey(testRow.Id));
+					Assert.That(testRow.Values, Has.Count.EqualTo(readColCount));
+				}
+			}
+		}
+
+		[Table]
+		class TestJsonWrite
+		{
+			[PrimaryKey]
+			public int Id { get; set; }
+
+			[Column(DbType = "NVARCHAR(MAX)")]
+			public string? JsonData { get; set; }
+		}
+
+		[Table(Name = nameof(TestJsonWrite))]
+		class TestJsonRead
+		{
+			[PrimaryKey]
+			public int Id { get; set; }
+
+			[DynamicColumnsStore]
+			public Dictionary<string, object?> Values { get; set; } = new();
+		}
+		#endregion
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/2817")]
+		public void Issue2817Test([DataSources] string context)
+		{
+			using var db = GetDataContext(context);
+
+			IQueryable<Person> query = from p in db.Person
+				   orderby p.LastName
+				   select p;
+
+			query = ApplyFilterToGeneric(query);
+
+			query.ToList();
+
+			static IQueryable<T> ApplyFilterToGeneric<T>(IQueryable<T> query) => query.Where(p => Sql.Property<string>(p, "LastName") == "ministra");
+		}
+
+		[Test]
+		public void Issue4602([DataSources] string context)
+		{
+			var ms = new MappingSchema();
+			ms.AddMetadataReader(new CustomMetadataReader());
+
+			using (var db = GetDataContext(context, ms))
+			using (db.CreateLocalTable<DynamicParent>())
+			using (db.CreateLocalTable<DynamicChild>())
+			{
+				Assert.DoesNotThrowAsync(async () =>
+				{
+					await db.GetTable<DynamicParent>()
+						.Where(it => it.Child!.ID == 123)
+						.ToArrayAsync();
+				});
+			}
+		}
+
+		public class DynamicParent
+		{
+			[Column, PrimaryKey, Identity]
+			public int ID { get; set; }
+
+			[Association(ThisKey = "ID", OtherKey = "ParentID")]
+			public DynamicChild? Child { get; set; }
+
+			[DynamicColumnsStore]
+			public IDictionary<string, object> ExtendedProperties { get; set; } = null!;
+		}
+
+		public class DynamicChild
+		{
+			[Column, PrimaryKey, Identity]
+			public int ID { get; set; }
+
+			[Association(ThisKey = "ParentID", OtherKey = "ID")]
+			public DynamicParent Parent { get; set; } = null!;
+
+			[DynamicColumnsStore]
+			public IDictionary<string, object> ExtendedProperties { get; set; } = null!;
+		}
+		
+		class CustomMetadataReader: IMetadataReader
+		{
+			public MappingAttribute[] GetAttributes(Type type)
+			{
+				return Array.Empty<MappingAttribute>();
+			}
+
+			public MappingAttribute[] GetAttributes(Type type, MemberInfo memberInfo)
+			{
+				if (type != typeof(DynamicChild) || memberInfo.Name != "ParentID")
+					return Array.Empty<MappingAttribute>();
+
+				return new[]
+				{
+					new ColumnAttribute("ParentID")
+				};
+			}
+
+			public MemberInfo[] GetDynamicColumns(Type type)
+			{
+				if (type != typeof(DynamicChild))
+					return Array.Empty<MemberInfo>();
+
+				return new[]
+				{
+					new DynamicColumnInfo(typeof(DynamicChild), typeof(int), "ParentID"),
+				};
+			}
+
+			public string GetObjectID()
+			{
+				return $".{nameof(CustomMetadataReader)}";
+			}
+		}
+
+		#region Issue 4770
+
+		sealed class Issue4770Person
+		{
+			public int Id { get; set; }
+			public Issue4770Address? Address { get; set; }
+			public string ?TestPostcode { get; set; }
+		}
+
+		sealed class Issue4770Address
+		{
+			public string? Postcode { get; set; }
+		}
+
+		[ActiveIssue]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4770")]
+		public void Issue4770([DataSources] string context)
+		{
+			var ms = new MappingSchema();
+			var fb = new FluentMappingBuilder(ms);
+			fb.Entity<Issue4770Person>()
+				.Property(c => c.Id).IsPrimaryKey()
+				.Property(c => c.Address!.Postcode).IsExpression(c => Sql.Upper(Sql.Property<string>(c, "Postcode")), true).IsColumn()
+				.Property(c => c.TestPostcode).IsExpression(c => Sql.Upper(Sql.Property<string>(c, "Postcode")), true);
+
+			fb.Build();
+
+			using var db = GetDataContext(context, ms);
+			using var tb = db.CreateLocalTable<Issue4770Person>();
+
+			tb.ToArray();
+		}
+		#endregion
 	}
 }

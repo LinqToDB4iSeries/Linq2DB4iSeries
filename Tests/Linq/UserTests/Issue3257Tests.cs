@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
-using FluentAssertions;
+
 using LinqToDB;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -37,7 +37,7 @@ namespace Tests.UserTests
 		}
 
 		[Sql.Expression(ProviderName.SqlServer, "ISNULL({0}, {1})", ServerSideOnly = true)]
-		public static T IsNull<T>(T value, T defaultValue)
+		private static T IsNull<T>(T value, T defaultValue)
 		{
 			throw new NotImplementedException();
 		}

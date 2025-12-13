@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
-using System.Runtime.Serialization;
+
 using LinqToDB;
-using LinqToDB.Data;
 using LinqToDB.Mapping;
-using Newtonsoft.Json;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests.Test3840
@@ -34,7 +30,7 @@ namespace Tests.UserTests.Test3840
 						.HasTableName("Common_Topology_Locations")
 						.Property(e => e.StartDateTime)
 						.Property(e => e.PreNotification)
-							.HasDataType(LinqToDB.DataType.Int64)
+							.HasDataType(DataType.Int64)
 						.Property(e => e.PreNotification2)
 						.Property(e => e.PreNotification3)
 						.Property(e => e.StrField)

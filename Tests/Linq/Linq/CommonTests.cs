@@ -1,19 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Threading.Tasks;
+
 using LinqToDB;
 using LinqToDB.Data;
 using LinqToDB.Mapping;
 
 using NUnit.Framework;
 
+using Tests.Model;
+
 namespace Tests.Linq
 {
-	using Model;
-
 	[TestFixture]
 	public class CommonTests : TestBase
 	{
@@ -35,9 +34,12 @@ namespace Tests.Linq
 
 				var list = q.ToList();
 
-				Assert.That(list.Count,     Is.EqualTo(1));
-				Assert.That(list[0].ChildA, Is.Null);
-				Assert.That(list[0].ChildB, Is.Not.Null);
+				Assert.That(list, Has.Count.EqualTo(1));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(list[0].ChildA, Is.Null);
+					Assert.That(list[0].ChildB, Is.Not.Null);
+				}
 			}
 		}
 
@@ -124,9 +126,16 @@ namespace Tests.Linq
 		public void ClientCoalesce1([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
+			{
+				var query = from p in db.Parent select p.Value1 ?? GetDefault1();
+
+				query = query.Where(x => x > 10);
+				query.ToList();
+
 				AreEqual(
-					from p in    Parent select p.Value1 ?? GetDefault1(),
+					from p in Parent select p.Value1    ?? GetDefault1(),
 					from p in db.Parent select p.Value1 ?? GetDefault1());
+			}
 		}
 
 		static int GetDefault2(int n)
@@ -197,9 +206,8 @@ namespace Tests.Linq
 		public void ClosureTest([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
-				Assert.AreNotEqual(
-					new Test().TestClosure(db),
-					new Test().TestClosure(db));
+				Assert.That(
+					new Test().TestClosure(db), Is.Not.EqualTo(new Test().TestClosure(db)));
 		}
 
 		[Test]
@@ -270,7 +278,7 @@ namespace Tests.Linq
 					select p);
 		}
 
-		public ITable<Person> People2(TestDataConnection db)
+		private ITable<Person> People2(TestDataConnection db)
 		{
 			return db.GetTable<Person>();
 		}
@@ -310,7 +318,6 @@ namespace Tests.Linq
 			}
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void Condition1([DataSources] string context)
 		{
@@ -353,7 +360,7 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 				AreEqual(
 					from p in    Person where string.Concat(p.FirstName, " ", 1, 2) == "John 12" select p.FirstName,
-					from p in db.Person where string.Concat(p.FirstName, " ", 1, 2) == "John 12" select p.FirstName);
+					from p in db.Person where string.Concat(new object[] { p.FirstName, " ", 1, 2 }) == "John 12" select p.FirstName);
 		}
 
 		enum PersonID
@@ -509,6 +516,7 @@ namespace Tests.Linq
 			AreEqual(groups1, groups2);
 		}
 
+		[YdbMemberNotFound]
 		[Test]
 		public void ParameterTest1([DataSources(TestProvName.AllClickHouse)] string context)
 		{
@@ -559,6 +567,7 @@ namespace Tests.Linq
 
 		sealed class User
 		{
+			[PrimaryKey] public int Id { get; set; }
 			public string? FirstName;
 			public int?    Status;
 		}
@@ -567,19 +576,17 @@ namespace Tests.Linq
 		[Test]
 		public void Issue191Test([DataSources] string context)
 		{
-			using (var db = GetDataContext(context))
-			{
-				string? firstName = null;
-				int?    status    = null;
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable<User>();
 
-				var str = db.GetTable<User>()
-					.Where(user =>
-						user.Status == status &&
-						(string.IsNullOrEmpty(firstName) || user.FirstName!.Contains(firstName)))
-					.ToString();
+			string? firstName = null;
+			int?    status    = null;
 
-				Debug.WriteLine(str);
-			}
+			db.GetTable<User>()
+				.Where(user =>
+					user.Status == status &&
+					(string.IsNullOrEmpty(firstName) || user.FirstName!.Contains(firstName)))
+				.ToArray();
 		}
 	}
 

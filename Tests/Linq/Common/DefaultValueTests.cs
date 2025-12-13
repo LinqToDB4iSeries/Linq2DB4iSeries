@@ -1,6 +1,6 @@
 ﻿using System;
 
-using LinqToDB.Common;
+using LinqToDB.Mapping;
 
 using NUnit.Framework;
 
@@ -12,50 +12,53 @@ namespace Tests.Common
 		[Test]
 		public void BaseTypes()
 		{
-			Assert.AreEqual(default(int),            DefaultValue<int>.           Value);
-			Assert.AreEqual(default(uint),           DefaultValue<uint>.          Value);
-			Assert.AreEqual(default(byte),           DefaultValue<byte>.          Value);
-			Assert.AreEqual(default(char),           DefaultValue<char>.          Value);
-			Assert.AreEqual(default(bool),           DefaultValue<bool>.          Value);
-			Assert.AreEqual(default(sbyte),          DefaultValue<sbyte>.         Value);
-			Assert.AreEqual(default(short),          DefaultValue<short>.         Value);
-			Assert.AreEqual(default(long),           DefaultValue<long>.          Value);
-			Assert.AreEqual(default(ushort),         DefaultValue<ushort>.        Value);
-			Assert.AreEqual(default(ulong),          DefaultValue<ulong>.         Value);
-			Assert.AreEqual(default(float),          DefaultValue<float>.         Value);
-			Assert.AreEqual(default(double),         DefaultValue<double>.        Value);
-			Assert.AreEqual(default(decimal),        DefaultValue<decimal>.       Value);
-			Assert.AreEqual(default(DateTime),       DefaultValue<DateTime>.      Value);
-			Assert.AreEqual(default(TimeSpan),       DefaultValue<TimeSpan>.      Value);
-			Assert.AreEqual(default(DateTimeOffset), DefaultValue<DateTimeOffset>.Value);
-			Assert.AreEqual(default(Guid),           DefaultValue<Guid>.          Value);
-			Assert.AreEqual(default(string),         DefaultValue<string>.        Value);
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(DefaultValue<int>.Value, Is.Default);
+				Assert.That(DefaultValue<uint>.Value, Is.Default);
+				Assert.That(DefaultValue<byte>.Value, Is.Default);
+				Assert.That(DefaultValue<char>.Value, Is.Default);
+				Assert.That(DefaultValue<bool>.Value, Is.Default);
+				Assert.That(DefaultValue<sbyte>.Value, Is.Default);
+				Assert.That(DefaultValue<short>.Value, Is.Default);
+				Assert.That(DefaultValue<long>.Value, Is.Default);
+				Assert.That(DefaultValue<ushort>.Value, Is.Default);
+				Assert.That(DefaultValue<ulong>.Value, Is.Default);
+				Assert.That(DefaultValue<float>.Value, Is.Default);
+				Assert.That(DefaultValue<double>.Value, Is.Default);
+				Assert.That(DefaultValue<decimal>.Value, Is.Default);
+				Assert.That(DefaultValue<DateTime>.Value, Is.Default);
+				Assert.That(DefaultValue<TimeSpan>.Value, Is.Default);
+				Assert.That(DefaultValue<DateTimeOffset>.Value, Is.Default);
+				Assert.That(DefaultValue<Guid>.Value, Is.Default);
+				Assert.That(DefaultValue<string>.Value, Is.Null);
+			}
 		}
 
 		[Test]
 		public void Int()
 		{
-			Assert.AreEqual(0, DefaultValue<int>.Value);
+			Assert.That(DefaultValue<int>.Value, Is.Zero);
 			DefaultValue<int>.Value = 5;
-			Assert.AreEqual(5, DefaultValue<int>.Value);
+			Assert.That(DefaultValue<int>.Value, Is.EqualTo(5));
 			DefaultValue<int>.Value = 0;
 		}
 
 		[Test]
 		public void UInt()
 		{
-			Assert.AreEqual(0u, DefaultValue.GetValue(typeof(uint)));
+			Assert.That(DefaultValue.GetValue(typeof(uint)), Is.TypeOf<uint>().And.Zero);
 			DefaultValue<uint>.Value = 10;
-			Assert.AreEqual(10u, DefaultValue.GetValue(typeof(uint)));
+			Assert.That(DefaultValue.GetValue(typeof(uint)), Is.EqualTo(10u));
 			DefaultValue<uint>.Value = 0;
 		}
 
 		[Test]
 		public void IntNullable()
 		{
-			Assert.AreEqual(null, DefaultValue<int?>.Value);
+			Assert.That(DefaultValue<int?>.Value, Is.Null);
 			DefaultValue<int?>.Value = 5;
-			Assert.AreEqual(5, DefaultValue<int?>.Value);
+			Assert.That(DefaultValue<int?>.Value, Is.EqualTo(5));
 			DefaultValue<int?>.Value = null;
 		}
 
@@ -68,27 +71,27 @@ namespace Tests.Common
 		[Test]
 		public void Enum()
 		{
-			Assert.AreEqual(Enum1.Value1, DefaultValue<Enum1>.Value);
+			Assert.That(DefaultValue<Enum1>.Value, Is.EqualTo(Enum1.Value1));
 			DefaultValue<Enum1>.Value = Enum1.Value2;
-			Assert.AreEqual(Enum1.Value2, DefaultValue<Enum1>.Value);
+			Assert.That(DefaultValue<Enum1>.Value, Is.EqualTo(Enum1.Value2));
 			DefaultValue<Enum1>.Value = Enum1.Value1;
 		}
 
 		[Test]
 		public void EnumNullable()
 		{
-			Assert.AreEqual(null, DefaultValue<Enum1?>.Value);
+			Assert.That(DefaultValue<Enum1?>.Value, Is.Null);
 			DefaultValue<Enum1?>.Value = Enum1.Value2;
-			Assert.AreEqual(Enum1.Value2, DefaultValue<Enum1?>.Value);
+			Assert.That(DefaultValue<Enum1?>.Value, Is.EqualTo(Enum1.Value2));
 			DefaultValue<Enum1?>.Value = null;
 		}
 
 		[Test]
 		public void String()
 		{
-			Assert.AreEqual(null, DefaultValue<string>.Value);
+			Assert.That(DefaultValue<string>.Value, Is.Null);
 			DefaultValue<string>.Value = "";
-			Assert.AreEqual("", DefaultValue<string>.Value);
+			Assert.That(DefaultValue<string>.Value, Is.EqualTo(""));
 			DefaultValue<string?>.Value = null;
 		}
 	}

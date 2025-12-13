@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+
 using LinqToDB;
+using LinqToDB.Async;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -33,15 +36,15 @@ namespace Tests.UserTests
 					.Select(x => Sql.ToNullable(x.Value))
 					.MaxAsync();
 
-				Assert.IsNull(value1);
+				Assert.That(value1, Is.Null);
 
 				var value2 = await db.GetTable<TestClass>()
 					.Where(x => x.Id == 0)
-					.Select(x => x.Value)
-					.DefaultIfEmpty()
+					.Select(x => (int?)x.Value)
+					.DefaultIfEmpty(0)
 					.MaxAsync();
 
-				Assert.AreEqual(0, value2);
+				Assert.That(value2, Is.Zero);
 
 				var value3 = await db.GetTable<TestClass>()
 					.Where(x => x.Id == 0)
@@ -49,7 +52,7 @@ namespace Tests.UserTests
 					.DefaultIfEmpty(5)
 					.MaxAsync();
 
-				Assert.AreEqual(5, value3);
+				Assert.That(value3, Is.EqualTo(5));
 			}
 		}
 	}

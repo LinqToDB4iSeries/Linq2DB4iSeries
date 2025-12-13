@@ -20,11 +20,11 @@
 			},
 			"DB2.iSeries.OleDb.Base": {
 				"Provider": "DB2.iSeries.OleDb.74",
-				"ConnectionString": "Provider=IBMDASQL;Data Source={HOST};User Id={USER};Password={PASSWORD};Default Collection={DEFAULT_SCHEMA};Convert Date Time To Char=TRUE;Library List={LIBRARY_LIST};Maximum Decimal Precision=63;Maximum Decimal Scale=63;Naming Convention=0"
+				"ConnectionString": "Provider=IBMDASQL;Data Source={HOST};User Id={USER};Password={PASSWORD};Default Collection={DEFAULT_SCHEMA};Convert Date Time To Char=TRUE;Library List={LIBRARY_LIST};Maximum Decimal Precision=63;Maximum Decimal Scale=63;Naming Convention=0;Keep Trailing Blanks=TRUE"
 			},
 			"DB2.iSeries.OleDb.Base.GAS": {
 				"Provider": "DB2.iSeries.OleDb.74.GAS",
-				"ConnectionString": "Provider=IBMDASQL;Data Source={HOST};User Id={USER};Password={PASSWORD};Default Collection={DEFAULT_SCHEMA};Convert Date Time To Char=TRUE;Library List={LIBRARY_LIST};Maximum Decimal Precision=63;Maximum Decimal Scale=63;Naming Convention=0"
+				"ConnectionString": "Provider=IBMDASQL;Data Source={HOST};User Id={USER};Password={PASSWORD};Default Collection={DEFAULT_SCHEMA};Convert Date Time To Char=TRUE;Library List={LIBRARY_LIST};Maximum Decimal Precision=63;Maximum Decimal Scale=63;Naming Convention=0;Keep Trailing Blanks=TRUE"
 			},
 			"DB2.iSeries.DB2Connect.Base": {
 				"Provider": "DB2.iSeries.DB2Connect.74",
@@ -61,15 +61,15 @@
 				"ConnectionString": "[DB2.iSeries.Net.Base.GAS]"
 			},
 			"DB2.iSeries.Net.72.GAS": {
-				"Provider": "DB2.iSeries.Net.72",
+				"Provider": "DB2.iSeries.Net.72.GAS",
 				"ConnectionString": "[DB2.iSeries.Net.Base.GAS]"
 			},
 			"DB2.iSeries.Net.73.GAS": {
-				"Provider": "DB2.iSeries.Net.73",
+				"Provider": "DB2.iSeries.Net.73.GAS",
 				"ConnectionString": "[DB2.iSeries.Net.Base.GAS]"
 			},
 			"DB2.iSeries.Net.74.GAS": {
-				"Provider": "DB2.iSeries.Net.74",
+				"Provider": "DB2.iSeries.Net.74.GAS",
 				"ConnectionString": "[DB2.iSeries.Net.Base.GAS]"
 			},
 
@@ -95,15 +95,15 @@
 				"ConnectionString": "[DB2.iSeries.ODBC.Base.GAS]"
 			},
 			"DB2.iSeries.ODBC.72.GAS": {
-				"Provider": "DB2.iSeries.ODBC.72",
+				"Provider": "DB2.iSeries.ODBC.72.GAS",
 				"ConnectionString": "[DB2.iSeries.ODBC.Base.GAS]"
 			},
 			"DB2.iSeries.ODBC.73.GAS": {
-				"Provider": "DB2.iSeries.ODBC.73",
+				"Provider": "DB2.iSeries.ODBC.73.GAS",
 				"ConnectionString": "[DB2.iSeries.ODBC.Base.GAS]"
 			},
 			"DB2.iSeries.ODBC.74.GAS": {
-				"Provider": "DB2.iSeries.ODBC.74",
+				"Provider": "DB2.iSeries.ODBC.74.GAS",
 				"ConnectionString": "[DB2.iSeries.ODBC.Base.GAS]"
 			},
 
@@ -129,15 +129,15 @@
 				"ConnectionString": "[DB2.iSeries.OleDb.Base.GAS]"
 			},
 			"DB2.iSeries.OleDb.72.GAS": {
-				"Provider": "DB2.iSeries.OleDb.72",
+				"Provider": "DB2.iSeries.OleDb.72.GAS",
 				"ConnectionString": "[DB2.iSeries.OleDb.Base.GAS]"
 			},
 			"DB2.iSeries.OleDb.73.GAS": {
-				"Provider": "DB2.iSeries.OleDb.73",
+				"Provider": "DB2.iSeries.OleDb.73.GAS",
 				"ConnectionString": "[DB2.iSeries.OleDb.Base.GAS]"
 			},
 			"DB2.iSeries.OleDb.74.GAS": {
-				"Provider": "DB2.iSeries.OleDb.74",
+				"Provider": "DB2.iSeries.OleDb.74.GAS",
 				"ConnectionString": "[DB2.iSeries.OleDb.Base.GAS]"
 			},
 
@@ -163,22 +163,22 @@
 				"ConnectionString": "[DB2.iSeries.DB2Connect.Base.GAS]"
 			},
 			"DB2.iSeries.DB2Connect.72.GAS": {
-				"Provider": "DB2.iSeries.DB2Connect.72",
+				"Provider": "DB2.iSeries.DB2Connect.72.GAS",
 				"ConnectionString": "[DB2.iSeries.DB2Connect.Base.GAS]"
 			},
 			"DB2.iSeries.DB2Connect.73.GAS": {
-				"Provider": "DB2.iSeries.DB2Connect.73",
+				"Provider": "DB2.iSeries.DB2Connect.73.GAS",
 				"ConnectionString": "[DB2.iSeries.DB2Connect.Base.GAS]"
 			},
 			"DB2.iSeries.DB2Connect.74.GAS": {
-				"Provider": "DB2.iSeries.DB2Connect.74",
+				"Provider": "DB2.iSeries.DB2Connect.74.GAS",
 				"ConnectionString": "[DB2.iSeries.DB2Connect.Base.GAS]"
 			}
 		}
 	},
-	"NET472": {
+	"NETFX": {
 		"BasedOn": "LocalConnectionStrings",
-		"DefaultConfiguration": "DB2.iSeries.OleDb.74",
+		"DefaultConfiguration": "DB2.iSeries.Net.74",
 		"Providers": [
 			//"DB2.iSeries.ODBC.71",
 			//"DB2.iSeries.ODBC.72",
@@ -210,16 +210,16 @@
 			//"DB2.iSeries.Net.71",
 			//"DB2.iSeries.Net.72",
 			//"DB2.iSeries.Net.73",
-			//"DB2.iSeries.Net.74",
+			//"DB2.iSeries.Net.74"
 			//"DB2.iSeries.Net.71.GAS",
 			//"DB2.iSeries.Net.72.GAS",
 			//"DB2.iSeries.Net.73.GAS",
 			//"DB2.iSeries.Net.74.GAS"
 		]
 	},
-	"NET60": {
+	"NET80": {
 		"BasedOn": "LocalConnectionStrings",
-		"DefaultConfiguration": "DB2.iSeries.OleDb.74",
+		"DefaultConfiguration": "DB2.iSeries.ODBC.74",
 		"Providers": [
 			//"DB2.iSeries.ODBC.71",
 			//"DB2.iSeries.ODBC.72",

@@ -3,6 +3,7 @@ using System.Linq;
 
 using LinqToDB;
 using LinqToDB.DataProvider.PostgreSQL;
+using LinqToDB.Mapping;
 
 using NUnit.Framework;
 
@@ -100,7 +101,7 @@ namespace Tests.Extensions
 
 			_ = q.ToList();
 
-			Assert.That(LastQuery, Contains.Substring("\nFOR UPDATE").Using(StringComparison.Ordinal));
+			Assert.That(LastQuery, Contains.Substring("\tFOR UPDATE").Using(StringComparison.Ordinal));
 			Assert.That(LastQuery, Contains.Substring("\nFOR SHARE").Using(StringComparison.Ordinal));
 			Assert.That(LastQuery, Contains.Substring("\nFOR KEY SHARE").Using(StringComparison.Ordinal));
 		}
@@ -187,14 +188,13 @@ namespace Tests.Extensions
 						.ForShareHint()
 						.Union
 						(
-							from p in db.Child
-							select p.Parent
+							from c in db.Child
+							select c.Parent
 						)
 						.Union
 						(
 							from p in db.Parent
 							from c in db.Child.TableID("pp")
-								.AsSubQuery()
 								.AsPostgreSQL()
 								.ForShareHint()
 							select p
@@ -217,6 +217,27 @@ namespace Tests.Extensions
 				")",
 				"FOR SHARE",
 				")"));
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4333")]
+		public void Issue4333Test([IncludeDataSources(TestProvName.AllPostgreSQL)] string context)
+		{
+			using var db = GetDataContext(context);
+
+			var data = new[]
+			{
+				new Issue4333Table { Name = "Bar" },
+				new Issue4333Table { Name = "Baz" },
+			};
+
+			using var table = db.CreateTempTable<Issue4333Table>(data);
+		}
+
+		[Table]
+		sealed class Issue4333Table
+		{
+			[PrimaryKey, Identity] public int Id { get; set; }
+			[Column] public string? Name { get; set; }
 		}
 	}
 }

@@ -1,9 +1,9 @@
-﻿using LinqToDB.Common;
-using LinqToDB.Mapping;
-using LinqToDB.SqlQuery;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
@@ -21,9 +21,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				int? maxPrecision = null,
 				int? maxScale = null,
 				bool requiresLength = false,
-				bool requiresPrecision = false,
-				bool requiresScale = false,
-				bool forBitData = false)
+				bool requiresPrecisionScale = false,
+				bool forBitData = false,
+				bool isComposite = false)
 			{
 				Name = name;
 				DataType = dataType;
@@ -34,9 +34,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				MaxPrecision = maxPrecision;
 				MaxScale = maxScale;
 				RequiresLength = requiresLength;
-				RequiresPrecision = requiresPrecision;
-				RequiresScale = requiresScale;
+				RequiresPrecisionScale = requiresPrecisionScale;
 				ForBitData = forBitData;
+				IsComposite = isComposite;
 			}
 
 			public string Name { get; }
@@ -48,50 +48,55 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			public int? MaxPrecision { get; }
 			public int? MaxScale { get; }
 			public bool RequiresLength { get; }
-			public bool RequiresPrecision { get; }
+			public bool RequiresPrecisionScale { get; }
 			public bool RequiresScale { get; }
 			public bool ForBitData { get; }
+			public bool	IsComposite { get; }
 
 			public bool HasLength => DefaultLength.HasValue;
 			public bool HasPrecision => DefaultPrecision.HasValue;
 			public bool HasScale => DefaultPrecision.HasValue && DefaultScale.HasValue;
 		}
 
-		public readonly static DbTypeInfo DbBinary = new DbTypeInfo(Constants.DbTypes.Binary, DataType.Binary, defaultLength: 4000, maxLength: 32740, requiresLength: true);
-		public readonly static DbTypeInfo DbVarBinary = new DbTypeInfo(Constants.DbTypes.VarBinary, DataType.VarBinary, defaultLength: 4000, maxLength: 32740, requiresLength: true);
-		public readonly static DbTypeInfo DbBlob = new DbTypeInfo(Constants.DbTypes.Blob, DataType.Blob, defaultLength: 1048576, maxLength: 2147483647, requiresLength: true);
+		private const int MAX_CHAR_LENGTH = 32740;
+		private const int MAX_BINARY_LENGTH = 32740;
+		private const int MAX_NCHAR_LENGTH = 32740 / 2;
+		
+		public readonly static DbTypeInfo DbBinary = new(Constants.DbTypes.Binary, DataType.Binary, defaultLength: 4000, maxLength: MAX_BINARY_LENGTH, requiresLength: true);
+		public readonly static DbTypeInfo DbVarBinary = new(Constants.DbTypes.VarBinary, DataType.VarBinary, defaultLength: 4000, maxLength: MAX_BINARY_LENGTH, requiresLength: true);
+		public readonly static DbTypeInfo DbBlob = new(Constants.DbTypes.Blob, DataType.Blob, defaultLength: 1048576, maxLength: 2147483647, requiresLength: true);
 
-		public readonly static DbTypeInfo DbChar = new DbTypeInfo(Constants.DbTypes.Char, DataType.Char, defaultLength: 255, maxLength: 32740, requiresLength: true);
-		public readonly static DbTypeInfo DbVarChar = new DbTypeInfo(Constants.DbTypes.VarChar, DataType.VarChar, defaultLength: 255, maxLength: 32740, requiresLength: true);
-		public readonly static DbTypeInfo DbClob = new DbTypeInfo(Constants.DbTypes.Clob, DataType.Text, defaultLength: 1048576, maxLength: 2147483647, requiresLength: true);
+		public readonly static DbTypeInfo DbChar = new(Constants.DbTypes.Char, DataType.Char, defaultLength: 255, maxLength: MAX_CHAR_LENGTH, requiresLength: true);
+		public readonly static DbTypeInfo DbVarChar = new(Constants.DbTypes.VarChar, DataType.VarChar, defaultLength: 255, maxLength: MAX_CHAR_LENGTH, requiresLength: true);
+		public readonly static DbTypeInfo DbClob = new(Constants.DbTypes.Clob, DataType.Text, defaultLength: 1048576, maxLength: 2147483647, requiresLength: true);
 
-		public readonly static DbTypeInfo DbNChar = new DbTypeInfo(Constants.DbTypes.NChar, DataType.NChar, defaultLength: 255, maxLength: 16370, requiresLength: true);
-		public readonly static DbTypeInfo DbNVarChar = new DbTypeInfo(Constants.DbTypes.NVarChar, DataType.NVarChar, defaultLength: 255, maxLength: 16370, requiresLength: true);
-		public readonly static DbTypeInfo DbNClob = new DbTypeInfo(Constants.DbTypes.NClob, DataType.NText, defaultLength: 1048576, maxLength: 1073741823, requiresLength: true);
+		public readonly static DbTypeInfo DbNChar = new(Constants.DbTypes.NChar, DataType.NChar, defaultLength: 255, maxLength: MAX_NCHAR_LENGTH, requiresLength: true);
+		public readonly static DbTypeInfo DbNVarChar = new(Constants.DbTypes.NVarChar, DataType.NVarChar, defaultLength: 255, maxLength: MAX_NCHAR_LENGTH, requiresLength: true);
+		public readonly static DbTypeInfo DbNClob = new(Constants.DbTypes.NClob, DataType.NText, defaultLength: 1048576, maxLength: 1073741823, requiresLength: true);
 
-		public readonly static DbTypeInfo DbGraphic = new DbTypeInfo(Constants.DbTypes.Graphic, DataType.NChar, defaultLength: 255, maxLength: 16370, requiresLength: true);
-		public readonly static DbTypeInfo DbVarGraphic = new DbTypeInfo(Constants.DbTypes.VarGraphic, DataType.NVarChar, defaultLength: 255, maxLength: 16370, requiresLength: true);
-		public readonly static DbTypeInfo DbDbClob = new DbTypeInfo(Constants.DbTypes.DbClob, DataType.NText, defaultLength: 1048576, maxLength: 1073741823, requiresLength: true);
+		public readonly static DbTypeInfo DbGraphic = new(Constants.DbTypes.Graphic, DataType.NChar, defaultLength: 255, maxLength: MAX_NCHAR_LENGTH, requiresLength: true);
+		public readonly static DbTypeInfo DbVarGraphic = new(Constants.DbTypes.VarGraphic, DataType.NVarChar, defaultLength: 255, maxLength: MAX_NCHAR_LENGTH, requiresLength: true);
+		public readonly static DbTypeInfo DbDbClob = new(Constants.DbTypes.DbClob, DataType.NText, defaultLength: 1048576, maxLength: 1073741823, requiresLength: true);
 
-		public readonly static DbTypeInfo DbSmallInt = new DbTypeInfo(Constants.DbTypes.SmallInt, DataType.Int16);
-		public readonly static DbTypeInfo DbInteger = new DbTypeInfo(Constants.DbTypes.Integer, DataType.Int32);
-		public readonly static DbTypeInfo DbBigInt = new DbTypeInfo(Constants.DbTypes.BigInt, DataType.Int64);
+		public readonly static DbTypeInfo DbSmallInt = new(Constants.DbTypes.SmallInt, DataType.Int16);
+		public readonly static DbTypeInfo DbInteger = new(Constants.DbTypes.Integer, DataType.Int32);
+		public readonly static DbTypeInfo DbBigInt = new(Constants.DbTypes.BigInt, DataType.Int64);
 
-		public readonly static DbTypeInfo DbDecimal = new DbTypeInfo(Constants.DbTypes.Decimal, DataType.Decimal, defaultPrecision: 29, defaultScale: 10, maxPrecision: 63, maxScale: 60, requiresPrecision: true, requiresScale: true);
-		public readonly static DbTypeInfo DbReal = new DbTypeInfo(Constants.DbTypes.Real, DataType.Single, defaultLength: 4, maxLength: 4);
-		public readonly static DbTypeInfo DbFloat = new DbTypeInfo(Constants.DbTypes.Float, DataType.Double, defaultLength: 8, maxLength: 8);
-		public readonly static DbTypeInfo DbDouble = new DbTypeInfo(Constants.DbTypes.Double, DataType.Double, defaultLength: 8, maxLength: 8);
+		public readonly static DbTypeInfo DbDecimal = new(Constants.DbTypes.Decimal, DataType.Decimal, defaultPrecision: 29, defaultScale: 10, maxPrecision: 63, maxScale: 60, requiresPrecisionScale: true);
+		public readonly static DbTypeInfo DbReal = new(Constants.DbTypes.Real, DataType.Single, defaultLength: 4, maxLength: 4);
+		public readonly static DbTypeInfo DbFloat = new(Constants.DbTypes.Float, DataType.Double, defaultLength: 8, maxLength: 8);
+		public readonly static DbTypeInfo DbDouble = new(Constants.DbTypes.Double, DataType.Double, defaultLength: 8, maxLength: 8);
 
-		public readonly static DbTypeInfo DbTimestamp = new DbTypeInfo(Constants.DbTypes.TimeStamp, DataType.DateTime, defaultPrecision: 6, maxPrecision: 12);
-		public readonly static DbTypeInfo DbDate = new DbTypeInfo(Constants.DbTypes.Date, DataType.Date);
-		public readonly static DbTypeInfo DbTime = new DbTypeInfo(Constants.DbTypes.Time, DataType.Time);
+		public readonly static DbTypeInfo DbTimestamp = new(Constants.DbTypes.TimeStamp, DataType.DateTime, defaultPrecision: 6, maxPrecision: 12);
+		public readonly static DbTypeInfo DbDate = new(Constants.DbTypes.Date, DataType.Date);
+		public readonly static DbTypeInfo DbTime = new(Constants.DbTypes.Time, DataType.Time);
 
-		public readonly static DbTypeInfo DbChar16ForBitData = new DbTypeInfo(Constants.DbTypes.Char16ForBitData, DataType.Guid, forBitData: true);
+		public readonly static DbTypeInfo DbChar16ForBitData = new(Constants.DbTypes.Char16ForBitData, DataType.Guid, defaultLength: 16, maxLength: 16, forBitData: true, isComposite: true);
 
-		public readonly static DbTypeInfo DbDataLink = new DbTypeInfo(Constants.DbTypes.DataLink, DataType.Undefined);
-		public readonly static DbTypeInfo DbRowId = new DbTypeInfo(Constants.DbTypes.RowId, DataType.Undefined);
+		public readonly static DbTypeInfo DbDataLink = new(Constants.DbTypes.DataLink, DataType.Undefined);
+		public readonly static DbTypeInfo DbRowId = new(Constants.DbTypes.RowId, DataType.Undefined);
 
-		public static readonly IReadOnlyDictionary<string, DbTypeInfo> DbTypes = new DbTypeInfo[]
+		public static readonly IReadOnlyDictionary<string, DbTypeInfo> DbTypeInfos = new DbTypeInfo[]
 		{
 			DbBinary, DbVarBinary, DbBlob,
 			DbChar, DbVarChar, DbClob,
@@ -112,218 +117,284 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static readonly IReadOnlyDictionary<DataType, DbTypeInfo> DataTypeMap = new Dictionary<DataType, DbTypeInfo>
 		{
-			{ DataType.Binary, DbTypes[Constants.DbTypes.Binary] },
-			{ DataType.VarBinary, DbTypes[Constants.DbTypes.VarBinary] },
-			{ DataType.Blob, DbTypes[Constants.DbTypes.Blob] },
+			{ DataType.Binary, DbTypeInfos[Constants.DbTypes.Binary] },
+			{ DataType.VarBinary, DbTypeInfos[Constants.DbTypes.VarBinary] },
+			{ DataType.Blob, DbTypeInfos[Constants.DbTypes.Blob] },
 
-			{ DataType.Char, DbTypes[Constants.DbTypes.Char] },
-			{ DataType.VarChar, DbTypes[Constants.DbTypes.VarChar] },
-			{ DataType.Text, DbTypes[Constants.DbTypes.Clob] },
+			{ DataType.Char, DbTypeInfos[Constants.DbTypes.Char] },
+			{ DataType.VarChar, DbTypeInfos[Constants.DbTypes.VarChar] },
+			{ DataType.Text, DbTypeInfos[Constants.DbTypes.Clob] },
 
-			{ DataType.NChar, DbTypes[Constants.DbTypes.NChar] },
-			{ DataType.NVarChar, DbTypes[Constants.DbTypes.NVarChar] },
-			{ DataType.NText, DbTypes[Constants.DbTypes.NClob] },
+			{ DataType.NChar, DbTypeInfos[Constants.DbTypes.NChar] },
+			{ DataType.NVarChar, DbTypeInfos[Constants.DbTypes.NVarChar] },
+			{ DataType.NText, DbTypeInfos[Constants.DbTypes.NClob] },
 
-			{ DataType.Boolean, DbTypes[Constants.DbTypes.SmallInt] },
-			{ DataType.Byte, DbTypes[Constants.DbTypes.SmallInt] },
-			{ DataType.SByte, DbTypes[Constants.DbTypes.SmallInt] },
-			{ DataType.Int16, DbTypes[Constants.DbTypes.SmallInt] },
+			{ DataType.Boolean, DbTypeInfos[Constants.DbTypes.SmallInt] },
+			{ DataType.Byte, DbTypeInfos[Constants.DbTypes.SmallInt] },
+			{ DataType.SByte, DbTypeInfos[Constants.DbTypes.SmallInt] },
+			{ DataType.Int16, DbTypeInfos[Constants.DbTypes.SmallInt] },
 
-			{ DataType.UInt16, DbTypes[Constants.DbTypes.Integer] },
-			{ DataType.Int32, DbTypes[Constants.DbTypes.Integer] },
+			{ DataType.UInt16, DbTypeInfos[Constants.DbTypes.Integer] },
+			{ DataType.Int32, DbTypeInfos[Constants.DbTypes.Integer] },
 
-			{ DataType.UInt32, DbTypes[Constants.DbTypes.BigInt] },
-			{ DataType.Int64, DbTypes[Constants.DbTypes.BigInt] },
+			{ DataType.UInt32, DbTypeInfos[Constants.DbTypes.BigInt] },
+			{ DataType.Int64, DbTypeInfos[Constants.DbTypes.BigInt] },
 
-			{ DataType.UInt64, DbTypes[Constants.DbTypes.Decimal] },
-			{ DataType.Decimal, DbTypes[Constants.DbTypes.Decimal] },
+			{ DataType.UInt64, DbTypeInfos[Constants.DbTypes.Decimal] },
+			{ DataType.Decimal, DbTypeInfos[Constants.DbTypes.Decimal] },
 
-			{ DataType.Single, DbTypes[Constants.DbTypes.Real] },
-			{ DataType.Double, DbTypes[Constants.DbTypes.Double] },
+			{ DataType.Single, DbTypeInfos[Constants.DbTypes.Real] },
+			{ DataType.Double, DbTypeInfos[Constants.DbTypes.Double] },
 
-			{ DataType.DateTimeOffset, DbTypes[Constants.DbTypes.TimeStamp] },
-			{ DataType.Timestamp, DbTypes[Constants.DbTypes.TimeStamp] },
-			{ DataType.DateTime, DbTypes[Constants.DbTypes.TimeStamp] },
-			{ DataType.DateTime2, DbTypes[Constants.DbTypes.TimeStamp] },
+			{ DataType.DateTimeOffset, DbTypeInfos[Constants.DbTypes.TimeStamp] },
+			{ DataType.Timestamp, DbTypeInfos[Constants.DbTypes.TimeStamp] },
+			{ DataType.DateTime, DbTypeInfos[Constants.DbTypes.TimeStamp] },
+			{ DataType.DateTime2, DbTypeInfos[Constants.DbTypes.TimeStamp] },
 
-			{ DataType.Date, DbTypes[Constants.DbTypes.Date] },
-			{ DataType.Time, DbTypes[Constants.DbTypes.Time] },
+			{ DataType.Date, DbTypeInfos[Constants.DbTypes.Date] },
+			{ DataType.Time, DbTypeInfos[Constants.DbTypes.Time] },
 
-			{ DataType.Guid, DbTypes[Constants.DbTypes.Char16ForBitData] },
+			{ DataType.Guid, DbTypeInfos[Constants.DbTypes.Char16ForBitData] },
 		};
 
-		public static DbDataType GetDbDataType(DbTypeInfo dbTypeInfo, Type systemType, int? length, int? precision, int? scale, bool forceDefaultAttributes, bool supportsNCharTypes)
+		public static DbDataType SanitizeDbDataType(DbDataType dbDataType, bool mapGuidAsString, bool supportsNCharTypes)
 		{
-			static int? sanitize(int? parameter, int minValue, bool supported)
+			if (string.IsNullOrEmpty(dbDataType.DbType))
 			{
-				if (!supported || parameter < minValue) return null;
-				return parameter;
-			}
-
-			if (forceDefaultAttributes)
-			{
-				length = dbTypeInfo.RequiresLength ? dbTypeInfo.DefaultLength : null;
-				precision = dbTypeInfo.RequiresPrecision ? dbTypeInfo.DefaultPrecision : null;
-				scale = dbTypeInfo.RequiresPrecision ? dbTypeInfo.DefaultScale : null;
-			}
-			else
-			{
-				length = sanitize(length, 1, dbTypeInfo.HasLength);
-				precision = sanitize(precision, 0, dbTypeInfo.HasPrecision);
-				scale = sanitize(scale, 0, dbTypeInfo.HasScale);
-
-				length ??= dbTypeInfo.RequiresLength ? dbTypeInfo.DefaultLength : null;
-				precision ??= dbTypeInfo.RequiresPrecision ? dbTypeInfo.DefaultPrecision : null;
-				scale = precision.HasValue ? scale ?? (dbTypeInfo.RequiresPrecision ? dbTypeInfo.DefaultScale : null) : null;
-			}
-
-
-			if (dbTypeInfo.ForBitData)
-			{
-				var name = dbTypeInfo.Name.Contains('(') ?
-					dbTypeInfo.Name : $"{dbTypeInfo.Name}({length}) FOR BIT DATA";
-
-				return new DbDataType(systemType, dbTypeInfo.DataType, name);
-			}
-			else
-			{
-				var name = dbTypeInfo.Name;
-
-				if (!supportsNCharTypes)
+				// Map special DataTypes
+				dbDataType = dbDataType.DataType switch
 				{
-					if (dbTypeInfo.Name.StartsWith(Constants.DbTypes.NChar))
+					DataType.UInt64 => dbDataType.WithDataType(DataType.Decimal).WithPrecisionScale(29, 0),
+					DataType.Guid when mapGuidAsString => dbDataType.WithDataType(DataType.VarChar).WithLength(38),
+					_ => dbDataType
+				};
+
+				// Look for DbTypeInfo
+				if (DataTypeMap.TryGetValue(dbDataType.DataType, out var dbTypeInfo))
+				{
+					var ccsid = (int?)null;
+					
+					// Map N* Types to matching CCSID specific types if not supported
+					if (!supportsNCharTypes)
 					{
-						name = Constants.DbTypes.GraphicUnicode;
+						if (dbTypeInfo.Name == Constants.DbTypes.NChar)
+						{
+							dbTypeInfo = DbGraphic;
+							ccsid = 1200;
+						}
+						else if (dbTypeInfo.Name == Constants.DbTypes.NVarChar)
+						{
+							dbTypeInfo = DbVarGraphic;
+							ccsid = 1200;
+						}
+						else if (dbTypeInfo.Name== Constants.DbTypes.NClob)
+						{
+							dbTypeInfo = DbClob;
+							ccsid = 1200;
+						}
 					}
-					else if (dbTypeInfo.Name.StartsWith(Constants.DbTypes.NVarChar))
+
+					// Sanitize Length, Precison and Scale based on DbTypeInfo definition
+					static int? sanitize(int? parameter, int minValue, bool supported)
+						=> !supported || parameter < minValue ? null : parameter;
+
+					var length = sanitize(dbDataType.Length, 1, dbTypeInfo.HasLength);
+					var precision = sanitize(dbDataType.Precision, 0, dbTypeInfo.HasPrecision);
+					var scale = sanitize(dbDataType.Scale, 0, dbTypeInfo.HasScale);
+
+					length ??= dbTypeInfo.RequiresLength ? dbTypeInfo.DefaultLength : null;
+					precision ??= dbTypeInfo.RequiresPrecisionScale ? dbTypeInfo.DefaultPrecision : null;
+					scale = precision.HasValue ? scale ?? (dbTypeInfo.RequiresPrecisionScale ? dbTypeInfo.DefaultScale : null) : null;
+
+					dbDataType = dbDataType
+						.WithLength(length)
+						.WithPrecision(precision)
+						.WithScale(scale);
+
+					// If DbTypeInfo is composite, set the name as DbType hint
+					if (dbTypeInfo.IsComposite)
 					{
-						name = Constants.DbTypes.VarGraphicUnicode;
+						dbDataType = dbDataType.WithDbType(dbTypeInfo.Name);
 					}
-					else if (dbTypeInfo.Name.StartsWith(Constants.DbTypes.NClob))
+					// Else build the DbType
+					else
 					{
-						name = Constants.DbTypes.DBClobUnicode;
+						var fullTypeName = BuilFullDbTypeName(dbTypeInfo.Name, dbDataType.Length ?? dbDataType.Precision, dbDataType.Scale, ccsid, dbTypeInfo.ForBitData);
+						dbDataType = dbDataType.WithDbType(fullTypeName);
 					}
 				}
-				return new DbDataType(
-					systemType,
-					dbTypeInfo.DataType,
-					name,
-					length, precision, scale);
 			}
+			//TODO: Check if sanitizing from an existing DbType is required
+
+			return dbDataType;
 		}
 
-		public static DbDataType GetDbDataType(Type systemType, DataType dataType, int? length, int? precision, int? scale, bool mapGuidAsString, bool forceDefaultAttributes, bool supportsNCharTypes)
+		public static DbDataType UpCastDbDataTypeToFit(DbDataType dbDataType, object? value)
 		{
-			if (!DataTypeMap.TryGetValue(dataType, out var dbTypeInfo))
+			var originalDbDataDatype = dbDataType;
+			
+			// Handle Length, Precision and Scale from the value itself if it exists
+			if (value is not null)
 			{
-				return new DbDataType(systemType, DataType.Undefined);
-			}
-
-			return dataType switch
-			{
-				//Decimal(29)
-				DataType.UInt64 =>
-					GetDbDataType(dbTypeInfo, systemType, null, 29, 0, forceDefaultAttributes, supportsNCharTypes),
-
-				//When defaults requested get the default Decimal type, 
-				//else set defaults to Decimal(60,30) to fit any value
-				DataType.Decimal =>
-					forceDefaultAttributes ?
-						GetDbDataType(dbTypeInfo, systemType, null, null, null, true, supportsNCharTypes) :
-						GetDbDataType(dbTypeInfo, systemType, null, 60, 30, false, supportsNCharTypes),
-
-				//Depending on mapping
-				DataType.Guid =>
-					mapGuidAsString ?
-						new DbDataType(systemType, dataType, Constants.DbTypes.VarChar, 38) :
-						GetDbDataType(dbTypeInfo, systemType, null, null, null, true, supportsNCharTypes),
-
-				//Any other type, fall back to DbTypeInfo configuration
-				_ =>
-					GetDbDataType(dbTypeInfo, systemType, length, precision, scale, forceDefaultAttributes, supportsNCharTypes),
-			};
-		}
-
-		public static DbDataType GetDbTypeForCast(SqlDataType type, MappingSchema mappingSchema, DB2iSeriesSqlProviderFlags flags)
-		{
-			if (!string.IsNullOrEmpty(type.Type.DbType))
-			{
-				var parenthesisIndex = type.Type.DbType.IndexOf('(');
-				var dbType = (parenthesisIndex >= 0 ? type.Type.DbType.Substring(0, parenthesisIndex) : type.Type.DbType)
-						.ToUpper();
-
-				var forBitData = type.Type.DbType.Substring(0, type.Type.DbType.IndexOf(')') + 1).Length > 0;
-
-				//Upcast types that require length/precision to fit value
-				switch (dbType)
+				switch (value)
 				{
-					//Upcast all char/string types to unicode for compatibility with .net string type
-					//type = new SqlDataType(new DbDataType(type.Type.SystemType, DataType.Text, Constants.DbTypes.Clob));
-					//break;
-					case Constants.DbTypes.Char when !forBitData:
-					case Constants.DbTypes.VarChar when !forBitData:
-					case Constants.DbTypes.Clob:
-					case Constants.DbTypes.NChar:
-					case Constants.DbTypes.NVarChar:
-					case Constants.DbTypes.NClob:
-					case Constants.DbTypes.Graphic:
-					case Constants.DbTypes.VarGraphic:
-					case Constants.DbTypes.Varg:
-					case Constants.DbTypes.DbClob:
-						type = new SqlDataType(new DbDataType(type.Type.SystemType, DataType.NText, Constants.DbTypes.DBClobUnicode));
+					case byte[] bytes:
+						dbDataType = dbDataType.WithLength(bytes.Length);
 						break;
-					case Constants.DbTypes.Binary:
-					case Constants.DbTypes.VarBinary:
-					case Constants.DbTypes.Blob:
-						type = new SqlDataType(new DbDataType(type.Type.SystemType, DataType.Blob, Constants.DbTypes.Blob));
+					case string str:
+						dbDataType = dbDataType.WithLength(str.Length);
 						break;
-					default:
+					case decimal d:
+
+						if (dbDataType.Precision == null)
+						{
+							var precision = PrecisionHelper.GetPrecision(d);
+							var scale = PrecisionHelper.GetScale(d);
+							if (precision == 0)
+							{
+								precision = 1;
+								scale = 0;
+							}
+							else if (scale > precision) 
+								scale = precision;
+
+							if (precision > 0)
+							{
+								dbDataType = dbDataType.WithPrecision(precision);
+								dbDataType = dbDataType.WithScale(scale);
+							}
+						}
 						break;
 				}
 			}
-			else
+
+			// Upcast required DataTypes
+			switch (dbDataType.DataType)
 			{
-				if (type.Type.DataType == DataType.Undefined)
-					type = mappingSchema.GetTypeOrUnderlyingTypeDataType(type.Type.SystemType);
-
-				type = new SqlDataType(
-					GetDbDataType(type.SystemType, type.Type.DataType, type.Type.Length, type.Type.Precision, type.Type.Scale, mappingSchema.IsGuidMappedAsString(), false, true));
-
-				//Upcast types that require length/precision to fit value
-				switch (type.Type.DataType)
-				{
-					case DataType.Undefined:
-						break;
-					case DataType.Char:
-					case DataType.VarChar:
-					case DataType.Text:
-						type = new SqlDataType(new DbDataType(type.Type.SystemType, DataType.Text, Constants.DbTypes.Clob));
-						break;
-					case DataType.NChar:
-					case DataType.NVarChar:
-					case DataType.NText:
-						type = new SqlDataType(new DbDataType(type.Type.SystemType, DataType.NText, Constants.DbTypes.DBClobUnicode));
-						break;
-					case DataType.Binary:
-					case DataType.VarBinary:
-					case DataType.Blob:
-						type = new SqlDataType(new DbDataType(type.Type.SystemType, DataType.Text, Constants.DbTypes.Blob));
-						break;
-					case DataType.Decimal:
-						var p = type.Type.Precision ?? type.Type.Length;
-						var s = p.HasValue ? type.Type.Scale : 0;
-						type = new SqlDataType(new DbDataType(type.Type.SystemType, DataType.Decimal, Constants.DbTypes.Decimal, null, p ?? 60, s ?? 30));
-						break;
-					case DataType.DateTime:
-					case DataType.DateTimeOffset:
-					case DataType.DateTime2:
-						type = new SqlDataType(new DbDataType(type.Type.SystemType, DataType.DateTime, Constants.DbTypes.TimeStamp, null, flags.SupportsArbitraryTimeStampPrecision ? type.Type.Precision : null, null));
-						break;
-					default: break;
-				}
+				case DataType.Char or DataType.VarChar
+					when dbDataType.Length is null || dbDataType.Length > MAX_CHAR_LENGTH:
+					dbDataType = dbDataType.WithDataType(DataType.Text);
+					break;
+				case DataType.NChar or DataType.NVarChar
+					when dbDataType.Length is null || dbDataType.Length > MAX_NCHAR_LENGTH:
+					dbDataType = dbDataType.WithDataType(DataType.NText);
+					break;
+				case DataType.Binary or DataType.VarBinary
+					when dbDataType.Length is null || dbDataType.Length > MAX_CHAR_LENGTH:
+					dbDataType = dbDataType.WithDataType(DataType.Blob);
+					break;
+				case DataType.Decimal:
+					dbDataType = dbDataType.WithDataType(DataType.Decimal)
+						.WithPrecisionScale(
+							precision: dbDataType.Precision ?? 60, 
+							scale: dbDataType.Precision.HasValue ? dbDataType.Scale ?? 30 : null);
+					break;
+				default: break;
 			}
 
-			return type.Type;
+			// If there are any changes, clear the DbType hint to allow the sanitization to rebuild it properly before printing
+			if (dbDataType != originalDbDataDatype
+				&& !string.IsNullOrEmpty(dbDataType.DbType))
+			{
+				dbDataType = dbDataType.WithDbType(null);
+			}
+
+			return dbDataType;
 		}
+
+		//TODO: Check if acting on the DbType is required
+		#region Decompose and Build DbType hint
+
+		private static DbDataType GetDbDataTypeFromDbTypeName(DbDataType dbDataType, DbTypeName dbTypeName)
+		{
+			if (DbTypeInfos.TryGetValue(dbTypeName.TypeName, out var dbTypeInfo))
+			{
+				return new DbDataType(dbDataType.SystemType, dbTypeInfo.DataType, null, dbDataType.Length, dbDataType.Precision, dbDataType.Scale);
+			}
+
+			return dbDataType;
+		}
+
+		private static string BuilFullDbTypeName(string typeName, int? lengthOrPrecision, int? scale, int? ccsid, bool forBitData)
+		{
+			var stringBuilder = new StringBuilder(typeName);
+
+			if (lengthOrPrecision.HasValue)
+			{
+				stringBuilder.Append('(').Append(lengthOrPrecision.Value.ToString(CultureInfo.InvariantCulture));
+				if (scale.HasValue)
+					stringBuilder.Append(", ") .Append(scale.Value.ToString(CultureInfo.InvariantCulture));
+				stringBuilder.Append(')');
+			}
+			if (forBitData)
+				stringBuilder.Append(" FOR BIT DATA");
+			if (ccsid.HasValue)
+			{
+				stringBuilder.Append(" CCSID ").Append(ccsid.Value.ToString(CultureInfo.InvariantCulture));
+			}
+
+			return stringBuilder.ToString();
+		}
+
+		private static readonly Regex DbTypeRegex = new(
+			@"^(?<type>\w+)" +
+			@"(?:\((?<lengthOrPrecision>\d+)(?:,(?<scale>\d+))?\))?" +
+			@"(?:\s+(?<bitData>FOR\s+BIT\s+DATA))?" +
+			@"(?:\s+CCSID\s+(?<ccsid>\d+))?",
+			RegexOptions.Compiled);
+
+		private static bool TryParseDbTypeName(string dbType, out DbTypeName? dbTypeName)
+		{
+			dbTypeName = null;
+			if (string.IsNullOrEmpty(dbType)) return false;
+			dbType = dbType.ToUpper();
+
+			var match = DbTypeRegex.Match(dbType);
+
+			if (match.Success)
+			{
+				var type = dbType;
+				int? lengthOrPrecision = null;
+				int? scale = null;
+				int? ccsid = null;
+
+				if (match.Groups["type"].Success)
+					type = match.Groups["type"].Value;
+				if (match.Groups["lengthOrPrecision"].Success)
+					lengthOrPrecision = int.Parse(match.Groups["lengthOrPrecision"].Value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+				if (match.Groups["scale"].Success)
+					scale = int.Parse(match.Groups["scale"].Value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+				if (match.Groups["ccsid"].Success)
+					ccsid = int.Parse(match.Groups["ccsid"].Value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+				var forBitData = match.Groups["bitData"].Success;
+
+				dbTypeName = new DbTypeName(dbType, type, lengthOrPrecision, scale, ccsid, forBitData);
+				return true;
+			}
+
+			return false;
+		}
+
+		private readonly struct DbTypeName
+		{
+			public DbTypeName(string fullName, string typeName, int? lengthOrPecision, int? scale, int? cSSID, bool forBitData)
+			{
+				FullName = fullName;
+				TypeName = typeName;
+				LengthOrPrecision = lengthOrPecision;
+				Scale = scale;
+				CSSID = cSSID;
+				ForBitData = forBitData;
+			}
+
+			public string FullName { get; }
+			public string TypeName { get; }
+			public int? LengthOrPrecision { get; }
+			public int? Scale { get; }
+			public int? CSSID { get; }
+			public bool ForBitData { get; }
+		}
+
+		#endregion
 	}
 }

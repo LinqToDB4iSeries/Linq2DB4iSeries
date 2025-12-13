@@ -1,40 +1,52 @@
 ﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Linq;
+using System.Threading.Tasks;
 
 using LinqToDB;
+using LinqToDB.Async;
 using LinqToDB.Data;
+using LinqToDB.DataProvider.Access;
+using LinqToDB.DataProvider.ClickHouse;
+using LinqToDB.DataProvider.DB2;
+using LinqToDB.DataProvider.Firebird;
+using LinqToDB.DataProvider.Informix;
+using LinqToDB.DataProvider.MySql;
+using LinqToDB.DataProvider.Oracle;
+using LinqToDB.DataProvider.PostgreSQL;
+using LinqToDB.DataProvider.SapHana;
+using LinqToDB.DataProvider.SQLite;
+using LinqToDB.DataProvider.SqlServer;
+using LinqToDB.DataProvider.Sybase;
 
 using NUnit.Framework;
 
+using Tests.Model;
+
 namespace Tests.Data
 {
-	using Model;
-
 	[TestFixture]
 	public class TransactionTests : TestBase
 	{
 		[Test]
 		public async Task DataContextBeginTransactionAsync([DataSources(false, TestProvName.AllClickHouse)] string context)
 		{
-			using (var db = new DataContext(context))
-			using (new RestoreBaseTables(db))
+			using var db = new DataContext(context);
+			using var ts = new RestoreBaseTables(db);
+
+			// ensure connection opened and test results not affected by OpenAsync
+			using var ks = new KeepConnectionAliveScope(db);
+
+			await db.GetTable<Parent>().ToListAsync();
+
+			var tid = Environment.CurrentManagedThreadId;
+
+			using (await db.BeginTransactionAsync())
 			{
-				// ensure connection opened and test results not affected by OpenAsync
-				db.KeepConnectionAlive = true;
-				await db.GetTable<Parent>().ToListAsync();
+				// perform synchonously to not mess with BeginTransactionAsync testing
+				db.Insert(new Parent { ParentID = 1010, Value1 = 1010 });
 
-				var tid = Environment.CurrentManagedThreadId;
-
-				using (await db.BeginTransactionAsync())
-				{
-					// perform synchonously to not mess with BeginTransactionAsync testing
-					db.Insert(new Parent { ParentID = 1010, Value1 = 1010 });
-
-					if (tid == Environment.CurrentManagedThreadId)
-						Assert.Inconclusive("Executed synchronously due to lack of async support or there were no underlying async operations");
-				}
+				if (tid == Environment.CurrentManagedThreadId)
+					Assert.Inconclusive("Executed synchronously due to lack of async support or there were no underlying async operations");
 			}
 		}
 
@@ -122,7 +134,7 @@ namespace Tests.Data
 		{
 			var tid = Environment.CurrentManagedThreadId;
 
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			using (new RestoreBaseTables(db))
 			await using (db.BeginTransaction())
 			{
@@ -183,7 +195,7 @@ namespace Tests.Data
 		[Test]
 		public void AutoRollbackTransaction([DataSources(false, TestProvName.AllClickHouse)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			using (new RestoreBaseTables(db))
 			{
 				db.Insert(new Parent { ParentID = 1010, Value1 = 1010 });
@@ -202,7 +214,7 @@ namespace Tests.Data
 		[Test]
 		public async Task AutoRollbackTransactionAsync([DataSources(false, TestProvName.AllClickHouse)] string context)
 		{
-			await using (var db = GetDataConnection(context))
+			await using (var db = GetDataContext(context))
 			using (new RestoreBaseTables(db))
 			{
 				await db.InsertAsync(new Parent { ParentID = 1010, Value1 = 1010 });
@@ -261,7 +273,7 @@ namespace Tests.Data
 		[Test(Description = "https://github.com/linq2db/linq2db/issues/3863")]
 		public void DisposeCommitedTransaction([IncludeDataSources(TestProvName.AllPostgreSQL)] string context)
 		{
-			using var db = GetDataConnection(context);
+			using var db = GetDataContext(context);
 			using var _ = db.BeginTransaction();
 			db.Execute("commit;");
 		}
@@ -290,6 +302,32 @@ namespace Tests.Data
 			await using var _ = await db.BeginTransactionAsync();
 			db.NextQueryHints.Add("**commit;");
 			await db.GetTable<Person>().CountAsync();
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/5225")]
+		public async Task AttachToExistingTransaction([DataSources(false, ProviderName.SqlCe)] string context)
+		{
+			var connectionString = GetConnectionString(context);
+
+			using var db = GetDataConnection(context);
+			using var tr = db.BeginTransaction();
+
+			_ = context switch
+			{
+				var ctx when ctx.IsAnyOf(TestProvName.AllAccess)     => AccessTools    .GetDataProvider(connectionString: connectionString, connection: db.OpenDbConnection(), transaction: db.Transaction),
+				var ctx when ctx.IsAnyOf(TestProvName.AllClickHouse) => ClickHouseTools.GetDataProvider(connectionString: connectionString, connection: db.OpenDbConnection(), transaction: db.Transaction),
+				var ctx when ctx.IsAnyOf(TestProvName.AllDB2)        => DB2Tools       .GetDataProvider(connectionString: connectionString, connection: db.OpenDbConnection(), transaction: db.Transaction),
+				var ctx when ctx.IsAnyOf(TestProvName.AllFirebird)   => FirebirdTools  .GetDataProvider(connectionString: connectionString, connection: db.OpenDbConnection(), transaction: db.Transaction),
+				var ctx when ctx.IsAnyOf(TestProvName.AllInformix)   => InformixTools  .GetDataProvider(connectionString: connectionString, connection: db.OpenDbConnection(), transaction: db.Transaction),
+				var ctx when ctx.IsAnyOf(TestProvName.AllMySql)      => MySqlTools     .GetDataProvider(connectionString: connectionString, connection: db.OpenDbConnection(), transaction: db.Transaction),
+				var ctx when ctx.IsAnyOf(TestProvName.AllOracle)     => OracleTools    .GetDataProvider(connectionString: connectionString, connection: db.OpenDbConnection(), transaction: db.Transaction),
+				var ctx when ctx.IsAnyOf(TestProvName.AllPostgreSQL) => PostgreSQLTools.GetDataProvider(connectionString: connectionString, connection: db.OpenDbConnection(), transaction: db.Transaction),
+				var ctx when ctx.IsAnyOf(TestProvName.AllSapHana)    => SapHanaTools   .GetDataProvider(connectionString: connectionString, connection: db.OpenDbConnection(), transaction: db.Transaction),
+				var ctx when ctx.IsAnyOf(TestProvName.AllSQLite)     => SQLiteTools    .GetDataProvider(connectionString: connectionString, connection: db.OpenDbConnection(), transaction: db.Transaction),
+				var ctx when ctx.IsAnyOf(TestProvName.AllSqlServer)  => SqlServerTools .GetDataProvider(connectionString: connectionString, connection: db.OpenDbConnection(), transaction: db.Transaction),
+				var ctx when ctx.IsAnyOf(TestProvName.AllSybase)     => SybaseTools    .GetDataProvider(connectionString: connectionString, connection: db.OpenDbConnection(), transaction: db.Transaction),
+				_                                                    => throw new NotImplementedException($"Missing case for provider {context}")
+			};
 		}
 	}
 }

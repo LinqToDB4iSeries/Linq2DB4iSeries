@@ -36,9 +36,9 @@ namespace Tests.DataProvider
 
 				var data = table.ToList();
 
-				Assert.NotNull(data);
-				Assert.AreEqual(1, data.Count);
-				Assert.AreEqual(123, data[0].ID);
+				Assert.That(data, Is.Not.Null);
+				Assert.That(data.Count, Is.EqualTo(1));
+				Assert.That(data[0].ID, Is.EqualTo(123));
 
 				table.Drop();
 
@@ -46,16 +46,16 @@ namespace Tests.DataProvider
 
 				// check that table dropped
 				var exception = Assert.Catch(() => table.ToList());
-				Assert.True(exception is Exception);
+				Assert.That(exception is Exception, Is.True);
 
 				// TODO: we need better assertion here
 				// Right now we just check generated sql query, not that it is
 				// executed properly as we use only one test database
 				if (database != TestUtils.NO_DATABASE_NAME)
-					Assert.True(sql.Contains(database));
+					Assert.That(sql.Contains(database), Is.True);
 
 				if (schema != TestUtils.NO_SCHEMA_NAME)
-					Assert.True(sql.Contains(schema));
+					Assert.That(sql.Contains(schema), Is.True);
 			}
 		}
 	}

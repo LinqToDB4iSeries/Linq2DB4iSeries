@@ -3,10 +3,10 @@ using LinqToDB.Data;
 
 using NUnit.Framework;
 
+using Tests.Model;
+
 namespace Tests.xUpdate
 {
-	using Model;
-
 	[TestFixture]
 	[Order(10000)]
 	public class BatchTests : TestBase
@@ -39,7 +39,7 @@ namespace Tests.xUpdate
 		[Test]
 		public void NoTransaction([DataSources(false)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var list = new[]
 				{

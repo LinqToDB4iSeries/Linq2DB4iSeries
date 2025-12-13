@@ -24,11 +24,10 @@ namespace Tests.UserTests
 			public int Column1064 { get; set; }
 		}
 
-
 		[Test]
 		public void Test([IncludeDataSources(TestProvName.AllSybase)] string configuration)
 		{
-			using (var db = GetDataConnection(configuration))
+			using (var db = GetDataContext(configuration))
 			{
 				using (db.CreateLocalTable<TableTest1064>())
 				{
@@ -41,8 +40,8 @@ namespace Tests.UserTests
 
 						var records = db.GetTable<TableTest1064Renamed>().ToList();
 
-						Assert.AreEqual(1, records.Count);
-						Assert.AreEqual(123, records[0].Column1064);
+						Assert.That(records, Has.Count.EqualTo(1));
+						Assert.That(records[0].Column1064, Is.EqualTo(123));
 					}
 					finally
 					{

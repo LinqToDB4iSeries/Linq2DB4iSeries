@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Linq;
 using System.Linq.Expressions;
-using FluentAssertions;
+
 using LinqToDB;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
+
+using Shouldly;
 
 namespace Tests.UserTests
 {
@@ -105,7 +108,7 @@ namespace Tests.UserTests
 				})
 				.First();
 
-			data.CityInfo.Should().Be("City 100");
+			data.CityInfo.ShouldBe("City 100");
 		}
 	}
 }

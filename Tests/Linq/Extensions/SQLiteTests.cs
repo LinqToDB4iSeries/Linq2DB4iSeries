@@ -6,6 +6,7 @@ using LinqToDB.Data;
 using LinqToDB.DataProvider.SQLite;
 using LinqToDB.Mapping;
 using LinqToDB.Tools.Comparers;
+
 using NUnit.Framework;
 
 namespace Tests.Extensions
@@ -129,7 +130,7 @@ namespace Tests.Extensions
 		[Test]
 		public void GuidMappingTest([IncludeDataSources(TestProvName.AllSQLite)] string context)
 		{
-			using var db = GetDataConnection(context);
+			using var db = GetDataContext(context);
 			var interceptor = new SaveCommandInterceptor();
 			db.AddInterceptor(interceptor);
 
@@ -152,32 +153,32 @@ namespace Tests.Extensions
 
 			// test literal passed with proper type
 			db.InlineParameters = true;
-			table.Insert(() => new() { BlobGuid1 = TestData.Guid1 });
+			table.Insert(() => new() { BlobGuid1 = TestData.NonReadonlyGuid1 });
 			TestWrite("BlobGuid1", "blob", true);
-			table.Insert(() => new() { BlobGuid2 = TestData.Guid1 });
+			table.Insert(() => new() { BlobGuid2 = TestData.NonReadonlyGuid1 });
 			TestWrite("BlobGuid2", "blob", true);
-			table.Insert(() => new() { BlobGuid3 = TestData.Guid1 });
+			table.Insert(() => new() { BlobGuid3 = TestData.NonReadonlyGuid1 });
 			TestWrite("BlobGuid3", "blob", true);
-			table.Insert(() => new() { BlobGuid4 = TestData.Guid1 });
+			table.Insert(() => new() { BlobGuid4 = TestData.NonReadonlyGuid1 });
 			TestWrite("BlobGuid4", "blob", true);
-			table.Insert(() => new() { TextGuid1 = TestData.Guid1 });
+			table.Insert(() => new() { TextGuid1 = TestData.NonReadonlyGuid1 });
 			TestWrite("TextGuid1", "text", true);
-			table.Insert(() => new() { TextGuid2 = TestData.Guid1 });
+			table.Insert(() => new() { TextGuid2 = TestData.NonReadonlyGuid1 });
 			TestWrite("TextGuid2", "text", true);
 
 			// test parameter passed with proper type
 			db.InlineParameters = false;
-			table.Insert(() => new() { BlobGuid1 = TestData.Guid1 });
+			table.Insert(() => new() { BlobGuid1 = TestData.NonReadonlyGuid1 });
 			TestWrite("BlobGuid1", "blob", false);
-			table.Insert(() => new() { BlobGuid2 = TestData.Guid1 });
+			table.Insert(() => new() { BlobGuid2 = TestData.NonReadonlyGuid1 });
 			TestWrite("BlobGuid2", "blob", false);
-			table.Insert(() => new() { BlobGuid3 = TestData.Guid1 });
+			table.Insert(() => new() { BlobGuid3 = TestData.NonReadonlyGuid1 });
 			TestWrite("BlobGuid3", "blob", false);
-			table.Insert(() => new() { BlobGuid4 = TestData.Guid1 });
+			table.Insert(() => new() { BlobGuid4 = TestData.NonReadonlyGuid1 });
 			TestWrite("BlobGuid4", "blob", false);
-			table.Insert(() => new() { TextGuid1 = TestData.Guid1 });
+			table.Insert(() => new() { TextGuid1 = TestData.NonReadonlyGuid1 });
 			TestWrite("TextGuid1", "text", false);
-			table.Insert(() => new() { TextGuid2 = TestData.Guid1 });
+			table.Insert(() => new() { TextGuid2 = TestData.NonReadonlyGuid1 });
 			TestWrite("TextGuid2", "text", false);
 
 			// test bulk copy roundtrip
@@ -189,7 +190,7 @@ namespace Tests.Extensions
 			// test insert literals roundtrip
 			db.InlineParameters = true;
 			db.Insert(data[0]);
-			Assert.AreEqual(0, interceptor.Parameters.Length);
+			Assert.That(interceptor.Parameters, Is.Empty);
 			result = table.ToArray();
 			AreEqual(data, result, comparer);
 			table.Delete();
@@ -197,7 +198,7 @@ namespace Tests.Extensions
 			// test insert parameters roundtrip
 			db.InlineParameters = false;
 			db.Insert(data[0]);
-			Assert.AreEqual(6, interceptor.Parameters.Length);
+			Assert.That(interceptor.Parameters, Has.Length.EqualTo(6));
 			result = table.ToArray();
 			AreEqual(data, result, comparer);
 			table.Delete();
@@ -214,13 +215,13 @@ namespace Tests.Extensions
 
 			void TestWrite(string FieldName, string expectedType, bool inline)
 			{
-				Assert.AreEqual(inline ? 0 : 1, interceptor.Parameters.Length);
+				Assert.That(interceptor.Parameters, Has.Length.EqualTo(inline ? 0 : 1));
 				var type = db.Execute<string>($"SELECT typeof({FieldName}) FROM GuidMapping");
-				Assert.AreEqual(expectedType, type);
+				Assert.That(type, Is.EqualTo(expectedType));
 
 				// assert literal is uppercased (M.D.SQLite format)
 				if (expectedType == "text")
-					Assert.AreEqual(TestData.Guid1.ToString().ToUpperInvariant(), db.Execute<string>($"SELECT {FieldName} FROM GuidMapping"));
+					Assert.That(db.Execute<string>($"SELECT {FieldName} FROM GuidMapping"), Is.EqualTo(TestData.Guid1.ToString().ToUpperInvariant()));
 
 				table.Delete();
 			}

@@ -1,12 +1,13 @@
 ﻿using System;
 
+using LinqToDB.Data;
+using LinqToDB.Internal.DataProvider;
+using LinqToDB.Mapping;
+
 namespace LinqToDB.DataProvider.DB2iSeries
 {
-	using Data;
-	using Mapping;
-	using SqlQuery;
-
 	internal class DB2iSeriesMultipleRowsHelper<T> : MultipleRowsHelper<T>
+		where T : notnull
 	{
 		private readonly DB2iSeriesSqlProviderFlags db2ISeriesSqlProviderFlags;
 		
@@ -16,39 +17,24 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			this.db2ISeriesSqlProviderFlags = db2ISeriesSqlProviderFlags;
 		}
 
-		private static readonly Func<ColumnDescriptor, bool> defaultSkipConvert = (_ => false);
-
-		public override void BuildColumns(object item, Func<ColumnDescriptor, bool> skipConvert = null, bool castParameters = false, bool castAllRows = false, bool castFirstRowLiteralOnUnionAll = false, Func<ColumnDescriptor, bool> castLiteral = null)
+		public override void BuildColumns(object item, bool castParameters = false, bool castAllRows = false, bool castFirstRowLiteralOnUnionAll = false, Func<ColumnDescriptor, bool>? castLiteral = null)
 		{
-			skipConvert ??= defaultSkipConvert;
-
 			for (var i = 0; i < Columns.Length; i++)
 			{
 				var column = Columns[i];
 				var value = column.GetProviderValue(item);
 				var columnType = ColumnTypes[i];
-
-				if (column.DbType != null)
-				{
-					if (column.DbType.Equals("time", StringComparison.OrdinalIgnoreCase)
-						&& columnType.Type.DataType != DataType.Time)
-						columnType = new SqlDataType(DataType.Time);
-					else if (column.DbType.Equals("date", StringComparison.OrdinalIgnoreCase)
-						&& columnType.Type.DataType != DataType.Date)
-						columnType = new SqlDataType(DataType.Date);
-				}
-
-				//column type is loosely defined, use value if provided
-				//var dbType = value == null ? columnType : DataConnection.MappingSchema.GetDataType(value.GetType());
 				
-				// wrap the parameter with a cast
-				var casttype = DataConnection.MappingSchema.GetDbTypeForCast(this.db2ISeriesSqlProviderFlags, columnType).ToSqlString();
+				// Get the type to cast to
+				var dbDataType = MappingSchema.GetDbTypeForCast(columnType, value, db2ISeriesSqlProviderFlags);
+				dbDataType = MappingSchema.SanitizeDbDataType(dbDataType, db2ISeriesSqlProviderFlags);
+				var casttype = dbDataType.DbType;
 
 				if (value == null)
 				{
-					StringBuilder.Append($"CAST(NULL AS {casttype})");
+					StringBuilder.Append(FormattableString.Invariant($"CAST(NULL AS {casttype})"));
 				}
-				else if (!skipConvert(column) && !MappingSchema.ValueToSqlConverter.TryConvert(StringBuilder, DataConnection.MappingSchema, columnType, this.Options, value))
+				else if (!MappingSchema.ValueToSqlConverter.TryConvert(StringBuilder, DataConnection.MappingSchema, columnType, this.Options, value))
 				{
 					if (value is DataParameter parameter)
 						value = parameter.Value;
@@ -57,7 +43,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 					Parameters.Add(dataParameter);
 
-					var parameterMarker = SqlBuilder.ConvertInline(dataParameter.Name, SqlProvider.ConvertType.NameToQueryParameter);
+					var parameterMarker = SqlBuilder.ConvertInline(dataParameter.Name!, Internal.SqlProvider.ConvertType.NameToQueryParameter);
 
 					var nameWithCast = casttype is null ?
 						parameterMarker :

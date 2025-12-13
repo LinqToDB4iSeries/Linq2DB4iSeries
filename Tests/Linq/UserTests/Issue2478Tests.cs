@@ -1,6 +1,9 @@
 ﻿using System.Linq;
+
 using LinqToDB;
+
 using NUnit.Framework;
+
 using Tests.Model;
 
 namespace Tests.UserTests
@@ -21,7 +24,6 @@ namespace Tests.UserTests
 						into g
 						select new { Count = g.Count(), Sum = g.Sum(_ => _.ChildID) })
 					select new { p.ParentID, Count = c == null ? 0 : c.Count, Sum = c == null ? 0 : c.Sum };
-
 
 				var result = query.ToArray();
 				var cnt    = query.Count();
@@ -54,7 +56,7 @@ namespace Tests.UserTests
 		}
 
 		[Test]
-		public void CrossApplyTestExt([IncludeDataSources(TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
+		public void CrossApplyTestExt([IncludeDataSources(TestProvName.AllSqlServer)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -87,7 +89,6 @@ namespace Tests.UserTests
 						select new { Count = g.Count(), Sum = g.Sum(_ => _.ChildID) })
 					select new { p.ParentID, Count = c == null ? 0 : c.Count, Sum = c == null ? 0 : c.Sum };
 
-
 				var result = query.ToArray();
 				var cnt    = query.Count();
 				
@@ -116,9 +117,8 @@ namespace Tests.UserTests
 			}
 		}
 
-		[ActiveIssue(Details = "Converted FuncLikePredicate expression is not a Predicate expression.")]
 		[Test]
-		public void ExistsRemoval([IncludeDataSources(TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context, [Values] bool shouldFilter, [Values] bool isPositive)
+		public void ExistsRemoval([IncludeDataSources(true, TestProvName.AllSqlServer)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -133,10 +133,12 @@ namespace Tests.UserTests
 
 				var result = query.ToArray();
 				var cnt    = query.Count();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(query.ToSqlQuery().Sql, Does.Not.Contain("EXISTS"));
 
-				Assert.That(query.ToString(), Does.Not.Contains("EXISTS"));
-				
-				Assert.That(cnt, Is.EqualTo(result.Length));
+					Assert.That(cnt, Is.EqualTo(result.Length));
+				}
 			}
 		}
 

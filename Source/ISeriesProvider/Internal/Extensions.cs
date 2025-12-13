@@ -1,19 +1,18 @@
-﻿using LinqToDB.Common;
-using LinqToDB.Data;
+﻿using LinqToDB.Data;
+using LinqToDB.Internal.SqlProvider;
 using LinqToDB.Mapping;
-using LinqToDB.SqlQuery;
 using System;
-using System.Linq;
-using System.Data;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
-using LinqToDB.SqlProvider;
+using System.Globalization;
+using System.Linq;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
 	internal static class Extensions
 	{
-		public static string ToSqlString(this DbDataType dbDataType)
+		public static string? ToSqlString(this DbDataType dbDataType)
 		{
 			return DB2iSeriesSqlBuilder.GetDbType(dbDataType.DbType, dbDataType.Length, dbDataType.Precision, dbDataType.Scale);
 		}
@@ -21,13 +20,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public static bool IsLatinLetterOrNumber(this char c)
 			=> (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 
-		public static SqlDataType GetTypeOrUnderlyingTypeDataType(this MappingSchema mappingSchema, Type type)
+		public static DbDataType GetTypeOrUnderlyingTypeDataType(this MappingSchema mappingSchema, Type type)
 		{
 			var sqlDataType = mappingSchema.GetDataType(type);
 			if (sqlDataType.Type.DataType == DataType.Undefined)
 				sqlDataType = mappingSchema.GetUnderlyingDataType(type, out var _);
 
-			return sqlDataType.Type.DataType == DataType.Undefined ? SqlDataType.Undefined : sqlDataType;
+			return sqlDataType.Type.DataType == DataType.Undefined ? DbDataType.Undefined : sqlDataType.Type;
 		}
 
 		public static bool IsGuidMappedAsString(this MappingSchema mappingSchema)
@@ -35,25 +34,73 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return mappingSchema is DB2iSeriesGuidAsStringMappingSchema;
 		}
 
-		public static DbDataType GetDbDataType(this MappingSchema mappingSchema, Type systemType, DataType dataType, int? length, int? precision, int? scale, bool forceDefaultAttributes, bool supportsNCharTypes)
+		public static DbDataType SanitizeDbDataType(this MappingSchema mappingSchema, DbDataType dbDataType, DB2iSeriesSqlProviderFlags flags)
 		{
-			return DB2iSeriesDbTypes.GetDbDataType(systemType, dataType, length, precision, scale, mappingSchema.IsGuidMappedAsString(), forceDefaultAttributes, supportsNCharTypes);
+			return DB2iSeriesDbTypes.SanitizeDbDataType(dbDataType, mappingSchema.IsGuidMappedAsString(), flags.SupportsNCharTypes);
 		}
 
-		public static DbDataType GetDbTypeForCast(this MappingSchema mappingSchema, DB2iSeriesSqlProviderFlags flags, SqlDataType type)
+		public static DbDataType GetDbTypeForCast(this MappingSchema mappingSchema, DbDataType type, object? value, DB2iSeriesSqlProviderFlags flags)
 		{
-			return DB2iSeriesDbTypes.GetDbTypeForCast(type, mappingSchema, flags);
+			return DB2iSeriesDbTypes.UpCastDbDataTypeToFit(type, value);
 		}
 
-		public static IDbConnection GetProviderConnection(this DataConnection dataConnection)
+		public static DbConnection GetDbConnection(this DataConnection dataConnection)
 		{
-			if (dataConnection.DataProvider is not DB2iSeriesDataProvider iSeriesDataProvider)
-				throw ExceptionHelper.InvalidProvider(dataConnection.DataProvider);
+			var dbConnection = dataConnection.TryGetDbConnection();
+			if (dbConnection == null)
+				throw ExceptionHelper.MisssingDbConnection();
 
-			if (iSeriesDataProvider.TryGetProviderConnection(dataConnection, out var connection))
-				return connection;
+			return dbConnection;
+		}
 
-			throw ExceptionHelper.InvalidDbConnectionType(dataConnection.Connection);
+		public static string? GetString(this DbDataReader dbDataReader, string fieldName)
+		{
+			var index = dbDataReader.GetOrdinal(fieldName);
+			var value = dbDataReader.GetValue(index);
+			if (value is null || value == DBNull.Value)
+				return null;
+
+			if (value is string str)
+				return str;
+
+			return dbDataReader.GetValue(index).ToString();
+		}
+
+		public static string? GetTrimmedString(this DbDataReader dbDataReader, string fieldName)
+		{
+			return dbDataReader.GetString(fieldName)?.TrimEnd();
+		}
+
+		public static int GetInt32(this DbDataReader dbDataReader, string fieldName)
+		{
+			return dbDataReader.GetInt32(dbDataReader.GetOrdinal(fieldName));
+		}
+
+		public static int? GetNullableInt32(this DbDataReader dbDataReader, string fieldName)
+		{
+			var index = dbDataReader.GetOrdinal(fieldName);
+			var value = dbDataReader.GetValue(index);
+			if (value is null || value == DBNull.Value)
+				return null;
+
+			return dbDataReader.GetInt32(index);
+		}
+
+		public static bool Any(this DbDataReader dbDataReader, Func<DbDataReader, int, bool> predicate)
+		{
+			for (var i = 0; i < dbDataReader.FieldCount; i++)
+			{
+				if (predicate(dbDataReader, i))
+					return true;
+			}
+
+			return false;
+		}
+
+		public static void ForEach<T>(this IEnumerable<T> enumerable, Action<T> action)
+		{
+			foreach(var item in enumerable)
+				action(item);
 		}
 
 		public static BulkCopyType GetEffectiveType(this BulkCopyType bulkCopyType)
@@ -64,8 +111,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static IEnumerable<string> GetLibList(this DataConnection dataConnection)
 		{
-			IEnumerable<string> libraries = new string[] { };
-			var connection = GetProviderConnection(dataConnection);
+			var connection = dataConnection.TryGetDbConnection()
+				?? throw ExceptionHelper.MisssingDbConnection();
 
 			if (dataConnection.DataProvider is DB2iSeriesDataProvider iSeriesDataProvider)
 			{
@@ -82,10 +129,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 				var csb = new DbConnectionStringBuilder() { ConnectionString = dataConnection.ConnectionString };
 
-				if (csb.TryGetValue(libraryListKey, out var libraryList))
+				if (csb.TryGetValue(libraryListKey, out var libraryList)
+					&& libraryList is not null)
 				{
 					return libraryList
-						.ToString()
+						.ToString()!
 						.Split(',', ' ')
 						.Select(x => x.Trim())
 						.Where(x => x != string.Empty)
@@ -93,20 +141,21 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				}
 				else
 				{
-					string lib = dataConnection.GetDefaultLib();
-					if(lib != null)
+					var lib = dataConnection.GetDefaultLib();
+					if (lib != null)
 					{
-						return new string[] { lib };
+						return [lib];
 					}
 				}
 			}
 
-			return Enumerable.Empty<string>();
+			return [];
 		}
 
-		public static string GetDefaultLib(this DataConnection dataConnection)
+		public static string? GetDefaultLib(this DataConnection dataConnection)
 		{
-			var connection = GetProviderConnection(dataConnection);
+			var connection = dataConnection.TryGetDbConnection()
+				?? throw ExceptionHelper.MisssingDbConnection();
 
 			if (dataConnection.DataProvider is DB2iSeriesDataProvider iSeriesDataProvider)
 			{
@@ -123,10 +172,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 				var csb = new DbConnectionStringBuilder() { ConnectionString = dataConnection.ConnectionString };
 
-				if (csb.TryGetValue(defaultLibKey, out var library))
+				if (csb.TryGetValue(defaultLibKey, out var library)
+					&& library is not null)
 				{
-					string result = library.ToString().Trim();
-					if(!string.IsNullOrEmpty(result))
+					string result = library.ToString()!.Trim();
+					if (!string.IsNullOrEmpty(result))
 					{
 						return result;
 					}
@@ -159,7 +209,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				if (csb.TryGetValue(namingConventionKey, out var namingConvention))
 				{
 					if (namingConvention is not string namingConventionString)
-						namingConventionString = ((int)namingConvention).ToString();
+						namingConventionString = ((int)namingConvention).ToString(CultureInfo.InvariantCulture.NumberFormat);
 
 					return namingConventionString == "1" ? DB2iSeriesNamingConvention.System : DB2iSeriesNamingConvention.Sql;
 				}
@@ -203,6 +253,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static bool IsOdbcOrOleDb(this DB2iSeriesProviderType providerType)
 			 => providerType == DB2iSeriesProviderType.Odbc
-			||	providerType == DB2iSeriesProviderType.OleDb;
+			|| providerType == DB2iSeriesProviderType.OleDb;
 	}
 }

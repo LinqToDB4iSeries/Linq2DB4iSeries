@@ -1,10 +1,10 @@
-﻿namespace LinqToDB.DataProvider.DB2iSeries
-{
-	using SqlProvider;
+﻿using LinqToDB.Internal.SqlProvider;
 
+namespace LinqToDB.DataProvider.DB2iSeries
+{
 	public class DB2iSeriesMappingOptions
 	{
-		public static readonly DB2iSeriesMappingOptions Default = new DB2iSeriesMappingOptions(DB2iSeriesProviderOptions.Defaults.MapGuidAsString);
+		public static readonly DB2iSeriesMappingOptions Default = new(DB2iSeriesProviderOptions.Defaults.MapGuidAsString);
 
 		public DB2iSeriesMappingOptions(bool mapGuidAsString)
 		{

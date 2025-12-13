@@ -1,18 +1,10 @@
 ﻿using System;
-using System.Data;
-using System.Data.Common;
 using System.Linq;
 
 namespace IBM.Data.Informix
 {
 	public class IfxTimeSpan { }
 }
-
-//namespace System.Runtime.CompilerServices
-//{
-//	public static class IsExternalInit { }
-//}
-
 
 namespace JetBrains.Annotations
 {
@@ -22,36 +14,6 @@ namespace JetBrains.Annotations
 
 	}
 }
-
-#if NETFRAMEWORK
-namespace System.Diagnostics.CodeAnalysis
-{
-	[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.ReturnValue, Inherited = false)]
-	public sealed class MaybeNullAttribute : Attribute
-	{
-	}
-
-	[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, Inherited = false)]
-	public sealed class AllowNullAttribute : Attribute
-	{
-	}
-
-    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-    public sealed class DoesNotReturnAttribute : Attribute
-	{
-	}
-
-	//public sealed class NotNullIfNotNullAttribute : Attribute
-	//{
-	//	public string ParameterName { get; }
-		
-	//	public NotNullIfNotNullAttribute(string parameterName)
-	//	{
-	//		ParameterName = parameterName;
-	//	}
-	//}
-}
-#endif
 
 namespace Tests
 {
@@ -71,5 +33,5 @@ namespace Tests
 			}
 		}
 	}
-
 }
+

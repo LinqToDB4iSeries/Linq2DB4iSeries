@@ -1,15 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+
 using LinqToDB;
 using LinqToDB.Data;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
+
+using Tests.Model;
 
 namespace Tests.xUpdate
 {
-	using Model;
-
 	[TestFixture]
 	public partial class MergeTests : TestBase
 	{
@@ -30,7 +32,7 @@ namespace Tests.xUpdate
 		[Test]
 		public void Issue200InSource([IncludeDataSources(TestProvName.AllSqlServer2008Plus)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			using (db.BeginTransaction())
 			{
 				db.GetTable<AllTypes2>().Delete();
@@ -59,22 +61,23 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = db.GetTable<AllTypes2>().OrderBy(_ => _.ID).ToArray();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(cnt, Is.EqualTo(2));
+					Assert.That(result, Has.Length.EqualTo(2));
+					Assert.That(result[0].datetime2DataType, Is.EqualTo(testData[0].datetime2DataType));
+					Assert.That(result[0].datetimeoffsetDataType, Is.EqualTo(testData[0].datetimeoffsetDataType));
 
-				Assert.AreEqual(2, cnt);
-				Assert.AreEqual(2, result.Length);
-
-				Assert.AreEqual(testData[0].datetime2DataType, result[0].datetime2DataType);
-				Assert.AreEqual(testData[0].datetimeoffsetDataType, result[0].datetimeoffsetDataType);
-
-				Assert.AreEqual(testData[1].datetime2DataType, result[1].datetime2DataType);
-				Assert.AreEqual(testData[1].datetimeoffsetDataType, result[1].datetimeoffsetDataType);
+					Assert.That(result[1].datetime2DataType, Is.EqualTo(testData[1].datetime2DataType));
+					Assert.That(result[1].datetimeoffsetDataType, Is.EqualTo(testData[1].datetimeoffsetDataType));
+				}
 			}
 		}
 
 		[Test]
 		public void Issue200InPredicate([IncludeDataSources(TestProvName.AllSqlServer2008Plus)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			using (db.BeginTransaction())
 			{
 				db.GetTable<AllTypes2>().Delete();
@@ -101,22 +104,23 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = db.GetTable<AllTypes2>().OrderBy(_ => _.ID).ToArray();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(cnt, Is.EqualTo(2));
+					Assert.That(result, Has.Length.EqualTo(2));
+					Assert.That(result[0].datetime2DataType, Is.EqualTo(testData[0].datetime2DataType));
+					Assert.That(result[0].datetimeoffsetDataType, Is.EqualTo(testData[0].datetimeoffsetDataType));
 
-				Assert.AreEqual(2, cnt);
-				Assert.AreEqual(2, result.Length);
-
-				Assert.AreEqual(testData[0].datetime2DataType, result[0].datetime2DataType);
-				Assert.AreEqual(testData[0].datetimeoffsetDataType, result[0].datetimeoffsetDataType);
-
-				Assert.AreEqual(testData[1].datetime2DataType, result[1].datetime2DataType);
-				Assert.AreEqual(testData[1].datetimeoffsetDataType, result[1].datetimeoffsetDataType);
+					Assert.That(result[1].datetime2DataType, Is.EqualTo(testData[1].datetime2DataType));
+					Assert.That(result[1].datetimeoffsetDataType, Is.EqualTo(testData[1].datetimeoffsetDataType));
+				}
 			}
 		}
 
 		[Test]
 		public void Issue200InPredicate2([IncludeDataSources(TestProvName.AllSqlServer2008Plus)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			using (db.BeginTransaction())
 			{
 				db.GetTable<AllTypes2>().Delete();
@@ -148,22 +152,23 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = db.GetTable<AllTypes2>().OrderBy(_ => _.ID).ToArray();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(cnt, Is.EqualTo(2));
+					Assert.That(result, Has.Length.EqualTo(2));
+					Assert.That(result[0].datetime2DataType, Is.EqualTo(testData[0].datetime2DataType));
+					Assert.That(result[0].datetimeoffsetDataType, Is.EqualTo(testData[0].datetimeoffsetDataType));
 
-				Assert.AreEqual(2, cnt);
-				Assert.AreEqual(2, result.Length);
-
-				Assert.AreEqual(testData[0].datetime2DataType, result[0].datetime2DataType);
-				Assert.AreEqual(testData[0].datetimeoffsetDataType, result[0].datetimeoffsetDataType);
-
-				Assert.AreEqual(testData[1].datetime2DataType, result[1].datetime2DataType);
-				Assert.AreEqual(testData[1].datetimeoffsetDataType, result[1].datetimeoffsetDataType);
+					Assert.That(result[1].datetime2DataType, Is.EqualTo(testData[1].datetime2DataType));
+					Assert.That(result[1].datetimeoffsetDataType, Is.EqualTo(testData[1].datetimeoffsetDataType));
+				}
 			}
 		}
 
 		[Test]
 		public void Issue200InInsert([IncludeDataSources(TestProvName.AllSqlServer2008Plus)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			using (db.BeginTransaction())
 			{
 				db.GetTable<AllTypes2>().Delete();
@@ -202,24 +207,25 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = db.GetTable<AllTypes2>().OrderBy(_ => _.ID).ToArray();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(cnt, Is.EqualTo(2));
+					Assert.That(result, Has.Length.EqualTo(2));
+					Assert.That(result[0].ID, Is.EqualTo(testData[0].ID));
+					Assert.That(result[0].datetime2DataType, Is.EqualTo(dt2));
+					Assert.That(result[0].datetimeoffsetDataType, Is.EqualTo(dto2));
 
-				Assert.AreEqual(2, cnt);
-				Assert.AreEqual(2, result.Length);
-
-				Assert.AreEqual(testData[0].ID, result[0].ID);
-				Assert.AreEqual(dt2, result[0].datetime2DataType);
-				Assert.AreEqual(dto2, result[0].datetimeoffsetDataType);
-
-				Assert.AreEqual(testData[1].ID, result[1].ID);
-				Assert.AreEqual(dt2, result[1].datetime2DataType);
-				Assert.AreEqual(dto2, result[1].datetimeoffsetDataType);
+					Assert.That(result[1].ID, Is.EqualTo(testData[1].ID));
+					Assert.That(result[1].datetime2DataType, Is.EqualTo(dt2));
+					Assert.That(result[1].datetimeoffsetDataType, Is.EqualTo(dto2));
+				}
 			}
 		}
 
 		[Test]
 		public void Issue200InUpdate([IncludeDataSources(TestProvName.AllSqlServer2008Plus)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			using (db.BeginTransaction())
 			{
 				db.GetTable<AllTypes2>().Delete();
@@ -264,15 +270,16 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = db.GetTable<AllTypes2>().OrderBy(_ => _.ID).ToArray();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(cnt, Is.EqualTo(1));
+					Assert.That(result, Has.Length.EqualTo(2));
+					Assert.That(result[0].datetime2DataType, Is.EqualTo(dt2));
+					Assert.That(result[0].datetimeoffsetDataType, Is.EqualTo(dto2));
 
-				Assert.AreEqual(1, cnt);
-				Assert.AreEqual(2, result.Length);
-
-				Assert.AreEqual(dt2, result[0].datetime2DataType);
-				Assert.AreEqual(dto2, result[0].datetimeoffsetDataType);
-
-				Assert.AreEqual(testData[1].datetime2DataType, result[1].datetime2DataType);
-				Assert.AreEqual(testData[1].datetimeoffsetDataType, result[1].datetimeoffsetDataType);
+					Assert.That(result[1].datetime2DataType, Is.EqualTo(testData[1].datetime2DataType));
+					Assert.That(result[1].datetimeoffsetDataType, Is.EqualTo(testData[1].datetimeoffsetDataType));
+				}
 			}
 		}
 		#endregion
@@ -330,12 +337,14 @@ namespace Tests.xUpdate
 
 				AssertRowCount(1, rows, context);
 
-				Assert.AreEqual(1, result.Count);
+				Assert.That(result, Has.Count.EqualTo(1));
 
 				var newRecord = new TestMapping1();
-
-				Assert.AreEqual(lastId, result[0].Id);
-				Assert.AreEqual(10, result[0].Field);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[0].Id, Is.EqualTo(lastId));
+					Assert.That(result[0].Field, Is.EqualTo(10));
+				}
 			}
 		}
 		#endregion
@@ -459,7 +468,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void TestMergeWithInterfaces6([MergeDataContextSource(TestProvName.AllInformix, ProviderName.Firebird)] string context)
+		public void TestMergeWithInterfaces6([MergeDataContextSource(TestProvName.AllInformix, ProviderName.Firebird25)] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (db.CreateLocalTable<ReviewIndex>())
@@ -493,7 +502,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void TestMergeWithInterfaces8([MergeDataContextSource(TestProvName.AllInformix, ProviderName.Firebird)] string context)
+		public void TestMergeWithInterfaces8([MergeDataContextSource(TestProvName.AllInformix, ProviderName.Firebird25)] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (db.CreateLocalTable<ReviewIndex>())
@@ -514,7 +523,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void TestMergeWithInterfaces9([MergeDataContextSource(TestProvName.AllInformix, ProviderName.Firebird)] string context)
+		public void TestMergeWithInterfaces9([MergeDataContextSource(TestProvName.AllInformix, ProviderName.Firebird25)] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (db.CreateLocalTable<ReviewIndex>())
@@ -548,7 +557,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void TestMergeWithInterfaces11([MergeDataContextSource(TestProvName.AllInformix, ProviderName.Firebird, TestProvName.AllOracle)] string context)
+		public void TestMergeWithInterfaces11([MergeDataContextSource(TestProvName.AllInformix, ProviderName.Firebird25, TestProvName.AllOracle)] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (db.CreateLocalTable<ReviewIndex>())
@@ -629,7 +638,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void TestMergeWithInterfaces16([MergeDataContextSource(ProviderName.Firebird, TestProvName.AllOracle, TestProvName.AllSybase)] string context)
+		public void TestMergeWithInterfaces16([MergeDataContextSource(ProviderName.Firebird25, TestProvName.AllOracle, TestProvName.AllSybase)] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (db.CreateLocalTable<ReviewIndex>())
@@ -644,7 +653,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void TestMergeWithInterfaces17([MergeDataContextSource(ProviderName.Firebird, TestProvName.AllInformix, TestProvName.AllOracle, TestProvName.AllSybase)] string context)
+		public void TestMergeWithInterfaces17([MergeDataContextSource(ProviderName.Firebird25, TestProvName.AllInformix, TestProvName.AllOracle, TestProvName.AllSybase)] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (db.CreateLocalTable<ReviewIndex>())
@@ -659,7 +668,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void TestMergeWithInterfaces18([IncludeDataSources(TestProvName.AllSqlServer2008Plus)] string context)
+		public void TestMergeWithInterfaces18([MergeNotMatchedBySourceDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (db.CreateLocalTable<ReviewIndex>())
@@ -674,7 +683,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void TestMergeWithInterfaces19([IncludeDataSources(TestProvName.AllSqlServer2008Plus)] string context)
+		public void TestMergeWithInterfaces19([MergeNotMatchedBySourceDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (db.CreateLocalTable<ReviewIndex>())
@@ -689,7 +698,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void TestMergeWithInterfaces20([IncludeDataSources(TestProvName.AllSqlServer2008Plus)] string context)
+		public void TestMergeWithInterfaces20([MergeNotMatchedBySourceDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (db.CreateLocalTable<ReviewIndex>())
@@ -704,7 +713,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void TestMergeWithInterfaces21([IncludeDataSources(TestProvName.AllSqlServer2008Plus)] string context)
+		public void TestMergeWithInterfaces21([MergeNotMatchedBySourceDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (db.CreateLocalTable<ReviewIndex>())
@@ -748,11 +757,14 @@ namespace Tests.xUpdate
 
 				var res = table.OrderBy(_ => _.Id).ToArray();
 
-				Assert.AreEqual(2, res.Length);
-				Assert.AreEqual(1, res[0].Id);
-				Assert.AreEqual(1, res[0].Value);
-				Assert.AreEqual(2, res[1].Id);
-				Assert.AreEqual(2, res[1].Value);
+				Assert.That(res, Has.Length.EqualTo(2));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(res[0].Id, Is.EqualTo(1));
+					Assert.That(res[0].Value, Is.EqualTo(1));
+					Assert.That(res[1].Id, Is.EqualTo(2));
+					Assert.That(res[1].Value, Is.EqualTo(2));
+				}
 
 				source[1].Value = 4;
 				source.Add(new CacheTestTable() { Id = 3, Value = 3 });
@@ -767,13 +779,16 @@ namespace Tests.xUpdate
 
 				res = table.OrderBy(_ => _.Id).ToArray();
 
-				Assert.AreEqual(3, res.Length);
-				Assert.AreEqual(1, res[0].Id);
-				Assert.AreEqual(1, res[0].Value);
-				Assert.AreEqual(2, res[1].Id);
-				Assert.AreEqual(4, res[1].Value);
-				Assert.AreEqual(3, res[2].Id);
-				Assert.AreEqual(3, res[2].Value);
+				Assert.That(res, Has.Length.EqualTo(3));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(res[0].Id, Is.EqualTo(1));
+					Assert.That(res[0].Value, Is.EqualTo(1));
+					Assert.That(res[1].Id, Is.EqualTo(2));
+					Assert.That(res[1].Value, Is.EqualTo(4));
+					Assert.That(res[2].Id, Is.EqualTo(3));
+					Assert.That(res[2].Value, Is.EqualTo(3));
+				}
 			}
 		}
 
@@ -830,7 +845,7 @@ namespace Tests.xUpdate
 				PrepareData(db1);
 
 			var ms = new MappingSchema();
-			new FluentMappingBuilder(ms).Entity<TestMapping1>().HasQueryFilter((t, _) => t.Where(_ => _.Id > 5)).Build();
+			new FluentMappingBuilder(ms).Entity<TestMapping1>().HasQueryFilter((t, _) => t.Id > 5).Build();
 
 			using var db = GetDataContext(context, ms);
 
@@ -847,13 +862,306 @@ namespace Tests.xUpdate
 
 			AssertRowCount(1, rows, context);
 
-			Assert.AreEqual(5, result.Count);
+			Assert.That(result, Has.Count.EqualTo(5));
 
 			AssertRow(InitialTargetData[0], result[0], null, null);
 			AssertRow(InitialTargetData[1], result[1], null, null);
 			AssertRow(InitialTargetData[2], result[2], null, 203);
 			AssertRow(InitialTargetData[3], result[3], null, null);
 			AssertRow(InitialSourceData[3], result[4], null, 216);
+		}
+
+		// HANA: Syntax error or access violation;257 sql syntax error: incorrect syntax near "WHEN MATCHED "
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/3589")]
+		public void Issue3589Test([MergeDataContextSource(TestProvName.AllSapHana)] string context)
+		{
+			// prepare data before fiters applied
+			using (var db1 = GetDataContext(context))
+				PrepareData(db1);
+
+			using var db = GetDataContext(context);
+
+			GetTarget(db)
+				.Merge()
+				// otherwise most databases will complain about multiple matches
+				.Using(GetSource1(db).Where(r => r.Id == 1))
+				.On((a, b) => true)
+				.InsertWhenNotMatched()
+				.UpdateWhenMatched()
+				.Merge();
+		}
+
+		// merge into CTE supported only by SQL Server
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4338")]
+		public void Issue4338Test([IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
+		{
+			// prepare data before fiters applied
+			using (var db1 = GetDataContext(context))
+				PrepareData(db1);
+
+			using var db = GetDataContext(context);
+
+			var values = new int[] { 11, 22 };
+
+			db
+				.GetTable<Child>()
+				.Where(ai => ai.Parent!.Value1 == -99)
+				.AsCte()
+				.Merge()
+				.Using(values.Select(u => new { Value1 = u }))
+				.On((dst, src) => dst.ParentID == src.Value1)
+				.InsertWhenNotMatchedAnd(
+					s => s.Value1 == -123,
+					s => new()
+					{
+						ParentID = 10,
+						ChildID = s.Value1
+					})
+				.Merge();
+		}
+
+		#region issue 2918
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/2918")]
+		public void Issue2918Test([MergeDataContextSource(TestProvName.AllSqlServer2016Minus, TestProvName.AllSybase, TestProvName.AllInformix)] string context)
+		{
+			// prepare data before fiters applied
+			using var db = GetDataContext(context);
+			using var t1 = db.CreateLocalTable<PatentAssessment>();
+			using var t2 = db.CreateLocalTable<PatentAssessmentTechnicalReviewer>();
+			using var t3 = db.CreateLocalTable<User>();
+
+			var userId = 1;
+
+			var query = from pa in t1
+						where t2.Any(patr => patr.UserId == userId && patr.PatentId == pa.PatentId)
+						select new PatentAssessment
+						{
+							PatentId = pa.PatentId,
+							TechnicalReviewersText = t2.LoadWith(patr => patr.User)
+														.Where(patr => patr.PatentId == pa.PatentId)
+														.StringAggregate("; ", patr => patr.User.DisplayName)
+														.OrderBy(patr => patr.User.DisplayName)
+														.ToValue()
+						};
+
+			t1
+				.Merge()
+				.Using(query)
+				.OnTargetKey()
+				.UpdateWhenMatched((target, source) => new PatentAssessment()
+				{
+					TechnicalReviewersText = source.TechnicalReviewersText
+				})
+				.Merge();
+		}
+
+		[Table]
+		sealed class PatentAssessment
+		{
+			[PrimaryKey] public int PatentId { get; set; }
+			[Column(Length = 1000)] public string? TechnicalReviewersText { get; set; }
+
+			[Association(ThisKey = nameof(PatentId), OtherKey = nameof(PatentAssessmentTechnicalReviewer.PatentId))]
+			public List<PatentAssessmentTechnicalReviewer> TechnicalReviewers { get; set; } = null!;
+		}
+
+		// use shorter name
+		[Table("Issue2918Table2")]
+		sealed class PatentAssessmentTechnicalReviewer
+		{
+			[Column] public int PatentId { get; set; }
+			[Column] public int UserId { get; set; }
+
+			[Association(ThisKey = nameof(PatentId), OtherKey = nameof(PatentAssessment.PatentId))]
+			public PatentAssessment PatentAssessment { get; set; } = null!;
+
+			[Association(ThisKey = nameof(UserId), OtherKey = nameof(User.Id))]
+			public User User { get; set; } = null!;
+		}
+
+		[Table]
+		sealed class User
+		{
+			[PrimaryKey] public int Id { get; set; }
+			[Column(CanBeNull = false, Length = 1000)] public string DisplayName { get; set; } = null!;
+		}
+		#endregion
+
+		[ActiveIssue]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4584")]
+		public void Issue4584Test([MergeDataContextSource(false)] string context)
+		{
+			using var db = GetDataConnection(context);
+
+			var records = new Person[]
+			{
+				new Person() { ID = 123, FirstName = "first name", LastName = "last name" }
+			};
+
+			db
+				.Person
+				.Merge()
+				.Using(records)
+				.OnTargetKey()
+				.InsertWhenNotMatchedAnd(
+					s => s.ID == -123,
+					s => new()
+					{
+						FirstName = s.FirstName,
+						LastName = s.LastName,
+						Gender = s.Gender,
+					})
+				.Merge();
+
+			Assert.That(db.LastQuery!.Count(_ => _ == GetParameterToken(context)), Is.EqualTo(6));
+		}
+
+		[Test]
+		public void MergeSubquery([MergeDataContextSource(false, TestProvName.AllOracle, TestProvName.AllFirebird, TestProvName.AllSybase)] string context, [Values(1, 2)] int iteration)
+		{
+			using var db  = GetDataContext(context);
+
+			db.BeginTransaction();
+
+			using var tmp = db.CreateTempTable(
+				"MergeTemp",
+				[new { ID = 1, Name = "John" }],
+				mb => mb
+					.Property(t => t.ID)
+						.IsPrimaryKey()
+					.Property(t => t.Name)
+						.HasLength(20));
+
+			var cacheMiss = tmp.GetCacheMissCount();
+
+			tmp.InsertOrUpdate(
+				() => new
+				{
+					ID   = (from t in tmp where t.Name == "John" select t.ID).Single(),
+					Name = "John II"
+				},
+				s => new { s.ID, s.Name });
+
+			if (iteration == 2)
+			{
+				Assert.That(tmp.GetCacheMissCount(), Is.EqualTo(cacheMiss));
+			}
+		}
+
+		#region Issue 4584
+		class MyBaseClass
+		{
+			[Column, PrimaryKey]
+			public int Id { get; set; }
+		}
+
+		[Table]
+		sealed class MyChildClass : MyBaseClass
+		{
+			[Column]
+			public int Value { get; set; }
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4584")]
+		public void Issue_EnumerableSourceDuplicateColumnAlias([MergeDataContextSource(true)] string context)
+		{
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable<MyChildClass>();
+
+			List<MyChildClass> items =
+			[
+				new MyChildClass { Id = 1, Value = 10 },
+				new MyChildClass { Id = 2, Value = 20 },
+				new MyChildClass { Id = 3, Value = 30 },
+				new MyChildClass { Id = 4, Value = 40 },
+			];
+
+			tb
+				.Merge()
+				.Using(items)
+				.OnTargetKey()
+				.InsertWhenNotMatched()
+				.Merge();
+		}
+		#endregion
+
+		public class UnusedSourceTable
+		{
+			[PrimaryKey]
+			public int Id    { get; set; }
+			public int Value { get; set; }
+
+			public static readonly UnusedSourceTable[] Data =
+			[
+				new UnusedSourceTable() { Id = 1, Value = 2 }
+			];
+		}
+
+		// Current Sybase version cannot handle such queries and crash with generic error
+		[ActiveIssue(TestProvName.AllSybase, Details = "ASE is terminating this process")]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/5181")]
+		public void UnusedSource_Query([MergeDataContextSource] string context)
+		{
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable(UnusedSourceTable.Data);
+
+			tb.Merge()
+				.UsingTarget()
+				.On((x, y) => x.Value == 5)
+				.InsertWhenNotMatched(x => new UnusedSourceTable { Id = 2, Value = 5 })
+				.Merge();
+
+			var record = tb.Where(r => r.Id != 1).SingleOrDefault();
+
+			Assert.That(record, Is.Not.Null);
+
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(record.Id, Is.EqualTo(2));
+				Assert.That(record.Value, Is.EqualTo(5));
+			}
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/5181")]
+		public void UnusedSource_Enumerable([MergeDataContextSource] string context)
+		{
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable<UnusedSourceTable>();
+
+			tb.Merge()
+				.Using(UnusedSourceTable.Data)
+				.On((x, y) => x.Value == 5)
+				.InsertWhenNotMatched(x => new UnusedSourceTable { Id = 2, Value = 5 })
+				.Merge();
+
+			var record = tb.Where(r => r.Id != 1).SingleOrDefault();
+
+			Assert.That(record, Is.Not.Null);
+
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(record.Id, Is.EqualTo(2));
+				Assert.That(record.Value, Is.EqualTo(5));
+			}
+		}
+
+		// Oracle adds record ignoring fact that source set is empty
+		// this is a bug in oracle implementation as inserted data comes from source records without matching target record
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/5181")]
+		public void UnusedSource_EmptyEnumerable([MergeDataContextSource(TestProvName.AllOracle)] string context)
+		{
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable<UnusedSourceTable>();
+
+			tb.Merge()
+				.Using(Array.Empty<UnusedSourceTable>())
+				.On((x, y) => x.Value == 5)
+				.InsertWhenNotMatched(x => new UnusedSourceTable { Id = 2, Value = 5 })
+				.Merge();
+
+			var record = tb.Where(r => r.Id != 1).SingleOrDefault();
+
+			Assert.That(record, Is.Null);
 		}
 	}
 }

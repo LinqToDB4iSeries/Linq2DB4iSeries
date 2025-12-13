@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Data;
+
 using LinqToDB;
 using LinqToDB.Mapping;
 
@@ -65,7 +65,6 @@ namespace Tests.Model
 			set { Gender = value; }
 		}
 
-
 		[NotColumn] public string Name { get { return FirstName + " " + LastName; }}
 
 		[Association(ThisKey = "ID", OtherKey = "PersonID", CanBeNull=true)]
@@ -90,15 +89,13 @@ namespace Tests.Model
 
 		public override int GetHashCode()
 		{
-			unchecked
-			{
-				var result = ID;
-				result = (result * 397) ^ (LastName   != null ? LastName.GetHashCode()   : 0);
-				result = (result * 397) ^ (MiddleName != null ? MiddleName.GetHashCode() : 0);
-				result = (result * 397) ^ Gender.GetHashCode();
-				result = (result * 397) ^ (FirstName  != null ? FirstName.GetHashCode()  : 0);
-				return result;
-			}
+			return HashCode.Combine(
+				ID,
+				LastName,
+				MiddleName,
+				Gender,
+				FirstName
+			);
 		}
 	}
 }

@@ -1,10 +1,10 @@
-﻿using NUnit.Framework;
+﻿using LinqToDB;
+using LinqToDB.Mapping;
+
+using NUnit.Framework;
 
 namespace Tests.UserTests
 {
-	using LinqToDB;
-	using LinqToDB.Mapping;
-
 	[TestFixture]
 	public class Issue1585Tests : TestBase
 	{
@@ -48,13 +48,14 @@ namespace Tests.UserTests
 				var data = db.GetTable<Test1585>();
 				ed1 = db.MappingSchema.GetEntityDescriptor(typeof(Test1585));
 			}
+
 			using (var db = GetDataContext(context, ms))
 			{
 				var data = db.GetTable<Test1585>();
 				ed2 = db.MappingSchema.GetEntityDescriptor(typeof(Test1585));
 			}
 
-			Assert.AreEqual(ed1, ed2);
+			Assert.That(ed2, Is.EqualTo(ed1));
 		}
 	}
 }

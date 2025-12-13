@@ -3,7 +3,8 @@
 1. Copy the DataProviders.json file to UserDataProviders.json in "Tests" folder and enable the providers to be tested (defaults are v7.4 AccessClient and v7.4 ODBC)
 2. Replace {HOST}, {USER}, {PASSWORD}, {LIBRARY_LIST} and {DEFAULT_SCHEMA} with your own values. Don't worry about commiting this file is excluded in git
 3. If you are going to run GAS and non GAS tests at the same time you have to use different schemas for each set
-4. You can disable any of the providers in the NET472 and CORE31 Providers sections at the bottom of the file.
+4. You can disable any of the providers in the NETFX and NETX0 Providers sections at the bottom of the file.
+5. The Access Client Solution package needs to be installed for the AccessClient, ODBC and OleDB drivers to work. It is recommended to copy the IBM.Data.DB2.ISeries.dll file from Program Files(x86)\IBM\Client Access folder to the \Redist folder to match.
 
 - How to maintain the tests from upstream
 
@@ -21,10 +22,13 @@ It's best to delete the existing code and then copy the new one over in case any
 - Tweaks to test SQL setup files in Data\Create Scripts\ might be needed
 
 
-This project was setup to run all DB2 tests. But sometimes tests that target DB2 are not valid for DB2i. All customization is performed in Tests\Base\CustomizationSupport\Db2iInterceptor.cs. You can intercept any test method there and return any valid DB2i providers for that specific test. If no providers are returned the test is ommited altogether. An DB2i specfic tests should be placed in the Tests\Linq\Custom folder.
+This project was setup to run all DB2 tests. But sometimes tests that target DB2 are not valid for DB2i. All customization is performed in Tests\Base\CustomizationSupport\Db2iInterceptor.cs, and from there piped to Tests\Linq\Custom\TestInterceptor.cs. 
+You can intercept any test method there and return any valid DB2i providers for that specific test. If no providers are returned the test is ommited altogether. An DB2i specfic tests should be placed in the Tests\Linq\Custom folder.
 
 For all tests to run properly journaling needs to be enabled on the liblists used (replace text in curly brackets):
 
 CRTJRNRCV JRNRCV({JOURNAL RECEIVER NAME})
 CRTJRN JRN({JOURNAL NAME}) JRNRCV({JOURNAL RECEIVER NAME})
 STRJRNLIB LIB({LIBRARY NAME}) JRN({JOURNAL NAME})
+
+In case tests don't run after a change in versions of NUnit3TestAdapter or Microsoft.NET.Test.Sdk unload the solution and clean bin/obj files with the clean.cmd file in the root folder.

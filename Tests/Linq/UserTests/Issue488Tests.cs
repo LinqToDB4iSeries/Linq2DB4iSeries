@@ -9,6 +9,8 @@ using LinqToDB.Mapping;
 
 using NUnit.Framework;
 
+using Shouldly;
+
 namespace Tests.UserTests
 {
 	[TestFixture]
@@ -27,9 +29,9 @@ namespace Tests.UserTests
 		}
 
 		[Test]
-		public void Test1([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		public void Test1([IncludeDataSources(ProviderName.SQLiteMS)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var commandInterceptor = new SaveCommandInterceptor();
 				db.AddInterceptor(commandInterceptor);
@@ -43,15 +45,15 @@ namespace Tests.UserTests
 				var _ = q.FirstOrDefault();
 
 				var dc = (DataConnection)db;
-				Assert.AreEqual(2, commandInterceptor.Parameters.Length);
-				Assert.AreEqual(1, commandInterceptor.Parameters.Count(p => p.DbType == DbType.Date));
+				commandInterceptor.Parameters.Length.ShouldBe(1);
+				commandInterceptor.Parameters.Where(p => p.DbType == DbType.Date).Count().ShouldBe(1);;
 			}
 		}
 
 		[Test]
-		public void Test2([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		public void Test2([IncludeDataSources(ProviderName.SQLiteMS)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var commandInterceptor = new SaveCommandInterceptor();
 				db.AddInterceptor(commandInterceptor);
@@ -64,8 +66,8 @@ namespace Tests.UserTests
 				var _ = q.FirstOrDefault();
 
 				var dc = (DataConnection)db;
-				Assert.AreEqual(2, commandInterceptor.Parameters.Length);
-				Assert.AreEqual(1, commandInterceptor.Parameters.Count(p => p.DbType == DbType.Date));
+				commandInterceptor.Parameters.Length.ShouldBe(1);
+				commandInterceptor.Parameters.Where(p => p.DbType == DbType.Date).Count().ShouldBe(1);;
 			}
 		}
 	}

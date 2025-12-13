@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+
 using LinqToDB.Expressions;
 using LinqToDB.Mapping;
 using LinqToDB.Metadata;
@@ -25,9 +26,9 @@ namespace Tests.Metadata
 			var attrs = rd.GetAttributes(typeof(TestEntity))
 				.OfType<TableAttribute>().ToArray();
 
-			Assert.NotNull (attrs);
-			Assert.AreEqual(1, attrs.Length);
-			Assert.AreEqual("TestTable", attrs[0].Name);
+			Assert.That(attrs, Is.Not.Null);
+			Assert.That(attrs, Has.Length.EqualTo(1));
+			Assert.That(attrs[0].Name, Is.EqualTo("TestTable"));
 		}
 
 		[Test]
@@ -37,7 +38,7 @@ namespace Tests.Metadata
 			var attrs = rd.GetAttributes(typeof(TestEntity), MemberHelper.MemberOf<TestEntity>(a => a.Field1))
 				.OfType<ColumnAttribute>().ToArray();
 
-			Assert.AreEqual(0, attrs.Length);
+			Assert.That(attrs, Is.Empty);
 		}
 
 		[Test]
@@ -47,9 +48,9 @@ namespace Tests.Metadata
 			var attrs = rd.GetAttributes(typeof(TestEntity), MemberHelper.MemberOf<TestEntity>(a => a.Property1))
 				.OfType<ColumnAttribute>().ToArray();
 
-			Assert.NotNull (attrs);
-			Assert.AreEqual(1, attrs.Length);
-			Assert.AreEqual("TestName", attrs[0].Name);
+			Assert.That(attrs, Is.Not.Null);
+			Assert.That(attrs, Has.Length.EqualTo(1));
+			Assert.That(attrs[0].Name, Is.EqualTo("TestName"));
 		}
 	}
 }

@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using FluentAssertions;
+
 using LinqToDB;
-using LinqToDB.DataProvider.SqlServer;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests

@@ -1,12 +1,10 @@
-﻿using System.Linq;
-using FluentAssertions;
-using LinqToDB;
-using LinqToDB.Mapping;
-using NUnit.Framework;
+﻿using System;
+using System.Linq;
 using System.Linq.Dynamic.Core;
-using System.Linq.Dynamic.Core.CustomTypeProviders;
-using System.Collections.Generic;
-using System;
+
+using LinqToDB;
+
+using NUnit.Framework;
 
 namespace Tests.UserTests
 {
@@ -40,7 +38,7 @@ namespace Tests.UserTests
 					(cat, owner) => cat)
 				.Count();
 
-				Assert.AreEqual(1, result);
+				Assert.That(result, Is.EqualTo(1));
 			}
 		}
 
@@ -71,7 +69,7 @@ namespace Tests.UserTests
 					(cat, owner) => cat)
 				.Count();
 
-				Assert.AreEqual(1, result);
+				Assert.That(result, Is.EqualTo(1));
 			}
 		}
 	}

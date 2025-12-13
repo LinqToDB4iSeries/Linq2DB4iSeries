@@ -1,7 +1,8 @@
 ﻿using System.Linq;
+
 using LinqToDB;
+
 using NUnit.Framework;
-using Tests.Linq;
 
 namespace Tests.UserTests
 {
@@ -9,7 +10,7 @@ namespace Tests.UserTests
 	public class Issue1284Tests : TestBase
 	{
 		[Test]
-		public void TestCteExpressionIsNotATable([CteTests.CteContextSource] string context)
+		public void TestCteExpressionIsNotATable([CteContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -24,7 +25,7 @@ namespace Tests.UserTests
 		}
 
 		[Test]
-		public void TestCteNoFieldList([CteTests.CteContextSource] string context)
+		public void TestCteNoFieldList([CteContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -43,7 +44,7 @@ namespace Tests.UserTests
 		}
 
 		[Test]
-		public void TestCteInvalidMapping([CteTests.CteContextSource] string context)
+		public void TestCteInvalidMapping([CteContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -59,12 +60,12 @@ namespace Tests.UserTests
 				var expected = query
 					.First();
 
-				Assert.AreEqual(expected, item);
+				Assert.That(item, Is.EqualTo(expected));
 			}
 		}
 
 		[Test]
-		public void TestCteInvalidMappingUnion([CteTests.CteContextSource] string context)
+		public void TestCteInvalidMappingUnion([CteContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -82,12 +83,12 @@ namespace Tests.UserTests
 				var expected = query
 					.First();
 
-				Assert.AreEqual(expected, item);
+				Assert.That(item, Is.EqualTo(expected));
 			}
 		}
 
 		[Test]
-		public void TestCteReservedWords([CteTests.CteContextSource] string context)
+		public void TestCteReservedWords([CteContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -110,7 +111,7 @@ namespace Tests.UserTests
 				var item = cte.FirstOrDefault();
 				var expected = query.FirstOrDefault();
 
-				Assert.AreEqual(expected, item);
+				Assert.That(item, Is.EqualTo(expected));
 			}
 		}
 	}

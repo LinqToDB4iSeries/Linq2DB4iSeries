@@ -1,12 +1,11 @@
 ﻿using LinqToDB;
-using LinqToDB.Linq;
 
 using NUnit.Framework;
 
+using Tests.Model;
+
 namespace Tests.Exceptions
 {
-	using Model;
-
 	[TestFixture]
 	public class DmlTests : TestBase
 	{
@@ -17,8 +16,7 @@ namespace Tests.Exceptions
 			{
 				db.BeginTransaction();
 
-				Assert.Throws(
-					typeof(LinqException),
+				Assert.Throws<LinqToDBException>(
 					() =>
 						db.Doctor.InsertOrUpdate(
 							() => new Doctor
@@ -41,8 +39,7 @@ namespace Tests.Exceptions
 			{
 				db.BeginTransaction();
 
-				Assert.Throws(
-					typeof(LinqException),
+				Assert.Throws<LinqToDBException>(
 					() =>
 						db.Patient.InsertOrUpdate(
 							() => new Patient

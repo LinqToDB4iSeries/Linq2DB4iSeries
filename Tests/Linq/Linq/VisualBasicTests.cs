@@ -5,12 +5,12 @@ using LinqToDB;
 
 using NUnit.Framework;
 
+using Tests.Model;
+
+using Tests.VisualBasic;
 
 namespace Tests.Linq
 {
-	using Model;
-	using VisualBasic;
-
 	[TestFixture]
 	public class VisualBasicTests : TestBase
 	{
@@ -29,8 +29,9 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 			{
 				var query = (IQueryable<Person>)CompilerServices.CompareString(db);
-				var str   = query.ToString();
-				TestContext.WriteLine(str);
+				query.ToArray();
+
+				var str   = query.ToSqlQuery().Sql;
 				Assert.That(str, Does.Not.Contain("CASE"));
 			}
 		}
@@ -44,7 +45,6 @@ namespace Tests.Linq
 					VisualBasicCommon.ParamenterName(db));
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void SearchCondition1([DataSources(TestProvName.AllAccess)] string context)
 		{
@@ -110,8 +110,6 @@ namespace Tests.Linq
 			}
 		}
 
-		//Instance property or field with name Key not found on type System.Collections.Generic.IEnumerable`1[Tests.VisualBasic.VBTests+Activity649]
-		[ActiveIssue(649)]
 		[Test]
 		public void Issue649Test1([DataSources] string context)
 		{
@@ -145,8 +143,6 @@ namespace Tests.Linq
 			}
 		}
 
-		// Instance property or field with name Key not found on type System.Collections.Generic.IEnumerable`1[Tests.Model.Child]
-		[ActiveIssue(649)]
 		[Test]
 		public void Issue649Test4([DataSources] string context)
 		{
@@ -168,7 +164,7 @@ namespace Tests.Linq
 					LastChild = data.Grouped.Max(f => f.ChildID)
 				});
 
-				var str = q1.ToString();
+				_ = q1.ToArray();
 			}
 		}
 

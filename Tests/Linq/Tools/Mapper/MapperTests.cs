@@ -171,22 +171,24 @@ namespace Tests.Tools.Mapper
 				.MapMember(_ => _.Field12, _ => _.Field12 != null ? int.Parse(_.Field12) : 12)
 				.MapMember(_ => _.Field13, _ => _.Field13 ?? 13)
 				.MapMember(_ => _.Field14, _ => _.Field14 ?? 14));
-
-			Assert.That(map.To.Field1,             Is.EqualTo(1));
-			Assert.That(map.To.Field3,             Is.EqualTo(2));
-			Assert.That(map.To.Field4,             Is.EqualTo(map.From.Field5));
-			Assert.That(map.To.Field6,             Is.EqualTo(map.From.Field6));
-			Assert.That(map.To.Field7,             Is.EqualTo(map.From.Field7));
-			Assert.That(map.To.Field8,             Is.EqualTo(map.From.Field8 ?? 0));
-			Assert.That(map.To.Field9,             Is.EqualTo(map.From.Field9 ?? 0));
-			Assert.That(map.To.Field10,            Is.EqualTo(map.From.Field10.ToString()));
-			Assert.That(map.To.Field11.ToString(), Is.EqualTo(map.From.Field11));
-			Assert.That(map.To.Field12,            Is.EqualTo(12));
-			Assert.That(map.To.Field13,            Is.EqualTo(13));
-			Assert.That(map.To.Field14,            Is.EqualTo(14));
-			Assert.That(map.To.Field15,            Is.EqualTo(Gender.Female));
-			Assert.That(map.To.Field16,            Is.EqualTo("M"));
-			Assert.That(map.To.Field17,            Is.EqualTo(Enum2.Value2));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(map.To.Field1, Is.EqualTo(1));
+				Assert.That(map.To.Field3, Is.EqualTo(2));
+				Assert.That(map.To.Field4, Is.EqualTo(map.From.Field5));
+				Assert.That(map.To.Field6, Is.EqualTo(map.From.Field6));
+				Assert.That(map.To.Field7, Is.EqualTo(map.From.Field7));
+				Assert.That(map.To.Field8, Is.EqualTo(map.From.Field8 ?? 0));
+				Assert.That(map.To.Field9, Is.EqualTo(map.From.Field9 ?? 0));
+				Assert.That(map.To.Field10, Is.EqualTo(map.From.Field10.ToString()));
+				Assert.That(map.To.Field11.ToString(), Is.EqualTo(map.From.Field11));
+				Assert.That(map.To.Field12, Is.EqualTo(12));
+				Assert.That(map.To.Field13, Is.EqualTo(13));
+				Assert.That(map.To.Field14, Is.EqualTo(14));
+				Assert.That(map.To.Field15, Is.EqualTo(Gender.Female));
+				Assert.That(map.To.Field16, Is.EqualTo("M"));
+				Assert.That(map.To.Field17, Is.EqualTo(Enum2.Value2));
+			}
 		}
 
 		[Explicit, Test]
@@ -216,7 +218,7 @@ namespace Tests.Tools.Mapper
 				sw.Start(); map.Map(src); sw.Stop();
 			}
 
-			TestContext.WriteLine(sw.Elapsed);
+			TestContext.Out.WriteLine(sw.Elapsed);
 
 			sw.Reset();
 
@@ -225,7 +227,7 @@ namespace Tests.Tools.Mapper
 				sw.Start(); map.Map(src, null); sw.Stop();
 			}
 
-			TestContext.WriteLine(sw.Elapsed);
+			TestContext.Out.WriteLine(sw.Elapsed);
 
 			sw.Reset();
 
@@ -234,7 +236,7 @@ namespace Tests.Tools.Mapper
 				sw.Start(); map.Map(src, null, null); sw.Stop();
 			}
 
-			TestContext.WriteLine(sw.Elapsed);
+			TestContext.Out.WriteLine(sw.Elapsed);
 
 			sw.Reset();
 
@@ -245,7 +247,7 @@ namespace Tests.Tools.Mapper
 				sw.Start(); map3(src); sw.Stop();
 			}
 
-			TestContext.WriteLine(sw.Elapsed);
+			TestContext.Out.WriteLine(sw.Elapsed);
 
 			sw.Reset();
 
@@ -256,7 +258,7 @@ namespace Tests.Tools.Mapper
 				sw.Start(); map4(src, null, null); sw.Stop();
 			}
 
-			TestContext.WriteLine(sw.Elapsed);
+			TestContext.Out.WriteLine(sw.Elapsed);
 		}
 
 		[Test]
@@ -266,19 +268,21 @@ namespace Tests.Tools.Mapper
 				.ToMapping      (nameof(Dest.Field3), nameof(Source.Field2))
 				.ToMapping<Dest>(nameof(Dest.Field6), nameof(Source.Field7))
 				.FromMapping(new Dictionary<string,string> { [nameof(Source.Field5)] = nameof(Dest.Field4) }));
-
-			Assert.That(map.To.Field1,             Is.EqualTo(1));
-			Assert.That(map.To.Field3,             Is.EqualTo(2));
-			Assert.That(map.To.Field4,             Is.EqualTo(map.From.Field5));
-			Assert.That(map.To.Field6,             Is.EqualTo(7));
-			Assert.That(map.To.Field7,             Is.EqualTo(map.From.Field7));
-			Assert.That(map.To.Field8,             Is.EqualTo(map.From.Field8 ?? 0));
-			Assert.That(map.To.Field9,             Is.EqualTo(map.From.Field9 ?? 0));
-			Assert.That(map.To.Field10,            Is.EqualTo(map.From.Field10.ToString()));
-			Assert.That(map.To.Field11.ToString(), Is.EqualTo(map.From.Field11));
-			Assert.That(map.To.Field15,            Is.EqualTo(Gender.Female));
-			Assert.That(map.To.Field16,            Is.EqualTo("M"));
-			Assert.That(map.To.Field17,            Is.EqualTo(Enum2.Value2));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(map.To.Field1, Is.EqualTo(1));
+				Assert.That(map.To.Field3, Is.EqualTo(2));
+				Assert.That(map.To.Field4, Is.EqualTo(map.From.Field5));
+				Assert.That(map.To.Field6, Is.EqualTo(7));
+				Assert.That(map.To.Field7, Is.EqualTo(map.From.Field7));
+				Assert.That(map.To.Field8, Is.EqualTo(map.From.Field8 ?? 0));
+				Assert.That(map.To.Field9, Is.EqualTo(map.From.Field9 ?? 0));
+				Assert.That(map.To.Field10, Is.EqualTo(map.From.Field10.ToString()));
+				Assert.That(map.To.Field11.ToString(), Is.EqualTo(map.From.Field11));
+				Assert.That(map.To.Field15, Is.EqualTo(Gender.Female));
+				Assert.That(map.To.Field16, Is.EqualTo("M"));
+				Assert.That(map.To.Field17, Is.EqualTo(Enum2.Value2));
+			}
 		}
 
 		[Test]
@@ -287,21 +291,24 @@ namespace Tests.Tools.Mapper
 			var map = new MapHelper<Source,Source>().Map(useAction, m => m);
 
 			Assert.That(map.To,         Is.Not.SameAs(map.From));
-			Assert.That(map.To.Field1,  Is.EqualTo(map.From.Field1));
-			Assert.That(map.To.Field2,  Is.EqualTo(map.From.Field2));
-			Assert.That(map.To.Field5,  Is.EqualTo(map.From.Field5));
-			Assert.That(map.To.Field6,  Is.EqualTo(map.From.Field6));
-			Assert.That(map.To.Field7,  Is.EqualTo(map.From.Field7));
-			Assert.That(map.To.Field8,  Is.EqualTo(map.From.Field8));
-			Assert.That(map.To.Field9,  Is.EqualTo(map.From.Field9));
-			Assert.That(map.To.Field10, Is.EqualTo(map.From.Field10));
-			Assert.That(map.To.Field11, Is.EqualTo(map.From.Field11));
-			Assert.That(map.To.Field12, Is.EqualTo(map.From.Field12));
-			Assert.That(map.To.Field13, Is.EqualTo(map.From.Field13));
-			Assert.That(map.To.Field14, Is.EqualTo(map.From.Field14));
-			Assert.That(map.To.Field15, Is.EqualTo(map.From.Field15));
-			Assert.That(map.To.Field16, Is.EqualTo(map.From.Field16));
-			Assert.That(map.To.Field17, Is.EqualTo(map.From.Field17));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(map.To.Field1, Is.EqualTo(map.From.Field1));
+				Assert.That(map.To.Field2, Is.EqualTo(map.From.Field2));
+				Assert.That(map.To.Field5, Is.EqualTo(map.From.Field5));
+				Assert.That(map.To.Field6, Is.EqualTo(map.From.Field6));
+				Assert.That(map.To.Field7, Is.EqualTo(map.From.Field7));
+				Assert.That(map.To.Field8, Is.EqualTo(map.From.Field8));
+				Assert.That(map.To.Field9, Is.EqualTo(map.From.Field9));
+				Assert.That(map.To.Field10, Is.EqualTo(map.From.Field10));
+				Assert.That(map.To.Field11, Is.EqualTo(map.From.Field11));
+				Assert.That(map.To.Field12, Is.EqualTo(map.From.Field12));
+				Assert.That(map.To.Field13, Is.EqualTo(map.From.Field13));
+				Assert.That(map.To.Field14, Is.EqualTo(map.From.Field14));
+				Assert.That(map.To.Field15, Is.EqualTo(map.From.Field15));
+				Assert.That(map.To.Field16, Is.EqualTo(map.From.Field16));
+				Assert.That(map.To.Field17, Is.EqualTo(map.From.Field17));
+			}
 		}
 
 		[Test]
@@ -338,9 +345,11 @@ namespace Tests.Tools.Mapper
 
 			var map = new MapHelper<Class5,Class6>().Map(useAction, src, m => m
 				.SetProcessCrossReferences(true));
-
-			Assert.That(map.To.Class1, Is.Not.Null);
-			Assert.That(map.To.Class2, Is.SameAs(map.To.Class1));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(map.To.Class1, Is.Not.Null);
+				Assert.That(map.To.Class2, Is.SameAs(map.To.Class1));
+			}
 		}
 
 		[Test]
@@ -352,9 +361,11 @@ namespace Tests.Tools.Mapper
 
 			var map = new MapHelper<Class5,Class6>().Map(useAction, src, m => m
 				.SetProcessCrossReferences(false));
-
-			Assert.That(map.To.Class1, Is.Not.Null);
-			Assert.That(map.To.Class2, Is.Not.SameAs(map.To.Class1));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(map.To.Class1, Is.Not.Null);
+				Assert.That(map.To.Class2, Is.Not.SameAs(map.To.Class1));
+			}
 		}
 
 		sealed class Class7  { public Class9?  Class; }
@@ -456,10 +467,14 @@ namespace Tests.Tools.Mapper
 			var map = new MapHelper<Class15,Class16>().Map(useAction, src, m => m
 				.SetProcessCrossReferences(true));
 
-			Assert.That(map.To.List!.Count, Is.EqualTo(3));
-			Assert.That(map.To.List[0],     Is.Not.Null);
-			Assert.That(map.To.List[1],     Is.Not.Null);
-			Assert.That(map.To.List[2],     Is.Not.Null);
+			Assert.That(map.To.List!, Has.Count.EqualTo(3));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(map.To.List[0], Is.Not.Null);
+				Assert.That(map.To.List[1], Is.Not.Null);
+				Assert.That(map.To.List[2], Is.Not.Null);
+			}
+
 			Assert.That(map.To.List[0],     Is.Not.SameAs(map.To.List[1]));
 			Assert.That(map.To.List[0],     Is.    SameAs(map.To.List[2]));
 		}
@@ -469,16 +484,20 @@ namespace Tests.Tools.Mapper
 		{
 			var mapper = Map.GetMapper<List<int>,IList<string>?>();
 			var dest   = mapper.Map(new List<int> { 1, 2, 3 })!;
-
-			Assert.AreEqual("1", dest[0]);
-			Assert.AreEqual("2", dest[1]);
-			Assert.AreEqual("3", dest[2]);
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(dest[0], Is.EqualTo("1"));
+				Assert.That(dest[1], Is.EqualTo("2"));
+				Assert.That(dest[2], Is.EqualTo("3"));
+			}
 
 			dest = mapper.Map(new List<int> { 1, 2, 3}, null)!;
-
-			Assert.AreEqual("1", dest[0]);
-			Assert.AreEqual("2", dest[1]);
-			Assert.AreEqual("3", dest[2]);
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(dest[0], Is.EqualTo("1"));
+				Assert.That(dest[1], Is.EqualTo("2"));
+				Assert.That(dest[2], Is.EqualTo("3"));
+			}
 		}
 
 		[Test]
@@ -486,16 +505,20 @@ namespace Tests.Tools.Mapper
 		{
 			var mapper = Map.GetMapper<int[],string[]?>();
 			var dest   = mapper.Map(new[] { 1, 2, 3 })!;
-
-			Assert.AreEqual("1", dest[0]);
-			Assert.AreEqual("2", dest[1]);
-			Assert.AreEqual("3", dest[2]);
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(dest[0], Is.EqualTo("1"));
+				Assert.That(dest[1], Is.EqualTo("2"));
+				Assert.That(dest[2], Is.EqualTo("3"));
+			}
 
 			dest   = mapper.Map(new[] { 1, 2, 3 }, null)!;
-
-			Assert.AreEqual("1", dest[0]);
-			Assert.AreEqual("2", dest[1]);
-			Assert.AreEqual("3", dest[2]);
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(dest[0], Is.EqualTo("1"));
+				Assert.That(dest[1], Is.EqualTo("2"));
+				Assert.That(dest[2], Is.EqualTo("3"));
+			}
 		}
 
 		sealed class Class17
@@ -520,10 +543,14 @@ namespace Tests.Tools.Mapper
 			var mapper = new MapHelper<Class17,Class18>().Map(useAction, new Class17(), m =>
 				m.SetProcessCrossReferences(true));
 
-			Assert.That(mapper.To.Arr!.Length, Is.EqualTo(3));
-			Assert.That(mapper.To.Arr[0], Is.Not.Null);
-			Assert.That(mapper.To.Arr[1], Is.Not.Null);
-			Assert.That(mapper.To.Arr[2], Is.Not.Null);
+			Assert.That(mapper.To.Arr!, Has.Length.EqualTo(3));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(mapper.To.Arr[0], Is.Not.Null);
+				Assert.That(mapper.To.Arr[1], Is.Not.Null);
+				Assert.That(mapper.To.Arr[2], Is.Not.Null);
+			}
+
 			Assert.That(mapper.To.Arr[0], Is.Not.SameAs(mapper.To.Arr[1]));
 			Assert.That(mapper.To.Arr[0], Is.SameAs(mapper.To.Arr[2]));
 		}
@@ -539,10 +566,14 @@ namespace Tests.Tools.Mapper
 			var mapper = new MapHelper<Class19,Class18>().Map(useAction, new Class19(), m =>
 				m.SetProcessCrossReferences(true));
 
-			Assert.That(mapper.To.Arr!.Length, Is.EqualTo(3));
-			Assert.That(mapper.To.Arr[0], Is.Not.Null);
-			Assert.That(mapper.To.Arr[1], Is.Not.Null);
-			Assert.That(mapper.To.Arr[2], Is.Not.Null);
+			Assert.That(mapper.To.Arr!, Has.Length.EqualTo(3));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(mapper.To.Arr[0], Is.Not.Null);
+				Assert.That(mapper.To.Arr[1], Is.Not.Null);
+				Assert.That(mapper.To.Arr[2], Is.Not.Null);
+			}
+
 			Assert.That(mapper.To.Arr[0], Is.Not.SameAs(mapper.To.Arr[1]));
 			Assert.That(mapper.To.Arr[0], Is.SameAs(mapper.To.Arr[2]));
 		}
@@ -559,10 +590,12 @@ namespace Tests.Tools.Mapper
 
 			var mapper = new MapHelper<Class20,Class21>().Map(useAction, source, m =>
 				m.SetProcessCrossReferences(false));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(mapper.To.Class1, Is.Not.Null);
+				Assert.That(mapper.To.Class2, Is.Not.Null);
+			}
 
-
-			Assert.That(mapper.To.Class1, Is.Not.Null);
-			Assert.That(mapper.To.Class2, Is.Not.Null);
 			Assert.That(mapper.To.Class1, Is.Not.SameAs(mapper.To.Class2));
 		}
 
@@ -584,7 +617,7 @@ namespace Tests.Tools.Mapper
 
 			foreach (var str in src.HashSet)
 			{
-				Assert.That(mapper.To.HashSet.Contains(str));
+				Assert.That(mapper.To.HashSet, Does.Contain(str));
 			}
 		}
 
@@ -662,15 +695,19 @@ namespace Tests.Tools.Mapper
 
 			var mapper = new MapHelper<RClass1,RClass1>().Map(useAction, src, m => m.SetDeepCopy(true));
 
-			Assert.That(mapper.To,                       Is.Not.Null);
-			Assert.That(mapper.To.Class2,                Is.Not.Null);
-			Assert.That(mapper.To.Class2!.List!.Count,   Is.EqualTo(2));
-			Assert.That(mapper.To.Class2.List[0],        Is.Not.Null);
-			Assert.That(mapper.To.Class2.List[1],        Is.Not.Null);
-			Assert.That(mapper.To.Class2.List[0].Class1, Is.Not.Null);
-			Assert.That(mapper.To.Class2.List[0].Class2, Is.Not.Null);
-			Assert.That(mapper.To.Class2.List[1].Class1, Is.Not.Null);
-			Assert.That(mapper.To.Class2.List[1].Class2, Is.Not.Null);
+			Assert.That(mapper.To,             Is.Not.Null);
+			Assert.That(mapper.To.Class2,      Is.Not.Null);
+			Assert.That(mapper.To.Class2.List, Is.Not.Null);
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(mapper.To.Class2.List, Has.Count.EqualTo(2));
+				Assert.That(mapper.To.Class2.List[0], Is.Not.Null);
+				Assert.That(mapper.To.Class2.List[1], Is.Not.Null);
+				Assert.That(mapper.To.Class2.List[0].Class1, Is.Not.Null);
+				Assert.That(mapper.To.Class2.List[0].Class2, Is.Not.Null);
+				Assert.That(mapper.To.Class2.List[1].Class1, Is.Not.Null);
+				Assert.That(mapper.To.Class2.List[1].Class2, Is.Not.Null);
+			}
 		}
 	}
 }

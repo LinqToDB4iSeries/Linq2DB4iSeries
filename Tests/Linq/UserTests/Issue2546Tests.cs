@@ -1,6 +1,8 @@
 ﻿using System.Linq;
+
 using LinqToDB;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -40,7 +42,7 @@ namespace Tests.UserTests
 					where x.Value2 == container.Value2
 					select x).ToList();
 
-				Assert.That(something.Count, Is.EqualTo(1));
+				Assert.That(something, Has.Count.EqualTo(1));
 			}
 		}
 	}

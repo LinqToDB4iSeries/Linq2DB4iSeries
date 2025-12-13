@@ -7,7 +7,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 {
 	internal static class DataTypeConverter
 	{
-		static readonly Dictionary<DataType, Type> typeMap = new Dictionary<DataType, Type> {
+		static readonly Dictionary<DataType, Type> typeMap = new() {
 			{ DataType.Int16, typeof(short) },
 			{ DataType.Int32, typeof(int) },
 			{ DataType.Int64, typeof(long) },
@@ -19,10 +19,10 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		static readonly Dictionary<DataType, TypeConverter> dataTypeConverters =
 			typeMap.ToDictionary(x => x.Key, x => TypeDescriptor.GetConverter(x.Value));
 
-		public static bool TryConvert(object value, DataType dataType, out object result)
+		public static bool TryConvert(object? value, DataType dataType, out object? result)
 		{
 			result = value;
-			if (value == null)
+			if (value == null || value == DBNull.Value)
 				return true;
 
 			var sourceType = value.GetType();
@@ -56,7 +56,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			if (value is IConvertible c)
 			{
-				var formatProvider = System.Globalization.CultureInfo.CurrentCulture;
+				var formatProvider = System.Globalization.CultureInfo.InvariantCulture;
 				
 				if (type == typeof(byte))
 				{
@@ -119,13 +119,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return false;
 		}
 
-		public static object TryConvertOrOriginal(object value, DataType dataType, out bool converted)
-		{
-			converted = TryConvert(value, dataType, out var v);
-			return v;
-		}
-
-		public static object TryConvertOrOriginal(object value, DataType dataType)
+		public static object? TryConvertOrOriginal(object? value, DataType dataType)
 		{
 			TryConvert(value, dataType, out var v);
 			return v;

@@ -1,11 +1,30 @@
-﻿using NUnit.Framework.Interfaces;
+﻿using LinqToDB.Extensions;
+using NUnit.Framework.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Tests
 {
+	public interface ITestInterceptor
+	{
+		IEnumerable<string> InterceptDataSources(DataSourcesBaseAttribute dataSourcesAttribute, IEnumerable<string> contexts);
+		IEnumerable<string> InterceptTestDataSources(DataSourcesBaseAttribute dataSourcesAttribute, IMethodInfo testMethod, IEnumerable<string> contexts);
+	}
+
 	public class Db2iInterceptor : CustomizationSupportInterceptor
 	{
+		private List<ITestInterceptor> interceptors;
+
+		public Db2iInterceptor()
+		{
+			interceptors = AppDomain.CurrentDomain.GetAssemblies()
+				.SelectMany(x => 
+					x.ExportedTypes.Where(x => x.GetInterfaces().Contains(typeof(ITestInterceptor))))
+				.Select(x => (ITestInterceptor)Activator.CreateInstance(x)!)
+				.ToList();
+		}
+
 		public override IEnumerable<string> GetSupportedProviders(IEnumerable<string> providers)
 		{
 			return TestProvNameDb2i.GetAll();
@@ -13,148 +32,23 @@ namespace Tests
 
 		public override IEnumerable<string> InterceptDataSources(DataSourcesBaseAttribute dataSourcesAttribute, IEnumerable<string> contexts)
 		{
-			return contexts.Concat(TestProvNameDb2i.GetProviders(contexts));
+			return interceptors.Aggregate(
+					contexts.Concat(TestProvNameDb2i.GetProviders(contexts)),
+					(acc, cur) => cur.InterceptDataSources(dataSourcesAttribute, acc));
 		}
 
 		public override IEnumerable<string> InterceptTestDataSources(DataSourcesBaseAttribute dataSourcesAttribute, IMethodInfo testMethod, IEnumerable<string> contexts)
 		{
-			//Filter out specific tests
-			switch (ExtractMethod(testMethod))
-			{
-				//Test targets DB2 provider
-				case ("SchemaProviderTests", "DB2Test"):
-				case ("MiniProfilerTests", "TestDB2"):
-				case ("DB2Tests", _):
-				//Tests have internal logic based on BulkCopyType - Copied to custom tests
-				case ("BulkCopyTests", "KeepIdentity_SkipOnInsertTrue"):
-				case ("BulkCopyTests", "KeepIdentity_SkipOnInsertFalse"):
-				//Tests rely on context being DB2
-				case ("BulkCopyTests", "BulkCopyAsyncEnumerableWithCloseAfterUseDataConnection"):
-				case ("BulkCopyTests", "BulkCopyAsyncWithCloseAfterUseDataConnection"):
-				//Tests have property have space - Copied to custom tests
-				case ("DynamicColumnsTests", "SqlPropertyNoStoreNonIdentifier"):
-				case ("DynamicColumnsTests", "SqlPropertyNoStoreNonIdentifierGrouping"):
-				//Valid for DB2 but not DB2i - Test copied to custom
-				case ("DropTableTests", "DropSpecificDatabaseTableTest"):
-				//Test copied to custom to reduce default source row number
-				case ("MergeTests", "BigSource"):
-				//Tests passing provider specific parameter types - Generic linq2db test - Not applicable
-				case ("MergeTests", "TestParametersInListSourceProperty"):
-				//Tests active issue with DB2 family ordering NULL last by default - Not applicable
-				case ("MergeTests", "SortedMergeResultsIssue"):
-				//Merge in Cte not supported 
-				case ("MergeTests", "MergeIntoCteIssue4107"):
-				//Tests are not applicable for Db2i (MERGE from/to CTE)
-				case ("MergeTests", "MergeFromCte"):
-				case ("MergeTests", "MergeIntoCte"):
-				case ("MergeTests", "MergeUsingCteJoin"):
-				case ("MergeTests", "MergeUsingCteWhere"):
-				//Too many cases in code - Copied to custom tests
-				case ("CharTypesTests", _):
-				//Too many changes and cases - Copied to custom tests
-				case ("MergeTests", "TestTypesInsertByMerge"):
-				case ("MergeTests", "TestMergeTypes"):
-				case ("MergeTests", "TestDB2NullsInSource"):
-				case ("Issue681Tests", "TestTableFQN"):
-					return Enumerable.Empty<string>();
-				//Query incorrect for DB2i - Copied to custom tests
-				case ("DataConnectionTests", "EnumExecuteScalarTest"):
-					return Enumerable.Empty<string>();
-				//Case valid for DB2 but not for DB2i
-				case ("Issue792Tests", "TestWithTransactionThrowsFromProvider"):
-				case ("Issue3148Tests", "TestDefaultExpression_09"):
-				//Data not valid for DB2i
-				case ("Issue1287Tests", _):
-				case ("TableOptionsTests", "CheckExistenceTest"):
-				case ("TableOptionsTests", "CreateIfNotExistsTest"):
-				case ("TableOptionsTests", "CreateTempIfNotExistsTest"):
-				case ("TableOptionsTests", "DB2TableOptionsTest"):
-				case ("TableOptionsTests", "FluentMappingTest"):
-				case ("TableOptionsTests", "IsTemporaryFlagTest"):
-				case ("TableOptionsTests", "IsTemporaryMethodTest"):
-				case ("TableOptionsTests", "IsTemporaryMethodTest2"):
-				case ("TableOptionsTests", "IsTemporaryMethodTest3"):
-				case ("TableOptionsTests", "IsTemporaryOptionAsyncTest"):
-				case ("TableOptionsTests", "IsTemporaryOptionTest"):
-				case ("TableOptionsTests", "TableOptionsMethodTest"):
-				//Implicit transactions do not function properly in .NET
-				case ("DataConnectionTests", "TestDisposeFlagCloning962Test1"):
-				case ("DataConnectionTests", "TestDisposeFlagCloning962Test2"):
-				//Tests break on net472 - generic linq2db tests - not need to test provider
-				case ("ConnectionBuilderTests", "CanUseLoggingFactoryFromIoc"):
-				case ("ConnectionBuilderTests", "CanUseWithLoggingFromFactory"):
-				//Query contains invalid keyword permission
-				case ("Issue825Tests", "Test"):
-				//Test for unsupported WCF feature
-				case ("AsyncTests", "Test"):
-				case ("AsyncTests", "Test1"):
-				case ("AsyncTests", "TestForEach"):
-				//Invalid query in test
-				case ("DataExtensionsTests", "TestDataParameterMapping1"):
-				case ("DataExtensionsTests", "TestObject3"):
-				case ("DataExtensionsTests", "TestObject4"):
-				case ("DataExtensionsTests", "TestObject5"):
-				case ("DataExtensionsTests", "TestObject6"):
-				//There is no collation in DB2i
-				case ("SqlExtensionsTests", "TestSqlCollate1"):
-				case ("SqlExtensionsTests", "TestSqlCollate2"):
-				//Unsupported table options
-				case ("CreateTempTableTests", "CreateTable_NoDisposeError"):
-				case ("CreateTempTableTests", "CreateTableAsyncCanceled"):
-				case ("CreateTempTableTests", "CreateTableAsyncCanceled2"):
-				case ("CreateTempTableTests", "CreateTable_NoDisposeErrorAsync"):
-				case ("CreateTempTableTests", "CreateTempTableWithPrimaryKey"):
-				case ("CreateTempTableTests", "InsertIntoTempTableWithPrimaryKey"):
-				case ("CreateTempTableTests", "CreateTableEnumerableWithNameAndDescriptionAsyncTest"):
-				// GUIDs are serialized in lower case
-				case ("ConvertTests", "GuidToString"):
-				// Recursive CTE expression defined in test is not supported
-				case ("CteTests", "Issue3357_RecordClass_DB2"):
-				case ("CteTests", "Issue3357_RecordLikeClass_DB2"):
-				//UpdateRow / UpdateRowLiteral not supported
-				case ("SqlRowTests", "UpdateRowLiteral"):
-				case ("SqlRowTests", "UpdateRowSelect"):
-				// Test case uses alias name assertion from generated sql, name sanitization breaks test assertion - Copied to custom tests
-				case ("TableIDTests", "TableTest"):
-				// Test case uses guid conversion with custom conversion expression
-				case ("ConvertExpressionTests", "Issue3791Test"):
-				//Ignore custom extension tests 
-				case ("SqlExtensionTests", _):
-				//DB2i only supports ASCII identifiers	
-				case ("IdentifierTests", _):
-				//Test cases invalid for DB2i
-				case ("InSubqueryTests", _):
-				//Test cases rely on TestUtils.GetSchemaName
-				case ("Issue681Tests", _):
-					return Enumerable.Empty<string>();
-
-				//Access client throws a different exception so it is excluded
-				case ("DataContextTests", "ProviderConnectionStringConstructorTest2"):
-				case ("TraceTests", "TraceInfoErrorsAreReportedForInvalidConnectionString"):
-				case ("TraceTests", "TraceInfoErrorsAreReportedForInvalidConnectionStringAsync"):
-					return contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_AccessClient));
-
-				//OleDb doesn't support inline comments so tags are not supported (fails with PREPARE STATEMENT error)
-				case ("TagTests", _):
-				//OleDb doesn't support inline comments so test that perform comment assertions are not supported
-				case ("QueryNameTests", "TableTest"):
-				case ("QueryNameTests", "FromTest"):
-				case ("QueryNameTests", "MainInlineTest"):
-					return contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_OleDb));
-
-				//LAG returns numeric instead of timestamp prior to 7.4
-				case ("AnalyticTests", "Issue1799Test1"):
-				case ("AnalyticTests", "Issue1799Test2"):
-					return contexts.Intersect(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_74));
-
-				//Tests use generic mapping schema so GAS guid doesn't work
-				case ("ConcurrencyTests", "TestGuid"):
-				case ("ConcurrencyTests", "TestGuidAsync"):
-				case ("ConcurrencyTests", "TestTestGuidAsync"): // probably type, also adding the correct one for future proofing
-					return contexts.Where(c => !c.Contains("GAS"));
-			}
-
-			return contexts;
+			// Skip tests marked as ActiveIssue for all providers or for DB2
+			if (testMethod.MethodInfo.GetAttributes<ActiveIssueAttribute>(false)
+				.Any(x => x.Configurations is null ||
+					x.Configurations.Length == 0 ||
+					x.Configurations?.Intersect(TestProvName.AllDB2.Split(',')).Any() == true))
+				return [];
+			
+			return interceptors.Aggregate(
+					contexts,
+					(acc, cur) => cur.InterceptTestDataSources(dataSourcesAttribute, testMethod, acc));
 		}
 
 		public override char GetParameterToken(char token, string context)

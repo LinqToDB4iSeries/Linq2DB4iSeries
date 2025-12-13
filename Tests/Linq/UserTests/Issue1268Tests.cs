@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+
 using LinqToDB;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -29,7 +31,6 @@ namespace Tests.UserTests
 			public Dictionary<string, object> Values { get; set; } = new Dictionary<string, object>();
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void InsertWithDynamicColumn([IncludeDataSources(true, TestProvName.AllSQLite, TestProvName.AllClickHouse)] string context)
 		{
@@ -50,11 +51,10 @@ namespace Tests.UserTests
 				db.Insert(obj2);
 
 				var loaded1 = db.GetTable<RepresentTable>().First(e => e.Name == "Some1");
-				Assert.AreEqual(true, loaded1.Values["IsDeleted"]);
-
+				Assert.That(loaded1.Values["IsDeleted"], Is.True);
 
 				var loaded2 = db.GetTable<RepresentTable>().First(e => e.Name == "Some2");
-				Assert.AreEqual(false, loaded2.Values["IsDeleted"]);
+				Assert.That(loaded2.Values["IsDeleted"], Is.False);
 			}
 		}
 	}

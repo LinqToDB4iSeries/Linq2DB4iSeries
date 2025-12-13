@@ -1,7 +1,9 @@
-﻿using NUnit.Framework;
-using System;
+﻿using System;
 using System.Linq;
+
 using LinqToDB;
+
+using NUnit.Framework;
 
 namespace Tests.UserTests
 {
@@ -10,10 +12,10 @@ namespace Tests.UserTests
 	{
 		[Test]
 		public void Issue1750Test(
-			[IncludeDataSources(false, TestProvName.AllSQLite, TestProvName.AllClickHouse)] string context, 
-			[Values(true, false)] bool includeX, 
-			[Values(true, false)] bool includeY,
-			[Values(true, false)] bool includeZ)
+			[IncludeDataSources(false, TestProvName.AllSQLite, TestProvName.AllClickHouse)] string context,
+			[Values] bool includeX,
+			[Values] bool includeY,
+			[Values] bool includeZ)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -34,8 +36,8 @@ namespace Tests.UserTests
 						((includeX && p.Value1 == 1) || (includeY && p.Value1 == 2) || (includeZ && p.ParentID % 2 == 0))
 					select p).ToArray();
 
-				if (expected.Length == 0) 
-					Assert.AreEqual(expected.Length, query.Count());
+				if (expected.Length == 0)
+					Assert.That(query.Count(), Is.EqualTo(expected.Length));
 				else
 					AreEqual(expected, query);
 			}

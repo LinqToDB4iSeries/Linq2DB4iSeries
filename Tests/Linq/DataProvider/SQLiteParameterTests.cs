@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Linq;
+
 using LinqToDB;
 using LinqToDB.Data;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.DataProvider
@@ -46,23 +48,25 @@ namespace Tests.DataProvider
 			ms.SetConverter<long, DateTime>(ticks => new DateTime(ticks, DateTimeKind.Unspecified));
 			ms.SetConverter<DateTime, DataParameter>(d => new DataParameter("", d.Ticks, DataType.Long));
 
-			using (var db = GetDataContext(context, ms))
+			using var db = GetDataContext(context, ms);
+			using var tb = db.CreateLocalTable<ClassWithIntDate>();
+			db.InlineParameters = true;
+
+			var query = from t in db.GetTable<ClassWithIntDate>()
+						where t.Value > TestData.NonReadonlyDateTime
+						select t;
+
+			query.ToArray();
+			using (Assert.EnterMultipleScope())
 			{
-				db.InlineParameters = true;
-
-				var query = from t in db.GetTable<ClassWithIntDate>()
-							where t.Value > TestData.DateTime
-							select t;
-
 #pragma warning disable CS0618 // Type or member is obsolete
-				Assert.That(query.GetStatement().CollectParameters().Length, Is.EqualTo(0));
+				Assert.That(query.GetStatement().CollectParameters(), Is.Empty);
 #pragma warning restore CS0618 // Type or member is obsolete
 
-				Assert.That(query.ToString(), Does.Not.Contain("DateTime("));
+				Assert.That(query.ToSqlQuery().Sql, Does.Not.Contain("DateTime("));
 			}
 		}
 
-		[ActiveIssue("Improving MappingSchema needed.")]
 		[Test]
 		public void DoubleParameterization([IncludeDataSources(TestProvName.AllSQLite)] string context)
 		{
@@ -90,7 +94,6 @@ namespace Tests.DataProvider
 					where t1.DoubleValue == double.MinValue && t1.FloatValue == float.MinValue
 					select t1
 				);
-
 
 				AreEqualWithComparer(expected, actual);
 			}

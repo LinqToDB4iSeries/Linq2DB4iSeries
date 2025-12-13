@@ -8,15 +8,14 @@ using NUnit.Framework;
 
 namespace Tests.UserTests
 {
-	// https://github.com/linq2db/linq2db.LINQPad/issues/10
 	[TestFixture]
-	[SkipCI]
 	public class Issue0010Tests : TestBase
 	{
-		[Test, SkipCategory("Access.12")]
-		public void TestOleDb([IncludeDataSources(ProviderName.Access)] string context)
+		[Test(Description = "https://github.com/linq2db/linq2db.LINQPad/issues/10")]
+		public void TestOleDb([IncludeDataSources(ProviderName.AccessAceOleDb)] string context)
 		{
-			using (var db = new DataConnection(new AccessOleDbDataProvider(), "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=Database\\issue_10_linqpad.accdb;"))
+			var cs = DataConnection.GetConnectionString(context);
+			using (var db = new DataConnection(new DataOptions().UseConnectionString(AccessTools.GetDataProvider(provider: AccessProvider.OleDb, connectionString: cs), "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=Database\\issue_10_linqpad.accdb;")))
 			{
 				var schemaProvider = db.DataProvider.GetSchemaProvider();
 
@@ -28,14 +27,15 @@ namespace Tests.UserTests
 				db.Execute("SELECT * FROM CLONECODE");
 
 				// all returned primary keys are defined on system/access tables
-				Assert.True(schema.Tables.Any(t => t.Columns.Any(c => c.IsPrimaryKey)));
+				Assert.That(schema.Tables.Any(t => t.Columns.Any(c => c.IsPrimaryKey)), Is.True);
 			}
 		}
 
-		[Test, SkipCategory("Access.12")]
-		public void TestOdbc([IncludeDataSources(ProviderName.AccessOdbc)] string context)
+		[Test(Description = "https://github.com/linq2db/linq2db.LINQPad/issues/10")]
+		public void TestOdbc([IncludeDataSources(ProviderName.AccessAceOdbc)] string context)
 		{
-			using (var db = new DataConnection(new AccessODBCDataProvider(), "Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=Database\\issue_10_linqpad.accdb;"))
+			var cs = DataConnection.GetConnectionString(context);
+			using (var db = new DataConnection(new DataOptions().UseConnectionString(AccessTools.GetDataProvider(provider: AccessProvider.ODBC, connectionString: cs), "Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=Database\\issue_10_linqpad.accdb;")))
 			{
 				var schemaProvider = db.DataProvider.GetSchemaProvider();
 

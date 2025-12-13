@@ -4,13 +4,16 @@ using System.Data;
 using System.Linq;
 using System.Data.Common;
 
+using LinqToDB.Internal.DataProvider.DB2;
+
 namespace LinqToDB.DataProvider.DB2iSeries
 {
 	using LinqToDB.Data;
 	using LinqToDB;
 	using LinqToDB.Common;
-	using DB2BulkCopyOptions = DB2.DB2ProviderAdapter.DB2BulkCopyOptions;
-
+	using DB2BulkCopyOptions = DB2ProviderAdapter.DB2BulkCopyOptions;
+	using LinqToDB.Internal.DataProvider;
+	
 	internal partial class DB2iSeriesBulkCopy : BasicBulkCopy
 	{
 		//Copied from DB2BulkCopy
@@ -20,8 +23,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		IEnumerable<T> source,
 		DataConnection dataConnection,
 		DbConnection connection,
-		DB2.DB2ProviderAdapter.BulkCopyAdapter bulkCopy,
+		DB2ProviderAdapter.BulkCopyAdapter bulkCopy,
 		Action<DataConnection, Func<string>, Func<int>> traceAction)
+		where T : notnull
 		{
 			var descriptor = table.DataContext.MappingSchema.GetEntityDescriptor(typeof(T), dataConnection.Options.ConnectionOptions.OnEntityDescriptorCreated);
 			var columns = descriptor.Columns.Where(c => !c.SkipOnInsert || options.KeepIdentity == true && c.IsIdentity).ToList();
@@ -61,7 +65,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				bc.DestinationTableName = tableName;
 
 				for (var i = 0; i < columns.Count; i++)
-					bc.ColumnMappings.Add(bulkCopy.CreateColumnMapping(i, sqlBuilder.ConvertInline(columns[i].ColumnName, SqlProvider.ConvertType.NameToQueryField)));
+					bc.ColumnMappings.Add(bulkCopy.CreateColumnMapping(i, sqlBuilder.ConvertInline(columns[i].ColumnName, Internal.SqlProvider.ConvertType.NameToQueryField)));
 
 				traceAction(
 					dataConnection,

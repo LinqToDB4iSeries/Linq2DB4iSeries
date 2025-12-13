@@ -1,6 +1,11 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
+
 using LinqToDB;
+using LinqToDB.Internal.Common;
 using LinqToDB.Mapping;
+using LinqToDB.Tools.Comparers;
+
 using NUnit.Framework;
 
 namespace Tests.xUpdate
@@ -41,7 +46,6 @@ namespace Tests.xUpdate
 			[Column] public int Value3 { get; set; }
 		}
 
-
 		private UpdatedEntities[] GenerateData()
 		{
 			return new UpdatedEntities[]
@@ -75,9 +79,10 @@ namespace Tests.xUpdate
 			};
 		}
 
+		[Obsolete("Remove test after API removed")]
 		[Test]
-		public void UpdateTestWhere(
-			[DataSources(ProviderName.Access, TestProvName.AllMySql, ProviderName.SqlCe, TestProvName.AllInformix, TestProvName.AllClickHouse)]
+		public void UpdateTestWhereOld(
+			[DataSources(TestProvName.AllMySql, ProviderName.SqlCe, TestProvName.AllInformix, TestProvName.AllClickHouse)]
 			string context)
 		{
 			var data = GenerateData();
@@ -99,6 +104,57 @@ namespace Tests.xUpdate
 				var int3 = 33;
 
 				recordsToUpdate.Update(forUpdates, v => new UpdatedEntities()
+				{
+					Value1 = v.c.Value1 * v.t.Value1 * int1,
+					Value2 = v.c.Value2 * v.t.Value2 * int2,
+					Value3 = v.c.Value3 * v.t.Value3 * int3,
+				});
+
+				var actual = forUpdates.Select(v => new
+				{
+					Id = v.id,
+					Value1 = v.Value1,
+					Value2 = v.Value2,
+					Value3 = v.Value3,
+				});
+
+				var expected = data.Join(newData, c => c.id, t => t.id, (c, t) => new { c, t })
+					.Select(v => new
+					{
+						Id = v.c.id,
+						Value1 = v.c.Value1 * v.t.Value1 * int1,
+						Value2 = v.c.Value2 * v.t.Value2 * int2,
+						Value3 = v.c.Value3 * v.t.Value3 * int3,
+					});
+
+				AreEqual(expected, actual);
+			}
+		}
+
+		[Test]
+		public void UpdateTestWhere(
+			[DataSources(TestProvName.AllMySql, ProviderName.SqlCe, TestProvName.AllInformix, TestProvName.AllClickHouse)]
+			string context)
+		{
+			var data = GenerateData();
+			var newData = GenerateNewData();
+			using (var db = GetDataContext(context))
+			using (var forUpdates = db.CreateLocalTable(data))
+			using (var tempTable = db.CreateLocalTable(newData))
+			{
+				var someId = 100;
+
+				var recordsToUpdate =
+					from c in forUpdates
+					from t in tempTable
+					where t.id == c.id && t.id != someId
+					select new {c, t};
+
+				var int1 = 11;
+				var int2 = 22;
+				var int3 = 33;
+
+				recordsToUpdate.Update(q => q.c, v => new UpdatedEntities()
 				{
 					Value1 = v.c.Value1 * v.t.Value1 * int1,
 					Value2 = v.c.Value2 * v.t.Value2 * int2,
@@ -230,8 +286,10 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
+		[ThrowsForProvider(typeof(LinqToDBException), TestProvName.AllSybase, ErrorMessage = ErrorHelper.Sybase.Error_UpdateWithTopOrderBy)]
+		[ThrowsForProvider(typeof(LinqToDBException), TestProvName.AllMySql, ErrorMessage = ErrorHelper.MySql.Error_SkipInUpdate)]
 		public void UpdateTestJoinSkipTake(
-			[DataSources(TestProvName.AllAccess, TestProvName.AllSqlServer2005, TestProvName.AllMySql, ProviderName.SqlCe, TestProvName.AllClickHouse, TestProvName.AllSybase)]
+			[DataSources(TestProvName.AllAccess, TestProvName.AllClickHouse, ProviderName.SqlCe)]
 			string context)
 		{
 			var data = GenerateData();
@@ -345,11 +403,11 @@ namespace Tests.xUpdate
 					.Set(v => v.Value1, v => v.Relation!.RelatedValue3)
 					.Update();
 
-				Assert.AreEqual(1, affected);
+				Assert.That(affected, Is.EqualTo(1));
 
 				var updatedValue = forUpdates.Where(v => v.Relation!.RelatedValue1 == 11).Select(v => v.Value1).First();
 
-				Assert.AreEqual(13, updatedValue);
+				Assert.That(updatedValue, Is.EqualTo(13));
 			}
 		}
 
@@ -372,11 +430,11 @@ namespace Tests.xUpdate
 
 				var affected = updatable.Update();
 
-				Assert.AreEqual(1, affected);
+				Assert.That(affected, Is.EqualTo(1));
 
 				var updatedValue = forUpdates.Where(v => v.Relation!.RelatedValue1 == 11).Select(v => v.Value1).First();
 
-				Assert.AreEqual(13, updatedValue);
+				Assert.That(updatedValue, Is.EqualTo(13));
 			}
 		}
 
@@ -398,15 +456,17 @@ namespace Tests.xUpdate
 					.Set(v => v.Value3, v => 1)
 					.Update();
 
-				Assert.AreEqual(1, affected);
+				Assert.That(affected, Is.EqualTo(1));
 
 				var updatedValue = forUpdates.Where(v => v.Relation!.RelatedValue1 == 11)
 					.Select(v => new {v.Value1, v.Value2, v.Value3})
 					.First();
-
-				Assert.AreEqual(36, updatedValue.Value1);
-				Assert.AreEqual(36, updatedValue.Value2);
-				Assert.AreEqual(1,  updatedValue.Value3);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(updatedValue.Value1, Is.EqualTo(36));
+					Assert.That(updatedValue.Value2, Is.EqualTo(36));
+					Assert.That(updatedValue.Value3, Is.EqualTo(1));
+				}
 			}
 		}
 
@@ -431,16 +491,240 @@ namespace Tests.xUpdate
 
 				var affected = updatable.Update();
 
-				Assert.AreEqual(1, affected);
+				Assert.That(affected, Is.EqualTo(1));
 
 				var updatedValue = forUpdates.Where(v => v.Relation!.RelatedValue1 == 11)
 					.Select(v => new {v.Value1, v.Value2, v.Value3})
 					.First();
-
-				Assert.AreEqual(36, updatedValue.Value1);
-				Assert.AreEqual(36, updatedValue.Value2);
-				Assert.AreEqual(1,  updatedValue.Value3);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(updatedValue.Value1, Is.EqualTo(36));
+					Assert.That(updatedValue.Value2, Is.EqualTo(36));
+					Assert.That(updatedValue.Value3, Is.EqualTo(1));
+				}
 			}
 		}
+
+		[Obsolete("Remove test after API removed")]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/2330")]
+		public void Issue2330TestOld([DataSources(TestProvName.AllClickHouse, ProviderName.SqlCe)] string context)
+		{
+			using var db = GetDataContext(context);
+
+			var q = from w in db.Parent
+					join b in db.Child on w.ParentID equals b.ParentID
+					where b.ChildID == (from b2 in db.Child select b2.ParentID).Max()
+						// to avoid actual update
+						&& b.ChildID == -1
+					select new { w, b };
+
+			q.Update(db.Parent, obj => new Model.Parent()
+			{
+				Value1 = obj.b.ChildID
+			});
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/2330")]
+		public void Issue2330Test([DataSources(TestProvName.AllClickHouse, ProviderName.SqlCe)] string context)
+		{
+			using var db = GetDataContext(context);
+
+			var q = from w in db.Parent
+					join b in db.Child on w.ParentID equals b.ParentID
+					where b.ChildID == (from b2 in db.Child select b2.ParentID).Max()
+						// to avoid actual update
+						&& b.ChildID == -1
+					select new { w, b };
+
+			q.Update(q => q.w, obj => new Model.Parent()
+			{
+				Value1 = obj.b.ChildID
+			});
+		}
+
+		#region Issue 2815
+
+		[ActiveIssue(Configurations = [ TestProvName.AllSqlServer, TestProvName.AllSQLite, ProviderName.SqlCe, TestProvName.AllPostgreSQL, TestProvName.AllOracle11, TestProvName.AllMySql, TestProvName.AllClickHouse, TestProvName.AllAccess ])]
+		[Obsolete("Remove test after API removed")]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/2815")]
+		public void Issue2815Test1([DataSources(false)] string context)
+		{
+			using var db = GetDataContext(context);
+			using var t1 = db.CreateLocalTable<Issue2815Table1>();
+			using var t2 = db.CreateLocalTable<Issue2815Table2>();
+			using var t3 = db.CreateLocalTable<Issue2815Table3>();
+
+			var query = (from ext in t1
+						 from source in t2.LeftJoin(c => c.ISO == ext.SRC_BIC)
+						 from destination in t2.LeftJoin(c => c.ISO == ext.DES_BIC)
+						 let sepa = source.SEPA && destination.SEPA
+							? source.ISO == destination.ISO
+								? EnumType.Sepa
+								: EnumType.SepaCrossBorder
+							: EnumType.Foreign
+						 from channel in t3.LeftJoin(c => c.TreasuryCenter == ext.TREA_CENT
+							&& c.BIC == ext.SRC_BIC
+							&& c.Sepa == sepa)
+						 where ext.NOT_HANDLED == 2 && ext.TRANS_CHANNEL == null
+						 select channel);
+
+			query.Update(t1, x => new Issue2815Table1()
+			{
+				TRANS_CHANNEL = ((TransChannel?)x.Trans_Channel) ?? TransChannel.Swift,
+				IDF = x.Idf
+			});
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/2815")]
+		[ThrowsForProvider(typeof(LinqToDBException), TestProvName.AllClickHouse, ErrorMessage = ErrorHelper.ClickHouse.Error_CorrelatedUpdate)]
+		public void Issue2815Test2([DataSources(false, ProviderName.SqlCe, TestProvName.AllAccess)] string context)
+		{
+			using var db = GetDataContext(context);
+			using var t1 = db.CreateLocalTable(Issue2815Table1.Data);
+			using var t2 = db.CreateLocalTable(Issue2815Table2.Data);
+			using var t3 = db.CreateLocalTable(Issue2815Table3.Data);
+
+			var query = (from ext in t1
+						 from source in t2.LeftJoin(c => c.ISO == ext.SRC_BIC)
+						 from destination in t2.LeftJoin(c => c.ISO == ext.DES_BIC)
+						 let sepa = source.SEPA && destination.SEPA
+							? source.ISO == destination.ISO
+								? EnumType.Sepa
+								: EnumType.SepaCrossBorder
+							: EnumType.Foreign
+						 from channel in t3.LeftJoin(c => c.TreasuryCenter == ext.TREA_CENT
+							&& c.BIC == ext.SRC_BIC
+							&& c.Sepa == sepa)
+						 where ext.NOT_HANDLED == 2 && ext.TRANS_CHANNEL == null
+						 select new {channel, ext });
+
+			var cnt = query.Update(q => q.ext, x => new Issue2815Table1()
+			{
+				TRANS_CHANNEL = ((TransChannel?)x.channel.Trans_Channel) ?? TransChannel.Swift,
+				IDF = (int?)x.channel.Idf ?? 0
+			});
+
+			Assert.That(cnt, Is.EqualTo(8));
+
+			var res = t1.OrderBy(r => r.SRC_BIC).ThenBy(r => r.DES_BIC).ToArray();
+
+			AreEqual(res, Issue2815Table1.Expected, ComparerBuilder.GetEqualityComparer<Issue2815Table1>());
+		}
+
+		enum EnumType
+		{
+			Sepa,
+			SepaCrossBorder,
+			Foreign
+		}
+
+		enum TransChannel
+		{
+			Tardy,
+			Swift,
+
+		}
+
+		[Table]
+		sealed class Issue2815Table1
+		{
+			[PrimaryKey] public int Id { get; set; }
+			[Column] public int SRC_BIC { get; set; }
+			[Column] public int DES_BIC { get; set; }
+			[Column] public int IDF { get; set; }
+			[Column] public int TREA_CENT { get; set; }
+			[Column] public int NOT_HANDLED { get; set; }
+			[Column] public TransChannel? TRANS_CHANNEL { get; set; }
+
+			public static readonly Issue2815Table1[] Data =
+			[
+				new Issue2815Table1() { Id = 1, SRC_BIC = 1, DES_BIC = 1, IDF = 1, TREA_CENT = 1, NOT_HANDLED = 1, TRANS_CHANNEL = null },
+				new Issue2815Table1() { Id = 2, SRC_BIC = 2, DES_BIC = 3, IDF = 1, TREA_CENT = 1, NOT_HANDLED = 2, TRANS_CHANNEL = TransChannel.Swift },
+				new Issue2815Table1() { Id = 3, SRC_BIC = 4, DES_BIC = 4, IDF = 1, TREA_CENT = 1, NOT_HANDLED = 1, TRANS_CHANNEL = null },
+				new Issue2815Table1() { Id = 4, SRC_BIC = 5, DES_BIC = 6, IDF = 1, TREA_CENT = 1, NOT_HANDLED = 2, TRANS_CHANNEL = null },
+				new Issue2815Table1() { Id = 5, SRC_BIC = 7, DES_BIC = 7, IDF = 1, TREA_CENT = 1, NOT_HANDLED = 2, TRANS_CHANNEL = null },
+				new Issue2815Table1() { Id = 6, SRC_BIC = 8, DES_BIC = 8, IDF = 1, TREA_CENT = 1, NOT_HANDLED = 2, TRANS_CHANNEL = null },
+				new Issue2815Table1() { Id = 7, SRC_BIC = 9, DES_BIC = 9, IDF = 1, TREA_CENT = 1, NOT_HANDLED = 2, TRANS_CHANNEL = null },
+				new Issue2815Table1() { Id = 8, SRC_BIC = 9, DES_BIC = 10, IDF = 1, TREA_CENT = 1, NOT_HANDLED = 2, TRANS_CHANNEL = null },
+				new Issue2815Table1() { Id = 9, SRC_BIC = 11, DES_BIC = 11, IDF = 1, TREA_CENT = 1, NOT_HANDLED = 1, TRANS_CHANNEL = TransChannel.Swift },
+				new Issue2815Table1() { Id = 10, SRC_BIC = 12, DES_BIC = 12, IDF = 1, TREA_CENT = 1, NOT_HANDLED = 2, TRANS_CHANNEL = null },
+				new Issue2815Table1() { Id = 11, SRC_BIC = 12, DES_BIC = 13, IDF = 1, TREA_CENT = 1, NOT_HANDLED = 1, TRANS_CHANNEL = null },
+				new Issue2815Table1() { Id = 12, SRC_BIC = 13, DES_BIC = 13, IDF = 1, TREA_CENT = 1, NOT_HANDLED = 2, TRANS_CHANNEL = null },
+				new Issue2815Table1() { Id = 13, SRC_BIC = 14, DES_BIC = 14, IDF = 1, TREA_CENT = 1, NOT_HANDLED = 2, TRANS_CHANNEL = null },
+			];
+
+			public static readonly Issue2815Table1[] Expected =
+			[
+				new Issue2815Table1() { Id = 1, SRC_BIC = 1, DES_BIC = 1, IDF = 1, TREA_CENT = 1, NOT_HANDLED = 1, TRANS_CHANNEL = null },
+				new Issue2815Table1() { Id = 2, SRC_BIC = 2, DES_BIC = 3, IDF = 1, TREA_CENT = 1, NOT_HANDLED = 2, TRANS_CHANNEL = TransChannel.Swift },
+				new Issue2815Table1() { Id = 3, SRC_BIC = 4, DES_BIC = 4, IDF = 1, TREA_CENT = 1, NOT_HANDLED = 1, TRANS_CHANNEL = null },
+				new Issue2815Table1() { Id = 4, SRC_BIC = 5, DES_BIC = 6, IDF = 5, TREA_CENT = 1, NOT_HANDLED = 2, TRANS_CHANNEL = TransChannel.Swift },
+				new Issue2815Table1() { Id = 5, SRC_BIC = 7, DES_BIC = 7, IDF = 4, TREA_CENT = 1, NOT_HANDLED = 2, TRANS_CHANNEL = TransChannel.Swift },
+				new Issue2815Table1() { Id = 6, SRC_BIC = 8, DES_BIC = 8, IDF = 0, TREA_CENT = 1, NOT_HANDLED = 2, TRANS_CHANNEL =  TransChannel.Swift },
+				new Issue2815Table1() { Id = 7, SRC_BIC = 9, DES_BIC = 9, IDF = 6, TREA_CENT = 1, NOT_HANDLED = 2, TRANS_CHANNEL = TransChannel.Tardy },
+				new Issue2815Table1() { Id = 8, SRC_BIC = 9, DES_BIC = 10, IDF = 6, TREA_CENT = 1, NOT_HANDLED = 2, TRANS_CHANNEL = TransChannel.Tardy },
+				new Issue2815Table1() { Id = 9, SRC_BIC = 11, DES_BIC = 11, IDF = 1, TREA_CENT = 1, NOT_HANDLED = 1, TRANS_CHANNEL = TransChannel.Swift },
+				new Issue2815Table1() { Id = 10, SRC_BIC = 12, DES_BIC = 12, IDF = 9, TREA_CENT = 1, NOT_HANDLED = 2, TRANS_CHANNEL = TransChannel.Swift },
+				new Issue2815Table1() { Id = 11, SRC_BIC = 12, DES_BIC = 13, IDF = 1, TREA_CENT = 1, NOT_HANDLED = 1, TRANS_CHANNEL = null },
+				new Issue2815Table1() { Id = 12, SRC_BIC = 13, DES_BIC = 13, IDF = 0, TREA_CENT = 1, NOT_HANDLED = 2, TRANS_CHANNEL =  TransChannel.Swift },
+				new Issue2815Table1() { Id = 13, SRC_BIC = 14, DES_BIC = 14, IDF = 0, TREA_CENT = 1, NOT_HANDLED = 2, TRANS_CHANNEL =  TransChannel.Swift },
+			];
+		}
+
+		[Table]
+		sealed class Issue2815Table2
+		{
+			[PrimaryKey] public int Id { get; set; }
+			[Column] public int ISO { get; set; }
+			[Column] public bool SEPA { get; set; }
+
+			public static readonly Issue2815Table2[] Data =
+			[
+				new Issue2815Table2() { Id = 1, ISO = 2, SEPA = true },
+				new Issue2815Table2() { Id = 2, ISO = 3 },
+				new Issue2815Table2() { Id = 3, ISO = 4, SEPA = true },
+				new Issue2815Table2() { Id = 4, ISO = 5, SEPA = true },
+				new Issue2815Table2() { Id = 5, ISO = 6, SEPA = true },
+				new Issue2815Table2() { Id = 6, ISO = 7, SEPA = true },
+				new Issue2815Table2() { Id = 7, ISO = 8, SEPA = true },
+				new Issue2815Table2() { Id = 8, ISO = 9 },
+				new Issue2815Table2() { Id = 9, ISO = 10, SEPA = true },
+				new Issue2815Table2() { Id = 10, ISO = 11 },
+				new Issue2815Table2() { Id = 11, ISO = 12, SEPA = true },
+				new Issue2815Table2() { Id = 12, ISO = 13 },
+				new Issue2815Table2() { Id = 13, ISO = 14, SEPA = true },
+			];
+		}
+
+		[Table]
+		sealed class Issue2815Table3
+		{
+			[PrimaryKey] public int Id { get; set; }
+			[Column] public int TreasuryCenter { get; set; }
+			[Column] public int BIC { get; set; }
+			[Column] public EnumType Sepa { get; set; }
+			[Column] public TransChannel Trans_Channel { get; set; }
+			[Column] public int Idf { get; set; }
+
+			public static readonly Issue2815Table3[] Data =
+			[
+				new Issue2815Table3() { Id = 1, TreasuryCenter = 1, BIC = 1, Sepa = EnumType.Sepa, Trans_Channel = TransChannel.Swift, Idf = 1 },
+				new Issue2815Table3() { Id = 2, TreasuryCenter = 2, BIC = 2, Sepa = EnumType.SepaCrossBorder, Trans_Channel = TransChannel.Tardy, Idf = 2 },
+				new Issue2815Table3() { Id = 3, TreasuryCenter = 1, BIC = 3, Sepa = EnumType.Foreign, Trans_Channel = TransChannel.Swift, Idf = 3 },
+				new Issue2815Table3() { Id = 4, TreasuryCenter = 2, BIC = 4, Sepa = EnumType.Sepa, Trans_Channel = TransChannel.Tardy, Idf = 4 },
+				new Issue2815Table3() { Id = 5, TreasuryCenter = 1, BIC = 5, Sepa = EnumType.SepaCrossBorder, Trans_Channel = TransChannel.Swift, Idf = 5 },
+				new Issue2815Table3() { Id = 6, TreasuryCenter = 2, BIC = 6, Sepa = EnumType.Foreign, Trans_Channel = TransChannel.Tardy, Idf = 6 },
+				new Issue2815Table3() { Id = 7, TreasuryCenter = 1, BIC = 7, Sepa = EnumType.Sepa, Trans_Channel = TransChannel.Swift, Idf = 4 },
+				new Issue2815Table3() { Id = 8, TreasuryCenter = 1, BIC = 9, Sepa = EnumType.Foreign, Trans_Channel = TransChannel.Tardy, Idf = 6 },
+				new Issue2815Table3() { Id = 9, TreasuryCenter = 1, BIC = 10, Sepa = EnumType.Sepa, Trans_Channel = TransChannel.Swift, Idf = 7 },
+				new Issue2815Table3() { Id = 10, TreasuryCenter = 1, BIC = 11, Sepa = EnumType.Foreign, Trans_Channel = TransChannel.Tardy, Idf = 8 },
+				new Issue2815Table3() { Id = 11, TreasuryCenter = 1, BIC = 12, Sepa = EnumType.Sepa, Trans_Channel = TransChannel.Swift, Idf = 9 },
+				new Issue2815Table3() { Id = 12, TreasuryCenter = 1, BIC = 13, Sepa = EnumType.Sepa, Trans_Channel = TransChannel.Tardy, Idf = 10 },
+				new Issue2815Table3() { Id = 13, TreasuryCenter = 1, BIC = 14, Sepa = EnumType.Foreign, Trans_Channel = TransChannel.Swift, Idf = 11 },
+				new Issue2815Table3() { Id = 14, TreasuryCenter = 1, BIC = 15, Sepa = EnumType.Sepa, Trans_Channel = TransChannel.Tardy, Idf = 11 },
+			];
+		}
+
+		#endregion
 	}
 }

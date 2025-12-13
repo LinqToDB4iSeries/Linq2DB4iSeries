@@ -1,6 +1,8 @@
 ﻿using System.Linq;
+
 using LinqToDB;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -98,12 +100,12 @@ namespace Tests.UserTests
 
 					if (supported)
 					{
-						Assert.AreEqual(1, query.Length);
-						Assert.AreEqual(3, query[0].Id);
+						Assert.That(query, Has.Length.EqualTo(1));
+						Assert.That(query[0].Id, Is.EqualTo(3));
 					}
 					else
 					{
-						Assert.AreEqual(3, query.Length);
+						Assert.That(query, Has.Length.EqualTo(3));
 					}
 				}
 			}

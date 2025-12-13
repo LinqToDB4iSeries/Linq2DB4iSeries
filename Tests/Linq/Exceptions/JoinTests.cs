@@ -1,14 +1,17 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+
 using LinqToDB;
-using LinqToDB.Linq;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
+
+using Shouldly;
+
+using Tests.Model;
 
 namespace Tests.Exceptions
 {
-	using Model;
-
 	[TestFixture]
 	public class JoinTests : TestBase
 	{
@@ -55,7 +58,8 @@ namespace Tests.Exceptions
 					where p1.ID == 1
 					select new Person { ID = p1.ID, FirstName = p2.FirstName };
 
-				Assert.Throws(typeof(LinqException), () => q.ToList());
+				var act = () => q.ToList();
+				act.ShouldThrow<LinqToDBException>();
 			}
 		}
 

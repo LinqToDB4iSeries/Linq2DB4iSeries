@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
+
 using LinqToDB;
-using LinqToDB.Data;
-using LinqToDB.Extensions;
+using LinqToDB.Internal.Extensions;
 
 using NUnit.Framework;
 
@@ -39,8 +37,8 @@ namespace Tests.UserTests
 			//Console.WriteLine("Members: {0}", string.Join(", ", members.Select(m => m.Name)));
 
 			// Test returned array
-			Assert.IsNotNull(members);
-			Assert.IsTrue(members.Length == 5, "Expected 5 returned members, found {0}.", members.Length);
+			Assert.That(members, Is.Not.Null);
+			Assert.That(members, Has.Length.EqualTo(5), $"Expected 5 returned members, found {members.Length}.");
 
 			var expected = String.Join(", ", new []
 			{ 
@@ -53,7 +51,7 @@ namespace Tests.UserTests
 
 			var actual = String.Join(", ", members.Select(m => $"{m.DeclaringType!.Name}.{m.Name}"));
 
-			Assert.AreEqual(expected, actual);
+			Assert.That(actual, Is.EqualTo(expected));
 		}
 	}
 }

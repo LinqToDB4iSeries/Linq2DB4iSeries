@@ -212,6 +212,7 @@ CREATE TABLE AllTypes(
     , varCharForBitDataType    varchar(5) for bit data Default NULL
     , varGraphicDataType       vargraphic(10)  ccsid 13488        Default NULL
     , xmlDataType              xml                     Default NULL
+	, decfloatDataType		   decfloat(34)            Default NULL -- for compatiblity with DB2 tests
 )
 GO
 
@@ -244,7 +245,8 @@ INSERT INTO AllTypes(
     , varcharDataType          
     , varCharForBitDataType    
     , varGraphicDataType       
-    , xmlDataType              
+    , xmlDataType            
+	, decFloatDataType
 ) VALUES (
       1000000                    --bigIntDataType         
     , Cast('123' as binary)      --binaryDataType
@@ -272,6 +274,7 @@ INSERT INTO AllTypes(
     , 'vcfb'                     --varCharForBitDataType    
     , 'vargraphic'                    --varGraphicDataType
     , '<root><element strattr="strvalue" intattr="12345"/></root>' --xmlDataType  
+	, 123.123					--decFloatDataType
 )
 GO
 

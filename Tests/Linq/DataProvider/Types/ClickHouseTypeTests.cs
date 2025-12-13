@@ -3,13 +3,14 @@ using System.Globalization;
 using System.Net;
 using System.Numerics;
 using System.Threading.Tasks;
+
 using LinqToDB;
-using LinqToDB.Data;
-using LinqToDB.Common;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
+
 #if !NETFRAMEWORK
-using ClickHouse.Client.Numerics;
+using ClickHouse.Driver.Numerics;
 #endif
 
 namespace Tests.DataProvider
@@ -197,21 +198,8 @@ namespace Tests.DataProvider
 			// as it is requires code, similar to NULL comparison translation code, and there is no
 			// request for support of it from users
 			const bool testNaNComparison = false;
-#if !NET6_0_OR_GREATER
-			// https://github.com/mysql-net/MySqlConnector/issues/1185
-			// fixed in 2.1.11
-			var infinitySupported = !context.IsAnyOf(ProviderName.ClickHouseMySql);
-#else
-			var infinitySupported = true;
-#endif
-
-#if NETFRAMEWORK
-			// NaN parsing fails in 0.x MySqlConnector (fixed somewhere in 1.x)
-			// nullable works only because of another bug: https://github.com/ClickHouse/ClickHouse/issues/39297
-			var nonNullableNaNSupported = !context.IsAnyOf(ProviderName.ClickHouseMySql);
-#else
-			var nonNullableNaNSupported = true;
-#endif
+			var infinitySupported        = true;
+			var nonNullableNaNSupported  = true;
 
 			// Float32
 			await TestType<float, float?>(context, new(typeof(float)), default, default);
@@ -273,19 +261,13 @@ namespace Tests.DataProvider
 		{
 			// https://clickhouse.com/docs/en/sql-reference/data-types/boolean/
 
-			// Bool
-			// https://github.com/Octonica/ClickHouseClient/issues/56
-			// https://github.com/ClickHouse/ClickHouse/issues/37999
-			if (!context.IsAnyOf(ProviderName.ClickHouseOctonica, ProviderName.ClickHouseMySql))
-			{
-				await TestType<bool, bool?>(context, new(typeof(bool)), default, default);
-				await TestType<bool, bool?>(context, new(typeof(bool)), true, false);
-				await TestType<bool, bool?>(context, new(typeof(bool)), false, true);
+			await TestType<bool, bool?>(context, new(typeof(bool)), default, default);
+			await TestType<bool, bool?>(context, new(typeof(bool)), true, false);
+			await TestType<bool, bool?>(context, new(typeof(bool)), false, true);
 
-				await TestType<bool, bool?>(context, new(typeof(bool), DataType.Boolean), default, default);
-				await TestType<bool, bool?>(context, new(typeof(bool), DataType.Boolean), true, false);
-				await TestType<bool, bool?>(context, new(typeof(bool), DataType.Boolean), false, true);
-			}
+			await TestType<bool, bool?>(context, new(typeof(bool), DataType.Boolean), default, default);
+			await TestType<bool, bool?>(context, new(typeof(bool), DataType.Boolean), true, false);
+			await TestType<bool, bool?>(context, new(typeof(bool), DataType.Boolean), false, true);
 
 			// as underlying type
 			await TestType<bool, bool?>(context, new(typeof(bool), DataType.Byte), default, default);
@@ -340,7 +322,7 @@ namespace Tests.DataProvider
 			await TestType<DateTime, DateTime?>(context, new(typeof(DateTime), DataType.Date), TestData.Date, default);
 			await TestType<DateTime, DateTime?>(context, new(typeof(DateTime), DataType.Date), min, max);
 
-#if NET6_0_OR_GREATER
+#if SUPPORTS_DATEONLY
 			await TestType<DateOnly, DateOnly?>(context, new(typeof(DateOnly), DataType.Date), DateOnly.FromDateTime(TestData.Date), default);
 			await TestType<DateOnly, DateOnly?>(context, new(typeof(DateOnly), DataType.Date), DateOnly.FromDateTime(min), DateOnly.FromDateTime(max));
 #endif
@@ -367,16 +349,8 @@ namespace Tests.DataProvider
 			var min = new DateTime(1900, 1, 1);
 			var max = new DateTime(2299, 12, 31);
 
-			// https://github.com/Octonica/ClickHouseClient/issues/66
-			if (context.IsAnyOf(ProviderName.ClickHouseOctonica))
-			{
-				// https://github.com/Octonica/ClickHouseClient/issues/60
-				min = new DateTime(1925, 1, 2);
-				max = new DateTime(2283, 11, 11);
-			}
-
 			// Date32
-#if NET6_0_OR_GREATER
+#if SUPPORTS_DATEONLY
 			await TestType<DateOnly, DateOnly?>(context, new(typeof(DateOnly)), DateOnly.FromDateTime(TestData.Date), default);
 			await TestType<DateOnly, DateOnly?>(context, new(typeof(DateOnly)), DateOnly.FromDateTime(min), DateOnly.FromDateTime(max));
 
@@ -450,12 +424,6 @@ namespace Tests.DataProvider
 			var max9 = new DateTime(2262, 4, 11, 23, 47, 16, 854, DateTimeKind.Unspecified).AddTicks(7758);
 			var val  = TestData.DateTime;
 
-			// https://github.com/Octonica/ClickHouseClient/issues/60
-			// https://github.com/Octonica/ClickHouseClient/issues/62
-			// https://github.com/Octonica/ClickHouseClient/issues/66
-			if (context.IsAnyOf(ProviderName.ClickHouseOctonica))
-				min = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Unspecified).AddSeconds(1);
-
 			// DateTime64
 
 			// default mappings: DateTime64(7)
@@ -514,7 +482,7 @@ namespace Tests.DataProvider
 			await TestType<decimal, decimal?>(context, new(typeof(decimal)), defaultMax, defaultMin);
 
 #if !NETFRAMEWORK
-			if (context.IsAnyOf(ProviderName.ClickHouseClient))
+			if (context.IsAnyOf(ProviderName.ClickHouseDriver))
 			{
 				var customMin = new ClickHouseDecimal(BigInteger.Parse("-" + new string('9', 76)), 10);
 				var customMax = new ClickHouseDecimal(BigInteger.Parse(new string('9', 76)), 10);
@@ -531,7 +499,7 @@ namespace Tests.DataProvider
 				if (p >= 29 && context.IsAnyOf(ProviderName.ClickHouseOctonica))
 					continue;
 
-				var skipBasicTypes = p >= 29 && context.IsAnyOf(ProviderName.ClickHouseClient);
+				var skipBasicTypes = p >= 29 && context.IsAnyOf(ProviderName.ClickHouseDriver);
 
 				for (var s = 0; s <= p; s++)
 				{
@@ -557,9 +525,9 @@ namespace Tests.DataProvider
 					var minString = $"-{maxString}";
 
 					// not really issue
-					// only ClickHouseClient fails because other providers parse values differently
+					// only ClickHouseDriver fails because other providers parse values differently
 					// and we test only 0 value, which works for them
-					var skipOutOfRange = p >= 29 && context.IsAnyOf(ProviderName.ClickHouseClient);
+					var skipOutOfRange = p >= 29 && context.IsAnyOf(ProviderName.ClickHouseDriver);
 					decimal minDecimal;
 					decimal maxDecimal;
 					if (p >= 29)
@@ -585,14 +553,15 @@ namespace Tests.DataProvider
 						await TestType<decimal, decimal?>(context, decimalType, minDecimal, maxDecimal);
 
 					var zero = "0";
-					if (context.IsAnyOf(ProviderName.ClickHouseOctonica, ProviderName.ClickHouseClient) && s > 0)
+					// also this "if" needed for Octonica if no primary key defined (different table engine)
+					if (context.IsAnyOf(ProviderName.ClickHouseDriver) && s > 0)
 						zero = $"{zero}.{new string('0', s)}";
 					await TestType<string, string?>(context, stringType, "0", default, getExpectedValue: v => zero);
 					if (!skipBasicTypes)
 						await TestType<string, string?>(context, stringType, minString, maxString);
 
 #if !NETFRAMEWORK
-					if (context.IsAnyOf(ProviderName.ClickHouseClient))
+					if (context.IsAnyOf(ProviderName.ClickHouseDriver))
 					{
 						var customDecimalType = new DbDataType(typeof(ClickHouseDecimal), dataType, null, null, p, s);
 						var customMin         = new ClickHouseDecimal(BigInteger.Parse("-" + new string('9', p)), s);
@@ -614,14 +583,14 @@ namespace Tests.DataProvider
 			// default
 			await TestType<string, string?>(context, new(typeof(string)), string.Empty, default);
 			await TestType<string, string?>(context, new(typeof(string)), "test ", "test\0");
-			await TestType<byte[], byte[]?>(context, new(typeof(byte[])), Array<byte>.Empty, default);
+			await TestType<byte[], byte[]?>(context, new(typeof(byte[])), Array.Empty<byte>(), default);
 			await TestType<byte[], byte[]?>(context, new(typeof(byte[])), new byte[] { 1, 2, 3, 4 }, new byte[] { 1, 2, 3, 4, 0, 0 });
 
 			await TestType<string, string?>(context, new(typeof(string), DataType.NVarChar), string.Empty, default);
 			await TestType<string, string?>(context, new(typeof(string), DataType.NVarChar), "test ", "test\0");
 			await TestType<string, string?>(context, new(typeof(string), DataType.VarChar), string.Empty, default);
 			await TestType<string, string?>(context, new(typeof(string), DataType.VarChar), "test ", "test\0");
-			await TestType<byte[], byte[]?>(context, new(typeof(byte[]), DataType.VarBinary), Array<byte>.Empty, default);
+			await TestType<byte[], byte[]?>(context, new(typeof(byte[]), DataType.VarBinary), Array.Empty<byte>(), default);
 			await TestType<byte[], byte[]?>(context, new(typeof(byte[]), DataType.VarBinary), new byte[] { 1, 2, 0, 3, 4 }, new byte[] { 1, 2, 3, 0, 4, 0, 0 });
 
 			// various characters handing
@@ -635,7 +604,7 @@ namespace Tests.DataProvider
 			await TestType<byte[], byte[]?>(context, new(typeof(byte[]), DataType.VarBinary), new byte[] { 2 }, new byte[] { 3 });
 			// https://github.com/DarkWanderer/ClickHouse.Client/issues/138
 			// https://github.com/ClickHouse/ClickHouse/issues/38790
-			if (!context.IsAnyOf(ProviderName.ClickHouseClient, ProviderName.ClickHouseMySql))
+			if (!context.IsAnyOf(ProviderName.ClickHouseDriver, ProviderName.ClickHouseMySql))
 			{
 				await TestType<byte[], byte[]?>(context, new(typeof(byte[]), DataType.VarBinary), new byte[] { 255 }, new byte[] { 254 });
 			}
@@ -646,71 +615,73 @@ namespace Tests.DataProvider
 			// https://github.com/ClickHouse/ClickHouse/issues/38059
 			// we are not trimming trailing \0 for ClickHouse
 			var padValues = true;
+			// this happens only if table has primary key (other engine used) and only for binary protocol
+			var trimAllZeros = context.IsAnyOf(ProviderName.ClickHouseOctonica);
 
-			await TestType<string, string?>(context, new(typeof(string), DataType.NChar,  null, length: 7), string.Empty, default, getExpectedValue: v => padValues ? "\0\0\0\0\0\0\0" : v);
+			await TestType<string, string?>(context, new(typeof(string), DataType.NChar,  null, length: 7), string.Empty, default, getExpectedValue: v => !trimAllZeros ? "\0\0\0\0\0\0\0" : v);
 			await TestType<string, string?>(context, new(typeof(string), DataType.NChar,  null, length: 7), "test ", "test\0", getExpectedValue: v => padValues ? "test \0\0" : v, getExpectedNullableValue: v => padValues ? "test\0\0\0" : "test");
-			await TestType<string, string?>(context, new(typeof(string), DataType.Char,   null, length: 7), string.Empty, default, getExpectedValue: v => padValues ? "\0\0\0\0\0\0\0" : v);
+			await TestType<string, string?>(context, new(typeof(string), DataType.Char,   null, length: 7), string.Empty, default, getExpectedValue: v => !trimAllZeros ? "\0\0\0\0\0\0\0" : v);
 			await TestType<string, string?>(context, new(typeof(string), DataType.Char,   null, length: 7), "test ", "test\0", getExpectedValue: v => padValues ? "test \0\0" : v, getExpectedNullableValue: v => padValues ? "test\0\0\0" : "test");
-			await TestType<byte[], byte[]?>(context, new(typeof(byte[]), DataType.Binary, null, length: 7), Array<byte>.Empty, default, getExpectedValue: v => new byte[7]);
+			await TestType<byte[], byte[]?>(context, new(typeof(byte[]), DataType.Binary, null, length: 7), Array.Empty<byte>(), default, getExpectedValue: v => trimAllZeros ? v : new byte[7]);
 			await TestType<byte[], byte[]?>(context, new(typeof(byte[]), DataType.Binary, null, length: 7), new byte[] { 1, 2, 0, 3, 4 }, new byte[] { 1, 2, 3, 0, 4, 0, 0 }, getExpectedValue: v => { Array.Resize(ref v, 7);return v; }, getExpectedNullableValue: v => { Array.Resize(ref v, 7); return v; });
 
 			// default length (ClickHouseMappingSchema.DEFAULT_FIXED_STRING_LENGTH=100)
 			var defaultBinary = new byte[100];
 			var defaultString = new string('\0', 100);
-			await TestType<string, string?>(context, new(typeof(string), DataType.NChar), string.Empty, default, getExpectedValue: _ => defaultString);
-			await TestType<string, string?>(context, new(typeof(string), DataType.Char), string.Empty, default, getExpectedValue: _ => defaultString);
-			await TestType<byte[], byte[]?>(context, new(typeof(byte[]), DataType.Binary), Array<byte>.Empty, default, getExpectedValue: _ => defaultBinary);
+			await TestType<string, string?>(context, new(typeof(string), DataType.NChar), string.Empty, default, getExpectedValue: v => trimAllZeros ? v : defaultString);
+			await TestType<string, string?>(context, new(typeof(string), DataType.Char), string.Empty, default, getExpectedValue: v => trimAllZeros ? v : defaultString);
+			await TestType<byte[], byte[]?>(context, new(typeof(byte[]), DataType.Binary), Array.Empty<byte>(), default, getExpectedValue: v => trimAllZeros ? v : defaultBinary);
 
 			// various characters handing
-			await TestType<string, string?>(context, new(typeof(string), DataType.NChar, null, length: 7), "\x00", "\x01", getExpectedValue: v => padValues ? "\0\0\0\0\0\0\0" : string.Empty, getExpectedNullableValue: v => padValues ? "\x1\0\0\0\0\0\0" : v);
+			await TestType<string, string?>(context, new(typeof(string), DataType.NChar, null, length: 7), "\x00", "\x01", getExpectedValue: v => !trimAllZeros ? "\0\0\0\0\0\0\0" : string.Empty, getExpectedNullableValue: v => padValues ? "\x1\0\0\0\0\0\0" : v);
 			await TestType<string, string?>(context, new(typeof(string), DataType.NChar, null, length: 7), "\x02", "\x03", getExpectedValue: v => padValues ? "\x2\0\0\0\0\0\0" : v, getExpectedNullableValue: v => padValues ? "\x3\0\0\0\0\0\0" : v);
 			await TestType<string, string?>(context, new(typeof(string), DataType.NChar, null, length: 7), "\xFF", "\xFE", getExpectedValue: v => padValues ? "\xff\0\0\0\0\0" : v, getExpectedNullableValue: v => padValues ? "\xfe\0\0\0\0\0" : v);
 			await TestType<string, string?>(context, new(typeof(string), DataType.NChar, null, length: 7), "\r", "\n", getExpectedValue: v => padValues ? "\r\0\0\0\0\0\0" : v, getExpectedNullableValue: v => padValues ? "\n\0\0\0\0\0\0" : v);
 			await TestType<string, string?>(context, new(typeof(string), DataType.NChar, null, length: 7), "'", "\\", getExpectedValue: v => padValues ? "'\0\0\0\0\0\0" : v, getExpectedNullableValue: v => padValues ? "\\\0\0\0\0\0\0" : v);
 
-			await TestType<byte[], byte[]?>(context, new(typeof(byte[]), DataType.Binary, null, length: 7), new byte[] { 0 }, new byte[] { 1 }, getExpectedValue: v => { Array.Resize(ref v, 7); return v; }, getExpectedNullableValue: v => { Array.Resize(ref v, 7); return v; });
+			await TestType<byte[], byte[]?>(context, new(typeof(byte[]), DataType.Binary, null, length: 7), new byte[] { 0 }, new byte[] { 1 }, getExpectedValue: v => { if (trimAllZeros) return Array.Empty<byte>(); Array.Resize(ref v, 7); return v; }, getExpectedNullableValue: v => { Array.Resize(ref v, 7); return v; });
 			await TestType<byte[], byte[]?>(context, new(typeof(byte[]), DataType.Binary, null, length: 7), new byte[] { 2 }, new byte[] { 3 }, getExpectedValue: v => { Array.Resize(ref v, 7); return v; }, getExpectedNullableValue: v => { Array.Resize(ref v, 7); return v; });
 			// https://github.com/DarkWanderer/ClickHouse.Client/issues/138
 			// https://github.com/ClickHouse/ClickHouse/issues/38790
-			if (!context.IsAnyOf(ProviderName.ClickHouseClient, ProviderName.ClickHouseMySql))
+			if (!context.IsAnyOf(ProviderName.ClickHouseDriver, ProviderName.ClickHouseMySql))
 			{
 				await TestType<byte[], byte[]?>(context, new(typeof(byte[]), DataType.Binary, null, length: 7), new byte[] { 255 }, new byte[] { 254 }, getExpectedValue: v => { Array.Resize(ref v, 7); return v; }, getExpectedNullableValue: v => { Array.Resize(ref v, 7); return v; });
 			}
 		}
 
+		[ActiveIssue(Configuration = ProviderName.ClickHouseOctonica, Details = "The type \"JSON\" is not supported")]
 		[Test]
 		public async ValueTask TestJSONType([ClickHouseDataSources(false)] string context)
 		{
 			// https://clickhouse.com/docs/en/sql-reference/data-types/json/
-			// currently JSON type looks completely unusable
 
 			// JSON
 
-			// cannot even insert (with nonsense message):
-			// Subcolumn '' already exists
+			// server doesn't like primitive JSON?
 			//await TestType<string, string?>(context, new(typeof(string), DataType.Json), "true", "false", filterByValue: false, filterByNullableValue: false);
 			//await TestType<string, string?>(context, new(typeof(string), DataType.Json), "12", "-34", filterByValue: false, filterByNullableValue: false);
+			//await TestType<string, string?>(
+			//	context, new(typeof(string), DataType.Json), string.Empty, default,
+			//	filterByValue: false, filterByNullableValue: false,
+			//	getExpectedValue: _ => "{}", getExpectedNullableValue: _ => "{}");
 
-			// provider errors not reported as JSON type is not yet unusable - nothing to fix on client side
-			// Client: Unknown type: ...
-			// Octonica: The type "Object('json')" is not supported.
-			if (!context.IsAnyOf(ProviderName.ClickHouseClient, ProviderName.ClickHouseOctonica))
+			if (!context.IsAnyOf(ProviderName.ClickHouseDriver))
 			{
 				await TestType<string, string?>(context, new(typeof(string), DataType.Json), "null", "null",
 					filterByValue: false, filterByNullableValue: false,
-					getExpectedValue: _ => "(0)", getExpectedNullableValue: _ => "(0)");
-
-				await TestType<string, string?>(
-					context, new(typeof(string), DataType.Json), string.Empty, default,
-					filterByValue: false, filterByNullableValue: false,
-					getExpectedValue: _ => "(0)", getExpectedNullableValue: _ => "(0)");
-
-				await TestType<string, string?>(context, new(typeof(string), DataType.Json),
-					/*lang=json,strict*/ "{ \"prop\": 333 }", /*lang=json,strict*/ "{ \"prop\": 123 }",
-					filterByValue: false, filterByNullableValue: false,
-					// yep, looks like JSON. Same as inserted, 146%
-					getExpectedValue: _ => "(333)", getExpectedNullableValue: _ => "(123)");
+					getExpectedValue: _ => "{}", getExpectedNullableValue: _ => "{}");
 			}
+
+			var expected = context.IsAnyOf(ProviderName.ClickHouseMySql)
+				? /*lang=json,strict*/ "{\"prop\":333}"
+				: /*lang=json,strict*/ $"{{{Environment.NewLine}  \"prop\": 333{Environment.NewLine}}}";
+			var expectedNullable = context.IsAnyOf(ProviderName.ClickHouseMySql)
+				? /*lang=json,strict*/ "{\"prop\":-123}"
+				: /*lang=json,strict*/ $"{{{Environment.NewLine}  \"prop\": -123{Environment.NewLine}}}";
+			await TestType<string, string?>(context, new(typeof(string), DataType.Json),
+				/*lang=json,strict*/ "{ \"prop\": 333 }", /*lang=json,strict*/ "{ \"prop\": -123 }",
+				filterByValue: false, filterByNullableValue: false,
+				getExpectedValue: _ => expected, getExpectedNullableValue: _ => expectedNullable);
 		}
 
 		[Test]
@@ -801,23 +772,20 @@ namespace Tests.DataProvider
 			// Unmapped enums cannot be used as server returns string values, which cannot be converted to enum
 			// because we don't have mapping information
 
-			// https://github.com/Octonica/ClickHouseClient/issues/64
-			var nullBug = context.IsAnyOf(ProviderName.ClickHouseOctonica);
-
 			// Enum8
 
-			await TestType<Enum8Mapped, Enum8Mapped?>(context, new(typeof(Enum8Mapped), DataType.Enum8, "Enum8('value1' = -111, 'value2' = 123)"), Enum8Mapped.Two, nullBug ? (Enum8Mapped?)Enum8Mapped.One : default);
+			await TestType<Enum8Mapped, Enum8Mapped?>(context, new(typeof(Enum8Mapped), DataType.Enum8, "Enum8('value1' = -111, 'value2' = 123)"), Enum8Mapped.Two, default);
 			await TestType<Enum8Mapped, Enum8Mapped?>(context, new(typeof(Enum8Mapped), DataType.Enum8, "Enum8('value1' = -111, 'value2' = 123)"), Enum8Mapped.One, Enum8Mapped.Two);
 
 			// Enum16
 
-			await TestType<Enum16Mapped, Enum16Mapped?>(context, new(typeof(Enum16Mapped), DataType.Enum16, "Enum16('value1' = -1111, 'value2' = 2212)"), Enum16Mapped.Two, nullBug ? (Enum16Mapped?)Enum16Mapped.One : default);
+			await TestType<Enum16Mapped, Enum16Mapped?>(context, new(typeof(Enum16Mapped), DataType.Enum16, "Enum16('value1' = -1111, 'value2' = 2212)"), Enum16Mapped.Two, default);
 			await TestType<Enum16Mapped, Enum16Mapped?>(context, new(typeof(Enum16Mapped), DataType.Enum16, "Enum16('value1' = -1111, 'value2' = 2212)"), Enum16Mapped.One, Enum16Mapped.Two);
 
-			await TestType<EnumMappedVar, EnumMappedVar?>(context, new(typeof(EnumMappedVar), DataType.Enum16, "Enum16('value1' = -1234, 'value 2' = 4567)"), EnumMappedVar.Two, nullBug ? (EnumMappedVar?)EnumMappedVar.One : default);
+			await TestType<EnumMappedVar, EnumMappedVar?>(context, new(typeof(EnumMappedVar), DataType.Enum16, "Enum16('value1' = -1234, 'value 2' = 4567)"), EnumMappedVar.Two, default);
 			await TestType<EnumMappedVar, EnumMappedVar?>(context, new(typeof(EnumMappedVar), DataType.Enum16, "Enum16('value1' = -1234, 'value 2' = 4567)"), EnumMappedVar.One, EnumMappedVar.Two);
 
-			await TestType<EnumMappedFixed, EnumMappedFixed?>(context, new(typeof(EnumMappedFixed), DataType.Enum16, "Enum16('value1' = -1234, 'value2' = 4567)"), EnumMappedFixed.Two, nullBug ? (EnumMappedFixed?)EnumMappedFixed.One : default);
+			await TestType<EnumMappedFixed, EnumMappedFixed?>(context, new(typeof(EnumMappedFixed), DataType.Enum16, "Enum16('value1' = -1234, 'value2' = 4567)"), EnumMappedFixed.Two, default);
 			await TestType<EnumMappedFixed, EnumMappedFixed?>(context, new(typeof(EnumMappedFixed), DataType.Enum16, "Enum16('value1' = -1234, 'value2' = 4567)"), EnumMappedFixed.One, EnumMappedFixed.Two);
 
 			// check that default mappings still work

@@ -2,11 +2,15 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+
 using LinqToDB;
-using LinqToDB.Common;
-using LinqToDB.Expressions;
-using LinqToDB.SqlQuery;
+using LinqToDB.Internal.SqlQuery;
+using LinqToDB.Mapping;
+
 using NUnit.Framework;
+
+using Shouldly;
+
 using Tests.Model;
 
 namespace Tests.UserTests
@@ -24,7 +28,7 @@ namespace Tests.UserTests
 		/// <exception cref="ArgumentNullException">Values for \"In\" operation should not be empty - values</exception>
 		/// <see cref="SqlExtensions.In{T}(Sql.ISqlExtension,T,IEnumerable{T})"/>
 		/// <seealso cref="SqlExtensions.In{T}(Sql.ISqlExtension,T,IEnumerable{T})"/>
-		public void Build(Sql.ISqExtensionBuilder builder)
+		public void Build(Sql.ISqlExtensionBuilder builder)
 		{
 			var parameterName = (builder.Arguments[2] as MemberExpression)?.Member.Name ?? "p";
 
@@ -109,5 +113,37 @@ namespace Tests.UserTests
 					GetParents(db, values2));
 			}
 		}
+
+		[Test]
+		public void TestCache([DataSources] string context)
+		{
+			using (var db = GetDataContext(context))
+			{
+				var values1 = new int?[] { 1, 2, 3, null };
+				var values2 = new int?[] { 4, 5, 6, null };
+
+				var query11 = GetParents(db, values1);
+				var result11 = query11.ToArray();
+
+				var cm1 = query11.GetCacheMissCount();
+
+				var query12 = GetParents(db, values1);
+				var result12 = query12.ToArray();
+
+				query12.GetCacheMissCount().ShouldBe(cm1);	
+
+				var query21  = GetParents(db, values2);
+				var result21 = query21.ToArray();
+
+				var cm2 = query21.GetCacheMissCount();
+
+				var query22  = GetParents(db, values2);
+				var result22 = query22.ToArray();
+
+				query22.GetCacheMissCount().ShouldBe(cm2);	
+
+			}
+		}
+
 	}
 }

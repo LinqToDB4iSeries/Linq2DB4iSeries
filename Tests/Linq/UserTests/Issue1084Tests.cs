@@ -1,8 +1,10 @@
-﻿using LinqToDB;
-using LinqToDB.Mapping;
-using NUnit.Framework;
-using System;
+﻿using System;
 using System.Linq;
+
+using LinqToDB;
+using LinqToDB.Mapping;
+
+using NUnit.Framework;
 
 namespace Tests.UserTests
 {
@@ -15,7 +17,7 @@ namespace Tests.UserTests
 			{
 			}
 
-			[Column] public int Id            { get; set; }
+			[PrimaryKey] public int Id        { get; set; }
 			[Column] public int Number        { get; set; }
 			[Column] public int StatusBitmask { get; set; }
 
@@ -30,7 +32,7 @@ namespace Tests.UserTests
 			{
 			}
 
-			[Column] public int Id            { get; set; }
+			[PrimaryKey] public int Id        { get; set; }
 			[Column] public int Number        { get; set; }
 			[Column] public int StatusBitmask { get; set; }
 
@@ -53,7 +55,7 @@ namespace Tests.UserTests
 				Copy = true;
 			}
 
-			[Column] public int Id            { get; set; }
+			[PrimaryKey] public int Id            { get; set; }
 			[Column] public int Number        { get; set; }
 			[Column] public int StatusBitmask { get; set; }
 
@@ -70,7 +72,7 @@ namespace Tests.UserTests
 		[Table("i1084_student")]
 		sealed class Issue1084Student
 		{
-			[Column] public int     Id            { get; set; }
+			[PrimaryKey] public int     Id            { get; set; }
 			[Column] public string? Number        { get; set; }
 			[Column] public int     StatusBitmask { get; set; }
 
@@ -100,11 +102,14 @@ namespace Tests.UserTests
 							 };
 
 				var res = result.ToList();
-				Assert.AreEqual(2, res.Count);
-				Assert.False(res[0].Default);
-				Assert.False(res[1].Default);
-				Assert.True(res[0].Copy);
-				Assert.True(res[1].Copy);
+				Assert.That(res, Has.Count.EqualTo(2));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(res[0].Default, Is.False);
+					Assert.That(res[1].Default, Is.False);
+					Assert.That(res[0].Copy, Is.True);
+					Assert.That(res[1].Copy, Is.True);
+				}
 			}
 		}
 

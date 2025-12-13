@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+
 using LinqToDB;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -48,6 +50,7 @@ namespace Tests.UserTests
 			public int UserId { get; set; }
 		}
 
+		[YdbMemberNotFound]
 		[Test]
 		public void Test([DataSources(TestProvName.AllClickHouse)] string context)
 		{
@@ -55,8 +58,6 @@ namespace Tests.UserTests
 			{
 				var userId  = 32;
 				var childId = 32;
-
-				//Configuration.Linq.OptimizeJoins = false;
 
 				var query = db.GetTable<Parent825>()
 					.Where(p => p.ParentPermissions.Any(permission => permission.UserId == userId))
@@ -66,8 +67,8 @@ namespace Tests.UserTests
 
 				var result = query.ToList();
 
-				Assert.AreEqual(1, result.Count);
-				Assert.AreEqual(3, result[0].Id);
+				Assert.That(result, Has.Count.EqualTo(1));
+				Assert.That(result[0].Id, Is.EqualTo(3));
 			}
 		}
 	}

@@ -36,7 +36,7 @@ namespace Tests
 		public static IEnumerable<string> GetAll() => GetProviders((string _) => true);
 
 		public static IEnumerable<string> GetAccessClient() =>
-#if NET472
+#if NETFRAMEWORK
 			GetProviders(x => x.ProviderType == DB2iSeriesProviderType.AccessClient);
 #else
 			Enumerable.Empty<string>();

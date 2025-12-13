@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+
 using LinqToDB;
-using LinqToDB.Data;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
+
 using Tests.Model;
 
 namespace Tests.Linq
@@ -13,21 +15,6 @@ namespace Tests.Linq
 	[TestFixture]
 	public class StringFunctionsTests : TestBase
 	{
-		static string? AggregateStrings(string separator, IEnumerable<string?> arguments)
-		{
-			var result = arguments.Aggregate((v1, v2) =>
-			{
-				if (v1 == null && v2 == null)
-					return null;
-				if (v1 == null)
-					return v2;
-				if (v2 == null)
-					return v1;
-				return v1 + separator + v2;
-			});
-			return result;
-		}
-
 		[Table]
 		sealed class SampleClass
 		{
@@ -96,7 +83,7 @@ namespace Tests.Linq
 					select new
 					{
 						Max = g.Max(),
-						Values = AggregateStrings(" -> ", g) ?? nullVal,
+						Values = Sql.ConcatStringsNullable(" -> ", g) ?? nullVal,
 					};
 
 				AreEqual(expected, actual);
@@ -121,6 +108,7 @@ namespace Tests.Linq
 					orderby g.Key.Id
 					select new
 					{
+						g.Key.Id,
 						Max = g.Max(),
 						Values = g.StringAggregate(" -> ").OrderBy(e => e).ToValue(),
 					};
@@ -131,8 +119,9 @@ namespace Tests.Linq
 					orderby g.Key.Id
 					select new
 					{
+						g.Key.Id,
 						Max = g.Max(),
-						Values = AggregateStrings(" -> ", g.OrderBy(e => e)) ?? nullVal,
+						Values = Sql.ConcatStringsNullable(" -> ", g.OrderBy(e => e)) ?? nullVal,
 					};
 
 				AreEqual(expected, actual);
@@ -152,18 +141,17 @@ namespace Tests.Linq
 					into g
 					select new
 					{
-						Max = g.Max(),
+						Max    = g.Max(),
 						Values = g.StringAggregate(" -> ").OrderByDescending(e => e).ToValue(),
 					};
-
 
 				var expected = from t in data
 					group t.Value1 by new {t.Id, Value = t.Value1}
 					into g
 					select new
 					{
-						Max = g.Max(),
-						Values = AggregateStrings(" -> ", g.OrderByDescending(e => e)),
+						Max    = g.Max(),
+						Values = Sql.ConcatStringsNullable(" -> ", g.OrderByDescending(e => e)),
 					};
 
 				AreEqual(expected, actual);
@@ -197,7 +185,7 @@ namespace Tests.Linq
 					orderby g.Key.Id
 					select new
 					{
-						Values = AggregateStrings(" -> ", g.Select(e => e.Value1)) ?? nullVal,
+						Values = Sql.ConcatStringsNullable(" -> ", g.Select(e => e.Value1)) ?? nullVal,
 					};
 
 				AreEqual(expected, actual);
@@ -225,7 +213,7 @@ namespace Tests.Linq
 					into g
 					select new
 					{
-						Values     = AggregateStrings(" -> ", g.OrderBy(e => e.Value3).ThenByDescending(e => e.Value1).Select(e => e.Value1)),
+						Values     = Sql.ConcatStringsNullable(" -> ", g.OrderBy(e => e.Value3).ThenByDescending(e => e.Value1).Select(e => e.Value1)),
 					};
 
 				AreEqual(expected, actual);
@@ -253,7 +241,7 @@ namespace Tests.Linq
 					into g
 					select new
 					{
-						Values     = AggregateStrings(" -> ", g.OrderByDescending(e => e.Value3).ThenBy(e => e.Value1).Select(e => e.Value1)),
+						Values     = Sql.ConcatStringsNullable(" -> ", g.OrderByDescending(e => e.Value3).ThenBy(e => e.Value1).Select(e => e.Value1)),
 					};
 
 				AreEqual(expected, actual);
@@ -269,11 +257,11 @@ namespace Tests.Linq
 			using (var table = db.CreateLocalTable(data))
 			{
 				var actual    = table.Select(t => t.Value1).StringAggregate(" -> ").ToValue();
-				var expected1 = AggregateStrings(" -> ", data.Select(t => t.Value1));
-				var expected2 = AggregateStrings(" -> ", data.Select(t => t.Value1).Reverse());
+				var expected1 = Sql.ConcatStringsNullable(" -> ", data.Select(t => t.Value1));
+				var expected2 = Sql.ConcatStringsNullable(" -> ", data.Select(t => t.Value1).Reverse());
 
 				// as we don't order aggregation, we should expect unstable results
-				Assert.True(expected1 == actual || expected2 == actual, $"Expected '{expected1}' or '{expected2}' but got '{actual}'");
+				Assert.That(expected1 == actual || expected2 == actual, Is.True, $"Expected '{expected1}' or '{expected2}' but got '{actual}'");
 			}
 		}
 
@@ -286,20 +274,20 @@ namespace Tests.Linq
 			using (var table = db.CreateLocalTable(data))
 			{
 				var actualAsc   = table.Select(t => t.Value1).StringAggregate(" -> ").OrderBy().ToValue();
-				var expectedAsc = AggregateStrings(" -> ", data.Select(t => t.Value1).OrderBy(d => d));
-				Assert.AreEqual(expectedAsc, actualAsc);
+				var expectedAsc = Sql.ConcatStringsNullable(" -> ", data.Select(t => t.Value1).OrderBy(d => d));
+				Assert.That(actualAsc, Is.EqualTo(expectedAsc));
 
 				var actualAscExpr   = table.Select(t => t.Value1).StringAggregate(" -> ").OrderBy(d => d).ToValue();
-				var expectedAscExpr = AggregateStrings(" -> ", data.Select(t => t.Value1).OrderBy(d => d));
-				Assert.AreEqual(expectedAscExpr, actualAscExpr);
+				var expectedAscExpr = Sql.ConcatStringsNullable(" -> ", data.Select(t => t.Value1).OrderBy(d => d));
+				Assert.That(actualAscExpr, Is.EqualTo(expectedAscExpr));
 
 				var actualDesc   = table.Select(t => t.Value1).StringAggregate(" -> ").OrderByDescending().ToValue();
-				var expectedDesc = AggregateStrings(" -> ", data.Select(t => t.Value1).OrderByDescending(d => d));
-				Assert.AreEqual(expectedDesc, actualDesc);
+				var expectedDesc = Sql.ConcatStringsNullable(" -> ", data.Select(t => t.Value1).OrderByDescending(d => d));
+				Assert.That(actualDesc, Is.EqualTo(expectedDesc));
 
 				var actualDescExpr   = table.Select(t => t.Value1).StringAggregate(" -> ").OrderByDescending(d => d).ToValue();
-				var expectedDescExpr = AggregateStrings(" -> ", data.Select(t => t.Value1).OrderByDescending(d => d));
-				Assert.AreEqual(expectedDescExpr, actualDescExpr);
+				var expectedDescExpr = Sql.ConcatStringsNullable(" -> ", data.Select(t => t.Value1).OrderByDescending(d => d));
+				Assert.That(actualDescExpr, Is.EqualTo(expectedDescExpr));
 			}
 		}
 
@@ -312,11 +300,11 @@ namespace Tests.Linq
 			using (var table = db.CreateLocalTable(data))
 			{
 				var actual    = table.AsQueryable().StringAggregate(" -> ", t => t.Value1).ToValue();
-				var expected1 = AggregateStrings(" -> ", data.Select(t => t.Value1));
-				var expected2 = AggregateStrings(" -> ", data.Select(t => t.Value1).Reverse());
+				var expected1 = Sql.ConcatStringsNullable(" -> ", data.Select(t => t.Value1));
+				var expected2 = Sql.ConcatStringsNullable(" -> ", data.Select(t => t.Value1).Reverse());
 
 				// as we don't order aggregation, we should expect unstable results
-				Assert.True(expected1 == actual || expected2 == actual, $"Expected '{expected1}' or '{expected2}' but got '{actual}'");
+				Assert.That(expected1 == actual || expected2 == actual, Is.True, $"Expected '{expected1}' or '{expected2}' but got '{actual}'");
 			}
 		}
 
@@ -346,26 +334,41 @@ namespace Tests.Linq
 				//AreEqual(expected, query);
 
 				var result = query.ToArray();
-				Assert.AreEqual(3, result.Length);
-				Assert.AreEqual(2, result[0].Count);
-				Assert.AreEqual(2, result[1].Count);
-				Assert.AreEqual(2, result[2].Count);
+				Assert.That(result, Has.Length.EqualTo(3));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[0].Count, Is.EqualTo(2));
+					Assert.That(result[1].Count, Is.EqualTo(2));
+					Assert.That(result[2].Count, Is.EqualTo(2));
 
-				Assert.That(result[0].Aggregated, Is.EqualTo("V1 -> Z1").Or.EqualTo("Z1 -> V1"));
-				Assert.That(result[1].Aggregated, Is.EqualTo("V1 -> Z1").Or.EqualTo("Z1 -> V1"));
-				Assert.That(result[2].Aggregated, Is.EqualTo("V1 -> Z1").Or.EqualTo("Z1 -> V1"));
+					Assert.That(result[0].Aggregated, Is.EqualTo("V1 -> Z1").Or.EqualTo("Z1 -> V1"));
+					Assert.That(result[1].Aggregated, Is.EqualTo("V1 -> Z1").Or.EqualTo("Z1 -> V1"));
+					Assert.That(result[2].Aggregated, Is.EqualTo("V1 -> Z1").Or.EqualTo("Z1 -> V1"));
+				}
 			}
 		}
 
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4501")]
+		public void Issue4501Test([StringTestSources] string context)
+		{
+			var data = GenerateData();
+
+			using var db = GetDataContext(context);
+			using var table = db.CreateLocalTable(data);
+
+			var query = table
+				.GroupBy(x => x.Id)
+				.Select(g => new
+				{
+					Id = g.Key,
+					AggregatedDescription = g.StringAggregate(", ", x => x.Value1).ToValue()
+				});
+
+			query.ToList();
+		}
+
 		[Test]
-		public void ConcatStringsTest([
-			IncludeDataSources(
-				TestProvName.AllSqlServer,
-				TestProvName.AllPostgreSQL,
-				TestProvName.AllMySql,
-				TestProvName.AllClickHouse,
-				TestProvName.AllSQLite
-			)] string context)
+		public void ConcatStringsTest([DataSources(TestProvName.AllOracle, TestProvName.AllSybase)] string context)
 		{
 			var data = GenerateData().OrderBy(_ => _.Id);
 
@@ -377,22 +380,22 @@ namespace Tests.Linq
 				var actualOne   = query.Select(t => Sql.ConcatStrings(" -> ", t.Value2));
 				var expectedOne = data .Select(t => Sql.ConcatStrings(" -> ", t.Value2));
 
-				Assert.AreEqual(expectedOne, actualOne);
+				Assert.That(actualOne, Is.EqualTo(expectedOne));
 
 				var actualOneNull   = query.Select(t => Sql.ConcatStrings(" -> ", t.Value3));
 				var expectedOneNull = data .Select(t => Sql.ConcatStrings(" -> ", t.Value3));
 
-				Assert.AreEqual(expectedOneNull, actualOneNull);
+				Assert.That(actualOneNull, Is.EqualTo(expectedOneNull));
 
 				var actual   = query.Select(t => Sql.ConcatStrings(" -> ", t.Value3, t.Value1, t.Value2));
 				var expected = data .Select(t => Sql.ConcatStrings(" -> ", t.Value3, t.Value1, t.Value2));
 
-				Assert.AreEqual(expected, actual);
+				Assert.That(actual, Is.EqualTo(expected));
 
 				var actualAllEmpty   = query.Select(t => Sql.ConcatStrings(" -> ", t.Value3, t.Value3));
 				var expectedAllEmpty = data .Select(t => Sql.ConcatStrings(" -> ", t.Value3, t.Value3));
 
-				Assert.AreEqual(expectedAllEmpty, actualAllEmpty);
+				Assert.That(actualAllEmpty, Is.EqualTo(expectedAllEmpty));
 			}
 		}
 
@@ -416,11 +419,11 @@ namespace Tests.Linq
 			using (var table = db.CreateLocalTable(data))
 			{
 				var actual    = table.Select(t => t.Value4).StringAggregate(" -> ").ToValue();
-				var expected1 = AggregateStrings(" -> ", data.Select(t => t.Value4));
-				var expected2 = AggregateStrings(" -> ", data.Select(t => t.Value4).Reverse());
+				var expected1 = Sql.ConcatStringsNullable(" -> ", data.Select(t => t.Value4));
+				var expected2 = Sql.ConcatStringsNullable(" -> ", data.Select(t => t.Value4).Reverse());
 
 				// as we don't order aggregation, we should expect unstable results
-				Assert.True(expected1 == actual || expected2 == actual, $"Expected '{expected1}' or '{expected2}' but got '{actual}'");
+				Assert.That(expected1 == actual || expected2 == actual, Is.True, $"Expected '{expected1}' or '{expected2}' but got '{actual}'");
 			}
 		}
 
@@ -433,11 +436,11 @@ namespace Tests.Linq
 			using (var table = db.CreateLocalTable(data))
 			{
 				var actual    = table.AsQueryable().StringAggregate(" -> ", t => t.Value4).ToValue();
-				var expected1 = AggregateStrings(" -> ", data.Select(t => t.Value4));
-				var expected2 = AggregateStrings(" -> ", data.Select(t => t.Value4).Reverse());
+				var expected1 = Sql.ConcatStringsNullable(" -> ", data.Select(t => t.Value4));
+				var expected2 = Sql.ConcatStringsNullable(" -> ", data.Select(t => t.Value4).Reverse());
 
 				// as we don't order aggregation, we should expect unstable results
-				Assert.True(expected1 == actual || expected2 == actual, $"Expected '{expected1}' or '{expected2}' but got '{actual}'");
+				Assert.That(expected1 == actual || expected2 == actual, Is.True, $"Expected '{expected1}' or '{expected2}' but got '{actual}'");
 			}
 		}
 
@@ -462,7 +465,7 @@ namespace Tests.Linq
 					into g
 							   select new
 							   {
-								   Values = AggregateStrings(" -> ", g.OrderByDescending(e => e.Value3).ThenBy(e => e.Value4).Select(e => e.Value4)),
+								   Values = Sql.ConcatStringsNullable(" -> ", g.OrderByDescending(e => e.Value3).ThenBy(e => e.Value4).Select(e => e.Value4)),
 							   };
 
 				AreEqual(expected, actual);
@@ -498,7 +501,7 @@ namespace Tests.Linq
 							   select new
 							   {
 								   Max = g.Max(),
-								   Values = AggregateStrings(" -> ", g) ?? nullVal,
+								   Values = Sql.ConcatStringsNullable(" -> ", g) ?? nullVal,
 							   };
 
 				AreEqual(expected, actual);
@@ -526,7 +529,7 @@ namespace Tests.Linq
 					into g
 							   select new
 							   {
-								   Values = AggregateStrings(separator, g.OrderByDescending(e => e.Value3).ThenBy(e => e.Value4).Select(e => e.Value4)),
+								   Values = Sql.ConcatStringsNullable(separator, g.OrderByDescending(e => e.Value3).ThenBy(e => e.Value4).Select(e => e.Value4)),
 							   };
 
 				AreEqual(expected, actual);
@@ -562,7 +565,7 @@ namespace Tests.Linq
 							   select new
 							   {
 								   Max = g.Max(),
-								   Values = AggregateStrings(separator, g) ?? nullVal,
+								   Values = Sql.ConcatStringsNullable(separator, g) ?? nullVal,
 							   };
 
 				AreEqual(expected, actual);
@@ -581,6 +584,71 @@ namespace Tests.Linq
 
 			_ = (from p in db.Person where p.FirstName == "A" + p.FirstName + "B" select p).ToList();
 			Assert.That(db.LastQuery, Contains.Substring("Concat('A', `p`.`FirstName`, 'B')"));
+		}
+
+		[ActiveIssue]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/1916")]
+		public void Issue1916Test1([DataSources] string context)
+		{
+			using var db = GetDataContext(context);
+
+			var cnt = db.Person.Where(p => string.Concat(p.FirstName, p.MiddleName) != null).Count();
+
+			Assert.That(cnt, Is.EqualTo(4));
+		}
+
+		[ActiveIssue]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/1916")]
+		public void Issue1916Test2([DataSources] string context)
+		{
+			using var db = GetDataContext(context);
+
+			var cnt = db.Person.Where(p => Sql.Concat(p.FirstName, p.MiddleName) != null).Count();
+
+			Assert.That(cnt, Is.EqualTo(4));
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/4597")]
+		public void Issue4597Test([DataSources(
+			ProviderName.SqlCe,
+			ProviderName.Ydb,
+			TestProvName.AllAccess,
+			TestProvName.AllClickHouse,
+			TestProvName.AllSybase,
+			TestProvName.AllSqlServer2016Minus,
+			TestProvName.AllInformix)] string context)
+		{
+			using var db = GetDataContext(context);
+
+			db.Parent
+				.Select(s => s.Children.StringAggregate(", ", l => l.ChildID.ToString()).ToValue())
+				.ToArray();
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/5173")]
+		public void Issue5173_ParameterLocation([StringTestSources] string provider)
+		{
+			using var db = GetDataContext(provider);
+
+			const string separator = ";";
+			List<int> channels = [11, 13];
+
+			var query = from ti in db.Parent
+						from ch in channels.AsQueryable()
+						from m in db.Child
+						.LeftJoin(i => i.ParentID == ti.ParentID && i.ChildID == ch)
+						orderby ti.ParentID
+						group new
+						{
+							ch,
+						} by ch % 10
+						into grp
+						select new
+						{
+							Value = grp.StringAggregate(separator,i => Sql.Concat("test:", i.ch)).ToValue()
+						};
+
+			_ = query.ToArray();
 		}
 	}
 }

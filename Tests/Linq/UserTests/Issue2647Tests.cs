@@ -1,7 +1,9 @@
 ﻿using System.Linq;
+
 using LinqToDB;
+using LinqToDB.Internal.SqlQuery;
 using LinqToDB.Mapping;
-using LinqToDB.SqlQuery;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -32,11 +34,9 @@ namespace Tests.UserTests
 				                                     db.GetTable<IssueClass>().Count(ss3 => ss3.Id == ss.Id));
 
 				query.ToList();
-				var sql = query.ToString();
-				TestContext.WriteLine(sql);
 
 				var selectQuery = query.GetSelectQuery();
-				Assert.That(selectQuery.OrderBy.Items.Count, Is.EqualTo(2));
+				Assert.That(selectQuery.OrderBy.Items, Has.Count.EqualTo(2));
 				Assert.That(selectQuery.OrderBy.Items[0].Expression.ElementType, Is.EqualTo(QueryElementType.SqlField));
 			}
 		}

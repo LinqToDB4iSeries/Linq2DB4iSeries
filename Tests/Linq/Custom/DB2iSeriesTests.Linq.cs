@@ -5,8 +5,6 @@ using System;
 using System.Linq;
 using Tests.Model;
 
-#nullable disable
-
 namespace Tests.DataProvider
 {
 	public partial class DB2iSeriesTests
@@ -18,9 +16,9 @@ namespace Tests.DataProvider
 			{
 				var person = conn.GetTable<Person>();
 
-				Assert.True(person.Any(p => p.ID == 2));
-				Assert.False(person.Any(p => p.ID == 23));
-				Assert.True(person.Any(p => !(p.ID == 23)));
+				Assert.That(person.Any(p => p.ID == 2), Is.True);
+				Assert.That(person.Any(p => p.ID == 23), Is.False);
+				Assert.That(person.Any(p => !(p.ID == 23)), Is.True);
 			}
 		}
 
@@ -33,9 +31,9 @@ namespace Tests.DataProvider
 
 				var results = person.ToArray();
 
-				Assert.AreEqual(2, results.Count());
-				Assert.AreEqual("Pupkin", results.First().LastName);
-				Assert.AreEqual("Testerson", results.Last().LastName);
+				Assert.That(results.Count(), Is.EqualTo(2));
+				Assert.That(results.First().LastName, Is.EqualTo("Pupkin"));
+				Assert.That(results.Last().LastName, Is.EqualTo("Testerson"));
 			}
 		}
 
@@ -48,9 +46,9 @@ namespace Tests.DataProvider
 
 				var results = person.ToArray();
 
-				Assert.AreEqual(2, results.Count());
-				Assert.AreEqual("König", results.First().LastName);
-				Assert.AreEqual("Doe", results.Last().LastName);
+				Assert.That(results.Count(), Is.EqualTo(2));
+				Assert.That(results.First().LastName, Is.EqualTo("König"));
+				Assert.That(results.Last().LastName, Is.EqualTo("Doe"));
 			}
 		}
 
@@ -63,7 +61,7 @@ namespace Tests.DataProvider
 
 				var actual = db.Types.Where(t => t.ID == 1 && t.DateTimeValue <= DateTime.Today);
 
-				Assert.AreEqual(expected, actual);
+				Assert.That(actual, Is.EqualTo(expected));
 			}
 		}
 
@@ -74,8 +72,8 @@ namespace Tests.DataProvider
 
 			using (var db = GetDataContext(context))
 			{
-				var expected = Types2.Where(t => t.DateTimeValue.Value.Date > dt.Value.Date);
-				var actual = db.Types2.Where(t => t.DateTimeValue.Value.Date > dt.Value.Date);
+				var expected = Types2.Where(t => t.DateTimeValue!.Value.Date > dt!.Value.Date);
+				var actual = db.Types2.Where(t => t.DateTimeValue!.Value.Date > dt!.Value.Date);
 
 				AreEqual(expected, actual);
 			}

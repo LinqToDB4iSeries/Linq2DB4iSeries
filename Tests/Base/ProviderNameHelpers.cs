@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+
 using LinqToDB;
 
 namespace Tests
@@ -14,7 +15,7 @@ namespace Tests
 		/// <param name="providers">List of test providers to check against. Each entry could be provider name or comma-separated list of providers.</param>
 		public static bool IsAnyOf(this string context, params string[] providers)
 		{
-			var providerName = context.Replace(TestBase.LinqServiceSuffix, string.Empty);
+			var providerName = context.StripRemote();
 			foreach (var provider in providers)
 			{
 				if (provider.Split(',').Any(p => p == providerName))
@@ -22,6 +23,24 @@ namespace Tests
 			}
 
 			return false;
+		}
+
+		/// <summary>
+		/// Provider returns number of affected records from Execute methods
+		/// </summary>
+		public static bool SupportsRowcount(this string context)
+		{
+			return !context.IsAnyOf(TestProvName.AllClickHouse, ProviderName.Ydb);
+		}
+
+		public static bool IsUseParameters(this string context)
+		{
+			return !context.IsAnyOf(TestProvName.AllClickHouse);
+		}
+
+		public static bool IsUsePositionalParameters(this string context)
+		{
+			return context.IsAnyOf(TestProvName.AllSapHana, TestProvName.AllAccess);
 		}
 
 		/// <summary>

@@ -1,9 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using FluentAssertions;
+
 using LinqToDB;
+using LinqToDB.Internal.Common;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
+
+using Shouldly;
 
 namespace Tests.UserTests
 {
@@ -143,7 +147,8 @@ namespace Tests.UserTests
 		}
 
 		[Test]
-		public void EagerLoadingTest([DataSources(TestProvName.AllAccess, TestProvName.AllClickHouse)] string context)
+		[ThrowsForProvider(typeof(LinqToDBException), TestProvName.AllAccess, ProviderName.Firebird25, TestProvName.AllMySql57, TestProvName.AllSybase, ErrorMessage = ErrorHelper.Error_OUTER_Joins)]
+		public void EagerLoadingTest([DataSources(TestProvName.AllClickHouse)] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (db.CreateLocalTable<InternalEmail>(new[] { new InternalEmail { Id = 10, UserId = 1, RequestId = 1 } }))
@@ -175,8 +180,8 @@ namespace Tests.UserTests
 					})
 					.ToArray();
 
-				result.Should().HaveCount(1);
-				result[0].DocumentName?.Names.Should().HaveCount(2);
+				result.Count().ShouldBe(1);
+				result[0].DocumentName?.Names.Count().ShouldBe(2);
 			}
 		}
 	}

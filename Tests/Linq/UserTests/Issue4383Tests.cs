@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 using LinqToDB;
@@ -39,8 +38,8 @@ namespace Tests.UserTests
 		[Table]
 		public class PumpLineChainTest<TChain> where TChain : IChainTest
 		{
-			[Column("LINE_ID")]  public int LineId  { get; set; }
-			[Column("CHAIN_ID")] public int ChainId { get; set; }
+			[PrimaryKey, Column("LINE_ID")]  public int LineId  { get; set; }
+			[PrimaryKey, Column("CHAIN_ID")] public int ChainId { get; set; }
 
 			[Association(ThisKey = nameof(ChainId), OtherKey = nameof(IChainTest.Id))]
 			public TChain Chain { get; set; } = default!;
@@ -51,7 +50,7 @@ namespace Tests.UserTests
 			where TChain : IChainTest
 			where TPumpLineChain : PumpLineChainTest<TChain>
 		{
-			[Association(ThisKey = nameof(Id), OtherKey = nameof(PumpLineChainTest<TChain>.LineId), CanBeNull = false)]
+			[Association(ThisKey = nameof(Id), OtherKey = nameof(PumpLineChainTest<>.LineId), CanBeNull = false)]
 			public IEnumerable<TPumpLineChain> PipeLineChains { get; set; } = null!;
 		}
 
@@ -85,15 +84,17 @@ namespace Tests.UserTests
 				.ThenLoad(i => i.Chain.ChainPoints)
 				.OrderBy (i => i.Id)
 				.ToList();
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(items.Select(r => new { r.Id }), Is.EquivalentTo(data1.Select(r => new { r.Id })));
+				Assert.That(items[0].PipeLineChains.Select(r => new { r.LineId, r.ChainId }), Is.EquivalentTo(data2.Take(1).Select(r => new { r.LineId, r.ChainId })));
+				Assert.That(items[1].PipeLineChains.Select(r => new { r.LineId, r.ChainId }), Is.EquivalentTo(data2.Skip(1).Select(r => new { r.LineId, r.ChainId })));
+				Assert.That(items[0].PipeLineChains.Select(c => new { c.Chain.Id }), Is.EquivalentTo(data3.Take(1).Select(r => new { r.Id })));
+				Assert.That(items[1].PipeLineChains.Select(c => new { c.Chain.Id }), Is.EquivalentTo(data3.Skip(1).Select(r => new { r.Id })));
 
-			Assert.That(items.Select(r => new { r.Id }), Is.EquivalentTo(data1.Select(r => new { r.Id })));
-			Assert.That(items[0].PipeLineChains.Select(r => new { r.LineId, r.ChainId }), Is.EquivalentTo(data2.Take(1).Select(r => new { r.LineId, r.ChainId })));
-			Assert.That(items[1].PipeLineChains.Select(r => new { r.LineId, r.ChainId }), Is.EquivalentTo(data2.Skip(1).Select(r => new { r.LineId, r.ChainId })));
-			Assert.That(items[0].PipeLineChains.Select(c => new { c.Chain.Id }),          Is.EquivalentTo(data3.Take(1).Select(r => new { r.Id })));
-			Assert.That(items[1].PipeLineChains.Select(c => new { c.Chain.Id }),          Is.EquivalentTo(data3.Skip(1).Select(r => new { r.Id })));
-
-			Assert.That(items[0].PipeLineChains.SelectMany(c => c.Chain.ChainPoints!).Select(c => new { c.ElementId }), Is.EquivalentTo(data4.Take(1).Select(r => new { r.ElementId })));
-			Assert.That(items[1].PipeLineChains.SelectMany(c => c.Chain.ChainPoints!).Select(c => new { c.ElementId }), Is.EquivalentTo(data4.Skip(1).Select(r => new { r.ElementId })));
+				Assert.That(items[0].PipeLineChains.SelectMany(c => c.Chain.ChainPoints!).Select(c => new { c.ElementId }), Is.EquivalentTo(data4.Take(1).Select(r => new { r.ElementId })));
+				Assert.That(items[1].PipeLineChains.SelectMany(c => c.Chain.ChainPoints!).Select(c => new { c.ElementId }), Is.EquivalentTo(data4.Skip(1).Select(r => new { r.ElementId })));
+			}
 		}
 	}
 }

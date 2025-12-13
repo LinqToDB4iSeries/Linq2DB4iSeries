@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+
 using LinqToDB;
-using LinqToDB.Common;
 using LinqToDB.Expressions;
+using LinqToDB.Internal.Common;
+using LinqToDB.Internal.Expressions;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.Linq
@@ -81,6 +84,7 @@ namespace Tests.Linq
 							supported = false;
 							break;
 					}
+
 					if (!supported)
 						break;
 
@@ -156,7 +160,6 @@ namespace Tests.Linq
 			Expression<Func<T, AnalyticFunctions.IOverMayHavePartitionAndOrder<long>>> overExpression =
 				t => Sql.Ext.Rank().Over();
 
-
 			var entityParam = Expression.Parameter(typeof(T), "e");
 			var windowFunctionBody = overExpression.Body;
 			windowFunctionBody = GeneratePartitionBy(windowFunctionBody,
@@ -164,7 +167,6 @@ namespace Tests.Linq
 
 			windowFunctionBody = GenerateOrderBy(entityParam, windowFunctionBody, orderBy);
 			windowFunctionBody = FinalizeFunction(windowFunctionBody);
-
 
 			// Generating Select
 			//
@@ -180,7 +182,7 @@ namespace Tests.Linq
 			var newExpression = Expression.New(typeof(RankHolder<T>).GetConstructor(Type.EmptyTypes)!);
 
 			var selectLambda = Expression.Lambda(Expression.MemberInit(newExpression, bindings), entityParam);
-			var selectQuery  = TypeHelper.MakeMethodCall(LinqToDB.Reflection.Methods.Queryable.Select, withoutOrder, Expression.Quote(selectLambda));
+			var selectQuery  = TypeHelper.MakeMethodCall(LinqToDB.Internal.Reflection.Methods.Queryable.Select, withoutOrder, Expression.Quote(selectLambda));
 
 			// Done! query is ready
 			//

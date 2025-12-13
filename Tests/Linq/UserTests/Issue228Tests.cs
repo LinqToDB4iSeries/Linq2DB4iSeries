@@ -1,17 +1,12 @@
 ﻿using System.Linq;
 
-using LinqToDB;
-
 using NUnit.Framework;
-
-using Tests.Model;
 
 namespace Tests.UserTests
 {
 	[TestFixture]
 	public class Issue228Tests : TestBase
 	{
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void Test([DataSources(false)] string context)
 		{

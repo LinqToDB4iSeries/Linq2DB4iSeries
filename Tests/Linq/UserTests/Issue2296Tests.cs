@@ -1,5 +1,7 @@
 ﻿using System.Linq;
+
 using LinqToDB;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -10,7 +12,7 @@ namespace Tests.UserTests
 		[Test]
 		public void Issue2296Test(
 			[IncludeDataSources(true, TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context,
-			[Values(true, false)] bool reverseWhereQuery)
+			[Values] bool reverseWhereQuery)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -24,7 +26,6 @@ namespace Tests.UserTests
 				localQuery = localQuery.Where(p => varInt < p.ParentID);
 				var expected = localQuery.ToArray();
 
-
 				var dbQuery =
 					from p in db.Parent
 					join c in db.GrandChild on p.ParentID equals c.ParentID
@@ -37,7 +38,7 @@ namespace Tests.UserTests
 
 				var actual = dbQuery.ToArray();
 
-				Assert.AreEqual(expected, actual);
+				Assert.That(actual, Is.EqualTo(expected));
 			}
 		}
 	}

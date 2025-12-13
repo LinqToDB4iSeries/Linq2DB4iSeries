@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
+
 using LinqToDB;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -18,13 +20,12 @@ namespace Tests.UserTests
 				{
 					new Issue1977Table()
 					{
-						firstField  = TestBase.TestData.Guid1,
-						secondField = TestBase.TestData.Guid2
+						firstField  = global::Tests.TestData.Guid1,
+						secondField = global::Tests.TestData.Guid2
 					}
 				};
 		}
 
-		[ActiveIssue("https://github.com/Octonica/ClickHouseClient/issues/56 + https://github.com/ClickHouse/ClickHouse/issues/37999", Configurations = new[] { ProviderName.ClickHouseMySql, ProviderName.ClickHouseOctonica })]
 		[Test]
 		public void Test([IncludeDataSources(TestProvName.AllSqlServer, TestProvName.AllClickHouse)] string context)
 		{
@@ -53,7 +54,7 @@ namespace Tests.UserTests
 					}
 				);
 
-				Assert.True(itemsQuery.ToArray().All(r => r.equals));
+				Assert.That(itemsQuery.ToArray().All(r => r.equals), Is.True);
 			}
 		}
 	}

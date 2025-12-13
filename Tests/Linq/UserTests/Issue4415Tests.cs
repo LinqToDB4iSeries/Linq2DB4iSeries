@@ -1,20 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Runtime.Serialization;
 
 using LinqToDB;
-using LinqToDB.Data;
 using LinqToDB.Mapping;
 
-using Newtonsoft.Json;
-
 using NUnit.Framework;
-
-using DataType = LinqToDB.DataType;
 
 namespace Tests.UserTests.Test4415
 {
@@ -58,7 +48,7 @@ namespace Tests.UserTests.Test4415
 			var qry2 = p.Where(x => qry.Contains(x.LanguageID));
 			var lst = qry2.ToList();
 
-			Assert.AreEqual(2, lst.Count);
+			Assert.That(lst, Has.Count.EqualTo(2));
 		}
 
 		[Test]
@@ -87,7 +77,7 @@ namespace Tests.UserTests.Test4415
 			var qry2 = p.Where(x => qry.Contains(x.LanguageID));
 			var lst = qry2.ToList();
 
-			Assert.AreEqual(1, lst.Count);
+			Assert.That(lst, Has.Count.EqualTo(1));
 		}
 
 		[Test]
@@ -120,7 +110,7 @@ namespace Tests.UserTests.Test4415
 			var qry2 = p.Where(x => qry.Contains(Sql.AsNotNull(x.LanguageID)));
 			var lst = qry2.ToList();
 
-			Assert.AreEqual(1, lst.Count);
+			Assert.That(lst, Has.Count.EqualTo(1));
 		}
 
 		[Test]
@@ -154,7 +144,7 @@ namespace Tests.UserTests.Test4415
 			var qry2 = p.Where(x => qry.Contains(x.LanguageID));
 			var lst = qry2.ToList();
 
-			Assert.AreEqual(1, lst.Count);
+			Assert.That(lst, Has.Count.EqualTo(1));
 		}
 
 		[Test]
@@ -193,7 +183,7 @@ namespace Tests.UserTests.Test4415
 			var qry2 = p.Where(x => qry.Contains(x.LanguageID));
 			var lst = qry2.ToList();
 
-			Assert.AreEqual(expected.Count, lst.Count);
+			Assert.That(lst, Has.Count.EqualTo(expected.Count));
 		}
 	}
 }

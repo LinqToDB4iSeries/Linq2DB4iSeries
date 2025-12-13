@@ -1,9 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
+
 using LinqToDB;
 using LinqToDB.Interceptors;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -61,7 +63,7 @@ namespace Tests.UserTests
 				var query = db.GetTable<Order>().LoadWith(o => o.Details).Where(o => o.OrderId == 1);
 				var order = query.FirstOrDefault();
 
-				Assert.AreEqual(2, interceptor.Count);
+				Assert.That(interceptor.Count, Is.EqualTo(2));
 			}
 		}
 

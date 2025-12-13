@@ -1,10 +1,15 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
+
 using LinqToDB;
-using LinqToDB.Common;
+using LinqToDB.Data;
+using LinqToDB.Internal.SqlQuery;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
-using Tests.Model;
+
+using Shouldly;
 
 namespace Tests.xUpdate
 {
@@ -31,7 +36,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(2, rows, context);
 
-				Assert.AreEqual(6, result.Count);
+				Assert.That(result, Has.Count.EqualTo(6));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -62,7 +67,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(1, rows, context);
 
-				Assert.AreEqual(5, result.Count);
+				Assert.That(result, Has.Count.EqualTo(5));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -100,7 +105,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(2, rows, context);
 
-				Assert.AreEqual(6, result.Count);
+				Assert.That(result, Has.Count.EqualTo(6));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -134,7 +139,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(1, rows, context);
 
-				Assert.AreEqual(5, result.Count);
+				Assert.That(result, Has.Count.EqualTo(5));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -164,7 +169,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(1, rows, context);
 
-				Assert.AreEqual(5, result.Count);
+				Assert.That(result, Has.Count.EqualTo(5));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -205,19 +210,21 @@ namespace Tests.xUpdate
 
 				AssertRowCount(1, rows, context);
 
-				Assert.AreEqual(5, result.Count);
+				Assert.That(result, Has.Count.EqualTo(5));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
 				AssertRow(InitialTargetData[2], result[2], null, 203);
 				AssertRow(InitialTargetData[3], result[3], null, null);
-
-				Assert.AreEqual(InitialSourceData[2].Id, result[4].Id);
-				Assert.IsNull(result[4].Field1);
-				Assert.IsNull(result[4].Field2);
-				Assert.IsNull(result[4].Field3);
-				Assert.AreEqual(15, result[4].Field4);
-				Assert.IsNull(result[4].Field5);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[4].Id, Is.EqualTo(InitialSourceData[2].Id));
+					Assert.That(result[4].Field1, Is.Null);
+					Assert.That(result[4].Field2, Is.Null);
+					Assert.That(result[4].Field3, Is.Null);
+					Assert.That(result[4].Field4, Is.EqualTo(15));
+					Assert.That(result[4].Field5, Is.Null);
+				}
 			}
 		}
 
@@ -249,19 +256,21 @@ namespace Tests.xUpdate
 
 				AssertRowCount(1, rows, context);
 
-				Assert.AreEqual(5, result.Count);
+				Assert.That(result, Has.Count.EqualTo(5));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
 				AssertRow(InitialTargetData[2], result[2], null, 203);
 				AssertRow(InitialTargetData[3], result[3], null, null);
-
-				Assert.AreEqual(InitialSourceData[3].Id, result[4].Id);
-				Assert.IsNull(result[4].Field1);
-				Assert.AreEqual(216, result[4].Field2);
-				Assert.IsNull(result[4].Field3);
-				Assert.AreEqual(18, result[4].Field4);
-				Assert.IsNull(result[4].Field5);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[4].Id, Is.EqualTo(InitialSourceData[3].Id));
+					Assert.That(result[4].Field1, Is.Null);
+					Assert.That(result[4].Field2, Is.EqualTo(216));
+					Assert.That(result[4].Field3, Is.Null);
+					Assert.That(result[4].Field4, Is.EqualTo(18));
+					Assert.That(result[4].Field5, Is.Null);
+				}
 			}
 		}
 
@@ -285,7 +294,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(2, rows, context);
 
-				Assert.AreEqual(6, result.Count);
+				Assert.That(result, Has.Count.EqualTo(6));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -307,16 +316,18 @@ namespace Tests.xUpdate
 
 				var rows = table
 					.Merge()
-					.Using(Array<TestMapping1>.Empty)
+					.Using(Array.Empty<TestMapping1>())
 					.OnTargetKey()
 					.InsertWhenNotMatched()
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.Zero);
 
-				Assert.AreEqual(0, rows);
-
-				Assert.AreEqual(4, result.Count);
+					Assert.That(result, Has.Count.EqualTo(4));
+				}
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -348,7 +359,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(1, rows, context);
 
-				Assert.AreEqual(5, result.Count);
+				Assert.That(result, Has.Count.EqualTo(5));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -378,7 +389,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(1, rows, context);
 
-				Assert.AreEqual(5, result.Count);
+				Assert.That(result, Has.Count.EqualTo(5));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -399,16 +410,18 @@ namespace Tests.xUpdate
 
 				var rows = table
 					.Merge()
-					.Using(Array<TestMapping1>.Empty)
+					.Using(Array.Empty<TestMapping1>())
 					.On((t, s) => t.Id == s.Id && s.Field3 != null)
 					.InsertWhenNotMatched()
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.Zero);
 
-				Assert.AreEqual(0, rows);
-
-				Assert.AreEqual(4, result.Count);
+					Assert.That(result, Has.Count.EqualTo(4));
+				}
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -418,13 +431,11 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void InsertFromCrossJoinedSourceQuery2Workaround([MergeDataContextSource(false)] string context)
+		public void InsertFromCrossJoinedSourceQuery2Workaround([MergeDataContextSource(false, ProviderName.DB2)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = (DataConnection)GetDataContext(context))
 			{
 				PrepareData(db);
-
-				var table = GetTarget(db);
 
 				var source = from t1 in db.GetTable<TestMapping1>().TableName("TestMerge1")
 							 from t2 in db.GetTable<TestMapping1>().TableName("TestMerge2")
@@ -442,23 +453,34 @@ namespace Tests.xUpdate
 
 				var results = source.ToList();
 
-				// 5 commas after selected columns and 1 comma in join
-				var explicitJoin = db.LastQuery!.Contains("JOIN");
-				Assert.AreEqual(explicitJoin ? 5 : 6, db.LastQuery!.Count(c => c == ','));
+				var selectQuery = source.GetSelectQuery();
+				selectQuery.Select.Columns.Count.ShouldBe(6);
 
-				Assert.AreEqual(16, results.Count);
+				if (db.DataProvider.SqlProviderFlags.IsCrossJoinSupported)
+				{
+					selectQuery.Select.From.Tables.Count.ShouldBe(1);
+					selectQuery.Select.From.Tables[0].Joins.Count.ShouldBe(1);
+					selectQuery.Select.From.Tables[0].Joins[0].JoinType.ShouldBe(JoinType.Cross);
+				}
+				else
+				{
+					selectQuery.Select.From.Tables.Count.ShouldBe(2);
+					selectQuery.Select.From.Tables[0].Joins.Count.ShouldBe(0);
+					selectQuery.Select.From.Tables[1].Joins.Count.ShouldBe(0);
+				}
+
+				results.Count.ShouldBe(16);
 			}
 		}
 
-		[ActiveIssue(896, Details = "Selects 10 columns instead of 6. Also see InsertFromCrossJoinedSourceQuery2Workaround for workaround")]
+		// Probably wrong test
+		[ActiveIssue]
 		[Test]
 		public void InsertFromCrossJoinedSourceQuery2([MergeDataContextSource(false)] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				PrepareData(db);
-
-				var table = GetTarget(db);
 
 				var source = from t1 in db.GetTable<TestMapping1>().TableName("TestMerge1")
 							 from t2 in db.GetTable<TestMapping1>().TableName("TestMerge2")
@@ -475,10 +497,10 @@ namespace Tests.xUpdate
 
 				var results = source.ToList();
 
-				// 5 commas after selected columns and 1 comma in join
-				Assert.AreEqual(6, db.LastQuery!.Count(c => c == ','));
+				var selectQuery = source.GetSelectQuery();
+				selectQuery.Select.Columns.Count.ShouldBe(6);
 
-				Assert.AreEqual(16, results.Count);
+				results.Count.ShouldBe(16);
 			}
 		}
 
@@ -551,23 +573,25 @@ namespace Tests.xUpdate
 
 				AssertRowCount(3, rows, context);
 
-				Assert.AreEqual(4, result.Count);
+				Assert.That(result, Has.Count.EqualTo(4));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[0].Id, Is.EqualTo(11));
+					Assert.That(result[0].LeftId, Is.EqualTo(100));
+					Assert.That(result[0].RightId, Is.EqualTo(200));
 
-				Assert.AreEqual(11,  result[0].Id);
-				Assert.AreEqual(100, result[0].LeftId);
-				Assert.AreEqual(200, result[0].RightId);
+					Assert.That(result[1].Id, Is.EqualTo(12));
+					Assert.That(result[1].LeftId, Is.EqualTo(2));
+					Assert.That(result[1].RightId, Is.EqualTo(10));
 
-				Assert.AreEqual(12, result[1].Id);
-				Assert.AreEqual(2,  result[1].LeftId);
-				Assert.AreEqual(10, result[1].RightId);
+					Assert.That(result[2].Id, Is.EqualTo(21));
+					Assert.That(result[2].LeftId, Is.EqualTo(1));
+					Assert.That(result[2].RightId, Is.EqualTo(20));
 
-				Assert.AreEqual(21, result[2].Id);
-				Assert.AreEqual(1,  result[2].LeftId);
-				Assert.AreEqual(20, result[2].RightId);
-
-				Assert.AreEqual(22, result[3].Id);
-				Assert.AreEqual(2,  result[3].LeftId);
-				Assert.AreEqual(20, result[3].RightId);
+					Assert.That(result[3].Id, Is.EqualTo(22));
+					Assert.That(result[3].LeftId, Is.EqualTo(2));
+					Assert.That(result[3].RightId, Is.EqualTo(20));
+				}
 			}
 		}
 
@@ -650,23 +674,25 @@ namespace Tests.xUpdate
 
 				AssertRowCount(3, rows, context);
 
-				Assert.AreEqual(4, result.Count);
+				Assert.That(result, Has.Count.EqualTo(4));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[0].Id, Is.EqualTo(11));
+					Assert.That(result[0].LeftId, Is.EqualTo(100));
+					Assert.That(result[0].RightId, Is.EqualTo(200));
 
-				Assert.AreEqual(11, result[0].Id);
-				Assert.AreEqual(100, result[0].LeftId);
-				Assert.AreEqual(200, result[0].RightId);
+					Assert.That(result[1].Id, Is.EqualTo(12));
+					Assert.That(result[1].LeftId, Is.EqualTo(2));
+					Assert.That(result[1].RightId, Is.EqualTo(10));
 
-				Assert.AreEqual(12, result[1].Id);
-				Assert.AreEqual(2, result[1].LeftId);
-				Assert.AreEqual(10, result[1].RightId);
+					Assert.That(result[2].Id, Is.EqualTo(21));
+					Assert.That(result[2].LeftId, Is.EqualTo(1));
+					Assert.That(result[2].RightId, Is.EqualTo(20));
 
-				Assert.AreEqual(21, result[2].Id);
-				Assert.AreEqual(1, result[2].LeftId);
-				Assert.AreEqual(20, result[2].RightId);
-
-				Assert.AreEqual(22, result[3].Id);
-				Assert.AreEqual(2, result[3].LeftId);
-				Assert.AreEqual(20, result[3].RightId);
+					Assert.That(result[3].Id, Is.EqualTo(22));
+					Assert.That(result[3].LeftId, Is.EqualTo(2));
+					Assert.That(result[3].RightId, Is.EqualTo(20));
+				}
 			}
 		}
 
@@ -687,8 +713,8 @@ namespace Tests.xUpdate
 						.InsertWhenNotMatched()
 						.Merge())!;
 
-				Assert.IsInstanceOf<LinqToDBException>(exception);
-				Assert.AreEqual("'s.Field2' cannot be converted to SQL.", exception.Message);
+				Assert.That(exception, Is.InstanceOf<LinqToDBException>());
+				Assert.That(exception.Message,  Does.EndWith("'source.Field2' could not be converted to SQL."));
 			}
 		}
 
@@ -713,9 +739,9 @@ namespace Tests.xUpdate
 						})
 						.Merge())!;
 
-				Assert.IsInstanceOf<LinqToDBException>(exception);
-				Assert.AreEqual("'s.Field3' cannot be converted to SQL.", exception.Message);
-				//Assert.AreEqual("Column Field3 doesn't exist in source", exception.Message);
+				Assert.That(exception, Is.InstanceOf<LinqToDBException>());
+
+				Assert.That(exception.Message,  Does.EndWith("s.Field3' could not be converted to SQL."));
 			}
 		}
 		#endregion
@@ -723,7 +749,7 @@ namespace Tests.xUpdate
 		#region Insert<TEntity>(predicate)
 		[Test]
 		public void SameSourceInsertWithPredicate([MergeDataContextSource(
-			TestProvName.AllInformix, TestProvName.AllSapHana, ProviderName.Firebird)]
+			TestProvName.AllInformix, TestProvName.AllSapHana, ProviderName.Firebird25)]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -751,19 +777,21 @@ namespace Tests.xUpdate
 
 				AssertRowCount(1, rows, context);
 
-				Assert.AreEqual(5, result.Count);
+				Assert.That(result, Has.Count.EqualTo(5));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
 				AssertRow(InitialTargetData[2], result[2], null, 203);
 				AssertRow(InitialTargetData[3], result[3], null, null);
-
-				Assert.AreEqual(InitialSourceData[3].Id, result[4].Id);
-				Assert.IsNull(result[4].Field1);
-				Assert.AreEqual(216, result[4].Field2);
-				Assert.IsNull(result[4].Field3);
-				Assert.AreEqual(18, result[4].Field4);
-				Assert.IsNull(result[4].Field5);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[4].Id, Is.EqualTo(InitialSourceData[3].Id));
+					Assert.That(result[4].Field1, Is.Null);
+					Assert.That(result[4].Field2, Is.EqualTo(216));
+					Assert.That(result[4].Field3, Is.Null);
+					Assert.That(result[4].Field4, Is.EqualTo(18));
+					Assert.That(result[4].Field5, Is.Null);
+				}
 			}
 		}
 		#endregion
@@ -797,26 +825,28 @@ namespace Tests.xUpdate
 
 				AssertRowCount(2, rows, context);
 
-				Assert.AreEqual(6, result.Count);
+				Assert.That(result, Has.Count.EqualTo(6));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
 				AssertRow(InitialTargetData[2], result[2], null, 203);
 				AssertRow(InitialTargetData[3], result[3], null, null);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[4].Id, Is.EqualTo(InitialSourceData[2].Id + 10));
+					Assert.That(result[4].Field1, Is.EqualTo(123));
+					Assert.That(result[4].Field2, Is.EqualTo(InitialSourceData[2].Field1));
+					Assert.That(result[4].Field3, Is.EqualTo(4));
+					Assert.That(result[4].Field4, Is.EqualTo(999));
+					Assert.That(result[4].Field5, Is.EqualTo(888));
 
-				Assert.AreEqual(InitialSourceData[2].Id + 10, result[4].Id);
-				Assert.AreEqual(123, result[4].Field1);
-				Assert.AreEqual(InitialSourceData[2].Field1, result[4].Field2);
-				Assert.AreEqual(4, result[4].Field3);
-				Assert.AreEqual(999, result[4].Field4);
-				Assert.AreEqual(888, result[4].Field5);
-
-				Assert.AreEqual(InitialSourceData[3].Id + 10, result[5].Id);
-				Assert.AreEqual(123, result[5].Field1);
-				Assert.AreEqual(InitialSourceData[3].Field1, result[5].Field2);
-				Assert.IsNull(result[5].Field3);
-				Assert.AreEqual(999, result[5].Field4);
-				Assert.AreEqual(888, result[5].Field5);
+					Assert.That(result[5].Id, Is.EqualTo(InitialSourceData[3].Id + 10));
+					Assert.That(result[5].Field1, Is.EqualTo(123));
+					Assert.That(result[5].Field2, Is.EqualTo(InitialSourceData[3].Field1));
+					Assert.That(result[5].Field3, Is.Null);
+					Assert.That(result[5].Field4, Is.EqualTo(999));
+					Assert.That(result[5].Field5, Is.EqualTo(888));
+				}
 			}
 		}
 
@@ -850,26 +880,28 @@ namespace Tests.xUpdate
 
 				AssertRowCount(2, rows, context);
 
-				Assert.AreEqual(6, result.Count);
+				Assert.That(result, Has.Count.EqualTo(6));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
 				AssertRow(InitialTargetData[2], result[2], null, 203);
 				AssertRow(InitialTargetData[3], result[3], null, null);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[4].Id, Is.EqualTo(InitialSourceData[2].Id + 10));
+					Assert.That(result[4].Field1, Is.EqualTo(123));
+					Assert.That(result[4].Field2, Is.EqualTo(InitialSourceData[2].Field1));
+					Assert.That(result[4].Field3, Is.EqualTo(4));
+					Assert.That(result[4].Field4, Is.EqualTo(999));
+					Assert.That(result[4].Field5, Is.EqualTo(888));
 
-				Assert.AreEqual(InitialSourceData[2].Id + 10, result[4].Id);
-				Assert.AreEqual(123, result[4].Field1);
-				Assert.AreEqual(InitialSourceData[2].Field1, result[4].Field2);
-				Assert.AreEqual(4, result[4].Field3);
-				Assert.AreEqual(999, result[4].Field4);
-				Assert.AreEqual(888, result[4].Field5);
-
-				Assert.AreEqual(InitialSourceData[3].Id + 10, result[5].Id);
-				Assert.AreEqual(123, result[5].Field1);
-				Assert.AreEqual(10, result[5].Field2);
-				Assert.IsNull(result[5].Field3);
-				Assert.AreEqual(999, result[5].Field4);
-				Assert.AreEqual(888, result[5].Field5);
+					Assert.That(result[5].Id, Is.EqualTo(InitialSourceData[3].Id + 10));
+					Assert.That(result[5].Field1, Is.EqualTo(123));
+					Assert.That(result[5].Field2, Is.EqualTo(10));
+					Assert.That(result[5].Field3, Is.Null);
+					Assert.That(result[5].Field4, Is.EqualTo(999));
+					Assert.That(result[5].Field5, Is.EqualTo(888));
+				}
 			}
 		}
 
@@ -902,26 +934,28 @@ namespace Tests.xUpdate
 
 				AssertRowCount(2, rows, context);
 
-				Assert.AreEqual(6, result.Count);
+				Assert.That(result, Has.Count.EqualTo(6));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
 				AssertRow(InitialTargetData[2], result[2], null, 203);
 				AssertRow(InitialTargetData[3], result[3], null, null);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[4].Id, Is.EqualTo(InitialSourceData[2].Id + 10));
+					Assert.That(result[4].Field1, Is.EqualTo(123));
+					Assert.That(result[4].Field2, Is.EqualTo(InitialSourceData[2].Field1));
+					Assert.That(result[4].Field3, Is.EqualTo(4));
+					Assert.That(result[4].Field4, Is.EqualTo(999));
+					Assert.That(result[4].Field5, Is.EqualTo(888));
 
-				Assert.AreEqual(InitialSourceData[2].Id + 10, result[4].Id);
-				Assert.AreEqual(123, result[4].Field1);
-				Assert.AreEqual(InitialSourceData[2].Field1, result[4].Field2);
-				Assert.AreEqual(4, result[4].Field3);
-				Assert.AreEqual(999, result[4].Field4);
-				Assert.AreEqual(888, result[4].Field5);
-
-				Assert.AreEqual(InitialSourceData[3].Id + 10, result[5].Id);
-				Assert.AreEqual(123, result[5].Field1);
-				Assert.AreEqual(InitialSourceData[3].Field1, result[5].Field2);
-				Assert.IsNull(result[5].Field3);
-				Assert.AreEqual(999, result[5].Field4);
-				Assert.AreEqual(888, result[5].Field5);
+					Assert.That(result[5].Id, Is.EqualTo(InitialSourceData[3].Id + 10));
+					Assert.That(result[5].Field1, Is.EqualTo(123));
+					Assert.That(result[5].Field2, Is.EqualTo(InitialSourceData[3].Field1));
+					Assert.That(result[5].Field3, Is.Null);
+					Assert.That(result[5].Field4, Is.EqualTo(999));
+					Assert.That(result[5].Field5, Is.EqualTo(888));
+				}
 			}
 		}
 
@@ -953,26 +987,28 @@ namespace Tests.xUpdate
 
 				AssertRowCount(2, rows, context);
 
-				Assert.AreEqual(6, result.Count);
+				Assert.That(result, Has.Count.EqualTo(6));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
 				AssertRow(InitialTargetData[2], result[2], null, 203);
 				AssertRow(InitialTargetData[3], result[3], null, null);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[4].Id, Is.EqualTo(InitialSourceData[2].Id + 10));
+					Assert.That(result[4].Field1, Is.EqualTo(123));
+					Assert.That(result[4].Field2, Is.EqualTo(InitialSourceData[2].Field1));
+					Assert.That(result[4].Field3, Is.EqualTo(4));
+					Assert.That(result[4].Field4, Is.EqualTo(999));
+					Assert.That(result[4].Field5, Is.EqualTo(888));
 
-				Assert.AreEqual(InitialSourceData[2].Id + 10, result[4].Id);
-				Assert.AreEqual(123, result[4].Field1);
-				Assert.AreEqual(InitialSourceData[2].Field1, result[4].Field2);
-				Assert.AreEqual(4, result[4].Field3);
-				Assert.AreEqual(999, result[4].Field4);
-				Assert.AreEqual(888, result[4].Field5);
-
-				Assert.AreEqual(InitialSourceData[3].Id + 10, result[5].Id);
-				Assert.AreEqual(123, result[5].Field1);
-				Assert.AreEqual(InitialSourceData[3].Field1, result[5].Field2);
-				Assert.IsNull(result[5].Field3);
-				Assert.AreEqual(999, result[5].Field4);
-				Assert.AreEqual(888, result[5].Field5);
+					Assert.That(result[5].Id, Is.EqualTo(InitialSourceData[3].Id + 10));
+					Assert.That(result[5].Field1, Is.EqualTo(123));
+					Assert.That(result[5].Field2, Is.EqualTo(InitialSourceData[3].Field1));
+					Assert.That(result[5].Field3, Is.Null);
+					Assert.That(result[5].Field4, Is.EqualTo(999));
+					Assert.That(result[5].Field5, Is.EqualTo(888));
+				}
 			}
 		}
 		#endregion
@@ -980,7 +1016,7 @@ namespace Tests.xUpdate
 		#region Insert<TEntity>(predicate, create)
 		[Test]
 		public void SameSourceInsertWithPredicateAndCreate([MergeDataContextSource(
-			TestProvName.AllInformix, TestProvName.AllSapHana, ProviderName.Firebird)]
+			TestProvName.AllInformix, TestProvName.AllSapHana, ProviderName.Firebird25)]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -1010,28 +1046,30 @@ namespace Tests.xUpdate
 
 				AssertRowCount(1, rows, context);
 
-				Assert.AreEqual(5, result.Count);
+				Assert.That(result, Has.Count.EqualTo(5));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
 				AssertRow(InitialTargetData[2], result[2], null, 203);
 				AssertRow(InitialTargetData[3], result[3], null, null);
-
-				Assert.AreEqual(InitialSourceData[2].Id + 10, result[4].Id);
-				Assert.AreEqual(123, result[4].Field1);
-				Assert.AreEqual(InitialSourceData[2].Field1, result[4].Field2);
-				// SkipInsert is ignored by explicit insert. Is it correct?
-				//Assert.IsNull(result[4].Field3);
-				Assert.AreEqual(4, result[4].Field3);
-				Assert.AreEqual(999, result[4].Field4);
-				//Assert.IsNull(result[4].Field5);
-				Assert.AreEqual(888, result[4].Field5);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[4].Id, Is.EqualTo(InitialSourceData[2].Id + 10));
+					Assert.That(result[4].Field1, Is.EqualTo(123));
+					Assert.That(result[4].Field2, Is.EqualTo(InitialSourceData[2].Field1));
+					// SkipInsert is ignored by explicit insert. Is it correct?
+					//Assert.IsNull(result[4].Field3);
+					Assert.That(result[4].Field3, Is.EqualTo(4));
+					Assert.That(result[4].Field4, Is.EqualTo(999));
+					//Assert.IsNull(result[4].Field5);
+					Assert.That(result[4].Field5, Is.EqualTo(888));
+				}
 			}
 		}
 
 		[Test]
 		public void InsertWithPredicatePartialSourceProjection_KnownFieldInCondition([MergeDataContextSource(
-			TestProvName.AllInformix, TestProvName.AllSapHana, ProviderName.Firebird)]
+			TestProvName.AllInformix, TestProvName.AllSapHana, ProviderName.Firebird25)]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -1062,28 +1100,30 @@ namespace Tests.xUpdate
 
 				AssertRowCount(1, rows, context);
 
-				Assert.AreEqual(5, result.Count);
+				Assert.That(result, Has.Count.EqualTo(5));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
 				AssertRow(InitialTargetData[2], result[2], null, 203);
 				AssertRow(InitialTargetData[3], result[3], null, null);
-
-				Assert.AreEqual(InitialSourceData[2].Id + 10, result[4].Id);
-				Assert.AreEqual(123, result[4].Field1);
-				Assert.AreEqual(InitialSourceData[2].Field1, result[4].Field2);
-				// SkipInsert is ignored by explicit insert. Is it correct?
-				//Assert.IsNull(result[4].Field3);
-				Assert.AreEqual(4, result[4].Field3);
-				Assert.AreEqual(999, result[4].Field4);
-				//Assert.IsNull(result[4].Field5);
-				Assert.AreEqual(888, result[4].Field5);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[4].Id, Is.EqualTo(InitialSourceData[2].Id + 10));
+					Assert.That(result[4].Field1, Is.EqualTo(123));
+					Assert.That(result[4].Field2, Is.EqualTo(InitialSourceData[2].Field1));
+					// SkipInsert is ignored by explicit insert. Is it correct?
+					//Assert.IsNull(result[4].Field3);
+					Assert.That(result[4].Field3, Is.EqualTo(4));
+					Assert.That(result[4].Field4, Is.EqualTo(999));
+					//Assert.IsNull(result[4].Field5);
+					Assert.That(result[4].Field5, Is.EqualTo(888));
+				}
 			}
 		}
 
 		[Test]
 		public void SameSourceInsertWithPredicateAndCreatePartialSourceProjection_UnknownFieldInCondition([MergeDataContextSource(
-			TestProvName.AllInformix, TestProvName.AllSapHana, ProviderName.Firebird)]
+			TestProvName.AllInformix, TestProvName.AllSapHana, ProviderName.Firebird25)]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -1109,8 +1149,8 @@ namespace Tests.xUpdate
 						})
 					.Merge())!;
 
-				Assert.IsInstanceOf<LinqToDBException>(exception);
-				Assert.AreEqual("'_.Field2' cannot be converted to SQL.", exception.Message);
+				Assert.That(exception, Is.InstanceOf<LinqToDBException>());
+				Assert.That(exception.Message,  Does.EndWith(".Field2' could not be converted to SQL."));
 			}
 		}
 		#endregion
@@ -1144,7 +1184,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(2, rows, context);
 
-				Assert.AreEqual(6, result.Count);
+				Assert.That(result, Has.Count.EqualTo(6));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -1183,19 +1223,21 @@ namespace Tests.xUpdate
 
 				AssertRowCount(1, rows, context);
 
-				Assert.AreEqual(5, result.Count);
+				Assert.That(result, Has.Count.EqualTo(5));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
 				AssertRow(InitialTargetData[2], result[2], null, 203);
 				AssertRow(InitialTargetData[3], result[3], null, null);
-
-				Assert.AreEqual(InitialSourceData[2].Id, result[4].Id);
-				Assert.IsNull(result[4].Field1);
-				Assert.IsNull(result[4].Field2);
-				Assert.AreEqual(InitialSourceData[2].Field3, result[4].Field3);
-				Assert.AreEqual(4, result[4].Field4);
-				Assert.AreEqual(10, result[4].Field5);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[4].Id, Is.EqualTo(InitialSourceData[2].Id));
+					Assert.That(result[4].Field1, Is.Null);
+					Assert.That(result[4].Field2, Is.Null);
+					Assert.That(result[4].Field3, Is.EqualTo(InitialSourceData[2].Field3));
+					Assert.That(result[4].Field4, Is.EqualTo(4));
+					Assert.That(result[4].Field5, Is.EqualTo(10));
+				}
 			}
 		}
 
@@ -1235,26 +1277,28 @@ namespace Tests.xUpdate
 
 				AssertRowCount(2, rows, context);
 
-				Assert.AreEqual(6, result.Count);
+				Assert.That(result, Has.Count.EqualTo(6));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
 				AssertRow(InitialTargetData[2], result[2], null, 203);
 				AssertRow(InitialTargetData[3], result[3], null, null);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[4].Id, Is.EqualTo(InitialSourceData[2].Id));
+					Assert.That(result[4].Field1, Is.EqualTo(10));
+					Assert.That(result[4].Field2, Is.EqualTo(InitialSourceData[2].Field2));
+					Assert.That(result[4].Field3, Is.EqualTo(InitialSourceData[2].Field1));
+					Assert.That(result[4].Field4, Is.EqualTo(10));
+					Assert.That(result[4].Field5, Is.Null);
 
-				Assert.AreEqual(InitialSourceData[2].Id, result[4].Id);
-				Assert.AreEqual(10, result[4].Field1);
-				Assert.AreEqual(InitialSourceData[2].Field2, result[4].Field2);
-				Assert.AreEqual(InitialSourceData[2].Field1, result[4].Field3);
-				Assert.AreEqual(10, result[4].Field4);
-				Assert.IsNull(result[4].Field5);
-
-				Assert.AreEqual(InitialSourceData[3].Id, result[5].Id);
-				Assert.AreEqual(12, result[5].Field1);
-				Assert.AreEqual(InitialSourceData[3].Field2, result[5].Field2);
-				Assert.AreEqual(InitialSourceData[3].Field1, result[5].Field3);
-				Assert.AreEqual(12, result[5].Field4);
-				Assert.IsNull(result[5].Field5);
+					Assert.That(result[5].Id, Is.EqualTo(InitialSourceData[3].Id));
+					Assert.That(result[5].Field1, Is.EqualTo(12));
+					Assert.That(result[5].Field2, Is.EqualTo(InitialSourceData[3].Field2));
+					Assert.That(result[5].Field3, Is.EqualTo(InitialSourceData[3].Field1));
+					Assert.That(result[5].Field4, Is.EqualTo(12));
+					Assert.That(result[5].Field5, Is.Null);
+				}
 			}
 		}
 
@@ -1286,26 +1330,28 @@ namespace Tests.xUpdate
 
 				AssertRowCount(2, rows, context);
 
-				Assert.AreEqual(6, result.Count);
+				Assert.That(result, Has.Count.EqualTo(6));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
 				AssertRow(InitialTargetData[2], result[2], null, 203);
 				AssertRow(InitialTargetData[3], result[3], null, null);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[4].Id, Is.EqualTo(InitialSourceData[2].Id));
+					Assert.That(result[4].Field1, Is.EqualTo(InitialSourceData[2].Field1));
+					Assert.That(result[4].Field2, Is.EqualTo(InitialSourceData[2].Field5));
+					Assert.That(result[4].Field3, Is.EqualTo(InitialSourceData[2].Field2));
+					Assert.That(result[4].Field4, Is.EqualTo(InitialSourceData[2].Field4));
+					Assert.That(result[4].Field5, Is.Null);
 
-				Assert.AreEqual(InitialSourceData[2].Id, result[4].Id);
-				Assert.AreEqual(InitialSourceData[2].Field1, result[4].Field1);
-				Assert.AreEqual(InitialSourceData[2].Field5, result[4].Field2);
-				Assert.AreEqual(InitialSourceData[2].Field2, result[4].Field3);
-				Assert.AreEqual(InitialSourceData[2].Field4, result[4].Field4);
-				Assert.IsNull(result[4].Field5);
-
-				Assert.AreEqual(InitialSourceData[3].Id, result[5].Id);
-				Assert.AreEqual(InitialSourceData[3].Field1, result[5].Field1);
-				Assert.AreEqual(InitialSourceData[3].Field5, result[5].Field2);
-				Assert.AreEqual(InitialSourceData[3].Field2, result[5].Field3);
-				Assert.AreEqual(InitialSourceData[3].Field4, result[5].Field4);
-				Assert.AreEqual(116, result[5].Field5);
+					Assert.That(result[5].Id, Is.EqualTo(InitialSourceData[3].Id));
+					Assert.That(result[5].Field1, Is.EqualTo(InitialSourceData[3].Field1));
+					Assert.That(result[5].Field2, Is.EqualTo(InitialSourceData[3].Field5));
+					Assert.That(result[5].Field3, Is.EqualTo(InitialSourceData[3].Field2));
+					Assert.That(result[5].Field4, Is.EqualTo(InitialSourceData[3].Field4));
+					Assert.That(result[5].Field5, Is.EqualTo(116));
+				}
 			}
 		}
 
@@ -1320,7 +1366,7 @@ namespace Tests.xUpdate
 
 				var rows = table
 					.Merge()
-					.Using(Array<TestMapping2>.Empty)
+					.Using(Array.Empty<TestMapping2>())
 					.On((t, s) => t.Id == s.OtherId)
 					.InsertWhenNotMatched(s => new TestMapping1()
 					{
@@ -1334,10 +1380,12 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.Zero);
 
-				Assert.AreEqual(0, rows);
-
-				Assert.AreEqual(4, result.Count);
+					Assert.That(result, Has.Count.EqualTo(4));
+				}
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -1350,7 +1398,7 @@ namespace Tests.xUpdate
 		#region Insert<TTarget, TSource>(predicate, create)
 		[Test]
 		public void OtherSourceInsertWithPredicate([MergeDataContextSource(
-			TestProvName.AllInformix, TestProvName.AllSapHana, ProviderName.Firebird)]
+			TestProvName.AllInformix, TestProvName.AllSapHana, ProviderName.Firebird25)]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -1380,7 +1428,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(1, rows, context);
 
-				Assert.AreEqual(5, result.Count);
+				Assert.That(result, Has.Count.EqualTo(5));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -1392,7 +1440,7 @@ namespace Tests.xUpdate
 
 		[Test]
 		public void AnonymousSourceInsertWithPredicate([MergeDataContextSource(
-			TestProvName.AllInformix, TestProvName.AllSapHana, ProviderName.Firebird)]
+			TestProvName.AllInformix, TestProvName.AllSapHana, ProviderName.Firebird25)]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -1430,7 +1478,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(1, rows, context);
 
-				Assert.AreEqual(5, result.Count);
+				Assert.That(result, Has.Count.EqualTo(5));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -1442,7 +1490,7 @@ namespace Tests.xUpdate
 
 		[Test]
 		public void AnonymousListSourceInsertWithPredicate([MergeDataContextSource(
-			TestProvName.AllInformix, TestProvName.AllSapHana, ProviderName.Firebird)]
+			TestProvName.AllInformix, TestProvName.AllSapHana, ProviderName.Firebird25)]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -1487,13 +1535,13 @@ namespace Tests.xUpdate
 				AssertRow(InitialTargetData[2], result[2], null, 203);
 				AssertRow(InitialTargetData[3], result[3], null, null);
 				if (result.Count != 6)
-				AssertRow(InitialSourceData[3], result[4], null, 216);
+					AssertRow(InitialSourceData[3], result[4], null, 216);
 			}
 		}
 
 		[Test]
 		public void InsertReservedAndCaseNames([MergeDataContextSource(
-			TestProvName.AllInformix, TestProvName.AllSapHana, ProviderName.Firebird)]
+			TestProvName.AllInformix, TestProvName.AllSapHana, ProviderName.Firebird25)]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -1531,7 +1579,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(1, rows, context);
 
-				Assert.AreEqual(5, result.Count);
+				Assert.That(result, Has.Count.EqualTo(5));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -1543,7 +1591,7 @@ namespace Tests.xUpdate
 
 		[Test]
 		public void InsertReservedAndCaseNamesFromList([MergeDataContextSource(
-			TestProvName.AllInformix, TestProvName.AllSapHana, ProviderName.Firebird)]
+			TestProvName.AllInformix, TestProvName.AllSapHana, ProviderName.Firebird25)]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -1554,7 +1602,7 @@ namespace Tests.xUpdate
 
 				var rows = table
 					.Merge()
-					.Using(GetSource2(db).ToList().Select(_ => new
+					.Using(GetSource2(db).ToList().OrderBy(s => s.OtherId).Select(_ => new
 					{
 						@as    = _.OtherId,
 						take   = _.OtherField1,
@@ -1582,7 +1630,7 @@ namespace Tests.xUpdate
 				AssertRowCount(1, rows, context);
 
 				if (!context.IsAnyOf(ProviderName.Sybase))
-					Assert.AreEqual(5, result.Count);
+					Assert.That(result, Has.Count.EqualTo(5));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -1596,7 +1644,7 @@ namespace Tests.xUpdate
 
 		#region Async
 		[Test]
-		public async Task SameSourceInsertFromTableAsyn([MergeDataContextSource] string context)
+		public async Task SameSourceInsertFromTableAsync([MergeDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -1615,7 +1663,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(2, rows, context);
 
-				Assert.AreEqual(6, result.Count);
+				Assert.That(result, Has.Count.EqualTo(6));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -1627,7 +1675,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public async Task SameSourceInsertFromQueryAsyn([MergeDataContextSource] string context)
+		public async Task SameSourceInsertFromQueryAsync([MergeDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -1646,7 +1694,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(1, rows, context);
 
-				Assert.AreEqual(5, result.Count);
+				Assert.That(result, Has.Count.EqualTo(5));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -1700,27 +1748,29 @@ namespace Tests.xUpdate
 
 				AssertRowCount(4, rows, context);
 
-				Assert.AreEqual(5, result.Count);
+				Assert.That(result, Has.Count.EqualTo(5));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[0].Id, Is.Zero);
+					Assert.That(result[0].LeftId, Is.Zero);
+					Assert.That(result[0].RightId, Is.EqualTo(10));
 
-				Assert.AreEqual(0, result[0].Id);
-				Assert.AreEqual(0, result[0].LeftId);
-				Assert.AreEqual(10, result[0].RightId);
+					Assert.That(result[1].Id, Is.Zero);
+					Assert.That(result[1].LeftId, Is.Zero);
+					Assert.That(result[1].RightId, Is.EqualTo(10));
 
-				Assert.AreEqual(0, result[1].Id);
-				Assert.AreEqual(0, result[1].LeftId);
-				Assert.AreEqual(10, result[1].RightId);
+					Assert.That(result[2].Id, Is.Zero);
+					Assert.That(result[2].LeftId, Is.Zero);
+					Assert.That(result[2].RightId, Is.EqualTo(20));
 
-				Assert.AreEqual(0, result[2].Id);
-				Assert.AreEqual(0, result[2].LeftId);
-				Assert.AreEqual(20, result[2].RightId);
+					Assert.That(result[3].Id, Is.Zero);
+					Assert.That(result[3].LeftId, Is.Zero);
+					Assert.That(result[3].RightId, Is.EqualTo(20));
 
-				Assert.AreEqual(0, result[3].Id);
-				Assert.AreEqual(0, result[3].LeftId);
-				Assert.AreEqual(20, result[3].RightId);
-
-				Assert.AreEqual(11, result[4].Id);
-				Assert.AreEqual(100, result[4].LeftId);
-				Assert.AreEqual(200, result[4].RightId);
+					Assert.That(result[4].Id, Is.EqualTo(11));
+					Assert.That(result[4].LeftId, Is.EqualTo(100));
+					Assert.That(result[4].RightId, Is.EqualTo(200));
+				}
 			}
 		}
 
@@ -1765,27 +1815,29 @@ namespace Tests.xUpdate
 
 				AssertRowCount(4, rows, context);
 
-				Assert.AreEqual(5, result.Count);
+				Assert.That(result, Has.Count.EqualTo(5));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[0].Id, Is.Zero);
+					Assert.That(result[0].LeftId, Is.Zero);
+					Assert.That(result[0].RightId, Is.EqualTo(10));
 
-				Assert.AreEqual(0, result[0].Id);
-				Assert.AreEqual(0, result[0].LeftId);
-				Assert.AreEqual(10, result[0].RightId);
+					Assert.That(result[1].Id, Is.Zero);
+					Assert.That(result[1].LeftId, Is.Zero);
+					Assert.That(result[1].RightId, Is.EqualTo(10));
 
-				Assert.AreEqual(0, result[1].Id);
-				Assert.AreEqual(0, result[1].LeftId);
-				Assert.AreEqual(10, result[1].RightId);
+					Assert.That(result[2].Id, Is.Zero);
+					Assert.That(result[2].LeftId, Is.Zero);
+					Assert.That(result[2].RightId, Is.EqualTo(20));
 
-				Assert.AreEqual(0, result[2].Id);
-				Assert.AreEqual(0, result[2].LeftId);
-				Assert.AreEqual(20, result[2].RightId);
+					Assert.That(result[3].Id, Is.Zero);
+					Assert.That(result[3].LeftId, Is.Zero);
+					Assert.That(result[3].RightId, Is.EqualTo(20));
 
-				Assert.AreEqual(0, result[3].Id);
-				Assert.AreEqual(0, result[3].LeftId);
-				Assert.AreEqual(20, result[3].RightId);
-
-				Assert.AreEqual(11, result[4].Id);
-				Assert.AreEqual(100, result[4].LeftId);
-				Assert.AreEqual(200, result[4].RightId);
+					Assert.That(result[4].Id, Is.EqualTo(11));
+					Assert.That(result[4].LeftId, Is.EqualTo(100));
+					Assert.That(result[4].RightId, Is.EqualTo(200));
+				}
 			}
 		}
 	}

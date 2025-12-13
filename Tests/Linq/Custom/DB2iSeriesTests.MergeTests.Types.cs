@@ -5,6 +5,7 @@ using LinqToDB;
 using LinqToDB.Mapping;
 
 using NUnit.Framework;
+using static Tests.xUpdate.MergeTests;
 
 namespace Tests.DataProvider
 {
@@ -292,8 +293,11 @@ namespace Tests.DataProvider
 				var result1 = GetTypes1(db).OrderBy(_ => _.Id).ToList();
 				var result2 = GetTypes2(db).OrderBy(_ => _.Id).ToList();
 
-				Assert.AreEqual(InitialTypes1Data.Length, result1.Count);
-				Assert.AreEqual(InitialTypes2Data.Length, result2.Count);
+				Assert.Multiple(() =>
+				{
+					Assert.That(result1, Has.Count.EqualTo(InitialTypes1Data.Length));
+					Assert.That(result2, Has.Count.EqualTo(InitialTypes2Data.Length));
+				});
 
 				var provider = GetProviderName(context, out var _);
 				for (var i = 0; i < InitialTypes1Data.Length; i++)
@@ -310,62 +314,54 @@ namespace Tests.DataProvider
 
 		private void AssertTypesRow(MergeTypes expected, MergeTypes actual, string provider)
 		{
-			Assert.AreEqual(expected.Id, actual.Id);
-			Assert.AreEqual(expected.FieldInt32, actual.FieldInt32);
-			Assert.AreEqual(expected.FieldInt64, actual.FieldInt64);
-			Assert.AreEqual(expected.FieldBoolean, actual.FieldBoolean);
+			Assert.That(actual.Id, Is.EqualTo(expected.Id));
+			Assert.That(actual.FieldInt32, Is.EqualTo(expected.FieldInt32));
+			Assert.That(actual.FieldInt64, Is.EqualTo(expected.FieldInt64));
+			Assert.That(actual.FieldBoolean, Is.EqualTo(expected.FieldBoolean));
 			AssertString(expected.FieldString, actual.FieldString, provider);
 			AssertString(expected.FieldNString, actual.FieldNString, provider);
 			AssertChar(expected.FieldChar, actual.FieldChar, provider);
 			AssertChar(expected.FieldChar, actual.FieldChar, provider);
-			Assert.AreEqual(expected.FieldFloat, actual.FieldFloat);
-			Assert.AreEqual(expected.FieldDouble, actual.FieldDouble);
-			Assert.AreEqual(expected.FieldDateTime, actual.FieldDateTime);
-			Assert.AreEqual(expected.FieldBinary, actual.FieldBinary);
-			Assert.AreEqual(expected.FieldGuid, actual.FieldGuid);
-			Assert.AreEqual(expected.FieldDecimal, actual.FieldDecimal);
-			Assert.AreEqual(expected.FieldDate, actual.FieldDate);
+			Assert.That(actual.FieldFloat, Is.EqualTo(expected.FieldFloat));
+			Assert.That(actual.FieldDouble, Is.EqualTo(expected.FieldDouble));
+			Assert.That(actual.FieldDateTime, Is.EqualTo(expected.FieldDateTime));
+			Assert.That(actual.FieldBinary, Is.EqualTo(expected.FieldBinary));
+			Assert.That(actual.FieldGuid, Is.EqualTo(expected.FieldGuid));
+			Assert.That(actual.FieldDecimal, Is.EqualTo(expected.FieldDecimal));
+			Assert.That(actual.FieldDate, Is.EqualTo(expected.FieldDate));
 			AssertTime(expected.FieldTime, actual.FieldTime, provider);
 
 			if (expected.FieldEnumString == StringEnum.Value4)
-				Assert.IsNull(actual.FieldEnumString);
+				Assert.That(actual.FieldEnumString, Is.Null);
 			else
-				Assert.AreEqual(expected.FieldEnumString, actual.FieldEnumString);
+				Assert.That(actual.FieldEnumString, Is.EqualTo(expected.FieldEnumString));
 
 			if (expected.FieldEnumNumber == NumberEnum.Value4)
-				Assert.IsNull(actual.FieldEnumNumber);
+				Assert.That(actual.FieldEnumNumber, Is.Null);
 			else
-				Assert.AreEqual(expected.FieldEnumNumber, actual.FieldEnumNumber);
+				Assert.That(actual.FieldEnumNumber, Is.EqualTo(expected.FieldEnumNumber));
 		}
 
 		private static void AssertChar(char? expected, char? actual, string provider)
 		{
-			if (TestProvNameDb2i.IsiSeriesOleDb(provider) && expected == ' ')
-				expected = '\0';
-			
-			Assert.AreEqual(expected, actual);
+			Assert.That(actual, Is.EqualTo(expected));
 		}
 
 		private static void AssertString(string? expected, string? actual, string provider)
 		{
-			var exp = expected?.TrimEnd(' ');
-
-			if (TestProvNameDb2i.IsiSeriesOleDb(provider) && (exp?.EndsWith("\0")).GetValueOrDefault())
-				exp = exp?.TrimEnd(' ', '\0');
-
-			Assert.AreEqual(exp, actual);
+			Assert.That(actual, Is.EqualTo(expected));
 		}
 
 		private static void AssertTime(TimeSpan? expected, TimeSpan? actual, string provider)
 		{
 			if (expected != null)
 				expected = TimeSpan.FromTicks((expected.Value.Ticks / 10000000) * 10000000);
-			
-			Assert.AreEqual(expected, actual);
+
+			Assert.That(actual, Is.EqualTo(expected));
 		}
 
 		[Test]
-		public void TestTypesInsertByMerge([Tests.xUpdate.MergeTests.MergeDataContextSource()]
+		public void TestTypesInsertByMerge([MergeDataContextSource]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -382,8 +378,11 @@ namespace Tests.DataProvider
 				var result1 = GetTypes1(db).OrderBy(_ => _.Id).ToList();
 				var result2 = GetTypes2(db).OrderBy(_ => _.Id).ToList();
 
-				Assert.AreEqual(InitialTypes1Data.Length, result1.Count);
-				Assert.AreEqual(InitialTypes2Data.Length, result2.Count);
+				Assert.Multiple(() =>
+				{
+					Assert.That(result1, Has.Count.EqualTo(InitialTypes1Data.Length));
+					Assert.That(result2, Has.Count.EqualTo(InitialTypes2Data.Length));
+				});
 
 				var provider = GetProviderName(context, out var _);
 				for (var i = 0; i < InitialTypes1Data.Length; i++)
@@ -399,7 +398,7 @@ namespace Tests.DataProvider
 		}
 
 		[Test]
-		public void TestDB2NullsInSource([xUpdate.MergeTests.MergeDataContextSource()] string context)
+		public void TestDB2NullsInSource([MergeDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{

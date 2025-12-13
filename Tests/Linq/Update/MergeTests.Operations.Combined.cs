@@ -2,6 +2,7 @@
 
 using LinqToDB;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.xUpdate
@@ -29,7 +30,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(4, rows, context);
 
-				Assert.AreEqual(6, result.Count);
+				Assert.That(result, Has.Count.EqualTo(6));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -61,10 +62,12 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(4));
 
-				Assert.AreEqual(4, rows);
-
-				Assert.AreEqual(4, result.Count);
+					Assert.That(result, Has.Count.EqualTo(4));
+				}
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -73,12 +76,11 @@ namespace Tests.xUpdate
 			}
 		}
 
-		// ASE: just fails
 		[Test]
 		public void UpdateWithConditionDelete([MergeDataContextSource(
 			TestProvName.AllOracle,
 			TestProvName.AllSybase, TestProvName.AllInformix,
-			TestProvName.AllSapHana, ProviderName.Firebird)]
+			TestProvName.AllSapHana, ProviderName.Firebird25)]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -96,10 +98,12 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(2));
 
-				Assert.AreEqual(2, rows);
-
-				Assert.AreEqual(3, result.Count);
+					Assert.That(result, Has.Count.EqualTo(3));
+				}
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -114,7 +118,7 @@ namespace Tests.xUpdate
 			TestProvName.AllOracle,
 			TestProvName.AllInformix,
 			TestProvName.AllSapHana,
-			ProviderName.Firebird,
+			ProviderName.Firebird25,
 			ProviderName.Sybase)]
 			string context)
 		{
@@ -140,23 +144,24 @@ namespace Tests.xUpdate
 
 				AssertRowCount(3, rows, context);
 
-				Assert.AreEqual(3, result.Count);
+				Assert.That(result, Has.Count.EqualTo(3));
 
 				AssertRow(InitialTargetData[1], result[0], null, null);
 				AssertRow(InitialTargetData[2], result[1], null, 203);
-
-				Assert.AreEqual(4, result[2].Id);
-				Assert.AreEqual(222, result[2].Field1);
-				Assert.AreEqual(6, result[2].Field2);
-				Assert.IsNull(result[2].Field3);
-				Assert.IsNull(result[2].Field4);
-				Assert.IsNull(result[2].Field5);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[2].Id, Is.EqualTo(4));
+					Assert.That(result[2].Field1, Is.EqualTo(222));
+					Assert.That(result[2].Field2, Is.EqualTo(6));
+					Assert.That(result[2].Field3, Is.Null);
+					Assert.That(result[2].Field4, Is.Null);
+					Assert.That(result[2].Field5, Is.Null);
+				}
 			}
 		}
 
 		[Test]
-		public void InsertUpdateBySourceWithConditionDeleteBySource(
-			[IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
+		public void InsertUpdateBySourceWithConditionDeleteBySource([MergeNotMatchedBySourceDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -176,17 +181,18 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(4));
 
-				Assert.AreEqual(4, rows);
-
-				Assert.AreEqual(5, result.Count);
-
-				Assert.AreEqual(2, result[0].Id);
-				Assert.AreEqual(44, result[0].Field1);
-				Assert.IsNull(result[0].Field2);
-				Assert.IsNull(result[0].Field3);
-				Assert.IsNull(result[0].Field4);
-				Assert.IsNull(result[0].Field5);
+					Assert.That(result, Has.Count.EqualTo(5));
+					Assert.That(result[0].Id, Is.EqualTo(2));
+					Assert.That(result[0].Field1, Is.EqualTo(44));
+					Assert.That(result[0].Field2, Is.Null);
+					Assert.That(result[0].Field3, Is.Null);
+					Assert.That(result[0].Field4, Is.Null);
+					Assert.That(result[0].Field5, Is.Null);
+				}
 
 				AssertRow(InitialTargetData[2], result[1], null, 203);
 				AssertRow(InitialTargetData[3], result[2], null, null);
@@ -196,7 +202,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void InsertDeleteUpdateBySource([IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
+		public void InsertDeleteUpdateBySource([MergeNotMatchedBySourceDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -214,24 +220,25 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(6));
 
-				Assert.AreEqual(6, rows);
+					Assert.That(result, Has.Count.EqualTo(4));
+					Assert.That(result[0].Id, Is.EqualTo(1));
+					Assert.That(result[0].Field1, Is.EqualTo(44));
+					Assert.That(result[0].Field2, Is.Null);
+					Assert.That(result[0].Field3, Is.Null);
+					Assert.That(result[0].Field4, Is.Null);
+					Assert.That(result[0].Field5, Is.Null);
 
-				Assert.AreEqual(4, result.Count);
-
-				Assert.AreEqual(1, result[0].Id);
-				Assert.AreEqual(44, result[0].Field1);
-				Assert.IsNull(result[0].Field2);
-				Assert.IsNull(result[0].Field3);
-				Assert.IsNull(result[0].Field4);
-				Assert.IsNull(result[0].Field5);
-
-				Assert.AreEqual(2, result[1].Id);
-				Assert.AreEqual(44, result[1].Field1);
-				Assert.IsNull(result[1].Field2);
-				Assert.IsNull(result[1].Field3);
-				Assert.IsNull(result[1].Field4);
-				Assert.IsNull(result[1].Field5);
+					Assert.That(result[1].Id, Is.EqualTo(2));
+					Assert.That(result[1].Field1, Is.EqualTo(44));
+					Assert.That(result[1].Field2, Is.Null);
+					Assert.That(result[1].Field3, Is.Null);
+					Assert.That(result[1].Field4, Is.Null);
+					Assert.That(result[1].Field5, Is.Null);
+				}
 
 				AssertRow(InitialSourceData[2], result[2], null, null);
 				AssertRow(InitialSourceData[3], result[3], null, 216);
@@ -245,7 +252,7 @@ namespace Tests.xUpdate
 			TestProvName.AllPostgreSQL15Plus,
 			TestProvName.AllInformix,
 			TestProvName.AllSapHana,
-			ProviderName.Firebird)]
+			ProviderName.Firebird25)]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -256,7 +263,7 @@ namespace Tests.xUpdate
 
 				var rows = table
 					.Merge()
-					.Using(GetSource1(db).ToList().Concat(new[] { new TestMapping1() { Id = 1, Field1 = 123 } }))
+					.Using(GetSource1(db).ToList().Concat(new[] { new TestMapping1() { Id = 1, Field1 = 123 } }).OrderBy(r => r.Id))
 					.OnTargetKey()
 					.InsertWhenNotMatchedAnd(s => s.Id == 5)
 					.InsertWhenNotMatched()
@@ -271,7 +278,7 @@ namespace Tests.xUpdate
 
 				if (!context.IsAnyOf(ProviderName.Sybase))
 				{
-					Assert.AreEqual(4, result.Count);
+					Assert.That(result, Has.Count.EqualTo(4));
 
 					AssertRow(InitialTargetData[1], result[0], null, null);
 					AssertRow(InitialTargetData[2], result[1], null, 203);
@@ -302,7 +309,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(4, rows, context);
 
-				Assert.AreEqual(6, result.Count);
+				Assert.That(result, Has.Count.EqualTo(6));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -320,7 +327,7 @@ namespace Tests.xUpdate
 			TestProvName.AllPostgreSQL15Plus,
 			TestProvName.AllInformix,
 			TestProvName.AllSapHana,
-			ProviderName.Firebird)]
+			ProviderName.Firebird25)]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -341,7 +348,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(2, rows, context);
 
-				Assert.AreEqual(4, result.Count);
+				Assert.That(result, Has.Count.EqualTo(4));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -353,7 +360,7 @@ namespace Tests.xUpdate
 		[Test]
 		public void DeleteInsert([MergeDataContextSource(
 			TestProvName.AllOracle,
-			TestProvName.AllSapHana, ProviderName.Firebird)]
+			TestProvName.AllSapHana, ProviderName.Firebird25)]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -371,10 +378,12 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(4));
 
-				Assert.AreEqual(4, rows);
-
-				Assert.AreEqual(4, result.Count);
+					Assert.That(result, Has.Count.EqualTo(4));
+				}
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -383,12 +392,11 @@ namespace Tests.xUpdate
 			}
 		}
 
-		// ASE: just fails
 		[Test]
 		public void DeleteWithConditionUpdate([MergeDataContextSource(
 			TestProvName.AllOracle,
 			TestProvName.AllSybase, TestProvName.AllInformix,
-			TestProvName.AllSapHana, ProviderName.Firebird)]
+			TestProvName.AllSapHana, ProviderName.Firebird25)]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -406,10 +414,12 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(2));
 
-				Assert.AreEqual(2, rows);
-
-				Assert.AreEqual(3, result.Count);
+					Assert.That(result, Has.Count.EqualTo(3));
+				}
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -438,7 +448,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(2, rows, context);
 
-				Assert.AreEqual(3, result.Count);
+				Assert.That(result, Has.Count.EqualTo(3));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -446,12 +456,11 @@ namespace Tests.xUpdate
 			}
 		}
 
-		// ASE: just fails
 		[Test]
 		public void InsertUpdateWithConditionDeleteWithCondition([MergeDataContextSource(
 			TestProvName.AllOracle,
 			TestProvName.AllSybase, TestProvName.AllInformix,
-			TestProvName.AllSapHana, ProviderName.Firebird)]
+			TestProvName.AllSapHana, ProviderName.Firebird25)]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -470,10 +479,12 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(4));
 
-				Assert.AreEqual(4, rows);
-
-				Assert.AreEqual(5, result.Count);
+					Assert.That(result, Has.Count.EqualTo(5));
+				}
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -504,7 +515,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(4, rows, context);
 
-				Assert.AreEqual(5, result.Count);
+				Assert.That(result, Has.Count.EqualTo(5));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -514,12 +525,11 @@ namespace Tests.xUpdate
 			}
 		}
 
-		// ASE: just fails
 		[Test]
 		public void InsertDeleteWithConditionUpdate([MergeDataContextSource(
 			TestProvName.AllOracle,
 			TestProvName.AllSybase, TestProvName.AllInformix,
-			TestProvName.AllSapHana, ProviderName.Firebird)]
+			TestProvName.AllSapHana, ProviderName.Firebird25)]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -538,10 +548,12 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(4));
 
-				Assert.AreEqual(4, rows);
-
-				Assert.AreEqual(5, result.Count);
+					Assert.That(result, Has.Count.EqualTo(5));
+				}
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -551,12 +563,11 @@ namespace Tests.xUpdate
 			}
 		}
 
-		// ASE: just fails
 		[Test]
 		public void UpdateWithConditionInsertDeleteWithCondition([MergeDataContextSource(
 			TestProvName.AllOracle,
 			TestProvName.AllSybase, TestProvName.AllInformix,
-			TestProvName.AllSapHana, ProviderName.Firebird)]
+			TestProvName.AllSapHana, ProviderName.Firebird25)]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -575,10 +586,12 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(4));
 
-				Assert.AreEqual(4, rows);
-
-				Assert.AreEqual(5, result.Count);
+					Assert.That(result, Has.Count.EqualTo(5));
+				}
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -588,12 +601,11 @@ namespace Tests.xUpdate
 			}
 		}
 
-		// ASE: just fails
 		[Test]
 		public void UpdateWithConditionDeleteWithConditionInsert([MergeDataContextSource(
 			TestProvName.AllOracle,
 			TestProvName.AllSybase, TestProvName.AllInformix,
-			TestProvName.AllSapHana, ProviderName.Firebird)]
+			TestProvName.AllSapHana, ProviderName.Firebird25)]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -612,10 +624,12 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(4));
 
-				Assert.AreEqual(4, rows);
-
-				Assert.AreEqual(5, result.Count);
+					Assert.That(result, Has.Count.EqualTo(5));
+				}
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -625,12 +639,11 @@ namespace Tests.xUpdate
 			}
 		}
 
-		// ASE: just fails
 		[Test]
 		public void DeleteWithConditionUpdateWithConditionInsert([MergeDataContextSource(
 			TestProvName.AllOracle,
 			TestProvName.AllSybase, TestProvName.AllInformix,
-			TestProvName.AllSapHana, ProviderName.Firebird)]
+			TestProvName.AllSapHana, ProviderName.Firebird25)]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -649,10 +662,12 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(4));
 
-				Assert.AreEqual(4, rows);
-
-				Assert.AreEqual(5, result.Count);
+					Assert.That(result, Has.Count.EqualTo(5));
+				}
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -662,12 +677,11 @@ namespace Tests.xUpdate
 			}
 		}
 
-		// ASE: just fails
 		[Test]
 		public void DeleteWithConditionInsertUpdateWithCondition([MergeDataContextSource(
 			TestProvName.AllOracle,
 			TestProvName.AllSybase, TestProvName.AllInformix,
-			TestProvName.AllSapHana, ProviderName.Firebird)]
+			TestProvName.AllSapHana, ProviderName.Firebird25)]
 			string context)
 		{
 			using (var db = GetDataContext(context))
@@ -686,10 +700,12 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(4));
 
-				Assert.AreEqual(4, rows);
-
-				Assert.AreEqual(5, result.Count);
+					Assert.That(result, Has.Count.EqualTo(5));
+				}
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -720,7 +736,7 @@ namespace Tests.xUpdate
 
 				AssertRowCount(4, rows, context);
 
-				Assert.AreEqual(5, result.Count);
+				Assert.That(result, Has.Count.EqualTo(5));
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[1], result[1], null, null);
@@ -735,7 +751,6 @@ namespace Tests.xUpdate
 		{
 			[PrimaryKey] public int ID { get; set; }
 		}
-
 
 		[Test]
 		public void InsertUpdatePKOnly([MergeDataContextSource] string context)
@@ -760,18 +775,18 @@ namespace Tests.xUpdate
 
 				var result = table.OrderBy(_ => _.ID).ToList();
 
-				if (context.IsAnyOf(TestProvName.AllSybase))
-					Assert.AreEqual(3, rows);
-				else if (context.IsAnyOf(TestProvName.AllOracleNative))
-					Assert.AreEqual(-1, rows);
+				if (context.IsAnyOf(TestProvName.AllOracleNative))
+					Assert.That(rows, Is.EqualTo(-1));
 				else
-					Assert.AreEqual(2, rows);
+					Assert.That(rows, Is.EqualTo(2));
 
-				Assert.AreEqual(3, result.Count);
-
-				Assert.AreEqual(1, result[0].ID);
-				Assert.AreEqual(2, result[1].ID);
-				Assert.AreEqual(3, result[2].ID);
+				Assert.That(result, Has.Count.EqualTo(3));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[0].ID, Is.EqualTo(1));
+					Assert.That(result[1].ID, Is.EqualTo(2));
+					Assert.That(result[2].ID, Is.EqualTo(3));
+				}
 			}
 		}
 	}

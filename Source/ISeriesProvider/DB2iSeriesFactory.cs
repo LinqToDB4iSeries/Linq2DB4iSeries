@@ -1,6 +1,9 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
+using System.Collections.Generic;
+
 using LinqToDB.Configuration;
+using LinqToDB.Internal.DataProvider;
+using LinqToDB.Internal.DataProvider.DB2;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
@@ -23,7 +26,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 #if NETFRAMEWORK
 				DB2iSeriesAccessClientProviderAdapter.AssemblyName => DB2iSeriesProviderType.AccessClient,
 #endif
-				DB2.DB2ProviderAdapter.AssemblyName => DB2iSeriesProviderType.DB2,
+				DB2ProviderAdapter.AssemblyName => DB2iSeriesProviderType.DB2,
 				OleDbProviderAdapter.AssemblyName => DB2iSeriesProviderType.OleDb,
 				OdbcProviderAdapter.AssemblyName => DB2iSeriesProviderType.Odbc,
 				null => DB2iSeriesProviderOptions.Defaults.ProviderType,

@@ -3,7 +3,10 @@ using System.Linq;
 
 using LinqToDB;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
+
+using Shouldly;
 
 namespace Tests.UserTests
 {
@@ -155,7 +158,7 @@ namespace Tests.UserTests
 
 				var result = query3.ToArray();
 
-				Assert.AreEqual(3, query3.GetSelectQuery().Select.Columns.Count);
+				query3.GetSelectQuery().Select.Columns.Count.ShouldBe(3);
 			}
 		}
 

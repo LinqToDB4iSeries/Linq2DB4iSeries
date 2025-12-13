@@ -9,7 +9,7 @@ namespace Tests.xUpdate
 	public partial class MergeTests
 	{
 		[Test]
-		public void SameSourceUpdateBySource([IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
+		public void SameSourceUpdateBySource([MergeNotMatchedBySourceDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -33,32 +33,36 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(2));
 
-				Assert.AreEqual(2, rows);
-
-				Assert.AreEqual(4, result.Count);
+					Assert.That(result, Has.Count.EqualTo(4));
+				}
 
 				AssertRow(InitialTargetData[2], result[0], null, 203);
 				AssertRow(InitialTargetData[3], result[1], null, null);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[2].Id, Is.EqualTo(12));
+					Assert.That(result[2].Field1, Is.Null);
+					Assert.That(result[2].Field2, Is.EqualTo(13));
+					Assert.That(result[2].Field3, Is.Null);
+					Assert.That(result[2].Field4, Is.Null);
+					Assert.That(result[2].Field5, Is.Null);
 
-				Assert.AreEqual(12, result[2].Id);
-				Assert.IsNull(result[2].Field1);
-				Assert.AreEqual(13, result[2].Field2);
-				Assert.IsNull(result[2].Field3);
-				Assert.IsNull(result[2].Field4);
-				Assert.IsNull(result[2].Field5);
-
-				Assert.AreEqual(24, result[3].Id);
-				Assert.AreEqual(4, result[3].Field1);
-				Assert.AreEqual(26, result[3].Field2);
-				Assert.IsNull(result[3].Field3);
-				Assert.IsNull(result[3].Field4);
-				Assert.IsNull(result[3].Field5);
+					Assert.That(result[3].Id, Is.EqualTo(24));
+					Assert.That(result[3].Field1, Is.EqualTo(4));
+					Assert.That(result[3].Field2, Is.EqualTo(26));
+					Assert.That(result[3].Field3, Is.Null);
+					Assert.That(result[3].Field4, Is.Null);
+					Assert.That(result[3].Field5, Is.Null);
+				}
 			}
 		}
 
 		[Test]
-		public void SameSourceUpdateBySourceWithPredicate([IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
+		public void SameSourceUpdateBySourceWithPredicate([MergeNotMatchedBySourceDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -84,27 +88,30 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(1));
 
-				Assert.AreEqual(1, rows);
-
-				Assert.AreEqual(4, result.Count);
+					Assert.That(result, Has.Count.EqualTo(4));
+				}
 
 				AssertRow(InitialTargetData[1], result[0], null, null);
 				AssertRow(InitialTargetData[2], result[1], null, 203);
 				AssertRow(InitialTargetData[3], result[2], null, null);
-
-				Assert.AreEqual(123, result[3].Id);
-				Assert.AreEqual(11, result[3].Field1);
-				Assert.IsNull(result[3].Field2);
-				Assert.IsNull(result[3].Field3);
-				Assert.IsNull(result[3].Field4);
-				Assert.IsNull(result[3].Field5);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[3].Id, Is.EqualTo(123));
+					Assert.That(result[3].Field1, Is.EqualTo(11));
+					Assert.That(result[3].Field2, Is.Null);
+					Assert.That(result[3].Field3, Is.Null);
+					Assert.That(result[3].Field4, Is.Null);
+					Assert.That(result[3].Field5, Is.Null);
+				}
 			}
 		}
 
 		[Test]
-		public void OnConditionPartialSourceProjection_KnownFieldInCondition(
-			[IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
+		public void OnConditionPartialSourceProjection_KnownFieldInCondition([MergeNotMatchedBySourceDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -128,32 +135,36 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(2));
 
-				Assert.AreEqual(2, rows);
-
-				Assert.AreEqual(4, result.Count);
+					Assert.That(result, Has.Count.EqualTo(4));
+				}
 
 				AssertRow(InitialTargetData[2], result[0], null, 203);
 				AssertRow(InitialTargetData[3], result[1], null, null);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[2].Id, Is.EqualTo(11));
+					Assert.That(result[2].Field1, Is.Null);
+					Assert.That(result[2].Field2, Is.EqualTo(10));
+					Assert.That(result[2].Field3, Is.Null);
+					Assert.That(result[2].Field4, Is.Null);
+					Assert.That(result[2].Field5, Is.Null);
 
-				Assert.AreEqual(11, result[2].Id);
-				Assert.IsNull(result[2].Field1);
-				Assert.AreEqual(10, result[2].Field2);
-				Assert.IsNull(result[2].Field3);
-				Assert.IsNull(result[2].Field4);
-				Assert.IsNull(result[2].Field5);
-
-				Assert.AreEqual(12, result[3].Id);
-				Assert.IsNull(result[3].Field1);
-				Assert.AreEqual(20, result[3].Field2);
-				Assert.IsNull(result[3].Field3);
-				Assert.IsNull(result[3].Field4);
-				Assert.AreEqual(2, result[3].Field5);
+					Assert.That(result[3].Id, Is.EqualTo(12));
+					Assert.That(result[3].Field1, Is.Null);
+					Assert.That(result[3].Field2, Is.EqualTo(20));
+					Assert.That(result[3].Field3, Is.Null);
+					Assert.That(result[3].Field4, Is.Null);
+					Assert.That(result[3].Field5, Is.EqualTo(2));
+				}
 			}
 		}
 
 		[Test]
-		public void OtherSourceUpdateBySourceWithPredicate([IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
+		public void OtherSourceUpdateBySourceWithPredicate([MergeNotMatchedBySourceDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -179,34 +190,39 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(1));
 
-				Assert.AreEqual(1, rows);
-
-				Assert.AreEqual(4, result.Count);
+					Assert.That(result, Has.Count.EqualTo(4));
+				}
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
-
-				Assert.AreEqual(2, result[1].Id);
-				Assert.IsNull(result[1].Field1);
-				Assert.IsNull(result[1].Field2);
-				Assert.IsNull(result[1].Field3);
-				Assert.IsNull(result[1].Field4);
-				Assert.AreEqual(2, result[1].Field5);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[1].Id, Is.EqualTo(2));
+					Assert.That(result[1].Field1, Is.Null);
+					Assert.That(result[1].Field2, Is.Null);
+					Assert.That(result[1].Field3, Is.Null);
+					Assert.That(result[1].Field4, Is.Null);
+					Assert.That(result[1].Field5, Is.EqualTo(2));
+				}
 
 				AssertRow(InitialTargetData[2], result[2], null, 203);
-
-				Assert.AreEqual(4, result[3].Id);
-				Assert.AreEqual(5, result[3].Field1);
-				Assert.AreEqual(6, result[3].Field2);
-				Assert.IsNull(result[3].Field3);
-				Assert.IsNull(result[3].Field4);
-				Assert.IsNull(result[3].Field5);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[3].Id, Is.EqualTo(4));
+					Assert.That(result[3].Field1, Is.EqualTo(5));
+					Assert.That(result[3].Field2, Is.EqualTo(6));
+					Assert.That(result[3].Field3, Is.Null);
+					Assert.That(result[3].Field4, Is.Null);
+					Assert.That(result[3].Field5, Is.Null);
+				}
 			}
 		}
 
 		[Test]
-		public void AnonymousSourceUpdateBySourceWithPredicate(
-			[IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
+		public void AnonymousSourceUpdateBySourceWithPredicate([MergeNotMatchedBySourceDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -240,34 +256,39 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(1));
 
-				Assert.AreEqual(1, rows);
-
-				Assert.AreEqual(4, result.Count);
+					Assert.That(result, Has.Count.EqualTo(4));
+				}
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
-
-				Assert.AreEqual(2, result[1].Id);
-				Assert.IsNull(result[1].Field1);
-				Assert.IsNull(result[1].Field2);
-				Assert.IsNull(result[1].Field3);
-				Assert.IsNull(result[1].Field4);
-				Assert.AreEqual(2, result[1].Field5);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[1].Id, Is.EqualTo(2));
+					Assert.That(result[1].Field1, Is.Null);
+					Assert.That(result[1].Field2, Is.Null);
+					Assert.That(result[1].Field3, Is.Null);
+					Assert.That(result[1].Field4, Is.Null);
+					Assert.That(result[1].Field5, Is.EqualTo(2));
+				}
 
 				AssertRow(InitialTargetData[2], result[2], null, 203);
-
-				Assert.AreEqual(4, result[3].Id);
-				Assert.AreEqual(5, result[3].Field1);
-				Assert.AreEqual(6, result[3].Field2);
-				Assert.IsNull(result[3].Field3);
-				Assert.IsNull(result[3].Field4);
-				Assert.IsNull(result[3].Field5);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[3].Id, Is.EqualTo(4));
+					Assert.That(result[3].Field1, Is.EqualTo(5));
+					Assert.That(result[3].Field2, Is.EqualTo(6));
+					Assert.That(result[3].Field3, Is.Null);
+					Assert.That(result[3].Field4, Is.Null);
+					Assert.That(result[3].Field5, Is.Null);
+				}
 			}
 		}
 
 		[Test]
-		public void AnonymousListSourceUpdateBySourceWithPredicate(
-			[IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
+		public void AnonymousListSourceUpdateBySourceWithPredicate([MergeNotMatchedBySourceDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -301,33 +322,39 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(1));
 
-				Assert.AreEqual(1, rows);
-
-				Assert.AreEqual(4, result.Count);
+					Assert.That(result, Has.Count.EqualTo(4));
+				}
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
-
-				Assert.AreEqual(2, result[1].Id);
-				Assert.IsNull(result[1].Field1);
-				Assert.IsNull(result[1].Field2);
-				Assert.IsNull(result[1].Field3);
-				Assert.IsNull(result[1].Field4);
-				Assert.AreEqual(2, result[1].Field5);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[1].Id, Is.EqualTo(2));
+					Assert.That(result[1].Field1, Is.Null);
+					Assert.That(result[1].Field2, Is.Null);
+					Assert.That(result[1].Field3, Is.Null);
+					Assert.That(result[1].Field4, Is.Null);
+					Assert.That(result[1].Field5, Is.EqualTo(2));
+				}
 
 				AssertRow(InitialTargetData[2], result[2], null, 203);
-
-				Assert.AreEqual(4, result[3].Id);
-				Assert.AreEqual(5, result[3].Field1);
-				Assert.AreEqual(6, result[3].Field2);
-				Assert.IsNull(result[3].Field3);
-				Assert.IsNull(result[3].Field4);
-				Assert.IsNull(result[3].Field5);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[3].Id, Is.EqualTo(4));
+					Assert.That(result[3].Field1, Is.EqualTo(5));
+					Assert.That(result[3].Field2, Is.EqualTo(6));
+					Assert.That(result[3].Field3, Is.Null);
+					Assert.That(result[3].Field4, Is.Null);
+					Assert.That(result[3].Field5, Is.Null);
+				}
 			}
 		}
 
 		[Test]
-		public void UpdateBySourceReservedAndCaseNames([IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
+		public void UpdateBySourceReservedAndCaseNames([MergeNotMatchedBySourceDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -361,34 +388,39 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(1));
 
-				Assert.AreEqual(1, rows);
-
-				Assert.AreEqual(4, result.Count);
+					Assert.That(result, Has.Count.EqualTo(4));
+				}
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
-
-				Assert.AreEqual(2, result[1].Id);
-				Assert.IsNull(result[1].Field1);
-				Assert.IsNull(result[1].Field2);
-				Assert.IsNull(result[1].Field3);
-				Assert.IsNull(result[1].Field4);
-				Assert.AreEqual(2, result[1].Field5);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[1].Id, Is.EqualTo(2));
+					Assert.That(result[1].Field1, Is.Null);
+					Assert.That(result[1].Field2, Is.Null);
+					Assert.That(result[1].Field3, Is.Null);
+					Assert.That(result[1].Field4, Is.Null);
+					Assert.That(result[1].Field5, Is.EqualTo(2));
+				}
 
 				AssertRow(InitialTargetData[2], result[2], null, 203);
-
-				Assert.AreEqual(4, result[3].Id);
-				Assert.AreEqual(5, result[3].Field1);
-				Assert.AreEqual(6, result[3].Field2);
-				Assert.IsNull(result[3].Field3);
-				Assert.IsNull(result[3].Field4);
-				Assert.IsNull(result[3].Field5);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[3].Id, Is.EqualTo(4));
+					Assert.That(result[3].Field1, Is.EqualTo(5));
+					Assert.That(result[3].Field2, Is.EqualTo(6));
+					Assert.That(result[3].Field3, Is.Null);
+					Assert.That(result[3].Field4, Is.Null);
+					Assert.That(result[3].Field5, Is.Null);
+				}
 			}
 		}
 
 		[Test]
-		public void UpdateBySourceReservedAndCaseNamesFromList(
-			[IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
+		public void UpdateBySourceReservedAndCaseNamesFromList([MergeNotMatchedBySourceDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -398,7 +430,7 @@ namespace Tests.xUpdate
 
 				var rows = table
 					.Merge()
-					.Using(GetSource2(db).ToList().Select(_ => new
+					.Using(GetSource2(db).ToList().OrderBy(s => s.OtherId).Select(_ => new
 					{
 						From = _.OtherId,
 						Order = _.OtherField1,
@@ -422,28 +454,34 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(1));
 
-				Assert.AreEqual(1, rows);
-
-				Assert.AreEqual(4, result.Count);
+					Assert.That(result, Has.Count.EqualTo(4));
+				}
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
-
-				Assert.AreEqual(2, result[1].Id);
-				Assert.IsNull(result[1].Field1);
-				Assert.IsNull(result[1].Field2);
-				Assert.IsNull(result[1].Field3);
-				Assert.IsNull(result[1].Field4);
-				Assert.AreEqual(2, result[1].Field5);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[1].Id, Is.EqualTo(2));
+					Assert.That(result[1].Field1, Is.Null);
+					Assert.That(result[1].Field2, Is.Null);
+					Assert.That(result[1].Field3, Is.Null);
+					Assert.That(result[1].Field4, Is.Null);
+					Assert.That(result[1].Field5, Is.EqualTo(2));
+				}
 
 				AssertRow(InitialTargetData[2], result[2], null, 203);
-
-				Assert.AreEqual(4, result[3].Id);
-				Assert.AreEqual(5, result[3].Field1);
-				Assert.AreEqual(6, result[3].Field2);
-				Assert.IsNull(result[3].Field3);
-				Assert.IsNull(result[3].Field4);
-				Assert.IsNull(result[3].Field5);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(result[3].Id, Is.EqualTo(4));
+					Assert.That(result[3].Field1, Is.EqualTo(5));
+					Assert.That(result[3].Field2, Is.EqualTo(6));
+					Assert.That(result[3].Field3, Is.Null);
+					Assert.That(result[3].Field4, Is.Null);
+					Assert.That(result[3].Field5, Is.Null);
+				}
 			}
 		}
 	}

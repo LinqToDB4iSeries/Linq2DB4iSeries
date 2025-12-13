@@ -12,7 +12,6 @@ using System.Numerics;
 using System.Threading.Tasks;
 
 using LinqToDB;
-using LinqToDB.Common;
 using LinqToDB.Data;
 using LinqToDB.DataProvider;
 using LinqToDB.DataProvider.Access;
@@ -21,32 +20,47 @@ using LinqToDB.DataProvider.DB2;
 using LinqToDB.DataProvider.Firebird;
 using LinqToDB.DataProvider.Informix;
 using LinqToDB.DataProvider.MySql;
-using LinqToDB.DataProvider.Oracle;
-using LinqToDB.DataProvider.PostgreSQL;
 using LinqToDB.DataProvider.SapHana;
 using LinqToDB.DataProvider.SqlCe;
 using LinqToDB.DataProvider.SQLite;
 using LinqToDB.DataProvider.SqlServer;
 using LinqToDB.DataProvider.Sybase;
-using LinqToDB.Interceptors;
 using LinqToDB.Mapping;
 
 using FirebirdSql.Data.Types;
+
 using IBM.Data.DB2Types;
+
 using Microsoft.SqlServer.Types;
+
 using NUnit.Framework;
+
 using StackExchange.Profiling;
 using StackExchange.Profiling.Data;
+
 using Tests.DataProvider;
 using Tests.Model;
-#if NET472
+
+#if NETFRAMEWORK
 using IBM.Data.Informix;
 #endif
 
-using MySqlConnectorDateTime   = MySqlConnector::MySqlConnector.MySqlDateTime;
-using MySqlDataDateTime        = MySqlData::MySql.Data.Types.MySqlDateTime;
-using MySqlDataDecimal         = MySqlData::MySql.Data.Types.MySqlDecimal;
+using MySqlConnectorDateTime = MySqlConnector::MySqlConnector.MySqlDateTime;
+using MySqlDataDateTime = MySqlData::MySql.Data.Types.MySqlDateTime;
+using MySqlDataDecimal = MySqlData::MySql.Data.Types.MySqlDecimal;
 using MySqlDataMySqlConnection = MySqlData::MySql.Data.MySqlClient.MySqlConnection;
+
+using LinqToDB.Data.RetryPolicy;
+using LinqToDB.Internal.DataProvider.ClickHouse;
+using LinqToDB.Internal.DataProvider.DB2;
+using LinqToDB.Internal.DataProvider.Firebird;
+using LinqToDB.Internal.DataProvider.Informix;
+using LinqToDB.Internal.DataProvider.MySql;
+using LinqToDB.Internal.DataProvider.Oracle;
+using LinqToDB.Internal.DataProvider.PostgreSQL;
+using LinqToDB.Internal.DataProvider.SqlServer;
+using LinqToDB.Internal.DataProvider.SapHana;
+using LinqToDB.Internal.DataProvider.SqlCe;
 
 namespace Tests.Data
 {
@@ -68,7 +82,7 @@ namespace Tests.Data
 		{
 			public MiniProfilerDataContext(string configurationString)
 #pragma warning disable CA2000 // Dispose objects before losing scope
-				: base(GetDataProvider(), GetConnection(configurationString)) { }
+				: base(new DataOptions().UseConnection(GetDataProvider(), GetConnection(configurationString))) { }
 #pragma warning restore CA2000 // Dispose objects before losing scope
 
 			private static IDataProvider GetDataProvider()
@@ -79,7 +93,9 @@ namespace Tests.Data
 			private static DbConnection GetConnection(string configurationString)
 			{
 #pragma warning disable CA2000 // Dispose objects before losing scope
+#pragma warning disable CS0618 // Type or member is obsolete
 				var dbConnection = new SqlConnection(GetConnectionString(configurationString));
+#pragma warning restore CS0618 // Type or member is obsolete
 #pragma warning restore CA2000 // Dispose objects before losing scope
 				return new ProfiledDbConnection(dbConnection, MiniProfiler.Current);
 			}
@@ -98,75 +114,100 @@ namespace Tests.Data
 		// tests must check all code, that use provider-specific functionality for specific provider
 		// also test must create new instance of provider, to not benefit from existing instance
 		[Test]
-		public void TestAccessOleDb([IncludeDataSources(ProviderName.Access)] string context, [Values] ConnectionType type)
+		public void TestAccessOleDb([IncludeDataSources(TestProvName.AllAccessOleDb)] string context, [Values] ConnectionType type)
 		{
+			var trace = string.Empty;
+
 			var unmapped = type == ConnectionType.MiniProfilerNoMappings;
-#if NET472
-			using (var db = CreateDataConnection(new AccessOleDbDataProvider(), context, type, cs => new System.Data.OleDb.OleDbConnection(cs)))
-#else
-			using (var db = CreateDataConnection(new AccessOleDbDataProvider(), context, type, "System.Data.OleDb.OleDbConnection, System.Data.OleDb"))
-#endif
-			{
-				var trace = string.Empty;
-				db.OnTraceConnection += (TraceInfo ti) =>
+			var connectionString = DataConnection.GetConnectionString(context);
+
+#if NETFRAMEWORK
+			using (var db = CreateDataConnection(AccessTools.GetDataProvider(provider: AccessProvider.OleDb, connectionString: connectionString), context, type, cs => new System.Data.OleDb.OleDbConnection(cs), onTrace: ti =>
 				{
 					if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
 						trace = ti.SqlText;
-				};
-
-				// assert provider-specific parameter type name
-				// DateTime, DateTime2 => Date
-				// Text => LongVarChar
-				// NText => LongVarWChar
-				Assert.AreEqual(2, db.Execute<int>("SELECT ID FROM AllTypes WHERE datetimeDataType = @p", new DataParameter("@p", new DateTime(2012, 12, 12, 12, 12, 12), DataType.DateTime)));
-				Assert.True    (trace.Contains("DECLARE @p Date "));
-				Assert.AreEqual(2, db.Execute<int>("SELECT ID FROM AllTypes WHERE datetimeDataType = @p", new DataParameter("@p", new DateTime(2012, 12, 12, 12, 12, 12), DataType.DateTime2)));
-				Assert.True    (trace.Contains("DECLARE @p Date "));
-				Assert.AreEqual(2, db.Execute<int>("SELECT ID FROM AllTypes WHERE textDataType = @p", new DataParameter("@p", "567", DataType.Text)));
-				Assert.True    (trace.Contains("DECLARE @p LongVarChar(3)"));
-				Assert.AreEqual(2, db.Execute<int>("SELECT ID FROM AllTypes WHERE ntextDataType = @p", new DataParameter("@p", "111", DataType.NText)));
-				Assert.True    (trace.Contains("DECLARE @p LongVarWChar(3)"));
-
-				// TODO: reenable, when issue with OleDb transactions under .net core fixed
-#if NET472
-				// assert custom schema table access
-				var schema = db.DataProvider.GetSchemaProvider().GetSchema(db);
-				Assert.AreEqual(!unmapped, schema.Tables.Any(t => t.ForeignKeys.Count > 0));
+				}))
+#else
+			using (var db = CreateDataConnection(AccessTools.GetDataProvider(provider: AccessProvider.OleDb, connectionString: connectionString), context, type, "System.Data.OleDb.OleDbConnection, System.Data.OleDb", onTrace: ti =>
+			{
+				if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
+					trace = ti.SqlText;
+			}))
 #endif
+			{
+				using (Assert.EnterMultipleScope())
+				{
+					// assert provider-specific parameter type name
+					// DateTime, DateTime2 => Date
+					// Text => LongVarChar
+					// NText => LongVarWChar
+					Assert.That(db.Execute<int>("SELECT ID FROM AllTypes WHERE datetimeDataType = @p", new DataParameter("@p", new DateTime(2012, 12, 12, 12, 12, 12), DataType.DateTime)), Is.EqualTo(2));
+					Assert.That(trace, Does.Contain("DECLARE @p Date "));
+					Assert.That(db.Execute<int>("SELECT ID FROM AllTypes WHERE datetimeDataType = @p", new DataParameter("@p", new DateTime(2012, 12, 12, 12, 12, 12), DataType.DateTime2)), Is.EqualTo(2));
+					Assert.That(trace, Does.Contain("DECLARE @p Date "));
+					Assert.That(db.Execute<int>("SELECT ID FROM AllTypes WHERE textDataType = @p", new DataParameter("@p", "567", DataType.Text)), Is.EqualTo(2));
+					Assert.That(trace, Does.Contain("DECLARE @p LongVarChar(3)"));
+					Assert.That(db.Execute<int>("SELECT ID FROM AllTypes WHERE ntextDataType = @p", new DataParameter("@p", "111", DataType.NText)), Is.EqualTo(2));
+				}
+
+				Assert.That(trace, Does.Contain("DECLARE @p LongVarWChar(3)"));
 			}
 		}
 
+#if NETFRAMEWORK
 		[Test]
-		public void TestAccessODBC([IncludeDataSources(ProviderName.AccessOdbc)] string context, [Values] ConnectionType type)
+		public void TestAccessOleDbSchema([IncludeDataSources(TestProvName.AllAccessOleDb)] string context, [Values] ConnectionType type)
 		{
 			var unmapped = type == ConnectionType.MiniProfilerNoMappings;
-#if NET472
-			using (var db = CreateDataConnection(new AccessODBCDataProvider(), context, type, cs => new System.Data.Odbc.OdbcConnection(cs)))
-#else
-			using (var db = CreateDataConnection(new AccessODBCDataProvider(), context, type, "System.Data.Odbc.OdbcConnection, System.Data.Odbc"))
-#endif
+			var connectionString = DataConnection.GetConnectionString(context);
+			using (var db = CreateDataConnection(AccessTools.GetDataProvider(provider: AccessProvider.OleDb, connectionString: connectionString), context, type, cs => new System.Data.OleDb.OleDbConnection(cs)))
 			{
-				var trace = string.Empty;
-				db.OnTraceConnection += (TraceInfo ti) =>
+				// TODO: reenable for .net, when issue with OleDb transactions under .net core fixed
+				// assert custom schema table access
+				var schema = db.DataProvider.GetSchemaProvider().GetSchema(db);
+				Assert.That(schema.Tables.Any(t => t.ForeignKeys.Count > 0), Is.EqualTo(!unmapped));
+			}
+		}
+#endif
+
+		[Test]
+		public void TestAccessODBC([IncludeDataSources(TestProvName.AllAccessOdbc)] string context, [Values] ConnectionType type)
+		{
+			var trace = string.Empty;
+
+			var unmapped = type == ConnectionType.MiniProfilerNoMappings;
+			var connectionString = DataConnection.GetConnectionString(context);
+#if NETFRAMEWORK
+			using (var db = CreateDataConnection(AccessTools.GetDataProvider(provider: AccessProvider.ODBC, connectionString: connectionString), context, type, cs => new System.Data.Odbc.OdbcConnection(cs), onTrace: ti =>
 				{
 					if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
 						trace = ti.SqlText;
-				};
-
-				// assert provider-specific parameter type name
-				// Variant => Binary
-				Assert.AreEqual(2, db.Execute<int>("SELECT ID FROM AllTypes WHERE oleObjectDataType = ?", DataParameter.Variant("@p", new byte[] { 5, 6, 7, 8 })));
-				Assert.True(trace.Contains("DECLARE @p Binary("));
+				}))
+#else
+			using (var db = CreateDataConnection(AccessTools.GetDataProvider(provider: AccessProvider.ODBC, connectionString: connectionString), context, type, "System.Data.Odbc.OdbcConnection, System.Data.Odbc", onTrace: ti =>
+			{
+				if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
+					trace = ti.SqlText;
+			}))
+#endif
+			{
+				using (Assert.EnterMultipleScope())
+				{
+					// assert provider-specific parameter type name
+					// Variant => Binary
+					Assert.That(db.Execute<int>("SELECT ID FROM AllTypes WHERE oleObjectDataType = ?", DataParameter.Variant("@p", new byte[] { 5, 6, 7, 8 })), Is.EqualTo(2));
+					Assert.That(trace, Does.Contain("DECLARE @p Binary("));
+				}
 			}
 		}
 
 		[Test]
 		public void TestSapHanaOdbc([IncludeDataSources(ProviderName.SapHanaOdbc)] string context, [Values] ConnectionType type)
 		{
-#if NET472
-			using (var db = CreateDataConnection(new SapHanaOdbcDataProvider(), context, type, cs => new System.Data.Odbc.OdbcConnection(cs)))
+#if NETFRAMEWORK
+			using (var db = CreateDataConnection(SapHanaTools.GetDataProvider(SapHanaProvider.ODBC), context, type, cs => new System.Data.Odbc.OdbcConnection(cs)))
 #else
-			using (var db = CreateDataConnection(new SapHanaOdbcDataProvider(), context, type, "System.Data.Odbc.OdbcConnection, System.Data.Odbc"))
+			using (var db = CreateDataConnection(SapHanaTools.GetDataProvider(SapHanaProvider.ODBC), context, type, "System.Data.Odbc.OdbcConnection, System.Data.Odbc"))
 #endif
 			{
 				// provider doesn't use provider-specific API, so we just query schema
@@ -178,18 +219,29 @@ namespace Tests.Data
 		public void TestFirebird([IncludeDataSources(TestProvName.AllFirebird)] string context, [Values] ConnectionType type)
 		{
 			var unmapped = type == ConnectionType.MiniProfilerNoMappings;
-			using (var db = CreateDataConnection(new FirebirdDataProvider(), context, type, "FirebirdSql.Data.FirebirdClient.FbConnection, FirebirdSql.Data.FirebirdClient"))
-			{
-				var trace = string.Empty;
-				db.OnTraceConnection += (TraceInfo ti) =>
-				{
-					if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
-						trace = ti.SqlText;
-				};
 
-				// assert provider-specific parameter type name
-				Assert.AreEqual(2, db.Execute<int>("SELECT ID FROM \"AllTypes\" WHERE \"nvarcharDataType\" = @p", new DataParameter("@p", "3323", DataType.NVarChar)));
-				Assert.True(trace.Contains("DECLARE @p VarChar"));
+			Type providerType;
+
+			using (var db = (DataConnection)GetDataContext(context))
+			{
+				providerType = db.DataProvider.GetType();
+			}
+
+			var provider = (FirebirdDataProvider)Activator.CreateInstance(providerType)!;
+			var trace = string.Empty;
+
+			using (var db = CreateDataConnection(provider, context, type, "FirebirdSql.Data.FirebirdClient.FbConnection, FirebirdSql.Data.FirebirdClient", onTrace: ti =>
+			{
+				if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
+					trace = ti.SqlText;
+			}))
+			{
+				using (Assert.EnterMultipleScope())
+				{
+					// assert provider-specific parameter type name
+					Assert.That(db.Execute<int>("SELECT ID FROM \"AllTypes\" WHERE \"nvarcharDataType\" = @p", new DataParameter("@p", "3323", DataType.NVarChar)), Is.EqualTo(2));
+					Assert.That(trace, Does.Contain("DECLARE @p VarChar"));
+				}
 
 				// just check schema (no api used)
 				db.DataProvider.GetSchemaProvider().GetSchema(db);
@@ -198,19 +250,19 @@ namespace Tests.Data
 				FirebirdTools.ClearAllPools();
 
 				// test provider-specific types
-				if (context == TestProvName.Firebird4)
+				if (context == TestProvName.AllFirebird4Plus)
 				{
 					var fbDecFloat = new FbDecFloat(BigInteger.Parse("12345"), 5);
 					var fbDecFloat1 = db.Execute<FbDecFloat>("SELECT CAST(@p as decfloat) from rdb$database", new DataParameter("@p", fbDecFloat, DataType.DecFloat));
-					Assert.AreEqual(fbDecFloat, fbDecFloat1);
+					Assert.That(fbDecFloat1, Is.EqualTo(fbDecFloat));
 
 					var fbZonedDateTime = new FbZonedDateTime(TestData.DateTime4Utc, "UTC");
 					var fbZonedDateTime1 = db.Execute<FbZonedDateTime>("SELECT CAST(@p as timestamp with time zone) from rdb$database", new DataParameter("@p", fbZonedDateTime, DataType.DateTimeOffset));
-					Assert.AreEqual(fbZonedDateTime, fbZonedDateTime1);
+					Assert.That(fbZonedDateTime1, Is.EqualTo(fbZonedDateTime));
 
 					var fbZonedTime = new FbZonedTime(TestData.TimeOfDay4, "UTC");
 					var fbZonedTime1 = db.Execute<FbZonedTime>("SELECT CAST(@p as time with time zone) from rdb$database", new DataParameter("@p", fbZonedTime, DataType.TimeTZ));
-					Assert.AreEqual(fbZonedTime, fbZonedTime1);
+					Assert.That(fbZonedTime1, Is.EqualTo(fbZonedTime));
 				}
 			}
 		}
@@ -218,35 +270,41 @@ namespace Tests.Data
 		[Test]
 		public void TestSqlCe([IncludeDataSources(ProviderName.SqlCe)] string context, [Values] ConnectionType type)
 		{
-			var unmapped = type == ConnectionType.MiniProfilerNoMappings;
-			using (var db = CreateDataConnection(new SqlCeDataProvider(), context, type, DbProviderFactories.GetFactory("System.Data.SqlServerCe.4.0").GetType().Assembly.GetType("System.Data.SqlServerCe.SqlCeConnection")!))
-			{
-				var trace = string.Empty;
-				db.OnTraceConnection += (TraceInfo ti) =>
-				{
-					if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
-						trace = ti.SqlText;
-				};
+			var trace = string.Empty;
 
-				// assert provider-specific parameter type name
-				Assert.AreEqual("111", db.Execute<string>("SELECT Cast(@p as ntext)", new DataParameter("@p", "111", DataType.Text)));
-				Assert.True    (trace.Contains("DECLARE @p NText"));
-				Assert.AreEqual("111", db.Execute<string>("SELECT Cast(@p as ntext)", new DataParameter("@p", "111", DataType.NText)));
-				Assert.True    (trace.Contains("DECLARE @p NText"));
-				Assert.AreEqual(2, db.Execute<int>("SELECT ID FROM AllTypes WHERE nvarcharDataType = @p", new DataParameter("@p", "3323", DataType.VarChar)));
-				Assert.True    (trace.Contains("DECLARE @p NVarChar"));
-				Assert.AreEqual(2, db.Execute<int>("SELECT ID FROM AllTypes WHERE nvarcharDataType = @p", new DataParameter("@p", "3323", DataType.NVarChar)));
-				Assert.True    (trace.Contains("DECLARE @p NVarChar"));
-				Assert.AreEqual(2, db.Execute<int>("SELECT ID FROM AllTypes WHERE binaryDataType = @p", new DataParameter("@p", new byte[] { 1 }, DataType.Binary)));
-				Assert.True    (trace.Contains("DECLARE @p Binary("));
-				Assert.AreEqual(2, db.Execute<int>("SELECT ID FROM AllTypes WHERE varbinaryDataType = @p", new DataParameter("@p", new byte[] { 2 }, DataType.VarBinary)));
-				Assert.True    (trace.Contains("DECLARE @p VarBinary("));
-				Assert.AreEqual(new byte[] { 0, 0, 0, 3 }, db.Execute<byte[]>("SELECT Cast(@p as image)", new DataParameter("@p", new byte[] { 0, 0, 0, 3 }, DataType.Image)));
-				Assert.True    (trace.Contains("DECLARE @p Image("));
+			var unmapped = type == ConnectionType.MiniProfilerNoMappings;
+			using (var db = CreateDataConnection(new SqlCeDataProvider(), context, type, DbProviderFactories.GetFactory("System.Data.SqlServerCe.4.0").GetType().Assembly.GetType("System.Data.SqlServerCe.SqlCeConnection")!, onTrace: ti =>
+			{
+				if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
+					trace = ti.SqlText;
+			}))
+			{
+				using (Assert.EnterMultipleScope())
+				{
+					// assert provider-specific parameter type name
+					Assert.That(db.Execute<string>("SELECT Cast(@p as ntext)", new DataParameter("@p", "111", DataType.Text)), Is.EqualTo("111"));
+					Assert.That(trace, Does.Contain("DECLARE @p NText"));
+					Assert.That(db.Execute<string>("SELECT Cast(@p as ntext)", new DataParameter("@p", "111", DataType.NText)), Is.EqualTo("111"));
+					Assert.That(trace, Does.Contain("DECLARE @p NText"));
+					Assert.That(db.Execute<int>("SELECT ID FROM AllTypes WHERE nvarcharDataType = @p", new DataParameter("@p", "3323", DataType.VarChar)), Is.EqualTo(2));
+					Assert.That(trace, Does.Contain("DECLARE @p NVarChar"));
+					Assert.That(db.Execute<int>("SELECT ID FROM AllTypes WHERE nvarcharDataType = @p", new DataParameter("@p", "3323", DataType.NVarChar)), Is.EqualTo(2));
+					Assert.That(trace, Does.Contain("DECLARE @p NVarChar"));
+					Assert.That(db.Execute<int>("SELECT ID FROM AllTypes WHERE binaryDataType = @p", new DataParameter("@p", new byte[] { 1 }, DataType.Binary)), Is.EqualTo(2));
+					Assert.That(trace, Does.Contain("DECLARE @p Binary("));
+					Assert.That(db.Execute<int>("SELECT ID FROM AllTypes WHERE varbinaryDataType = @p", new DataParameter("@p", new byte[] { 2 }, DataType.VarBinary)), Is.EqualTo(2));
+					Assert.That(trace, Does.Contain("DECLARE @p VarBinary("));
+					Assert.That(db.Execute<byte[]>("SELECT Cast(@p as image)", new DataParameter("@p", new byte[] { 0, 0, 0, 3 }, DataType.Image)), Is.EqualTo(new byte[] { 0, 0, 0, 3 }));
+				}
+
+				Assert.That(trace, Does.Contain("DECLARE @p Image("));
 
 				var tsVal = db.Execute<byte[]>("SELECT timestampDataType FROM AllTypes WHERE ID = 2");
-				Assert.AreEqual(2, db.Execute<int>("SELECT ID FROM AllTypes WHERE timestampDataType = @p", new DataParameter("@p", tsVal, DataType.Timestamp)));
-				Assert.True    (trace.Contains("DECLARE @p Timestamp("));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(db.Execute<int>("SELECT ID FROM AllTypes WHERE timestampDataType = @p", new DataParameter("@p", tsVal, DataType.Timestamp)), Is.EqualTo(2));
+					Assert.That(trace, Does.Contain("DECLARE @p Timestamp("));
+				}
 
 				// just check schema (no api used)
 				db.DataProvider.GetSchemaProvider().GetSchema(db);
@@ -271,37 +329,43 @@ namespace Tests.Data
 			public object? Value { get; set; }
 		}
 
-		sealed class TestMySqlDataProvider : MySqlDataProvider
-		{
-			public TestMySqlDataProvider(string providerName)
-				: base(providerName)
-			{
-			}
-		}
-
 		// tests support of data reader methods by Mapper.Map (using MySql.Data provider only)
 		[Test]
 		public void TestMapperMap([IncludeDataSources(TestProvName.AllMySqlData)] string context, [Values] ConnectionType type)
 		{
+			Type providerType;
+
+			using (var db = (DataConnection)GetDataContext(context))
+			{
+				providerType = db.DataProvider.GetType();
+			}
+
+			var provider = (MySqlDataProvider)Activator.CreateInstance(providerType)!;
+
 			// AllowZeroDateTime is to enable MySqlDateTime type
-			using (var db = CreateDataConnection(new TestMySqlDataProvider(ProviderName.MySqlOfficial), context, type, "MySql.Data.MySqlClient.MySqlConnection, MySql.Data", ";AllowZeroDateTime=true"))
+			using (var db = CreateDataConnection(provider, context, type, "MySql.Data.MySqlClient.MySqlConnection, MySql.Data", ";AllowZeroDateTime=true"))
 			{
 				var dtValue = new DateTime(2012, 12, 12, 12, 12, 12, 0);
-
-				Assert.AreEqual(dtValue, db.FromSql<MapperExpressionTest1>("SELECT Cast({0} as datetime) as Value", new DataParameter("p", dtValue, DataType.DateTime)).Single().Value);
-				Assert.AreEqual(dtValue, db.FromSql<MapperExpressionTest2>("SELECT Cast({0} as datetime) as Value", new DataParameter("p", dtValue, DataType.DateTime)).Single().Value.Value);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(db.FromSql<MapperExpressionTest1>("SELECT Cast({0} as datetime) as Value", new DataParameter("p", dtValue, DataType.DateTime)).Single().Value, Is.EqualTo(dtValue));
+					Assert.That(db.FromSql<MapperExpressionTest2>("SELECT Cast({0} as datetime) as Value", new DataParameter("p", dtValue, DataType.DateTime)).Single().Value.Value, Is.EqualTo(dtValue));
+				}
 
 				var rawDtValue = db.FromSql<MapperExpressionTest3>("SELECT Cast({0} as datetime) as Value", new DataParameter("p", dtValue, DataType.DateTime)).Single().Value;
-				Assert.True    (rawDtValue is MySqlDataDateTime);
-				Assert.AreEqual(dtValue, ((MySqlDataDateTime)rawDtValue!).Value);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rawDtValue, Is.InstanceOf<MySqlDataDateTime>());
+					Assert.That(((MySqlDataDateTime)rawDtValue!).Value, Is.EqualTo(dtValue));
+				}
 			}
 		}
 
 		sealed class LinqMySqlDataProvider : MySqlDataProvider
 		{
 			private readonly Func<string, DbConnection> _connectionFactory;
-			public LinqMySqlDataProvider(Func<string, DbConnection> connectionFactory)
-				: base(ProviderName.MySqlOfficial)
+			public LinqMySqlDataProvider(MySqlVersion version, Func<string, DbConnection> connectionFactory)
+				: base(ProviderName.MySql, version, MySqlProvider.MySqlData)
 			{
 				_connectionFactory = connectionFactory;
 			}
@@ -318,13 +382,18 @@ namespace Tests.Data
 		public void TestLinqService([IncludeDataSources(true, TestProvName.AllMySqlData)] string context, [Values] ConnectionType type)
 		{
 			var provider = GetProviderName(context, out var isLinq);
+			MySqlVersion version;
+			using (var db = (DataConnection)GetDataContext(provider))
+			{
+				version = ((MySqlDataProvider)db.DataProvider).Version;
+			}
 
 			const string testContext = "test-linq-service-reader";
 
 			// hacks to make remote context to work new custom dataprovider instance
 			var cs = DataConnection.GetConnectionString(provider);
 			DataConnection.AddOrSetConfiguration(testContext, cs + ";AllowZeroDateTime=true", testContext);
-			DataConnection.AddDataProvider(testContext,  new LinqMySqlDataProvider(cs =>
+			DataConnection.AddDataProvider(testContext, new LinqMySqlDataProvider(version, cs =>
 			{
 				var cn = new MySqlDataMySqlConnection(cs);
 
@@ -334,7 +403,7 @@ namespace Tests.Data
 					case ConnectionType.MiniProfiler:
 						if (MiniProfiler.Current == null)
 							MiniProfiler.DefaultOptions.StartProfiler();
-						Assert.IsNotNull(MiniProfiler.Current);
+						Assert.That(MiniProfiler.Current, Is.Not.Null);
 						return new ProfiledDbConnection(cn, MiniProfiler.Current);
 				}
 
@@ -352,10 +421,12 @@ namespace Tests.Data
 					db.AddInterceptor(UnwrapProfilerInterceptor.Instance);
 
 				var dtValue = new DateTime(2012, 12, 12, 12, 12, 12, 0);
-
-				// ExecuteReader
-				Assert.AreEqual(dtValue, db.FromSql<MapperExpressionTest1>("SELECT Cast({0} as datetime) as Value", new DataParameter("p", dtValue, DataType.DateTime)).Single().Value);
-				Assert.AreEqual(dtValue, db.FromSql<MapperExpressionTest2>("SELECT Cast({0} as datetime) as Value", new DataParameter("p", dtValue, DataType.DateTime)).Single().Value.Value);
+				using (Assert.EnterMultipleScope())
+				{
+					// ExecuteReader
+					Assert.That(db.FromSql<MapperExpressionTest1>("SELECT Cast({0} as datetime) as Value", new DataParameter("p", dtValue, DataType.DateTime)).Single().Value, Is.EqualTo(dtValue));
+					Assert.That(db.FromSql<MapperExpressionTest2>("SELECT Cast({0} as datetime) as Value", new DataParameter("p", dtValue, DataType.DateTime)).Single().Value.Value, Is.EqualTo(dtValue));
+				}
 
 				// TODO: doesn't work due to object use, probably we should add type to remote context data
 				//var rawDtValue = db.FromSql<MapperExpressionTest3>("SELECT Cast(@p as datetime) as Value", new DataParameter("@p", dtValue, DataType.DateTime)).Single().Value;
@@ -367,17 +438,24 @@ namespace Tests.Data
 		[Test]
 		public void TestMySqlData([IncludeDataSources(TestProvName.AllMySqlData)] string context, [Values] ConnectionType type)
 		{
+			Type providerType;
+
+			using (var db = (DataConnection)GetDataContext(context))
+			{
+				providerType = db.DataProvider.GetType();
+			}
+
+			var provider = (MySqlDataProvider)Activator.CreateInstance(providerType)!;
+
+			var trace = string.Empty;
 			var unmapped = type == ConnectionType.MiniProfilerNoMappings;
 			// AllowZeroDateTime is to enable MySqlDateTime type
-			using (var db = CreateDataConnection(new TestMySqlDataProvider(ProviderName.MySqlOfficial), context, type, "MySql.Data.MySqlClient.MySqlConnection, MySql.Data", ";AllowZeroDateTime=true"))
+			using (var db = CreateDataConnection(provider, context, type, "MySql.Data.MySqlClient.MySqlConnection, MySql.Data", ";AllowZeroDateTime=true", onTrace: ti =>
 			{
-				var trace = string.Empty;
-				db.OnTraceConnection += (TraceInfo ti) =>
-				{
-					if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
-						trace = ti.SqlText;
-				};
-
+				if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
+					trace = ti.SqlText;
+			}))
+			{
 				// test provider-specific type readers
 				// (using both SetProviderField and SetToTypeField registrations)
 				var decValue = 123.456m;
@@ -387,39 +465,51 @@ namespace Tests.Data
 				if (type != ConnectionType.MiniProfilerNoMappings)
 				{
 					mysqlDecValue = db.Execute<MySqlDataDecimal>("SELECT Cast(@p as decimal(6, 3))", new DataParameter("@p", decValue, DataType.Decimal));
-					Assert.AreEqual(decValue, mysqlDecValue.Value);
+					Assert.That(mysqlDecValue.Value, Is.EqualTo(decValue));
 				}
 
 				var rawDecValue = db.Execute<object>("SELECT Cast(@p as decimal(6, 3))", new DataParameter("@p", decValue, DataType.Decimal));
-				Assert.True    (rawDecValue is decimal);
-				Assert.AreEqual(decValue, (decimal)rawDecValue);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rawDecValue, Is.InstanceOf<decimal>());
+					Assert.That((decimal)rawDecValue, Is.EqualTo(decValue));
+				}
 
 				var dtValue = new DateTime(2012, 12, 12, 12, 12, 12, 0);
-				Assert.AreEqual(dtValue, db.Execute<MySqlDataDateTime>("SELECT Cast(@p as datetime)", new DataParameter("@p", dtValue, DataType.DateTime)).Value);
+				Assert.That(db.Execute<MySqlDataDateTime>("SELECT Cast(@p as datetime)", new DataParameter("@p", dtValue, DataType.DateTime)).Value, Is.EqualTo(dtValue));
 				var rawDtValue = db.Execute<object>("SELECT Cast(@p as datetime)", new DataParameter("@p", dtValue, DataType.DateTime));
-				Assert.True    (rawDtValue is MySqlDataDateTime);
-				Assert.AreEqual(dtValue, ((MySqlDataDateTime)rawDtValue).Value);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rawDtValue, Is.InstanceOf<MySqlDataDateTime>());
+					Assert.That(((MySqlDataDateTime)rawDtValue).Value, Is.EqualTo(dtValue));
 
-				// test readers + mapper.map
-				Assert.AreEqual(dtValue, db.FromSql<MapperExpressionTest1>("SELECT Cast(@p as datetime) as Value", new DataParameter("@p", dtValue, DataType.DateTime)).Single().Value);
-				Assert.AreEqual(dtValue, db.FromSql<MapperExpressionTest2>("SELECT Cast(@p as datetime) as Value", new DataParameter("@p", dtValue, DataType.DateTime)).Single().Value.Value);
+					// test readers + mapper.map
+					Assert.That(db.FromSql<MapperExpressionTest1>("SELECT Cast(@p as datetime) as Value", new DataParameter("@p", dtValue, DataType.DateTime)).Single().Value, Is.EqualTo(dtValue));
+					Assert.That(db.FromSql<MapperExpressionTest2>("SELECT Cast(@p as datetime) as Value", new DataParameter("@p", dtValue, DataType.DateTime)).Single().Value.Value, Is.EqualTo(dtValue));
+				}
+
 				rawDtValue = db.FromSql<MapperExpressionTest3>("SELECT Cast(@p as datetime) as Value", new DataParameter("@p", dtValue, DataType.DateTime)).Single().Value!;
-				Assert.True    (rawDtValue is MySqlDataDateTime);
-				Assert.AreEqual(dtValue, ((MySqlDataDateTime)rawDtValue).Value);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rawDtValue, Is.InstanceOf<MySqlDataDateTime>());
+					Assert.That(((MySqlDataDateTime)rawDtValue).Value, Is.EqualTo(dtValue));
+				}
 
 				// test provider-specific parameter values
 				if (type == ConnectionType.MiniProfilerNoMappings)
 					decValue = 0;
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(db.Execute<decimal>("SELECT Cast(@p as decimal(6, 3))", new DataParameter("@p", mysqlDecValue, DataType.Decimal)), Is.EqualTo(decValue));
+					Assert.That(db.Execute<decimal>("SELECT Cast(@p as decimal(6, 3))", new DataParameter("@p", mysqlDecValue, DataType.VarNumeric)), Is.EqualTo(decValue));
+					Assert.That(db.Execute<DateTime>("SELECT Cast(@p as datetime)", new DataParameter("@p", new MySqlDataDateTime(dtValue), DataType.Date)), Is.EqualTo(dtValue));
+					Assert.That(db.Execute<DateTime>("SELECT Cast(@p as datetime)", new DataParameter("@p", new MySqlDataDateTime(dtValue), DataType.DateTime)), Is.EqualTo(dtValue));
+					Assert.That(db.Execute<DateTime>("SELECT Cast(@p as datetime)", new DataParameter("@p", new MySqlDataDateTime(dtValue), DataType.DateTime2)), Is.EqualTo(dtValue));
 
-				Assert.AreEqual(decValue, db.Execute<decimal>("SELECT Cast(@p as decimal(6, 3))", new DataParameter("@p", mysqlDecValue, DataType.Decimal)));
-				Assert.AreEqual(decValue, db.Execute<decimal>("SELECT Cast(@p as decimal(6, 3))", new DataParameter("@p", mysqlDecValue, DataType.VarNumeric)));
-				Assert.AreEqual(dtValue, db.Execute<DateTime>("SELECT Cast(@p as datetime)", new DataParameter("@p", new MySqlDataDateTime(dtValue), DataType.Date)));
-				Assert.AreEqual(dtValue, db.Execute<DateTime>("SELECT Cast(@p as datetime)", new DataParameter("@p", new MySqlDataDateTime(dtValue), DataType.DateTime)));
-				Assert.AreEqual(dtValue, db.Execute<DateTime>("SELECT Cast(@p as datetime)", new DataParameter("@p", new MySqlDataDateTime(dtValue), DataType.DateTime2)));
-
-				// assert provider-specific parameter type name
-				Assert.AreEqual(2, db.Execute<int>("SELECT ID FROM AllTypes WHERE tinyintDataType = @p", new DataParameter("@p", (sbyte)111, DataType.SByte)));
-				Assert.True(trace.Contains("DECLARE @p Byte "));
+					// assert provider-specific parameter type name
+					Assert.That(db.Execute<int>("SELECT ID FROM AllTypes WHERE tinyintDataType = @p", new DataParameter("@p", (sbyte)111, DataType.SByte)), Is.EqualTo(2));
+					Assert.That(trace, Does.Contain("DECLARE @p Byte "));
+				}
 
 				// just check schema (no api used)
 				db.DataProvider.GetSchemaProvider().GetSchema(db);
@@ -429,50 +519,62 @@ namespace Tests.Data
 		[Test]
 		public async Task TestMySqlConnector([IncludeDataSources(TestProvName.AllMySqlConnector)] string context, [Values] ConnectionType type)
 		{
-			var unmapped = type == ConnectionType.MiniProfilerNoMappings;
-#if NETFRAMEWORK
-			var connectionTypeName = "MySql.Data.MySqlClient.MySqlConnection, MySqlConnector";
-#else
-			var connectionTypeName = "MySqlConnector.MySqlConnection, MySqlConnector";
-#endif
-			using (var db = CreateDataConnection(new TestMySqlDataProvider(ProviderName.MySqlConnector), context, type, connectionTypeName, ";AllowZeroDateTime=true"))
-			{
-				var trace = string.Empty;
-				db.OnTraceConnection += (TraceInfo ti) =>
-				{
-					if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
-						trace = ti.SqlText;
-				};
+			Type providerType;
 
+			using (var db = (DataConnection)GetDataContext(context))
+			{
+				providerType = db.DataProvider.GetType();
+			}
+
+			var provider = (MySqlDataProvider)Activator.CreateInstance(providerType)!;
+
+			var unmapped = type == ConnectionType.MiniProfilerNoMappings;
+			var connectionTypeName = "MySqlConnector.MySqlConnection, MySqlConnector";
+			var trace = string.Empty;
+			using (var db = CreateDataConnection(provider, context, type, connectionTypeName, ";AllowZeroDateTime=true", onTrace: ti =>
+			{
+				if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
+					trace = ti.SqlText;
+			}))
+			{
 				// test provider-specific type readers
 				var dtValue = new DateTime(2012, 12, 12, 12, 12, 12, 0);
-				Assert.AreEqual(dtValue, db.Execute<MySqlConnectorDateTime>("SELECT Cast(@p as datetime)", new DataParameter("@p", dtValue, DataType.DateTime)).GetDateTime());
-				Assert.AreEqual(dtValue, db.Execute<MySqlConnectorDateTime>("SELECT Cast(@p as datetime)", new DataParameter("@p", dtValue, DataType.DateTime)).GetDateTime());
+				Assert.That(db.Execute<MySqlConnectorDateTime>("SELECT Cast(@p as datetime)", new DataParameter("@p", dtValue, DataType.DateTime)).GetDateTime(), Is.EqualTo(dtValue));
+				Assert.That(db.Execute<MySqlConnectorDateTime>("SELECT Cast(@p as datetime)", new DataParameter("@p", dtValue, DataType.DateTime)).GetDateTime(), Is.EqualTo(dtValue));
 				var rawDtValue = db.Execute<object>("SELECT Cast(@p as datetime)", new DataParameter("@p", dtValue, DataType.DateTime));
-				Assert.True    (rawDtValue is MySqlConnectorDateTime);
-				Assert.AreEqual(dtValue, ((MySqlConnectorDateTime)rawDtValue).GetDateTime());
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rawDtValue, Is.InstanceOf<MySqlConnectorDateTime>());
+					Assert.That(((MySqlConnectorDateTime)rawDtValue).GetDateTime(), Is.EqualTo(dtValue));
+				}
 
 				// test provider-specific parameter values
 				using (new DisableBaseline("Output (datetime format) is culture-/system-dependent"))
 				{
-					Assert.AreEqual(dtValue, db.Execute<DateTime>("SELECT Cast(@p as datetime)", new DataParameter("@p", new MySqlConnectorDateTime(dtValue), DataType.Date)));
-					Assert.AreEqual(dtValue, db.Execute<DateTime>("SELECT Cast(@p as datetime)", new DataParameter("@p", new MySqlConnectorDateTime(dtValue), DataType.DateTime)));
-					Assert.AreEqual(dtValue, db.Execute<DateTime>("SELECT Cast(@p as datetime)", new DataParameter("@p", new MySqlConnectorDateTime(dtValue), DataType.DateTime2)));
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(db.Execute<DateTime>("SELECT Cast(@p as datetime)", new DataParameter("@p", new MySqlConnectorDateTime(dtValue), DataType.Date)), Is.EqualTo(dtValue));
+						Assert.That(db.Execute<DateTime>("SELECT Cast(@p as datetime)", new DataParameter("@p", new MySqlConnectorDateTime(dtValue), DataType.DateTime)), Is.EqualTo(dtValue));
+						Assert.That(db.Execute<DateTime>("SELECT Cast(@p as datetime)", new DataParameter("@p", new MySqlConnectorDateTime(dtValue), DataType.DateTime2)), Is.EqualTo(dtValue));
+					}
 				}
 
-				// assert provider-specific parameter type name
-				Assert.AreEqual(2, db.Execute<int>("SELECT ID FROM AllTypes WHERE tinyintDataType = @p", new DataParameter("@p", (sbyte)111, DataType.SByte)));
-				Assert.True    (trace.Contains("DECLARE @p Byte "));
+				using (Assert.EnterMultipleScope())
+				{
+					// assert provider-specific parameter type name
+					Assert.That(db.Execute<int>("SELECT ID FROM AllTypes WHERE tinyintDataType = @p", new DataParameter("@p", (sbyte)111, DataType.SByte)), Is.EqualTo(2));
+					Assert.That(trace, Does.Contain("DECLARE @p Byte "));
+				}
 
 				// bulk copy
-				MySqlTests.EnableNativeBulk(db, context);
+				MySqlTestUtils.EnableNativeBulk(db, context);
 				try
 				{
 					db.BulkCopy(
 						new BulkCopyOptions() { BulkCopyType = BulkCopyType.ProviderSpecific },
 						Enumerable.Range(0, 1000).Select(n => new MySqlTests.AllTypeBaseProviderSpecific() { ID = 2000 + n }));
 
-					Assert.AreEqual(!unmapped, trace.Contains("INSERT BULK"));
+					Assert.That(trace.Contains("INSERT BULK"), Is.EqualTo(!unmapped));
 				}
 				finally
 				{
@@ -486,7 +588,7 @@ namespace Tests.Data
 						new BulkCopyOptions() { BulkCopyType = BulkCopyType.ProviderSpecific },
 						Enumerable.Range(0, 1000).Select(n => new MySqlTests.AllTypeBaseProviderSpecific() { ID = 2000 + n }));
 
-					Assert.AreEqual(!unmapped, trace.Contains("INSERT ASYNC BULK"));
+					Assert.That(trace.Contains("INSERT ASYNC BULK"), Is.EqualTo(!unmapped));
 				}
 				finally
 				{
@@ -501,7 +603,7 @@ namespace Tests.Data
 		[Test]
 		public void TestSystemSqlite([IncludeDataSources(ProviderName.SQLiteClassic)] string context, [Values] ConnectionType type)
 		{
-			using (var db = CreateDataConnection(SQLiteTools.GetDataProvider(ProviderName.SQLiteClassic), context, type, "System.Data.SQLite.SQLiteConnection, System.Data.SQLite"))
+			using (var db = CreateDataConnection(SQLiteTools.GetDataProvider(SQLiteProvider.System), context, type, "System.Data.SQLite.SQLiteConnection, System.Data.SQLite"))
 			{
 				// just check schema (no api used)
 				db.DataProvider.GetSchemaProvider().GetSchema(db);
@@ -511,7 +613,7 @@ namespace Tests.Data
 		[Test]
 		public void TestMicrosoftSqlite([IncludeDataSources(ProviderName.SQLiteMS)] string context, [Values] ConnectionType type)
 		{
-			using (var db = CreateDataConnection(SQLiteTools.GetDataProvider(ProviderName.SQLiteMS), context, type, "Microsoft.Data.Sqlite.SqliteConnection, Microsoft.Data.Sqlite"))
+			using (var db = CreateDataConnection(SQLiteTools.GetDataProvider(SQLiteProvider.Microsoft), context, type, "Microsoft.Data.Sqlite.SqliteConnection, Microsoft.Data.Sqlite"))
 			{
 				// just check schema (no api used)
 				db.DataProvider.GetSchemaProvider().GetSchema(db);
@@ -530,34 +632,31 @@ namespace Tests.Data
 		public void TestDB2([IncludeDataSources(ProviderName.DB2)] string context, [Values] ConnectionType type)
 		{
 			var unmapped = type == ConnectionType.MiniProfilerNoMappings;
-#if NETCOREAPP3_1
-			using (var db = CreateDataConnection(new TestDB2LUWDataProvider(), context, type, $"{DB2ProviderAdapter.ClientNamespaceOld}.DB2Connection, {DB2ProviderAdapter.AssemblyNameOld}"))
-#else
-			using (var db = CreateDataConnection(new TestDB2LUWDataProvider(), context, type, $"{DB2ProviderAdapter.ClientNamespace}.DB2Connection, {DB2ProviderAdapter.AssemblyName}"))
-#endif
+			var trace = string.Empty;
+			using (var db = CreateDataConnection(new TestDB2LUWDataProvider(), context, type, $"{DB2ProviderAdapter.ClientNamespace}.DB2Connection, {DB2ProviderAdapter.AssemblyName}", onTrace: ti =>
 			{
-				var trace = string.Empty;
-				db.OnTraceConnection += (TraceInfo ti) =>
-				{
-					if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
-						trace = ti.SqlText;
-				};
-
+				if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
+					trace = ti.SqlText;
+			}))
+			{
 				// we have DB2 tests for all types, so here we will test only one type (they all look the same)
 				// test provider-specific type readers
 				var longValue = -12335L;
-				Assert.AreEqual(longValue, db.Execute<DB2Int64>("SELECT Cast(@p as bigint) FROM SYSIBM.SYSDUMMY1", new DataParameter("p", longValue, DataType.Int64)).Value);
+				Assert.That(db.Execute<DB2Int64>("SELECT Cast(@p as bigint) FROM SYSIBM.SYSDUMMY1", new DataParameter("p", longValue, DataType.Int64)).Value, Is.EqualTo(longValue));
 				var rawValue = db.Execute<object>("SELECT Cast(@p as bigint) FROM SYSIBM.SYSDUMMY1", new DataParameter("p", longValue, DataType.Int64));
-				// DB2DataReader returns provider-specific types only if asked explicitly
-				Assert.True    (rawValue is long);
-				Assert.AreEqual(longValue, (long)rawValue);
+				using (Assert.EnterMultipleScope())
+				{
+					// DB2DataReader returns provider-specific types only if asked explicitly
+					Assert.That(rawValue, Is.InstanceOf<long>());
+					Assert.That((long)rawValue, Is.EqualTo(longValue));
 
-				// test provider-specific parameter values
-				Assert.AreEqual(longValue, db.Execute<long>("SELECT Cast(@p as bigint) FROM SYSIBM.SYSDUMMY1", new DataParameter("p", new DB2Int64(longValue), DataType.Int64)));
+					// test provider-specific parameter values
+					Assert.That(db.Execute<long>("SELECT Cast(@p as bigint) FROM SYSIBM.SYSDUMMY1", new DataParameter("p", new DB2Int64(longValue), DataType.Int64)), Is.EqualTo(longValue));
 
-				//// assert provider-specific parameter type name
-				Assert.AreEqual(2, db.Execute<int>("SELECT ID FROM AllTypes WHERE blobDataType = @p", new DataParameter("p", new byte[] { 50, 51, 52 }, DataType.Blob)));
-				Assert.True    (trace.Contains("DECLARE @p Blob("));
+					//// assert provider-specific parameter type name
+					Assert.That(db.Execute<int>("SELECT ID FROM AllTypes WHERE blobDataType = @p", new DataParameter("p", new byte[] { 50, 51, 52 }, DataType.Blob)), Is.EqualTo(2));
+					Assert.That(trace, Does.Contain("DECLARE @p Blob("));
+				}
 
 				// bulk copy
 				try
@@ -566,7 +665,7 @@ namespace Tests.Data
 						new BulkCopyOptions() { BulkCopyType = BulkCopyType.ProviderSpecific },
 						Enumerable.Range(0, 1000).Select(n => new ALLTYPE() { ID = 2000 + n }));
 
-					Assert.AreEqual(!unmapped, trace.Contains("INSERT BULK"));
+					Assert.That(trace.Contains("INSERT BULK"), Is.EqualTo(!unmapped));
 				}
 				finally
 				{
@@ -582,29 +681,24 @@ namespace Tests.Data
 				{
 					cn.Open();
 
-					Assert.AreEqual(DB2ProviderAdapter.DB2ServerTypes.DB2_UW, cn.eServerType);
+					Assert.That(DB2ProviderAdapter.Instance.ConnectionWrapper(cn).eServerType, Is.EqualTo(DB2ProviderAdapter.DB2ServerTypes.DB2_UW));
 				}
 			}
 		}
 
-		[ActiveIssue("Investigation required. Timeouts on CI", Configurations = [TestProvName.AllSqlServer2008Minus])]
 		[Test]
 		public async Task TestRetryPolicy([IncludeDataSources(TestProvName.AllSqlServer)] string context, [Values] ConnectionType type)
 		{
-			Configuration.RetryPolicy.Factory = connection => new SqlServerRetryPolicy();
-			try
-			{
-				await TestSqlServer(context, type);
-			}
-			finally
-			{
-				Configuration.RetryPolicy.Factory = null;
-			}
+			await TestSqlServerImpl(context, type, connection => new SqlServerRetryPolicy());
 		}
 
-		[ActiveIssue("Investigation required. Timeouts on CI", Configurations = [TestProvName.AllSqlServer2008Minus])]
 		[Test]
 		public async Task TestSqlServer([IncludeDataSources(TestProvName.AllSqlServer)] string context, [Values] ConnectionType type)
+		{
+			await TestSqlServerImpl(context, type, null);
+		}
+
+		async Task TestSqlServerImpl(string context, ConnectionType type, Func<DataConnection, IRetryPolicy?>? factory)
 		{
 			string providerName;
 			SqlServerVersion version;
@@ -617,55 +711,65 @@ namespace Tests.Data
 			var tvpSupported = version >= SqlServerVersion.v2008;
 			var hierarchyidSupported = version >= SqlServerVersion.v2008;
 
+			var trace = string.Empty;
 			var unmapped = type == ConnectionType.MiniProfilerNoMappings;
 			using (new DisableBaseline("TODO: debug reason for inconsistent bulk copy sql"))
-#if NET472
-			using (var db = CreateDataConnection(new SqlServerTests.TestSqlServerDataProvider(providerName, version, SqlServerProvider.SystemDataSqlClient), context, type, typeof(SqlConnection)))
-#else
-			using (var db = CreateDataConnection(new SqlServerTests.TestSqlServerDataProvider(providerName, version, SqlServerProvider.SystemDataSqlClient), context, type, "System.Data.SqlClient.SqlConnection, System.Data.SqlClient"))
-#endif
-			{
-				var trace = string.Empty;
-				db.OnTraceConnection += (TraceInfo ti) =>
+#if NETFRAMEWORK
+			using (var db = CreateDataConnection(new SqlServerTests.TestSqlServerDataProvider(providerName, version, SqlServerProvider.SystemDataSqlClient), context, type, typeof(SqlConnection), onTrace: ti =>
 				{
 					if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
 						trace = ti.SqlText;
-				};
-
+				}))
+#else
+			using (var db = CreateDataConnection(new SqlServerTests.TestSqlServerDataProvider(providerName, version, SqlServerProvider.SystemDataSqlClient), context, type, "System.Data.SqlClient.SqlConnection, System.Data.SqlClient", onTrace: ti =>
+			{
+				if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
+					trace = ti.SqlText;
+			}))
+#endif
+			{
 				var testValue = -1.2335m;
-				Assert.AreEqual(testValue, db.Execute<SqlMoney>("SELECT Cast(@p as money)", new DataParameter("@p", testValue, DataType.Money)).Value);
+				Assert.That(db.Execute<SqlMoney>("SELECT Cast(@p as money)", new DataParameter("@p", testValue, DataType.Money)).Value, Is.EqualTo(testValue));
 				var rawValue = db.Execute<object>("SELECT Cast(@p as money)", new DataParameter("@p", testValue, DataType.Money));
-				Assert.True    (rawValue is decimal);
-				Assert.AreEqual(testValue, (decimal)rawValue);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rawValue, Is.InstanceOf<decimal>());
+					Assert.That((decimal)rawValue, Is.EqualTo(testValue));
 
-				// test provider-specific parameter values
-				Assert.AreEqual(testValue, db.Execute<decimal>("SELECT Cast(@p as money)", new DataParameter("@p", new SqlMoney(testValue), DataType.Money)));
+					// test provider-specific parameter values
+					Assert.That(db.Execute<decimal>("SELECT Cast(@p as money)", new DataParameter("@p", new SqlMoney(testValue), DataType.Money)), Is.EqualTo(testValue));
 
-				//// assert provider-specific parameter type name
-				Assert.AreEqual(2, db.Execute<int>("SELECT ID FROM AllTypes WHERE smalldatetimeDataType = @p", new DataParameter("@p", new DateTime(2012, 12, 12, 12, 12, 00), DataType.SmallDateTime)));
-				Assert.True    (trace.Contains("DECLARE @p SmallDateTime "));
+					//// assert provider-specific parameter type name
+					Assert.That(db.Execute<int>("SELECT ID FROM AllTypes WHERE smalldatetimeDataType = @p", new DataParameter("@p", new DateTime(2012, 12, 12, 12, 12, 00), DataType.SmallDateTime)), Is.EqualTo(2));
+					Assert.That(trace, Does.Contain("DECLARE @p SmallDateTime "));
+				}
 
 				if (hierarchyidSupported)
 				{
 					//// assert UDT type name
 					var hid = SqlHierarchyId.Parse("/1/3/");
-					Assert.AreEqual(hid, db.Execute<SqlHierarchyId>("SELECT Cast(@p as hierarchyid)", new DataParameter("@p", hid, DataType.Udt)));
-					Assert.True(trace.Contains("DECLARE @p hierarchyid -- Udt"));
-					Assert.AreEqual(hid, db.Execute<object>("SELECT Cast(@p as hierarchyid)", new DataParameter("@p", hid, DataType.Udt)));
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(db.Execute<SqlHierarchyId>("SELECT Cast(@p as hierarchyid)", new DataParameter("@p", hid, DataType.Udt)), Is.EqualTo(hid));
+						Assert.That(trace, Does.Contain("DECLARE @p hierarchyid -- Udt"));
+						Assert.That(db.Execute<object>("SELECT Cast(@p as hierarchyid)", new DataParameter("@p", hid, DataType.Udt)), Is.EqualTo(hid));
+					}
 				}
 
 				if (tvpSupported)
 				{
 					//// assert TVP type name
-					var record     = SqlServerTypesTests.TestUDTData[0];
-					var parameter  = new DataParameter("p", SqlServerTypesTests.GetSqlDataRecords()) { DbType = SqlServerTypesTests.TYPE_NAME };
-					var readRecord = (from r in db.FromSql<SqlServerTypesTests.TVPRecord>($"select * from {parameter}")
+					var record     = SqlServerTestUtils.TestUDTData[0];
+					var parameter  = new DataParameter("p", SqlServerTestUtils.GetSqlDataRecords()) { DbType = SqlServerTypesTests.TYPE_NAME };
+					var readRecord = (from r in db.FromSql<SqlServerTestUtils.TVPRecord>($"select * from {parameter}")
 									  where r.Id == record.Id
-									  select new SqlServerTypesTests.TVPRecord() { Id = record.Id, Name = record.Name }).Single();
-
-					Assert.AreEqual(record.Id, readRecord.Id);
-					Assert.AreEqual(record.Name, readRecord.Name);
-					Assert.True    (trace.Contains($"DECLARE @p {SqlServerTypesTests.TYPE_NAME} "));
+									  select new SqlServerTestUtils.TVPRecord() { Id = record.Id, Name = record.Name }).Single();
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(readRecord.Id, Is.EqualTo(record.Id));
+						Assert.That(readRecord.Name, Is.EqualTo(record.Name));
+						Assert.That(trace, Does.Contain($"DECLARE @p {SqlServerTypesTests.TYPE_NAME} "));
+					}
 				}
 
 				// bulk copy
@@ -682,12 +786,12 @@ namespace Tests.Data
 				if (tvpSupported)
 				{
 					var proc = schema.Procedures.FirstOrDefault(p => p.ProcedureName == "TableTypeTestProc")!;
-					Assert.IsNotNull(proc);
-					Assert.AreEqual ("[dbo].[TestTableType]", proc.Parameters[0].SchemaType);
+					Assert.That(proc, Is.Not.Null);
+					Assert.That(proc.Parameters[0].SchemaType, Is.EqualTo("[dbo].[TestTableType]"));
 				}
 
 				// test SqlException handing
-				Assert.IsFalse(SqlServerTransientExceptionDetector.IsHandled(new InvalidOperationException(), out var errors));
+				Assert.That(SqlServerTransientExceptionDetector.IsHandled(new InvalidOperationException(), out var errors), Is.False);
 				Exception? sex = null;
 				try
 				{
@@ -698,21 +802,26 @@ namespace Tests.Data
 					sex = ex;
 				}
 
-				Assert.IsTrue  (SqlServerTransientExceptionDetector.IsHandled(sex!, out errors));
-				Assert.AreEqual(1, errors!.Count());
-				Assert.AreEqual(8134, errors!.Single());
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(SqlServerTransientExceptionDetector.IsHandled(sex!, out errors), Is.True);
+					Assert.That(errors!.Count(), Is.EqualTo(1));
+					Assert.That(errors!.Single(), Is.EqualTo(8134));
+				}
 
 				var cs = DataConnection.GetConnectionString(GetProviderName(context, out var _));
 
 				// test MARS not set
-				Assert.AreEqual(cs.ToLowerInvariant().Contains("multipleactiveresultsets=true"), db.IsMarsEnabled);
+#pragma warning disable CS0618 // Type or member is obsolete
+				Assert.That(db.IsMarsEnabled, Is.EqualTo(cs.ToLowerInvariant().Contains("multipleactiveresultsets=true")));
+#pragma warning restore CS0618 // Type or member is obsolete
 
 				// test server version
 				using (var cn = ((SqlServerDataProvider)db.DataProvider).Adapter.CreateConnection(cs))
 				{
 					cn.Open();
 
-					Assert.IsNotNull(cn.ServerVersion);
+					Assert.That(cn.ServerVersion, Is.Not.Null);
 				}
 
 				void TestBulkCopy()
@@ -723,23 +832,25 @@ namespace Tests.Data
 						var options = new BulkCopyOptions()
 						{
 							BulkCopyType       = BulkCopyType.ProviderSpecific,
-							NotifyAfter        = 500,
+							NotifyAfter        = 5,
 							RowsCopiedCallback = arg => copied = arg.RowsCopied
 						};
 
 						db.BulkCopy(
 							options,
-							Enumerable.Range(0, 1000).Select(n => new SqlServerTests.AllTypes() { ID = 2000 + n }));
-
-						Assert.AreEqual(!unmapped, trace.Contains("INSERT BULK"));
-						Assert.AreEqual(1000, copied);
+							Enumerable.Range(0, 10).Select(n => new SqlServerTests.AllTypes() { ID = 2000 + n }));
+						using (Assert.EnterMultipleScope())
+						{
+							Assert.That(trace.Contains("INSERT BULK"), Is.EqualTo(!unmapped));
+							Assert.That(copied, Is.EqualTo(10));
+						}
 					}
 					finally
 					{
 						db.GetTable<SqlServerTests.AllTypes>().Delete(p => p.ID >= 3);
 
 						// test quotation works
-						Assert.True(trace.Contains("[AllTypes]"));
+						Assert.That(trace, Does.Contain("[AllTypes]"));
 					}
 				}
 
@@ -751,29 +862,30 @@ namespace Tests.Data
 						var options = new BulkCopyOptions()
 						{
 							BulkCopyType       = BulkCopyType.ProviderSpecific,
-							NotifyAfter        = 500,
+							NotifyAfter        = 5,
 							RowsCopiedCallback = arg => copied = arg.RowsCopied
 						};
 
 						await db.BulkCopyAsync(
 							options,
-							Enumerable.Range(0, 1000).Select(n => new SqlServerTests.AllTypes() { ID = 2000 + n }));
-
-						Assert.AreEqual(!unmapped, trace.Contains("INSERT ASYNC BULK"));
-						Assert.AreEqual(1000, copied);
+							Enumerable.Range(0, 10).Select(n => new SqlServerTests.AllTypes() { ID = 2000 + n }));
+						using (Assert.EnterMultipleScope())
+						{
+							Assert.That(trace.Contains("INSERT ASYNC BULK"), Is.EqualTo(!unmapped));
+							Assert.That(copied, Is.EqualTo(10));
+						}
 					}
 					finally
 					{
 						await db.GetTable<SqlServerTests.AllTypes>().DeleteAsync(p => p.ID >= 2000);
 
 						// test quotation works
-						Assert.True(trace.Contains("[AllTypes]"));
+						Assert.That(trace, Does.Contain("[AllTypes]"));
 					}
 				}
 			}
 		}
 
-		[ActiveIssue("Investigation required. Timeouts on CI", Configurations = [TestProvName.AllSqlServer2008Minus])]
 		[Test]
 		public async Task TestSqlServerMS([IncludeDataSources(TestProvName.AllSqlServer)] string context, [Values] ConnectionType type)
 		{
@@ -788,28 +900,29 @@ namespace Tests.Data
 			var tvpSupported = version >= SqlServerVersion.v2008;
 
 			var unmapped = type == ConnectionType.MiniProfilerNoMappings;
+			var trace = string.Empty;
 			using (new DisableBaseline("TODO: debug reason for inconsistent bulk copy sql"))
-			using (var db = CreateDataConnection(new SqlServerTests.TestSqlServerDataProvider(providerName, version, SqlServerProvider.MicrosoftDataSqlClient), context, type, "Microsoft.Data.SqlClient.SqlConnection, Microsoft.Data.SqlClient"))
+			using (var db = CreateDataConnection(new SqlServerTests.TestSqlServerDataProvider(providerName, version, SqlServerProvider.MicrosoftDataSqlClient), context, type, "Microsoft.Data.SqlClient.SqlConnection, Microsoft.Data.SqlClient", onTrace: ti =>
 			{
-				var trace = string.Empty;
-				db.OnTraceConnection += (TraceInfo ti) =>
-				{
-					if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
-						trace = ti.SqlText;
-				};
-
+				if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
+					trace = ti.SqlText;
+			}))
+			{
 				var testValue = -1.2335m;
-				Assert.AreEqual(testValue, db.Execute<SqlMoney>("SELECT Cast(@p as money)", new DataParameter("@p", testValue, DataType.Money)).Value);
+				Assert.That(db.Execute<SqlMoney>("SELECT Cast(@p as money)", new DataParameter("@p", testValue, DataType.Money)).Value, Is.EqualTo(testValue));
 				var rawValue = db.Execute<object>("SELECT Cast(@p as money)", new DataParameter("@p", testValue, DataType.Money));
-				Assert.True    (rawValue is decimal);
-				Assert.AreEqual(testValue, (decimal)rawValue);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rawValue, Is.InstanceOf<decimal>());
+					Assert.That((decimal)rawValue, Is.EqualTo(testValue));
 
-				// test provider-specific parameter values
-				Assert.AreEqual(testValue, db.Execute<decimal>("SELECT Cast(@p as money)", new DataParameter("@p", new SqlMoney(testValue), DataType.Money)));
+					// test provider-specific parameter values
+					Assert.That(db.Execute<decimal>("SELECT Cast(@p as money)", new DataParameter("@p", new SqlMoney(testValue), DataType.Money)), Is.EqualTo(testValue));
 
-				//// assert provider-specific parameter type name
-				Assert.AreEqual(2, db.Execute<int>("SELECT ID FROM AllTypes WHERE smalldatetimeDataType = @p", new DataParameter("@p", new DateTime(2012, 12, 12, 12, 12, 00), DataType.SmallDateTime)));
-				Assert.True(trace.Contains("DECLARE @p SmallDateTime "));
+					//// assert provider-specific parameter type name
+					Assert.That(db.Execute<int>("SELECT ID FROM AllTypes WHERE smalldatetimeDataType = @p", new DataParameter("@p", new DateTime(2012, 12, 12, 12, 12, 00), DataType.SmallDateTime)), Is.EqualTo(2));
+					Assert.That(trace, Does.Contain("DECLARE @p SmallDateTime "));
+				}
 
 				// not supported by provider
 				// assert UDT type name
@@ -821,15 +934,17 @@ namespace Tests.Data
 				if (tvpSupported)
 				{
 					//// assert TVP type name
-					var record     = SqlServerTypesTests.TestUDTData[0];
-					var parameter  = new DataParameter("p", SqlServerTypesTests.GetSqlDataRecordsMS()) { DbType = SqlServerTypesTests.TYPE_NAME };
-					var readRecord = (from r in db.FromSql<SqlServerTypesTests.TVPRecord>($"select * from {parameter}")
+					var record     = SqlServerTestUtils.TestUDTData[0];
+					var parameter  = new DataParameter("p", SqlServerTestUtils.GetSqlDataRecordsMS()) { DbType = SqlServerTypesTests.TYPE_NAME };
+					var readRecord = (from r in db.FromSql<SqlServerTestUtils.TVPRecord>($"select * from {parameter}")
 									  where r.Id == record.Id
-									  select new SqlServerTypesTests.TVPRecord() { Id = record.Id, Name = record.Name }).Single();
-
-					Assert.AreEqual(record.Id, readRecord.Id);
-					Assert.AreEqual(record.Name, readRecord.Name);
-					Assert.True    (trace.Contains($"DECLARE @p {SqlServerTypesTests.TYPE_NAME} "));
+									  select new SqlServerTestUtils.TVPRecord() { Id = record.Id, Name = record.Name }).Single();
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(readRecord.Id, Is.EqualTo(record.Id));
+						Assert.That(readRecord.Name, Is.EqualTo(record.Name));
+						Assert.That(trace, Does.Contain($"DECLARE @p {SqlServerTypesTests.TYPE_NAME} "));
+					}
 				}
 
 				// bulk copy
@@ -847,12 +962,12 @@ namespace Tests.Data
 				if (tvpSupported)
 				{
 					var proc = schema.Procedures.FirstOrDefault(p => p.ProcedureName == "TableTypeTestProc")!;
-					Assert.IsNotNull(proc);
-					Assert.AreEqual("[dbo].[TestTableType]", proc.Parameters[0].SchemaType);
+					Assert.That(proc, Is.Not.Null);
+					Assert.That(proc.Parameters[0].SchemaType, Is.EqualTo("[dbo].[TestTableType]"));
 				}
 
 				// test SqlException handing
-				Assert.IsFalse(SqlServerTransientExceptionDetector.IsHandled(new InvalidOperationException(), out var errors));
+				Assert.That(SqlServerTransientExceptionDetector.IsHandled(new InvalidOperationException(), out var errors), Is.False);
 				Exception? sex = null;
 				try
 				{
@@ -862,21 +977,27 @@ namespace Tests.Data
 				{
 					sex = ex;
 				}
-				Assert.IsTrue  (SqlServerTransientExceptionDetector.IsHandled(sex!, out errors));
-				Assert.AreEqual(1, errors!.Count());
-				Assert.AreEqual(8134, errors!.Single());
+
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(SqlServerTransientExceptionDetector.IsHandled(sex!, out errors), Is.True);
+					Assert.That(errors!.Count(), Is.EqualTo(1));
+					Assert.That(errors!.Single(), Is.EqualTo(8134));
+				}
 
 				var cs = DataConnection.GetConnectionString(GetProviderName(context, out var _));
 
 				// test MARS not set
-				Assert.AreEqual(cs.ToLowerInvariant().Contains("multipleactiveresultsets=true"), db.IsMarsEnabled);
+#pragma warning disable CS0618 // Type or member is obsolete
+				Assert.That(db.IsMarsEnabled, Is.EqualTo(cs.ToLowerInvariant().Contains("multipleactiveresultsets=true")));
+#pragma warning restore CS0618 // Type or member is obsolete
 
 				// test server version
 				using (var cn = ((SqlServerDataProvider)db.DataProvider).Adapter.CreateConnection(cs))
 				{
 					cn.Open();
 
-					Assert.IsNotNull(cn.ServerVersion);
+					Assert.That(cn.ServerVersion, Is.Not.Null);
 				}
 
 				void TestBulkCopy()
@@ -887,23 +1008,25 @@ namespace Tests.Data
 						var options = new BulkCopyOptions()
 						{
 							BulkCopyType       = BulkCopyType.ProviderSpecific,
-							NotifyAfter        = 500,
+							NotifyAfter        = 5,
 							RowsCopiedCallback = arg => copied = arg.RowsCopied
 						};
 
 						db.BulkCopy(
 							options,
-							Enumerable.Range(0, 1000).Select(n => new SqlServerTests.AllTypes() { ID = 2000 + n }));
-
-						Assert.AreEqual(!unmapped, trace.Contains("INSERT BULK"));
-						Assert.AreEqual(1000, copied);
+							Enumerable.Range(0, 10).Select(n => new SqlServerTests.AllTypes() { ID = 2000 + n }));
+						using (Assert.EnterMultipleScope())
+						{
+							Assert.That(trace.Contains("INSERT BULK"), Is.EqualTo(!unmapped));
+							Assert.That(copied, Is.EqualTo(10));
+						}
 					}
 					finally
 					{
 						db.GetTable<SqlServerTests.AllTypes>().Delete(p => p.ID >= 2000);
 
 						// test quotation works
-						Assert.True(trace.Contains("[AllTypes]"));
+						Assert.That(trace, Does.Contain("[AllTypes]"));
 					}
 				}
 
@@ -915,23 +1038,25 @@ namespace Tests.Data
 						var options = new BulkCopyOptions()
 						{
 							BulkCopyType       = BulkCopyType.ProviderSpecific,
-							NotifyAfter        = 500,
+							NotifyAfter        = 5,
 							RowsCopiedCallback = arg => copied = arg.RowsCopied
 						};
 
 						await db.BulkCopyAsync(
 							options,
-							Enumerable.Range(0, 1000).Select(n => new SqlServerTests.AllTypes() { ID = 2000 + n }));
-
-						Assert.AreEqual(!unmapped, trace.Contains("INSERT ASYNC BULK"));
-						Assert.AreEqual(1000, copied);
+							Enumerable.Range(0, 10).Select(n => new SqlServerTests.AllTypes() { ID = 2000 + n }));
+						using (Assert.EnterMultipleScope())
+						{
+							Assert.That(trace.Contains("INSERT ASYNC BULK"), Is.EqualTo(!unmapped));
+							Assert.That(copied, Is.EqualTo(10));
+						}
 					}
 					finally
 					{
 						await db.GetTable<SqlServerTests.AllTypes>().DeleteAsync(p => p.ID >= 2000);
 
 						// test quotation works
-						Assert.True(trace.Contains("[AllTypes]"));
+						Assert.That(trace, Does.Contain("[AllTypes]"));
 					}
 				}
 			}
@@ -941,30 +1066,37 @@ namespace Tests.Data
 		public async Task TestSapHanaNative([IncludeDataSources(ProviderName.SapHanaNative)] string context, [Values] ConnectionType type)
 		{
 			var unmapped = type == ConnectionType.MiniProfilerNoMappings;
-#if NETFRAMEWORK
-			using (var db = CreateDataConnection(new SapHanaDataProvider(), context, type, DbProviderFactories.GetFactory("Sap.Data.Hana").GetType().Assembly.GetType("Sap.Data.Hana.HanaConnection")!))
-#else
-			using (var db = CreateDataConnection(new SapHanaDataProvider(), context, type, "Sap.Data.Hana.HanaConnection, Sap.Data.Hana.Core.v2.1"))
-#endif
-			{
-				var trace = string.Empty;
-				db.OnTraceConnection += (TraceInfo ti) =>
-				{
-					if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
-						trace = ti.SqlText;
-				};
+			var trace = string.Empty;
 
+			var connectionType = ((SapHanaDataProvider)SapHanaTools.GetDataProvider(SapHanaProvider.Unmanaged)).Adapter.ConnectionType;
+			using (var db = CreateDataConnection(SapHanaTools.GetDataProvider(SapHanaProvider.Unmanaged), context, type, connectionType, onTrace: ti =>
+			{
+				if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
+					trace = ti.SqlText;
+			}))
+			{
 				var binaryValue = new byte[] { 1, 2, 3 };
-				Assert.AreEqual(binaryValue, db.Execute<byte[]>("SELECT cast(:p as blob) from dummy", new DataParameter("p", binaryValue, DataType.Image)));
-				Assert.True    (trace.Contains("DECLARE @p Binary("));
-				Assert.AreEqual(binaryValue, db.Execute<byte[]>("SELECT cast(:p as varbinary) from dummy", new DataParameter("p", binaryValue, DataType.Binary)));
-				Assert.True    (trace.Contains("DECLARE @p Binary("));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(db.Execute<byte[]>("SELECT cast(:p as blob) from dummy", new DataParameter("p", binaryValue, DataType.Image)), Is.EqualTo(binaryValue));
+					Assert.That(trace, Does.Contain("DECLARE @p Blob("));
+					Assert.That(db.Execute<byte[]>("SELECT cast(:p as varbinary) from dummy", new DataParameter("p", binaryValue, DataType.Binary)), Is.EqualTo(binaryValue));
+				}
+
+				Assert.That(trace, Does.Contain("DECLARE @p VarBinary("));
 				var textValue = "test";
-				Assert.AreEqual(textValue, db.Execute<string>("SELECT cast(:p as text) from dummy", new DataParameter("p", textValue, DataType.Text)));
-				Assert.True    (trace.Contains("DECLARE @p NVarChar("));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(db.Execute<string>("SELECT cast(:p as text) from dummy", new DataParameter("p", textValue, DataType.Text)), Is.EqualTo(textValue));
+					Assert.That(trace, Does.Contain("DECLARE @p Text("));
+				}
+
 				var ntextValue = "тест";
-				Assert.AreEqual(ntextValue, db.Execute<string>("SELECT cast(:p as nclob) from dummy", new DataParameter("p", ntextValue, DataType.NText)));
-				Assert.True    (trace.Contains("DECLARE @p  -- Xml"));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(db.Execute<string>("SELECT cast(:p as nclob) from dummy", new DataParameter("p", ntextValue, DataType.NText)), Is.EqualTo(ntextValue));
+					Assert.That(trace, Does.Contain("DECLARE @p NClob"));
+				}
 
 				// bulk copy without and with transaction
 				TestBulkCopy();
@@ -994,9 +1126,11 @@ namespace Tests.Data
 						db.BulkCopy(
 							options,
 							Enumerable.Range(0, 1000).Select(n => new SapHanaTests.AllType() { ID = 2000 + n }));
-
-						Assert.AreEqual(!unmapped, trace.Contains("INSERT BULK"));
-						Assert.AreEqual(1000, copied);
+						using (Assert.EnterMultipleScope())
+						{
+							Assert.That(trace.Contains("INSERT BULK"), Is.EqualTo(!unmapped));
+							Assert.That(copied, Is.EqualTo(1000));
+						}
 					}
 					finally
 					{
@@ -1019,14 +1153,16 @@ namespace Tests.Data
 						await db.BulkCopyAsync(
 							options,
 							Enumerable.Range(0, 1000).Select(n => new SapHanaTests.AllType() { ID = 2000 + n }));
-
-#if NET472
-						Assert.AreEqual(!unmapped, trace.Contains("INSERT ASYNC BULK"));
+						using (Assert.EnterMultipleScope())
+						{
+#if NETFRAMEWORK
+							Assert.That(trace.Contains("INSERT ASYNC BULK"), Is.EqualTo(!unmapped));
 #else
-						Assert.AreEqual(!unmapped, trace.Contains("INSERT BULK"));
+						Assert.That(trace.Contains("INSERT BULK"), Is.EqualTo(!unmapped));
 #endif
 
-						Assert.AreEqual(1000, copied);
+							Assert.That(copied, Is.EqualTo(1000));
+						}
 					}
 					finally
 					{
@@ -1039,19 +1175,20 @@ namespace Tests.Data
 		[Test]
 		public void TestSybaseNative([IncludeDataSources(ProviderName.Sybase)] string context, [Values] ConnectionType type)
 		{
+			var trace = string.Empty;
 			var unmapped = type == ConnectionType.MiniProfilerNoMappings;
-			using (var db = CreateDataConnection(SybaseTools.GetDataProvider(ProviderName.Sybase), context, type, DbProviderFactories.GetFactory("Sybase.Data.AseClient").GetType().Assembly.GetType("Sybase.Data.AseClient.AseConnection")!))
+			using (var db = CreateDataConnection(SybaseTools.GetDataProvider(SybaseProvider.Unmanaged), context, type, DbProviderFactories.GetFactory("Sybase.Data.AseClient").GetType().Assembly.GetType("Sybase.Data.AseClient.AseConnection")!, onTrace: ti =>
 			{
-				var trace = string.Empty;
-				db.OnTraceConnection += (TraceInfo ti) =>
-				{
-					if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
-						trace = ti.SqlText;
-				};
-
+				if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
+					trace = ti.SqlText;
+			}))
+			{
 				var ntextValue = "тест";
-				Assert.AreEqual(ntextValue, db.Execute<string>("SELECT @p", new DataParameter("p", ntextValue, DataType.NText)));
-				Assert.True    (trace.Contains("DECLARE @p Unitext("));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(db.Execute<string>("SELECT @p", new DataParameter("p", ntextValue, DataType.NText)), Is.EqualTo(ntextValue));
+					Assert.That(trace, Does.Contain("DECLARE @p Unitext("));
+				}
 
 				// bulk copy without and with transaction
 				TestBulkCopy();
@@ -1076,9 +1213,11 @@ namespace Tests.Data
 						db.BulkCopy(
 							options,
 							Enumerable.Range(0, 500).Select(n => new SybaseTests.AllType() { ID = 2000 + n, bitDataType = true }));
-
-						Assert.AreEqual(!unmapped, trace.Contains("INSERT BULK"));
-						Assert.AreEqual(500, copied);
+						using (Assert.EnterMultipleScope())
+						{
+							Assert.That(trace.Contains("INSERT BULK"), Is.EqualTo(!unmapped));
+							Assert.That(copied, Is.EqualTo(500));
+						}
 					}
 					finally
 					{
@@ -1091,39 +1230,38 @@ namespace Tests.Data
 		[Test]
 		public void TestSybaseManaged([IncludeDataSources(ProviderName.SybaseManaged)] string context, [Values] ConnectionType type)
 		{
+			var trace = string.Empty;
 			var unmapped = type == ConnectionType.MiniProfilerNoMappings;
-			using (var db = CreateDataConnection(SybaseTools.GetDataProvider(ProviderName.SybaseManaged), context, type, "AdoNetCore.AseClient.AseConnection, AdoNetCore.AseClient"))
+			using (var db = CreateDataConnection(SybaseTools.GetDataProvider(SybaseProvider.DataAction), context, type, "AdoNetCore.AseClient.AseConnection, AdoNetCore.AseClient", onTrace: ti =>
 			{
-				var trace = string.Empty;
-				db.OnTraceConnection += (TraceInfo ti) =>
-				{
-					if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
-						trace = ti.SqlText;
-				};
-
+				if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
+					trace = ti.SqlText;
+			}))
+			{
 				var ntextValue = "тест";
-				Assert.AreEqual(ntextValue, db.Execute<string>("SELECT @p", new DataParameter("p", ntextValue, DataType.NText)));
-				Assert.True    (trace.Contains("DECLARE @p Unitext("));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(db.Execute<string>("SELECT @p", new DataParameter("p", ntextValue, DataType.NText)), Is.EqualTo(ntextValue));
+					Assert.That(trace, Does.Contain("DECLARE @p Unitext("));
+				}
 
 				var schema = db.DataProvider.GetSchemaProvider().GetSchema(db);
 			}
 		}
 
-#if NET472
+#if NETFRAMEWORK
 		[Test]
 		public void TestInformixIFX([IncludeDataSources(ProviderName.Informix)] string context, [Values] ConnectionType type)
 		{
 			var unmapped  = type == ConnectionType.MiniProfilerNoMappings;
-			var provider  = new TestInformixDataProvider(ProviderName.Informix);
-			using (var db = CreateDataConnection(provider, context, type, "IBM.Data.Informix.IfxConnection, IBM.Data.Informix"))
+			var provider  = new TestInformixDataProvider(ProviderName.Informix, InformixProvider.Informix);
+			var trace = string.Empty;
+			using (var db = CreateDataConnection(provider, context, type, "IBM.Data.Informix.IfxConnection, IBM.Data.Informix", onTrace: ti =>
 			{
-				var trace = string.Empty;
-				db.OnTraceConnection += (TraceInfo ti) =>
-				{
-					if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
-						trace = ti.SqlText;
-				};
-
+				if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
+					trace = ti.SqlText;
+			}))
+			{
 				// IfxType type name test
 				try
 				{
@@ -1133,24 +1271,31 @@ namespace Tests.Data
 				catch
 				{
 				}
-				Assert.True(trace.Contains("DECLARE @p Clob("));
+
+				Assert.That(trace, Does.Contain("DECLARE @p Clob("));
 
 				// provider-specific type classes
 				if (!provider.Adapter.IsIDSProvider)
 				{
 					var ifxTSVal = db.Execute<IfxTimeSpan>("SELECT FIRST 1 intervalDataType FROM ALLTYPES WHERE intervalDataType IS NOT NULL");
-					Assert.AreEqual(ifxTSVal, db.Execute<IfxTimeSpan>("SELECT FIRST 1 intervalDataType FROM ALLTYPES WHERE intervalDataType  = ?", new DataParameter("@p", ifxTSVal, DataType.Time)));
+					Assert.That(db.Execute<IfxTimeSpan>("SELECT FIRST 1 intervalDataType FROM ALLTYPES WHERE intervalDataType  = ?", new DataParameter("@p", ifxTSVal, DataType.Time)), Is.EqualTo(ifxTSVal));
 					var rawValue = db.Execute<object>("SELECT FIRST 1 intervalDataType FROM ALLTYPES WHERE intervalDataType  = ?", new DataParameter("@p", ifxTSVal, DataType.Time));
-					Assert.True    (rawValue is TimeSpan);
-					Assert.AreEqual((TimeSpan)ifxTSVal, rawValue);
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(rawValue, Is.InstanceOf<TimeSpan>());
+						Assert.That(rawValue, Is.EqualTo((TimeSpan)ifxTSVal));
+					}
 				}
 				else
 				{
 					var dateTimeValue = db.Execute<IfxDateTime>("SELECT FIRST 1 datetimeDataType FROM ALLTYPES WHERE ID = 2");
-					Assert.AreEqual(dateTimeValue, db.Execute<IfxDateTime>("SELECT FIRST 1 datetimeDataType FROM ALLTYPES WHERE datetimeDataType  = ?", new DataParameter("@p", dateTimeValue, DataType.DateTime)));
+					Assert.That(db.Execute<IfxDateTime>("SELECT FIRST 1 datetimeDataType FROM ALLTYPES WHERE datetimeDataType  = ?", new DataParameter("@p", dateTimeValue, DataType.DateTime)), Is.EqualTo(dateTimeValue));
 					var rawValue = db.Execute<object>("SELECT FIRST 1 datetimeDataType FROM ALLTYPES WHERE datetimeDataType  = ?", new DataParameter("@p", dateTimeValue, DataType.DateTime));
-					Assert.True    (rawValue is DateTime);
-					Assert.AreEqual((DateTime)dateTimeValue, rawValue);
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(rawValue, Is.InstanceOf<DateTime>());
+						Assert.That(rawValue, Is.EqualTo((DateTime)dateTimeValue));
+					}
 				}
 
 				// bulk copy (transaction not supported)
@@ -1175,9 +1320,11 @@ namespace Tests.Data
 						db.BulkCopy(
 							options,
 							Enumerable.Range(0, 1000).Select(n => new InformixTests.AllType() { ID = 2000 + n }));
-
-						Assert.AreEqual(!unmapped, trace.Contains("INSERT BULK"));
-						Assert.AreEqual(1000, copied);
+						using (Assert.EnterMultipleScope())
+						{
+							Assert.That(trace.Contains("INSERT BULK"), Is.EqualTo(!unmapped));
+							Assert.That(copied, Is.EqualTo(1000));
+						}
 					}
 					finally
 					{
@@ -1190,8 +1337,8 @@ namespace Tests.Data
 
 		sealed class TestInformixDataProvider : InformixDataProvider
 		{
-			public TestInformixDataProvider(string providerName)
-				: base(providerName)
+			public TestInformixDataProvider(string providerName, InformixProvider provider)
+				: base(providerName, provider)
 			{
 			}
 		}
@@ -1199,21 +1346,15 @@ namespace Tests.Data
 		[Test]
 		public void TestInformixDB2([IncludeDataSources(ProviderName.InformixDB2)] string context, [Values] ConnectionType type)
 		{
+			var trace = string.Empty;
 			var unmapped = type == ConnectionType.MiniProfilerNoMappings;
-			var provider = new TestInformixDataProvider(ProviderName.InformixDB2);
-#if NETCOREAPP3_1
-			using (var db = CreateDataConnection(provider, context, type, $"{DB2ProviderAdapter.ClientNamespaceOld}.DB2Connection, {DB2ProviderAdapter.AssemblyNameOld}"))
-#else
-			using (var db = CreateDataConnection(provider, context, type, $"{DB2ProviderAdapter.ClientNamespace}.DB2Connection, {DB2ProviderAdapter.AssemblyName}"))
-#endif
+			var provider = new TestInformixDataProvider(ProviderName.InformixDB2, InformixProvider.DB2);
+			using (var db = CreateDataConnection(provider, context, type, $"{DB2ProviderAdapter.ClientNamespace}.DB2Connection, {DB2ProviderAdapter.AssemblyName}", onTrace: ti =>
 			{
-				var trace = string.Empty;
-				db.OnTraceConnection += (TraceInfo ti) =>
-				{
-					if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
-						trace = ti.SqlText;
-				};
-
+				if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
+					trace = ti.SqlText;
+			}))
+			{
 				// DB2Type type name test
 				try
 				{
@@ -1222,14 +1363,17 @@ namespace Tests.Data
 				}
 				catch { }
 
-				Assert.True(trace.Contains("DECLARE @p Clob("));
+				Assert.That(trace, Does.Contain("DECLARE @p Clob("));
 
 				// provider-specific type classes
 				var dateTimeValue = db.Execute<DB2DateTime>("SELECT FIRST 1 datetimeDataType FROM ALLTYPES WHERE ID = 2");
-				Assert.AreEqual(dateTimeValue, db.Execute<DB2DateTime>("SELECT FIRST 1 datetimeDataType FROM ALLTYPES WHERE datetimeDataType  = ?", new DataParameter("@p", dateTimeValue, DataType.DateTime)));
+				Assert.That(db.Execute<DB2DateTime>("SELECT FIRST 1 datetimeDataType FROM ALLTYPES WHERE datetimeDataType  = ?", new DataParameter("@p", dateTimeValue, DataType.DateTime)), Is.EqualTo(dateTimeValue));
 				var rawValue = db.Execute<object>("SELECT FIRST 1 datetimeDataType FROM ALLTYPES WHERE datetimeDataType  = ?", new DataParameter("@p", dateTimeValue, DataType.DateTime));
-				Assert.True    (rawValue is DateTime);
-				Assert.AreEqual((DateTime)dateTimeValue, rawValue);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rawValue, Is.InstanceOf<DateTime>());
+					Assert.That(rawValue, Is.EqualTo((DateTime)dateTimeValue));
+				}
 
 				// bulk copy (transaction not supported)
 				if (provider.Adapter.DB2BulkCopy != null)
@@ -1253,9 +1397,11 @@ namespace Tests.Data
 						db.BulkCopy(
 							options,
 							Enumerable.Range(0, 1000).Select(n => new InformixTests.AllType() { ID = 2000 + n }));
-
-						Assert.AreEqual(!unmapped, trace.Contains("INSERT BULK"));
-						Assert.AreEqual(1000, copied);
+						using (Assert.EnterMultipleScope())
+						{
+							Assert.That(trace.Contains("INSERT BULK"), Is.EqualTo(!unmapped));
+							Assert.That(copied, Is.EqualTo(1000));
+						}
 					}
 					finally
 					{
@@ -1265,7 +1411,7 @@ namespace Tests.Data
 			}
 		}
 
-#if NET472
+#if NETFRAMEWORK
 		[Test]
 		public void TestOracleNative([IncludeDataSources(TestProvName.AllOracleNative)] string context, [Values] ConnectionType type)
 		{
@@ -1273,65 +1419,76 @@ namespace Tests.Data
 			var unmapped  = type == ConnectionType.MiniProfilerNoMappings;
 
 			OracleDataProvider provider;
+			Type connectionType;
 			using (var db = GetDataConnection(context))
-				provider = new OracleTests.TestOracleDataProvider(db.DataProvider.Name, ((OracleDataProvider)db.DataProvider).Provider, ((OracleDataProvider)db.DataProvider).Version);
-
-			using (var db = CreateDataConnection(provider, context, type, "Oracle.DataAccess.Client.OracleConnection, Oracle.DataAccess"))
 			{
-				var trace = string.Empty;
-				db.OnTraceConnection += (TraceInfo ti) =>
-				{
-					if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
-						trace = ti.SqlText;
-				};
+				provider = new OracleTests.TestOracleDataProvider(db.DataProvider.Name, ((OracleDataProvider)db.DataProvider).Provider, ((OracleDataProvider)db.DataProvider).Version);
+				connectionType = ((OracleDataProvider)db.DataProvider).Adapter.ConnectionType;
+			}
 
+			var trace = string.Empty;
+			using (var db = CreateDataConnection(provider, context, type, connectionType, onTrace: ti =>
+			{
+				if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
+					trace = ti.SqlText;
+			}))
+			{
 				var commandInterceptor = new SaveWrappedCommandInterceptor(wrapped);
 				db.AddInterceptor(commandInterceptor);
 
 				var ntextValue = "тест";
-				Assert.AreEqual(ntextValue, db.Execute<string>("SELECT :p FROM SYS.DUAL", new DataParameter("p", ntextValue, DataType.NText)));
-				Assert.True(trace.Contains("DECLARE @p NClob "));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(db.Execute<string>("SELECT :p FROM SYS.DUAL", new DataParameter("p", ntextValue, DataType.NText)), Is.EqualTo(ntextValue));
+					Assert.That(trace, Does.Contain("DECLARE @p NClob "));
+				}
 
 				// provider-specific type classes and readers
 				var decValue = 123.45m;
 				var decimalValue = db.Execute<Oracle.DataAccess.Types.OracleDecimal>("SELECT :p FROM SYS.DUAL", new DataParameter("p", decValue, DataType.Decimal));
-				Assert.AreEqual(decValue, (decimal)decimalValue);
+				Assert.That((decimal)decimalValue, Is.EqualTo(decValue));
 				var rawValue = db.Execute<object>("SELECT :p FROM SYS.DUAL", new DataParameter("p", decValue, DataType.Decimal));
-				Assert.True    (rawValue is decimal);
-				Assert.AreEqual(decValue, (decimal)rawValue);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rawValue, Is.InstanceOf<decimal>());
+					Assert.That((decimal)rawValue, Is.EqualTo(decValue));
+				}
 
 				// OracleTimeStampTZ parameter creation and conversion to DateTimeOffset
 				var dtoVal = DateTimeOffset.Now;
 				var dtoValue = db.Execute<DateTimeOffset>("SELECT :p FROM SYS.DUAL", new DataParameter("p", dtoVal, DataType.DateTimeOffset) { Precision = 6});
 				dtoVal = dtoVal.AddTicks(-1 * (dtoVal.Ticks % 10));
-				Assert.AreEqual(dtoVal, dtoValue);
-				Assert.AreEqual(((OracleDataProvider)db.DataProvider).Adapter.OracleTimeStampTZType, commandInterceptor.Parameters[0].Value.GetType());
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(dtoValue, Is.EqualTo(dtoVal));
+					Assert.That(commandInterceptor.Parameters[0].Value.GetType(), Is.EqualTo(((OracleDataProvider)db.DataProvider).Adapter.OracleTimeStampTZType));
+				}
 
 				// bulk copy without transaction (transaction not supported)
 				TestBulkCopy();
 
 				var schema = db.DataProvider.GetSchemaProvider().GetSchema(db);
 				// ToLower, because native prodiver returns it lowercased
-				Assert.AreEqual(unmapped ? string.Empty : TestUtils.GetServerName(db, context).ToUpperInvariant(), schema.Database.ToUpperInvariant());
+				Assert.That(schema.Database.ToUpperInvariant(), Is.EqualTo(unmapped ? string.Empty : TestUtils.GetServerName(db, context).ToUpperInvariant()));
 				//schema.DataSource not asserted, as it returns db hostname
 
 				// dbcommand properties
-				db.DisposeCommand();
+				//db.DisposeCommand();
 
 				db.Execute<DateTimeOffset>("SELECT :p FROM SYS.DUAL", new DataParameter("p", dtoVal, DataType.DateTimeOffset));
 
 				dynamic cmd = commandInterceptor.Command!;
 				if (unmapped)
 				{
-					Assert.AreEqual(false, cmd.BindByName);
-					Assert.AreEqual(0, cmd.InitialLONGFetchSize);
-					Assert.AreEqual(0, cmd.ArrayBindCount);
+					Assert.That(cmd.BindByName, Is.False);
+					Assert.That(cmd.InitialLONGFetchSize, Is.Zero);
+					Assert.That(cmd.ArrayBindCount, Is.Zero);
 				}
 				else
 				{
-					Assert.AreEqual(true, cmd.BindByName);
-					Assert.AreEqual(-1, cmd.InitialLONGFetchSize);
-					Assert.AreEqual(0, cmd.ArrayBindCount);
+					Assert.That(cmd.BindByName, Is.True);
+					Assert.That(cmd.InitialLONGFetchSize, Is.EqualTo(-1));
+					Assert.That(cmd.ArrayBindCount, Is.Zero);
 				}
 
 				void TestBulkCopy()
@@ -1350,9 +1507,11 @@ namespace Tests.Data
 						db.BulkCopy(
 							options,
 							Enumerable.Range(0, 1000).Select(n => new OracleBulkCopyTable() { ID = 2000 + n }));
-
-						Assert.AreEqual(!unmapped, trace.Contains("INSERT BULK"));
-						Assert.AreEqual(1000, copied);
+						using (Assert.EnterMultipleScope())
+						{
+							Assert.That(trace.Contains("INSERT BULK"), Is.EqualTo(!unmapped));
+							Assert.That(copied, Is.EqualTo(1000));
+						}
 					}
 				}
 			}
@@ -1369,29 +1528,33 @@ namespace Tests.Data
 			using (var db = GetDataConnection(context))
 				provider = new OracleTests.TestOracleDataProvider(db.DataProvider.Name, ((OracleDataProvider)db.DataProvider).Provider, ((OracleDataProvider)db.DataProvider).Version);
 
-			using (var db = CreateDataConnection(provider, context, type, "Oracle.ManagedDataAccess.Client.OracleConnection, Oracle.ManagedDataAccess"))
+			var trace = string.Empty;
+			using (var db = CreateDataConnection(provider, context, type, "Oracle.ManagedDataAccess.Client.OracleConnection, Oracle.ManagedDataAccess", onTrace: ti =>
 			{
-				var trace = string.Empty;
-				db.OnTraceConnection += (TraceInfo ti) =>
-				{
-					if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
-						trace = ti.SqlText;
-				};
-
+				if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
+					trace = ti.SqlText;
+			}))
+			{
 				var commandInterceptor = new SaveWrappedCommandInterceptor(wrapped);
 				db.AddInterceptor(commandInterceptor);
 
 				var ntextValue = "тест";
-				Assert.AreEqual(ntextValue, db.Execute<string>("SELECT :p FROM SYS.DUAL", new DataParameter("p", ntextValue, DataType.NText)));
-				Assert.True(trace.Contains("DECLARE @p NClob "));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(db.Execute<string>("SELECT :p FROM SYS.DUAL", new DataParameter("p", ntextValue, DataType.NText)), Is.EqualTo(ntextValue));
+					Assert.That(trace, Does.Contain("DECLARE @p NClob "));
+				}
 
 				// provider-specific type classes and readers
 				var decValue = 123.45m;
 				var decimalValue = db.Execute<Oracle.ManagedDataAccess.Types.OracleDecimal>("SELECT :p FROM SYS.DUAL", new DataParameter("p", decValue, DataType.Decimal));
-				Assert.AreEqual(decValue, (decimal)decimalValue);
+				Assert.That((decimal)decimalValue, Is.EqualTo(decValue));
 				var rawValue = db.Execute<object>("SELECT :p FROM SYS.DUAL", new DataParameter("p", decValue, DataType.Decimal));
-				Assert.True    (rawValue is decimal);
-				Assert.AreEqual(decValue, (decimal)rawValue);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rawValue, Is.InstanceOf<decimal>());
+					Assert.That((decimal)rawValue, Is.EqualTo(decValue));
+				}
 
 				// OracleTimeStampTZ parameter creation and conversion to DateTimeOffset
 				var dtoVal = TestData.DateTimeOffset;
@@ -1403,35 +1566,47 @@ namespace Tests.Data
 				{
 					var dtoValue = db.Execute<DateTimeOffset>("SELECT :p FROM SYS.DUAL", new DataParameter("p", dtoVal, DataType.DateTimeOffset) { Precision = 6 });
 					dtoVal = dtoVal.AddTicks(-1 * (dtoVal.Ticks % 10));
-					Assert.AreEqual(dtoVal, dtoValue);
-					Assert.AreEqual(((OracleDataProvider)db.DataProvider).Adapter.OracleTimeStampTZType, commandInterceptor.Parameters[0].Value!.GetType()!);
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(dtoValue, Is.EqualTo(dtoVal));
+						Assert.That(commandInterceptor.Parameters[0].Value!.GetType()!, Is.EqualTo(((OracleDataProvider)db.DataProvider).Adapter.OracleTimeStampTZType));
+					}
 				}
 
 				// bulk copy without transaction (transaction not supported)
 				TestBulkCopy();
 
 				var schema = db.DataProvider.GetSchemaProvider().GetSchema(db);
-				Assert.AreEqual(unmapped ? string.Empty : TestUtils.GetServerName(db, context).ToUpperInvariant(), schema.Database.ToUpperInvariant());
+				Assert.That(schema.Database.ToUpperInvariant(), Is.EqualTo(unmapped ? string.Empty : TestUtils.GetServerName(db, context).ToUpperInvariant()));
 				//schema.DataSource not asserted, as it returns db hostname
 
 				// dbcommand properties
-				db.DisposeCommand();
+				//db.DisposeCommand();
+
+				// starting from v23 those properties available only on non-disposed command
+				void assertCommand(DbCommand command)
+				{
+					dynamic cmd = type == ConnectionType.Raw ? command : ((dynamic)command).WrappedCommand;
+
+					if (unmapped)
+					{
+						Assert.That(cmd.BindByName, Is.False);
+						Assert.That(cmd.InitialLONGFetchSize, Is.Zero);
+						Assert.That(cmd.ArrayBindCount, Is.Zero);
+					}
+					else
+					{
+						Assert.That(cmd.BindByName, Is.True);
+						Assert.That(cmd.InitialLONGFetchSize, Is.EqualTo(-1));
+						Assert.That(cmd.ArrayBindCount, Is.Zero);
+					}
+				}
+
+				commandInterceptor.OnCommandSet += assertCommand;
 
 				db.Execute<DateTimeOffset>("SELECT :p FROM SYS.DUAL", new DataParameter("p", dtoVal, DataType.DateTimeOffset));
 
-				dynamic cmd = commandInterceptor.Command!;
-				if (unmapped)
-				{
-					Assert.AreEqual(false, cmd.BindByName);
-					Assert.AreEqual(0, cmd.InitialLONGFetchSize);
-					Assert.AreEqual(0, cmd.ArrayBindCount);
-				}
-				else
-				{
-					Assert.AreEqual(true, cmd.BindByName);
-					Assert.AreEqual(-1, cmd.InitialLONGFetchSize);
-					Assert.AreEqual(0, cmd.ArrayBindCount);
-				}
+				commandInterceptor.OnCommandSet -= assertCommand;
 
 				void TestBulkCopy()
 				{
@@ -1449,9 +1624,11 @@ namespace Tests.Data
 						db.BulkCopy(
 							options,
 							Enumerable.Range(0, 1000).Select(n => new OracleBulkCopyTable() { ID = 2000 + n }));
-
-						Assert.AreEqual(!unmapped, trace.Contains("INSERT BULK"));
-						Assert.AreEqual(1000, copied);
+						using (Assert.EnterMultipleScope())
+						{
+							Assert.That(trace.Contains("INSERT BULK"), Is.EqualTo(!unmapped));
+							Assert.That(copied, Is.EqualTo(1000));
+						}
 					}
 				}
 			}
@@ -1468,29 +1645,33 @@ namespace Tests.Data
 			using (var db = GetDataConnection(context))
 				provider = new OracleTests.TestOracleDataProvider(db.DataProvider.Name, ((OracleDataProvider)db.DataProvider).Provider, ((OracleDataProvider)db.DataProvider).Version);
 
-			using (var db = CreateDataConnection(provider, context, type, "Devart.Data.Oracle.OracleConnection, Devart.Data.Oracle"))
+			var trace = string.Empty;
+			using (var db = CreateDataConnection(provider, context, type, "Devart.Data.Oracle.OracleConnection, Devart.Data.Oracle", onTrace: ti =>
 			{
-				var trace = string.Empty;
-				db.OnTraceConnection += (TraceInfo ti) =>
-				{
-					if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
-						trace = ti.SqlText;
-				};
-
+				if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
+					trace = ti.SqlText;
+			}))
+			{
 				var commandInterceptor = new SaveWrappedCommandInterceptor(wrapped);
 				db.AddInterceptor(commandInterceptor);
 
 				var ntextValue = "тест";
-				Assert.AreEqual(ntextValue, db.Execute<string>("SELECT :p FROM SYS.DUAL", new DataParameter("p", ntextValue, DataType.NText)));
-				Assert.True(trace.Contains("DECLARE @p NClob(4) "));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(db.Execute<string>("SELECT :p FROM SYS.DUAL", new DataParameter("p", ntextValue, DataType.NText)), Is.EqualTo(ntextValue));
+					Assert.That(trace, Does.Contain("DECLARE @p NClob(4) "));
+				}
 
 				// provider-specific type classes and readers
 				var decValue = 123.45m;
 				var decimalValue = db.Execute<Devart.Data.Oracle.OracleNumber>("SELECT :p FROM SYS.DUAL", new DataParameter("p", decValue, DataType.Decimal));
-				Assert.AreEqual(decValue, (decimal)decimalValue);
+				Assert.That((decimal)decimalValue, Is.EqualTo(decValue));
 				var rawValue = db.Execute<object>("SELECT :p FROM SYS.DUAL", new DataParameter("p", decValue, DataType.Decimal));
-				Assert.True    (rawValue is decimal);
-				Assert.AreEqual(decValue, (decimal)rawValue);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rawValue, Is.InstanceOf<decimal>());
+					Assert.That((decimal)rawValue, Is.EqualTo(decValue));
+				}
 
 				// OracleTimeStampTZ parameter creation and conversion to DateTimeOffset
 				var dtoVal = TestData.DateTimeOffset;
@@ -1502,8 +1683,11 @@ namespace Tests.Data
 				{
 					var dtoValue = db.Execute<DateTimeOffset>("SELECT :p FROM SYS.DUAL", new DataParameter("p", dtoVal, DataType.DateTimeOffset) { Precision = 6 });
 					dtoVal = dtoVal.AddTicks(-1 * (dtoVal.Ticks % 10));
-					Assert.AreEqual(dtoVal, dtoValue);
-					Assert.AreEqual(((OracleDataProvider)db.DataProvider).Adapter.OracleTimeStampType, commandInterceptor.Parameters[0].Value!.GetType()!);
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(dtoValue, Is.EqualTo(dtoVal));
+						Assert.That(commandInterceptor.Parameters[0].Value!.GetType()!, Is.EqualTo(((OracleDataProvider)db.DataProvider).Adapter.OracleTimeStampType));
+					}
 				}
 
 				TestBulkCopy();
@@ -1511,12 +1695,12 @@ namespace Tests.Data
 					TestBulkCopy();
 
 				// dbcommand properties
-				db.DisposeCommand();
+				//db.DisposeCommand();
 
 				db.Execute<DateTimeOffset>("SELECT :p FROM SYS.DUAL", new DataParameter("p", dtoVal, DataType.DateTimeOffset));
 
 				dynamic cmd = commandInterceptor.Command!;
-				Assert.AreEqual(!unmapped, cmd.PassParametersByName);
+				Assert.That(cmd.PassParametersByName, Is.Not.EqualTo(unmapped));
 
 				void TestBulkCopy()
 				{
@@ -1534,9 +1718,11 @@ namespace Tests.Data
 						db.BulkCopy(
 							options,
 							Enumerable.Range(0, 1000).Select(n => new OracleBulkCopyTable() { ID = 2000 + n }));
-
-						Assert.AreEqual(!unmapped, trace.Contains("INSERT BULK"));
-						Assert.AreEqual(1000, copied);
+						using (Assert.EnterMultipleScope())
+						{
+							Assert.That(trace.Contains("INSERT BULK"), Is.EqualTo(!unmapped));
+							Assert.That(copied, Is.EqualTo(1000));
+						}
 					}
 				}
 			}
@@ -1563,30 +1749,34 @@ namespace Tests.Data
 			}
 
 			var provider = (PostgreSQLDataProvider)Activator.CreateInstance(providerType)!;
+			var trace = string.Empty;
 
-			using (var db = CreateDataConnection(provider, context, type, "Npgsql.NpgsqlConnection, Npgsql"))
+			using (var db = CreateDataConnection(provider, context, type, "Npgsql.NpgsqlConnection, Npgsql", onTrace: ti =>
+			{
+				if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
+					trace = ti.SqlText;
+			}))
 			{
 				// needed for proper AllTypes columns mapping
 				db.AddMappingSchema(new MappingSchema(context));
 
-				var trace = string.Empty;
-				db.OnTraceConnection += (TraceInfo ti) =>
-				{
-					if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
-						trace = ti.SqlText;
-				};
-
 				var jsonValue = /*lang=json,strict*/ "{ \"x\": 1 }";
-				Assert.AreEqual(jsonValue, db.Execute<string>("SELECT @p", new DataParameter("@p", jsonValue, DataType.Json)));
-				Assert.True    (trace.Contains("DECLARE @p Json"));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(db.Execute<string>("SELECT @p", new DataParameter("@p", jsonValue, DataType.Json)), Is.EqualTo(jsonValue));
+					Assert.That(trace, Does.Contain("DECLARE @p Json"));
+				}
 
 				// provider-specific type classes and readers
 				var interval = TimeSpan.FromSeconds(-1234);
 				var nValue = db.Execute<NpgsqlTypes.NpgsqlInterval>("SELECT @p", new DataParameter("@p", interval, DataType.Interval));
-				Assert.AreEqual(interval, TimeSpan.FromTicks(nValue.Time * 10));
+				Assert.That(TimeSpan.FromTicks(nValue.Time * 10), Is.EqualTo(interval));
 				var rawValue = db.Execute<object>("SELECT @p", new DataParameter("@p", interval, DataType.Interval));
-				Assert.True    (rawValue is TimeSpan);
-				Assert.AreEqual(interval, (TimeSpan)rawValue);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rawValue, Is.InstanceOf<TimeSpan>());
+					Assert.That((TimeSpan)rawValue, Is.EqualTo(interval));
+				}
 
 				// bulk copy without and with transaction
 				TestBulkCopy();
@@ -1601,17 +1791,20 @@ namespace Tests.Data
 				// provider types support by schema
 				var schema = db.DataProvider.GetSchemaProvider().GetSchema(db);
 				var allTypes = schema.Tables.Where(t => t.TableName == "AllTypes").SingleOrDefault()!;
-				Assert.NotNull (allTypes);
+				Assert.That(allTypes, Is.Not.Null);
 				var tsColumn = allTypes.Columns.Where(c => c.ColumnName == "intervalDataType").SingleOrDefault()!;
-				Assert.NotNull (tsColumn);
-				Assert.AreEqual("NpgsqlInterval", tsColumn.ProviderSpecificType);
+				Assert.That(tsColumn, Is.Not.Null);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(tsColumn.ProviderSpecificType, Is.EqualTo("NpgsqlInterval"));
 
-				// provider properties
-				Assert.AreEqual(true, provider.HasMacAddr8);
+					// provider properties
+					Assert.That(provider.HasMacAddr8, Is.True);
+				}
 
 				// type name generation from provider type
 				using (db.CreateLocalTable<TestPostgreSQLTypeName>())
-					Assert.True(trace.Contains("\"Column\" circle     NULL"));
+					Assert.That(trace, Does.Contain("\"Column\" circle     NULL"));
 
 				// test server version
 				var serverVersion = db.Execute<int>("SHOW server_version_num");
@@ -1620,13 +1813,15 @@ namespace Tests.Data
 				{
 					cn.Open();
 
-					Assert.AreEqual(serverVersion / 10000, cn.PostgreSqlVersion.Major);
+					var version = ((PostgreSQLDataProvider)db.DataProvider).Adapter.ConnectionWrapper(cn).PostgreSqlVersion;
+
+					Assert.That(version.Major, Is.EqualTo(serverVersion / 10000));
 
 					// machine-readable version number... sure
-					if (cn.PostgreSqlVersion.Major == 9)
-						Assert.AreEqual((serverVersion / 100) % 100, cn.PostgreSqlVersion.Minor);
+					if (version.Major == 9)
+						Assert.That(version.Minor, Is.EqualTo((serverVersion / 100) % 100));
 					else
-						Assert.AreEqual(serverVersion % 100, cn.PostgreSqlVersion.Minor);
+						Assert.That(version.Minor, Is.EqualTo(serverVersion % 100));
 
 				}
 
@@ -1646,9 +1841,11 @@ namespace Tests.Data
 						db.BulkCopy(
 							options,
 							Enumerable.Range(0, 1000).Select(n => new PostgreSQLTests.AllTypes() { ID = 2000 + n }));
-
-						Assert.AreEqual(!unmapped, trace.Contains("INSERT BULK"));
-						Assert.AreEqual(1000, copied);
+						using (Assert.EnterMultipleScope())
+						{
+							Assert.That(trace.Contains("INSERT BULK"), Is.EqualTo(!unmapped));
+							Assert.That(copied, Is.EqualTo(1000));
+						}
 					}
 					finally
 					{
@@ -1672,9 +1869,11 @@ namespace Tests.Data
 						await db.BulkCopyAsync(
 							options,
 							Enumerable.Range(0, 1000).Select(n => new PostgreSQLTests.AllTypes() { ID = 2000 + n }));
-
-						Assert.AreEqual(!unmapped, trace.Contains("INSERT ASYNC BULK"));
-						Assert.AreEqual(1000, copied);
+						using (Assert.EnterMultipleScope())
+						{
+							Assert.That(trace.Contains("INSERT ASYNC BULK"), Is.EqualTo(!unmapped));
+							Assert.That(copied, Is.EqualTo(1000));
+						}
 					}
 					finally
 					{
@@ -1715,18 +1914,13 @@ namespace Tests.Data
 			using (var db = GetDataConnection(context))
 				provider = new TestClickHouseDataProvider(db.DataProvider.Name, ((ClickHouseDataProvider)db.DataProvider).Provider);
 
-			// temporary workaround for https://github.com/Octonica/ClickHouseClient/issues/54
-			using (var db = context.IsAnyOf(ProviderName.ClickHouseOctonica)
-				? CreateDataConnection(provider, context, type, cs => (DbConnection)Activator.CreateInstance(provider.Adapter.ConnectionType, cs, null)!)
-				: CreateDataConnection(provider, context, type, provider.Adapter.ConnectionType))
+			var trace = string.Empty;
+			using (var db = CreateDataConnection(provider, context, type, provider.Adapter.ConnectionType, onTrace: ti =>
 			{
-				var trace = string.Empty;
-				db.OnTraceConnection += (TraceInfo ti) =>
-				{
-					if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
-						trace = ti.SqlText;
-				};
-
+				if (ti.TraceInfoStep == TraceInfoStep.BeforeExecute)
+					trace = ti.SqlText;
+			}))
+			{
 				// native bulk copy not supported for mysql interface
 				if (!context.IsAnyOf(ProviderName.ClickHouseMySql))
 				{
@@ -1751,11 +1945,11 @@ namespace Tests.Data
 							Enumerable.Range(0, 1000).Select(n => new ClickHouseBulkCopyTable() { ID = 2000 + n }));
 
 						// Client provider supports only async API
-						if (context.IsAnyOf(ProviderName.ClickHouseClient))
-							Assert.AreEqual(!unmapped, trace.Contains("INSERT ASYNC BULK"));
+						if (context.IsAnyOf(ProviderName.ClickHouseDriver))
+							Assert.That(trace.Contains("INSERT ASYNC BULK"), Is.EqualTo(!unmapped));
 						else
-							Assert.AreEqual(true, trace.Contains("INSERT INTO"));
-						Assert.AreEqual(1000, copied);
+							Assert.That(trace, Does.Contain("INSERT INTO"));
+						Assert.That(copied, Is.EqualTo(1000));
 					}
 				}
 
@@ -1775,11 +1969,11 @@ namespace Tests.Data
 							options,
 							Enumerable.Range(0, 1000).Select(n => new ClickHouseBulkCopyTable() { ID = 2000 + n }));
 
-						if (context.IsAnyOf(ProviderName.ClickHouseClient))
-							Assert.AreEqual(!unmapped, trace.Contains("INSERT ASYNC BULK"));
+						if (context.IsAnyOf(ProviderName.ClickHouseDriver))
+							Assert.That(trace.Contains("INSERT ASYNC BULK"), Is.EqualTo(!unmapped));
 						else
-							Assert.AreEqual(true, trace.Contains("INSERT INTO"));
-						Assert.AreEqual(1000, copied);
+							Assert.That(trace, Does.Contain("INSERT INTO"));
+						Assert.That(copied, Is.EqualTo(1000));
 					}
 				}
 			}
@@ -1792,19 +1986,30 @@ namespace Tests.Data
 			MiniProfilerNoMappings
 		}
 
-		private DataConnection CreateDataConnection(IDataProvider provider, string context, ConnectionType type, Type connectionType, string? csExtra = null)
+		private DataConnection CreateDataConnection(IDataProvider provider, string context, ConnectionType type, Type connectionType, string? csExtra = null, Action<TraceInfo>? onTrace = null)
 		{
-			return CreateDataConnection(provider, context, type, cs => (DbConnection)Activator.CreateInstance(connectionType, cs)!, csExtra);
+			return CreateDataConnection(provider, context, type, cs => (DbConnection)Activator.CreateInstance(connectionType, cs)!, csExtra, onTrace: onTrace);
 		}
 
-		private DataConnection CreateDataConnection(IDataProvider provider, string context, ConnectionType type, string connectionTypeName, string? csExtra = null)
+		private DataConnection CreateDataConnection(IDataProvider provider, string context, ConnectionType type, string connectionTypeName, string? csExtra = null, Action<TraceInfo>? onTrace = null)
 		{
-			return CreateDataConnection(provider, context, type, cs => (DbConnection)Activator.CreateInstance(Type.GetType(connectionTypeName, true)!, cs)!, csExtra);
+			return CreateDataConnection(provider, context, type, cs => (DbConnection)Activator.CreateInstance(Type.GetType(connectionTypeName, true)!, cs)!, csExtra, onTrace: onTrace);
 		}
 
-		private DataConnection CreateDataConnection(IDataProvider provider, string context, ConnectionType type, Func<string, DbConnection> connectionFactory, string? csExtra = null)
+		private DataConnection CreateDataConnection(
+			IDataProvider provider,
+			string context,
+			ConnectionType type,
+			Func<string, DbConnection> connectionFactory,
+			string? csExtra = null,
+			Func<DataConnection, IRetryPolicy?>? retryPolicyFactory = null,
+			Action<TraceInfo>? onTrace = null)
 		{
-			var db = new DataConnection(provider, options =>
+			var options = new DataOptions();
+			if (onTrace != null)
+				options = options.UseTracing(onTrace);
+
+			var db = new DataConnection(options.UseConnectionFactory(provider, options =>
 			{
 				// don't create connection using provider, or it will initialize types
 				var cn = connectionFactory(DataConnection.GetConnectionString(context) + csExtra);
@@ -1813,12 +2018,12 @@ namespace Tests.Data
 				{
 					case ConnectionType.MiniProfilerNoMappings      :
 					case ConnectionType.MiniProfiler                :
-						Assert.IsNotNull(MiniProfiler.Current);
+						Assert.That(MiniProfiler.Current, Is.Not.Null);
 						return new ProfiledDbConnection(cn, MiniProfiler.Current);
 				}
 
 				return cn;
-			});
+			}).UseFactory(retryPolicyFactory));
 
 			switch (type)
 			{

@@ -1,15 +1,15 @@
 ﻿using System;
 
 using LinqToDB;
+using LinqToDB.Data;
 using LinqToDB.Mapping;
 
 using NUnit.Framework;
 
+using Tests.Model;
+
 namespace Tests.Linq
 {
-	using LinqToDB.Data;
-	using Model;
-
 	[TestFixture]
 	public class AK107Tests : TestBase
 	{
@@ -49,12 +49,13 @@ namespace Tests.Linq
 			//var schema = context.IsAnyOf(TestProvName.AllOracle19) ? "sequence_schema" : "c##sequence_schema";
 			var schema = "c##sequence_schema";
 
-			using var db = GetDataConnection(context);
+			using var db = GetDataContext(context);
 			try
 			{
 				db.Execute($"DROP USER \"{schema}\" CASCADE");
 			}
 			catch { }
+
 			db.Execute($"CREATE USER \"{schema}\" IDENTIFIED BY \"secret_password\"");
 			db.Execute($"GRANT CREATE SEQUENCE TO \"{schema}\"");
 			db.Execute($"create sequence \"{schema}\".\"sq_test_user\"");
@@ -178,21 +179,21 @@ namespace Tests.Linq
 		}
 
 		//[Test]
-		public void ContractLinqManyInsertWithIdentity()
-		{
-			using (var db = GetDataContext("Oracle"))
-			{
-				db.BeginTransaction();
+		//public void ContractLinqManyInsertWithIdentity()
+		//{
+		//	using (var db = GetDataContext("Oracle"))
+		//	{
+		//		db.BeginTransaction();
 
-				var user = new User { Name = "user" };
-				user.Id = Convert.ToInt64(db.InsertWithIdentity(user));
+		//		var user = new User { Name = "user" };
+		//		user.Id = Convert.ToInt64(db.InsertWithIdentity(user));
 
-				db.GetTable<User>().InsertWithIdentity(db.GetTable<Contract>(), x => new Contract
-				{
-					UserId = x.Id, ContractNo = 1, Name = "contract"
-				});
-			}
-		}
+		//		db.GetTable<User>().InsertWithIdentity(db.GetTable<Contract>(), x => new Contract
+		//		{
+		//			UserId = x.Id, ContractNo = 1, Name = "contract"
+		//		});
+		//	}
+		//}
 
 		[Test]
 		public void SequenceNameTest([IncludeDataSources(false, TestProvName.AllOracle)]
@@ -206,11 +207,11 @@ namespace Tests.Linq
 			var user = new User { Name = "user" };
 			user.Id = Convert.ToInt64(db.InsertWithIdentity(user));
 
-			Assert.True(db.LastQuery?.Contains($"\"{schema}\".\"sq_test_user\".nextval"));
+			Assert.That(db.LastQuery?.Contains($"\"{schema}\".\"sq_test_user\".nextval"), Is.True);
 
 			db.Insert(new Contract { UserId = user.Id, ContractNo = 1, Name = "contract1" });
 
-			Assert.True(db.LastQuery?.Contains("\t\"sq_test_user_contract\".nextval"));
+			Assert.That(db.LastQuery?.Contains("\t\"sq_test_user_contract\".nextval"), Is.True);
 		}
 	}
 }

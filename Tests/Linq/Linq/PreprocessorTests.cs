@@ -1,17 +1,17 @@
 ﻿using System.Linq;
 using System.Linq.Expressions;
 
+using LinqToDB;
 using LinqToDB.Data;
 using LinqToDB.Expressions;
-using LinqToDB.Linq;
+using LinqToDB.Internal.Linq;
 
 using NUnit.Framework;
 
+using Tests.Model;
+
 namespace Tests.Linq
 {
-	using LinqToDB;
-	using Model;
-
 	[TestFixture]
 	public class PreprocessorTests : TestBase
 	{
@@ -33,13 +33,13 @@ namespace Tests.Linq
 							return Expression.Constant((int) constant.Value + 1);
 						}
 					}
+
 					return e;
 				});
 
 				return result;
 			}
 		}
-
 
 		[Test]
 		public void Test([DataSources(false)] string context)
@@ -49,7 +49,7 @@ namespace Tests.Linq
 				for (int i = 0; i < 3; i++)
 				{
 					var newId = db.GetTable<Parent>().Where(p => p.ParentID == 1).Select(p => p.ParentID).First();
-					Assert.AreEqual(2, newId);
+					Assert.That(newId, Is.EqualTo(2));
 				}
 			}
 		}

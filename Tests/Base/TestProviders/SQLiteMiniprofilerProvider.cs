@@ -1,11 +1,10 @@
-﻿using System;
-using System.Data.Common;
+﻿using System.Data.Common;
 
 using LinqToDB;
-using LinqToDB.Configuration;
 using LinqToDB.Data;
 using LinqToDB.DataProvider;
 using LinqToDB.DataProvider.SQLite;
+using LinqToDB.Internal.DataProvider.SQLite;
 
 using StackExchange.Profiling;
 using StackExchange.Profiling.Data;
@@ -17,7 +16,7 @@ namespace Tests
 		private readonly bool _mapped;
 
 		public SQLiteMiniprofilerProvider(bool mapped)
-			: base(ProviderName.SQLiteClassic)
+			: base(ProviderName.SQLiteClassic, SQLiteProvider.System)
 		{
 			_mapped = mapped;
 		}

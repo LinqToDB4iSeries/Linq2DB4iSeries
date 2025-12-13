@@ -9,7 +9,7 @@ namespace Tests.xUpdate
 	public partial class MergeTests
 	{
 		[Test]
-		public void SameSourceDeleteBySource([IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
+		public void SameSourceDeleteBySource([MergeNotMatchedBySourceDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -25,10 +25,12 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(2));
 
-				Assert.AreEqual(2, rows);
-
-				Assert.AreEqual(2, result.Count);
+					Assert.That(result, Has.Count.EqualTo(2));
+				}
 
 				AssertRow(InitialTargetData[2], result[0], null, 203);
 				AssertRow(InitialTargetData[3], result[1], null, null);
@@ -36,7 +38,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void SameSourceDeleteBySourceWithPredicate([IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
+		public void SameSourceDeleteBySourceWithPredicate([MergeNotMatchedBySourceDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -52,10 +54,12 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(1));
 
-				Assert.AreEqual(1, rows);
-
-				Assert.AreEqual(3, result.Count);
+					Assert.That(result, Has.Count.EqualTo(3));
+				}
 
 				AssertRow(InitialTargetData[1], result[0], null, null);
 				AssertRow(InitialTargetData[2], result[1], null, 203);
@@ -64,7 +68,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void OtherSourceDeleteBySource([IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
+		public void OtherSourceDeleteBySource([MergeNotMatchedBySourceDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -80,17 +84,19 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(3));
 
-				Assert.AreEqual(3, rows);
-
-				Assert.AreEqual(1, result.Count);
+					Assert.That(result, Has.Count.EqualTo(1));
+				}
 
 				AssertRow(InitialTargetData[2], result[0], null, 203);
 			}
 		}
 
 		[Test]
-		public void OtherSourceDeleteBySourceWithPredicate([IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
+		public void OtherSourceDeleteBySourceWithPredicate([MergeNotMatchedBySourceDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -106,10 +112,12 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(1));
 
-				Assert.AreEqual(1, rows);
-
-				Assert.AreEqual(3, result.Count);
+					Assert.That(result, Has.Count.EqualTo(3));
+				}
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[2], result[1], null, 203);
@@ -118,8 +126,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void AnonymousSourceDeleteBySourceWithPredicate(
-			[IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
+		public void AnonymousSourceDeleteBySourceWithPredicate([MergeNotMatchedBySourceDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -138,10 +145,12 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(1));
 
-				Assert.AreEqual(1, rows);
-
-				Assert.AreEqual(3, result.Count);
+					Assert.That(result, Has.Count.EqualTo(3));
+				}
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[2], result[1], null, 203);
@@ -150,8 +159,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void AnonymousListSourceDeleteBySourceWithPredicate(
-			[IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
+		public void AnonymousListSourceDeleteBySourceWithPredicate([MergeNotMatchedBySourceDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -161,7 +169,7 @@ namespace Tests.xUpdate
 
 				var rows = table
 					.Merge()
-					.Using(GetSource2(db).ToList().Select(_ => new
+					.Using(GetSource2(db).ToList().OrderBy(r => r.OtherId).Select(_ => new
 					{
 						Key = _.OtherId
 					}))
@@ -170,10 +178,12 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(1));
 
-				Assert.AreEqual(1, rows);
-
-				Assert.AreEqual(3, result.Count);
+					Assert.That(result, Has.Count.EqualTo(3));
+				}
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[2], result[1], null, 203);
@@ -182,7 +192,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void DeleteBySourceReservedAndCaseNames([IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
+		public void DeleteBySourceReservedAndCaseNames([MergeNotMatchedBySourceDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -202,10 +212,12 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(1));
 
-				Assert.AreEqual(1, rows);
-
-				Assert.AreEqual(3, result.Count);
+					Assert.That(result, Has.Count.EqualTo(3));
+				}
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[2], result[1], null, 203);
@@ -214,8 +226,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void DeleteBySourceReservedAndCaseNamesFromList(
-			[IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
+		public void DeleteBySourceReservedAndCaseNamesFromList([MergeNotMatchedBySourceDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -235,10 +246,12 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(1));
 
-				Assert.AreEqual(1, rows);
-
-				Assert.AreEqual(3, result.Count);
+					Assert.That(result, Has.Count.EqualTo(3));
+				}
 
 				AssertRow(InitialTargetData[0], result[0], null, null);
 				AssertRow(InitialTargetData[2], result[1], null, 203);
@@ -247,8 +260,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void DeleteBySourceFromPartialSourceProjection(
-			[IncludeDataSources(true, TestProvName.AllSqlServer2008Plus)] string context)
+		public void DeleteBySourceFromPartialSourceProjection([MergeNotMatchedBySourceDataContextSource] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -264,10 +276,12 @@ namespace Tests.xUpdate
 					.Merge();
 
 				var result = table.OrderBy(_ => _.Id).ToList();
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(rows, Is.EqualTo(1));
 
-				Assert.AreEqual(1, rows);
-
-				Assert.AreEqual(3, result.Count);
+					Assert.That(result, Has.Count.EqualTo(3));
+				}
 
 				AssertRow(InitialTargetData[1], result[0], null, null);
 				AssertRow(InitialTargetData[2], result[1], null, 203);

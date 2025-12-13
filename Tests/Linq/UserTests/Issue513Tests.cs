@@ -2,13 +2,14 @@
 using System.Threading;
 using System.Threading.Tasks;
 
+using LinqToDB;
+
 using NUnit.Framework;
+
+using Tests.Model;
 
 namespace Tests.UserTests
 {
-	using LinqToDB;
-	using Model;
-
 	[TestFixture]
 	public class Issue513Tests : TestBase
 	{
@@ -17,9 +18,12 @@ namespace Tests.UserTests
 		{
 			using (var db = GetDataContext(context))
 			{
-				Assert.AreEqual(typeof(InheritanceParentBase), InheritanceParent[0].GetType());
-				Assert.AreEqual(typeof(InheritanceParent1),    InheritanceParent[1].GetType());
-				Assert.AreEqual(typeof(InheritanceParent2),    InheritanceParent[2].GetType());
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(InheritanceParent[0].GetType(), Is.EqualTo(typeof(InheritanceParentBase)));
+					Assert.That(InheritanceParent[1].GetType(), Is.EqualTo(typeof(InheritanceParent1)));
+					Assert.That(InheritanceParent[2].GetType(), Is.EqualTo(typeof(InheritanceParent2)));
+				}
 
 				AreEqual(InheritanceParent, db.InheritanceParent);
 				AreEqual(InheritanceChild,  db.InheritanceChild);
@@ -29,7 +33,6 @@ namespace Tests.UserTests
 		// Informix disabled due to issue, described here (but it reproduced with client 4.1):
 		// https://www-01.ibm.com/support/docview.wss?uid=swg1IC66046
 		[Test]
-		[ActiveIssue("Fails due to connection limit for development version when run with nonmanaged provider", Configuration = TestProvName.AllSybase)]
 		public void Test([DataSources(TestProvName.AllInformix)] string context)
 		{
 			using (new DisableBaseline("Multi-threading"))

@@ -4,29 +4,30 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 using LinqToDB;
+using LinqToDB.Common;
 using LinqToDB.Mapping;
+using LinqToDB.Tools.Comparers;
 
 using NUnit.Framework;
 
-using LinqToDB.Tools.Comparers;
-using LinqToDB.Common;
+using Tests.Model;
 
 namespace Tests.xUpdate
 {
-	using Model;
-
 	[TestFixture]
 	public class InsertWithOutputTests : TestBase
 	{
-		private const string FeatureInsertOutputSingle     = $"{TestProvName.AllSqlServer},{TestProvName.AllFirebird},{TestProvName.AllMariaDB},{TestProvName.AllPostgreSQL},{TestProvName.AllSQLite}";
-		private const string FeatureInsertOutputMultiple   = $"{TestProvName.AllSqlServer},{TestProvName.AllMariaDB},{TestProvName.AllPostgreSQL},{TestProvName.AllSQLite}";
-		private const string FeatureInsertOutputWithSchema = $"{TestProvName.AllSqlServer},{TestProvName.AllFirebird},{TestProvName.AllMariaDB},{TestProvName.AllSQLite}";
+		private const string FeatureInsertOutputSingleWithExpressions   = $"{TestProvName.AllSqlServer},{TestProvName.AllFirebirdLess5},{TestProvName.AllMariaDB},{TestProvName.AllPostgreSQL},{TestProvName.AllSQLite}";
+		private const string FeatureInsertOutputSingle                  = $"{TestProvName.AllSqlServer},{TestProvName.AllFirebirdLess5},{TestProvName.AllMariaDB},{TestProvName.AllPostgreSQL},{TestProvName.AllSQLite},{ProviderName.Ydb}";
+		private const string FeatureInsertOutputMultipleWithExpressions = $"{TestProvName.AllSqlServer},{TestProvName.AllFirebird5Plus},{TestProvName.AllMariaDB},{TestProvName.AllPostgreSQL},{TestProvName.AllSQLite}";
+		private const string FeatureInsertOutputMultiple                = $"{TestProvName.AllSqlServer},{TestProvName.AllFirebird5Plus},{TestProvName.AllMariaDB},{TestProvName.AllPostgreSQL},{TestProvName.AllSQLite},{ProviderName.Ydb}";
+		private const string FeatureInsertOutputWithSchema              = $"{TestProvName.AllSqlServer},{TestProvName.AllFirebird},{TestProvName.AllMariaDB},{TestProvName.AllSQLite},{ProviderName.Ydb}";
 		private const string FeatureInsertOutputInto       = $"{TestProvName.AllSqlServer}";
 
 		[Table]
 		sealed class TableWithData
 		{
-			[Column]              public int     Id       { get; set; }
+			[PrimaryKey]          public int     Id       { get; set; }
 			[Column]              public int     Value    { get; set; }
 			[Column(Length = 50)] public string? ValueStr { get; set; }
 		}
@@ -34,7 +35,7 @@ namespace Tests.xUpdate
 		[Table(Schema = "TestSchema")]
 		sealed class TableWithDataAndSchema
 		{
-			[Column]              public int     Id       { get; set; }
+			[PrimaryKey]          public int     Id       { get; set; }
 			[Column]              public int     Value    { get; set; }
 			[Column(Length = 50)] public string? ValueStr { get; set; }
 		}
@@ -42,7 +43,7 @@ namespace Tests.xUpdate
 		[Table]
 		sealed class DestinationTable
 		{
-			[Column]              public int     Id       { get; set; }
+			[PrimaryKey]          public int     Id       { get; set; }
 			[Column]              public int     Value    { get; set; }
 			[Column(Length = 50)] public string? ValueStr { get; set; }
 		}
@@ -55,7 +56,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void InsertWithOutputProjectionFromQueryTest([IncludeDataSources(true, FeatureInsertOutputMultiple)] string context, [Values(100, 200)] int param)
+		public void InsertWithOutputProjectionFromQueryTest([IncludeDataSources(true, FeatureInsertOutputMultipleWithExpressions)] string context, [Values(100, 200)] int param)
 		{
 			var sourceData    = GetSourceData();
 			using (var db     = GetDataContext(context))
@@ -89,7 +90,7 @@ namespace Tests.xUpdate
 			}
 		}
 
-		[Test]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/5192")]
 		public void InsertWithOutputFromQueryTest([IncludeDataSources(true, FeatureInsertOutputMultiple)] string context, [Values(100, 200)] int param)
 		{
 			var sourceData    = GetSourceData();
@@ -157,16 +158,17 @@ namespace Tests.xUpdate
 			using (var source = db.CreateLocalTable(sourceData))
 			using (var target = db.CreateLocalTable<DestinationTable>())
 			{
-				var output = await source
-					.Where(s => s.Id > 3)
-					.InsertWithOutputAsync(
-						target,
-						s => new DestinationTable
-						{
-							Id       = s.Id       + param,
-							Value    = s.Value    + param,
-							ValueStr = s.ValueStr + param
-						});
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.Where(s => s.Id > 3)
+						.InsertWithOutputAsync(
+							target,
+							s => new DestinationTable
+							{
+								Id       = s.Id       + param,
+								Value    = s.Value    + param,
+								ValueStr = s.ValueStr + param
+							}));
 
 				AreEqual(source.Where(s => s.Id > 3).Select(s => new DestinationTable
 				{
@@ -186,16 +188,17 @@ namespace Tests.xUpdate
 			using (var source = db.CreateLocalTable(sourceData))
 			using (var target = db.CreateLocalTable<DestinationTable>())
 			{
-				var output = await source
-					.Where(s => s.Id == 3)
-					.InsertWithOutputAsync(
-						target,
-						s => new DestinationTable
-						{
-							Id       = s.Id       + param,
-							Value    = s.Value    + param,
-							ValueStr = s.ValueStr + param
-						});
+				var output = await AsyncEnumerableToListAsync(
+					source
+						.Where(s => s.Id == 3)
+						.InsertWithOutputAsync(
+							target,
+							s => new DestinationTable
+							{
+								Id       = s.Id       + param,
+								Value    = s.Value    + param,
+								ValueStr = s.ValueStr + param
+							}));
 
 				AreEqual(source.Where(s => s.Id == 3).Select(s => new DestinationTable
 				{
@@ -208,7 +211,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void InsertWithOutputTest3([IncludeDataSources(true, FeatureInsertOutputSingle)] string context, [Values(100, 200)] int param)
+		public void InsertWithOutputTest3([IncludeDataSources(true, FeatureInsertOutputSingleWithExpressions)] string context, [Values(100, 200)] int param)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -247,7 +250,7 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void InsertWithOutputTest4([IncludeDataSources(true, FeatureInsertOutputSingle)] string context, [Values(100, 200)] int param)
+		public void InsertWithOutputTest4([IncludeDataSources(true, FeatureInsertOutputSingleWithExpressions)] string context, [Values(100, 200)] int param)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -295,10 +298,12 @@ namespace Tests.xUpdate
 				};
 
 				var output = source.InsertWithOutput(data);
-
-				Assert.AreEqual(data.Id,       output.Id);
-				Assert.AreEqual(data.Value,    output.Value);
-				Assert.AreEqual(data.ValueStr, output.ValueStr);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(output.Id, Is.EqualTo(data.Id));
+					Assert.That(output.Value, Is.EqualTo(data.Value));
+					Assert.That(output.ValueStr, Is.EqualTo(data.ValueStr));
+				}
 			}
 		}
 
@@ -316,10 +321,12 @@ namespace Tests.xUpdate
 				};
 
 				var output = await source.InsertWithOutputAsync(data);
-
-				Assert.AreEqual(data.Id,       output.Id);
-				Assert.AreEqual(data.Value,    output.Value);
-				Assert.AreEqual(data.ValueStr, output.ValueStr);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(output.Id, Is.EqualTo(data.Id));
+					Assert.That(output.Value, Is.EqualTo(data.Value));
+					Assert.That(output.ValueStr, Is.EqualTo(data.ValueStr));
+				}
 			}
 		}
 
@@ -338,10 +345,12 @@ namespace Tests.xUpdate
 
 				var output = source.InsertWithOutput(dataFunc);
 				var data   = dataFunc.CompileExpression()();
-
-				Assert.AreEqual(data.Id,       output.Id);
-				Assert.AreEqual(data.Value,    output.Value);
-				Assert.AreEqual(data.ValueStr, output.ValueStr);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(output.Id, Is.EqualTo(data.Id));
+					Assert.That(output.Value, Is.EqualTo(data.Value));
+					Assert.That(output.ValueStr, Is.EqualTo(data.ValueStr));
+				}
 			}
 		}
 
@@ -360,10 +369,12 @@ namespace Tests.xUpdate
 
 				var output = await source.InsertWithOutputAsync(dataFunc);
 				var data = dataFunc.CompileExpression()();
-
-				Assert.AreEqual(data.Id,       output.Id);
-				Assert.AreEqual(data.Value,    output.Value);
-				Assert.AreEqual(data.ValueStr, output.ValueStr);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(output.Id, Is.EqualTo(data.Id));
+					Assert.That(output.Value, Is.EqualTo(data.Value));
+					Assert.That(output.ValueStr, Is.EqualTo(data.ValueStr));
+				}
 			}
 		}
 
@@ -383,10 +394,12 @@ namespace Tests.xUpdate
 				var output = source.InsertWithOutput(dataFunc,
 					inserted => new { inserted.Id, inserted.Value, inserted.ValueStr });
 				var data = dataFunc.CompileExpression()();
-
-				Assert.AreEqual(data.Id,       output.Id);
-				Assert.AreEqual(data.Value,    output.Value);
-				Assert.AreEqual(data.ValueStr, output.ValueStr);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(output.Id, Is.EqualTo(data.Id));
+					Assert.That(output.Value, Is.EqualTo(data.Value));
+					Assert.That(output.ValueStr, Is.EqualTo(data.ValueStr));
+				}
 			}
 		}
 
@@ -408,10 +421,12 @@ namespace Tests.xUpdate
 					.Value(a => a.Id, value)
 					.Value(a => a.ValueStr, "SomeStr" + value)
 					.InsertWithOutput();
-
-				Assert.AreEqual(data.Id, output.Id);
-				Assert.AreEqual(data.Value, output.Value);
-				Assert.AreEqual(data.ValueStr, output.ValueStr);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(output.Id, Is.EqualTo(data.Id));
+					Assert.That(output.Value, Is.EqualTo(data.Value));
+					Assert.That(output.ValueStr, Is.EqualTo(data.ValueStr));
+				}
 			}
 		}
 
@@ -433,10 +448,12 @@ namespace Tests.xUpdate
 					.Value(a => a.Id, value)
 					.Value(a => a.ValueStr, "SomeStr" + value)
 					.InsertWithOutputAsync();
-
-				Assert.AreEqual(data.Id, output.Id);
-				Assert.AreEqual(data.Value, output.Value);
-				Assert.AreEqual(data.ValueStr, output.ValueStr);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(output.Id, Is.EqualTo(data.Id));
+					Assert.That(output.Value, Is.EqualTo(data.Value));
+					Assert.That(output.ValueStr, Is.EqualTo(data.ValueStr));
+				}
 			}
 		}
 
@@ -459,10 +476,12 @@ namespace Tests.xUpdate
 					.Value(a => a.ValueStr, () => "SomeStr" + value)
 					.InsertWithOutput();
 				var data   = dataFunc.CompileExpression()();
-
-				Assert.AreEqual(data.Id, output.Id);
-				Assert.AreEqual(data.Value, output.Value);
-				Assert.AreEqual(data.ValueStr, output.ValueStr);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(output.Id, Is.EqualTo(data.Id));
+					Assert.That(output.Value, Is.EqualTo(data.Value));
+					Assert.That(output.ValueStr, Is.EqualTo(data.ValueStr));
+				}
 			}
 		}
 
@@ -485,10 +504,12 @@ namespace Tests.xUpdate
 					.Value(a => a.ValueStr, () => "SomeStr" + value)
 					.InsertWithOutputAsync();
 				var data = dataFunc.CompileExpression()();
-
-				Assert.AreEqual(data.Id, output.Id);
-				Assert.AreEqual(data.Value, output.Value);
-				Assert.AreEqual(data.ValueStr, output.ValueStr);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(output.Id, Is.EqualTo(data.Id));
+					Assert.That(output.Value, Is.EqualTo(data.Value));
+					Assert.That(output.ValueStr, Is.EqualTo(data.ValueStr));
+				}
 			}
 		}
 
@@ -511,10 +532,12 @@ namespace Tests.xUpdate
 					.Value(a => a.ValueStr, () => "SomeStr" + value)
 					.InsertWithOutput(inserted => new { inserted.Id, inserted.Value, inserted.ValueStr });
 				var data = dataFunc.CompileExpression()();
-
-				Assert.AreEqual(data.Id, output.Id);
-				Assert.AreEqual(data.Value, output.Value);
-				Assert.AreEqual(data.ValueStr, output.ValueStr);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(output.Id, Is.EqualTo(data.Id));
+					Assert.That(output.Value, Is.EqualTo(data.Value));
+					Assert.That(output.ValueStr, Is.EqualTo(data.ValueStr));
+				}
 			}
 		}
 
@@ -550,7 +573,7 @@ namespace Tests.xUpdate
 										}
 								);
 
-						Assert.AreEqual(1, output);
+						Assert.That(output, Is.EqualTo(1));
 
 						AreEqual(db.Child.Where(c => c.ChildID > idsLimit).Select(c => new Child
 							{
@@ -600,7 +623,7 @@ namespace Tests.xUpdate
 									},
 									t.Table);
 
-						Assert.AreEqual(1, output);
+						Assert.That(output, Is.EqualTo(1));
 
 						AreEqual(db.Child.Where(c => c.ChildID > idsLimit).Select(c => new Child
 							{
@@ -655,7 +678,7 @@ namespace Tests.xUpdate
 										}
 								);
 
-						Assert.AreEqual(1, output);
+						Assert.That(output, Is.EqualTo(1));
 
 						AreEqual(db.Child.Where(c => c.ChildID > idsLimit).Select(c => new Child
 							{
@@ -705,7 +728,7 @@ namespace Tests.xUpdate
 									},
 									t);
 
-						Assert.AreEqual(1, output);
+						Assert.That(output, Is.EqualTo(1));
 
 						AreEqual(db.Child.Where(c => c.ChildID > idsLimit).Select(c => new Child
 							{
@@ -755,7 +778,7 @@ namespace Tests.xUpdate
 								},
 								t);
 
-					Assert.AreEqual(1, output);
+					Assert.That(output, Is.EqualTo(1));
 
 					AreEqual(db.Child.Where(c => c.ChildID > idsLimit)
 						.Select(
@@ -809,7 +832,7 @@ namespace Tests.xUpdate
 								},
 								tRef);
 
-					Assert.AreEqual(1, output);
+					Assert.That(output, Is.EqualTo(1));
 
 					AreEqual(db.Child.Where(c => c.ChildID > idsLimit)
 						.Select(
@@ -862,7 +885,7 @@ namespace Tests.xUpdate
 							},
 							tRef);
 
-				Assert.AreEqual(1, output);
+				Assert.That(output, Is.EqualTo(1));
 
 				AreEqual(db.Child.Where(c => c.ChildID > idsLimit)
 					.Select(
@@ -903,19 +926,25 @@ namespace Tests.xUpdate
 			};
 
 			var rowCount = source.InsertWithOutputInto(setter, outputRef);
-			Assert.AreEqual(1, rowCount);
+			Assert.That(rowCount, Is.EqualTo(1));
 
 			var sourceData = source.ToArray();
-			Assert.AreEqual(1, sourceData.Length);
-			Assert.AreEqual(42, sourceData[0].Id);
-			Assert.AreEqual(42123, sourceData[0].Value);
-			Assert.AreEqual("SomeStr", sourceData[0].ValueStr);
+			Assert.That(sourceData, Has.Length.EqualTo(1));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(sourceData[0].Id, Is.EqualTo(42));
+				Assert.That(sourceData[0].Value, Is.EqualTo(42123));
+				Assert.That(sourceData[0].ValueStr, Is.EqualTo("SomeStr"));
+			}
 
 			var outputData = output.ToArray();
-			Assert.AreEqual(1, outputData.Length);
-			Assert.AreEqual(42, outputData[0].Id);
-			Assert.AreEqual(42123, outputData[0].Value);
-			Assert.AreEqual("SomeStr", outputData[0].ValueStr);
+			Assert.That(outputData, Has.Length.EqualTo(1));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(outputData[0].Id, Is.EqualTo(42));
+				Assert.That(outputData[0].Value, Is.EqualTo(42123));
+				Assert.That(outputData[0].ValueStr, Is.EqualTo("SomeStr"));
+			}
 		}
 		
 		[Test]
@@ -936,19 +965,25 @@ namespace Tests.xUpdate
 			};
 
 			var rowCount = await source.InsertWithOutputIntoAsync(setter, outputRef);
-			Assert.AreEqual(1, rowCount);
+			Assert.That(rowCount, Is.EqualTo(1));
 
 			var sourceData = source.ToArray();
-			Assert.AreEqual(1, sourceData.Length);
-			Assert.AreEqual(42, sourceData[0].Id);
-			Assert.AreEqual(42123, sourceData[0].Value);
-			Assert.AreEqual("SomeStr", sourceData[0].ValueStr);
+			Assert.That(sourceData, Has.Length.EqualTo(1));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(sourceData[0].Id, Is.EqualTo(42));
+				Assert.That(sourceData[0].Value, Is.EqualTo(42123));
+				Assert.That(sourceData[0].ValueStr, Is.EqualTo("SomeStr"));
+			}
 
 			var outputData = output.ToArray();
-			Assert.AreEqual(1, outputData.Length);
-			Assert.AreEqual(42, outputData[0].Id);
-			Assert.AreEqual(42123, outputData[0].Value);
-			Assert.AreEqual("SomeStr", outputData[0].ValueStr);
+			Assert.That(outputData, Has.Length.EqualTo(1));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(outputData[0].Id, Is.EqualTo(42));
+				Assert.That(outputData[0].Value, Is.EqualTo(42123));
+				Assert.That(outputData[0].ValueStr, Is.EqualTo("SomeStr"));
+			}
 		}
 
 		[Test]
@@ -974,19 +1009,25 @@ namespace Tests.xUpdate
 				Id = v.Id + 1,
 				ValueStr = "Foo" + v.ValueStr
 			});
-			Assert.AreEqual(1, rowCount);
+			Assert.That(rowCount, Is.EqualTo(1));
 
 			var sourceData = source.ToArray();
-			Assert.AreEqual(1, sourceData.Length);
-			Assert.AreEqual(42, sourceData[0].Id);
-			Assert.AreEqual(42123, sourceData[0].Value);
-			Assert.AreEqual("SomeStr", sourceData[0].ValueStr);
+			Assert.That(sourceData, Has.Length.EqualTo(1));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(sourceData[0].Id, Is.EqualTo(42));
+				Assert.That(sourceData[0].Value, Is.EqualTo(42123));
+				Assert.That(sourceData[0].ValueStr, Is.EqualTo("SomeStr"));
+			}
 
 			var outputData = output.ToArray();
-			Assert.AreEqual(1, outputData.Length);
-			Assert.AreEqual(43, outputData[0].Id);
-			Assert.AreEqual(84246, outputData[0].Value);
-			Assert.AreEqual("FooSomeStr", outputData[0].ValueStr);
+			Assert.That(outputData, Has.Length.EqualTo(1));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(outputData[0].Id, Is.EqualTo(43));
+				Assert.That(outputData[0].Value, Is.EqualTo(84246));
+				Assert.That(outputData[0].ValueStr, Is.EqualTo("FooSomeStr"));
+			}
 		}
 
 		[Test]
@@ -1012,19 +1053,25 @@ namespace Tests.xUpdate
 				Id = v.Id + 1,
 				ValueStr = "Foo" + v.ValueStr
 			});
-			Assert.AreEqual(1, rowCount);
+			Assert.That(rowCount, Is.EqualTo(1));
 
 			var sourceData = source.ToArray();
-			Assert.AreEqual(1, sourceData.Length);
-			Assert.AreEqual(42, sourceData[0].Id);
-			Assert.AreEqual(42123, sourceData[0].Value);
-			Assert.AreEqual("SomeStr", sourceData[0].ValueStr);
+			Assert.That(sourceData, Has.Length.EqualTo(1));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(sourceData[0].Id, Is.EqualTo(42));
+				Assert.That(sourceData[0].Value, Is.EqualTo(42123));
+				Assert.That(sourceData[0].ValueStr, Is.EqualTo("SomeStr"));
+			}
 
 			var outputData = output.ToArray();
-			Assert.AreEqual(1, outputData.Length);
-			Assert.AreEqual(43, outputData[0].Id);
-			Assert.AreEqual(84246, outputData[0].Value);
-			Assert.AreEqual("FooSomeStr", outputData[0].ValueStr);
+			Assert.That(outputData, Has.Length.EqualTo(1));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(outputData[0].Id, Is.EqualTo(43));
+				Assert.That(outputData[0].Value, Is.EqualTo(84246));
+				Assert.That(outputData[0].ValueStr, Is.EqualTo("FooSomeStr"));
+			}
 		}
 
 		[Test]
@@ -1062,7 +1109,7 @@ namespace Tests.xUpdate
 								}
 						);
 
-				Assert.AreEqual(1, output);
+				Assert.That(output, Is.EqualTo(1));
 
 				AreEqual(db.Child.Where(c => c.ChildID > idsLimit).Select(c => new Child
 					{
@@ -1119,7 +1166,7 @@ namespace Tests.xUpdate
 								}
 						);
 
-				Assert.AreEqual(1, output);
+				Assert.That(output, Is.EqualTo(1));
 
 				AreEqual(db.Child.Where(c => c.ChildID > idsLimit).Select(c => new Child
 					{
@@ -1165,19 +1212,25 @@ namespace Tests.xUpdate
 				.Into(targetRef)
 				.InsertWithOutputInto(outputRef);
 
-			Assert.AreEqual(1, rowCount);
+			Assert.That(rowCount, Is.EqualTo(1));
 
 			var targetData = target.ToArray();
-			Assert.AreEqual(1, targetData.Length);
-			Assert.AreEqual(3, targetData[0].Id);
-			Assert.AreEqual(30, targetData[0].Value);
-			Assert.AreEqual("Jane Doe", targetData[0].ValueStr);
+			Assert.That(targetData, Has.Length.EqualTo(1));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(targetData[0].Id, Is.EqualTo(3));
+				Assert.That(targetData[0].Value, Is.EqualTo(30));
+				Assert.That(targetData[0].ValueStr, Is.EqualTo("Jane Doe"));
+			}
 
 			var outputData = output.ToArray();
-			Assert.AreEqual(1, outputData.Length);
-			Assert.AreEqual(3, outputData[0].Id);
-			Assert.AreEqual(30, outputData[0].Value);
-			Assert.AreEqual("Jane Doe", outputData[0].ValueStr);
+			Assert.That(outputData, Has.Length.EqualTo(1));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(outputData[0].Id, Is.EqualTo(3));
+				Assert.That(outputData[0].Value, Is.EqualTo(30));
+				Assert.That(outputData[0].ValueStr, Is.EqualTo("Jane Doe"));
+			}
 		}
 
 		[Test]
@@ -1204,19 +1257,25 @@ namespace Tests.xUpdate
 				.Into(targetRef)
 				.InsertWithOutputIntoAsync(outputRef);
 
-			Assert.AreEqual(1, rowCount);
+			Assert.That(rowCount, Is.EqualTo(1));
 
 			var targetData = target.ToArray();
-			Assert.AreEqual(1, targetData.Length);
-			Assert.AreEqual(3, targetData[0].Id);
-			Assert.AreEqual(30, targetData[0].Value);
-			Assert.AreEqual("Jane Doe", targetData[0].ValueStr);
+			Assert.That(targetData, Has.Length.EqualTo(1));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(targetData[0].Id, Is.EqualTo(3));
+				Assert.That(targetData[0].Value, Is.EqualTo(30));
+				Assert.That(targetData[0].ValueStr, Is.EqualTo("Jane Doe"));
+			}
 
 			var outputData = output.ToArray();
-			Assert.AreEqual(1, outputData.Length);
-			Assert.AreEqual(3, outputData[0].Id);
-			Assert.AreEqual(30, outputData[0].Value);
-			Assert.AreEqual("Jane Doe", outputData[0].ValueStr);
+			Assert.That(outputData, Has.Length.EqualTo(1));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(outputData[0].Id, Is.EqualTo(3));
+				Assert.That(outputData[0].Value, Is.EqualTo(30));
+				Assert.That(outputData[0].ValueStr, Is.EqualTo("Jane Doe"));
+			}
 		}
 
 		[Test]
@@ -1233,10 +1292,12 @@ namespace Tests.xUpdate
 				};
 
 				var output = source.InsertWithOutput(data);
-
-				Assert.AreEqual(data.Id,       output.Id);
-				Assert.AreEqual(data.Value,    output.Value);
-				Assert.AreEqual(data.ValueStr, output.ValueStr);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(output.Id, Is.EqualTo(data.Id));
+					Assert.That(output.Value, Is.EqualTo(data.Value));
+					Assert.That(output.ValueStr, Is.EqualTo(data.ValueStr));
+				}
 			}
 		}
 
@@ -1268,13 +1329,55 @@ namespace Tests.xUpdate
 			};
 
 			var x = table.InsertWithOutput(what);
-
-			Assert.AreEqual(what.Id      , x.Id      );
-			Assert.AreEqual(what.Co2Aend , x.Co2Aend );
-			Assert.AreEqual(what.Nest    , x.Nest    );
-			Assert.AreEqual(what.Co2Grund, x.Co2Grund);
-			Assert.AreEqual(what.Nesto   , x.Nesto   );
-			Assert.AreEqual(what.Whatsov , x.Whatsov );
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(x.Id, Is.EqualTo(what.Id));
+				Assert.That(x.Co2Aend, Is.EqualTo(what.Co2Aend));
+				Assert.That(x.Nest, Is.EqualTo(what.Nest));
+				Assert.That(x.Co2Grund, Is.EqualTo(what.Co2Grund));
+				Assert.That(x.Nesto, Is.EqualTo(what.Nesto));
+				Assert.That(x.Whatsov, Is.EqualTo(what.Whatsov));
+			}
 		}
+
+		#region Issue 3581
+
+		[Table]
+		sealed class Issue3581Table
+		{
+			[PrimaryKey] public int Id { get; set; }
+			[Column ]public string? Name { get; set; }
+
+			[Column("ExternalId", ".Id")]
+			[Column("Source", ".Source")]
+			public ExternalId? ExternalId { get; set; }
+		}
+
+		sealed class ExternalId
+		{
+			public string? Id { get; set; }
+			public string? Source { get; set; }
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/3581")]
+		public void Issue3581Test([IncludeDataSources(true, FeatureInsertOutputSingle)] string context)
+		{
+			using var db    = GetDataContext(context);
+			using var table = db.CreateLocalTable<Issue3581Table>();
+
+			var row = new Issue3581Table {Id = 1, Name = "John Doe", ExternalId = new ExternalId() { Id = "1", Source = "unknown" } };
+			var created = table.InsertWithOutput(row);
+
+			Assert.That(created, Is.Not.Null);
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(created.Id, Is.EqualTo(row.Id));
+				Assert.That(created.Name, Is.EqualTo(row.Name));
+				Assert.That(created.ExternalId, Is.Not.Null);
+				Assert.That(created.ExternalId!.Id, Is.EqualTo(row.ExternalId.Id));
+				Assert.That(created.ExternalId.Source, Is.EqualTo(row.ExternalId.Source));
+			}
+		}
+		#endregion
 	}
 }

@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using LinqToDB;
+using LinqToDB.Async;
 using LinqToDB.Data;
 using LinqToDB.Mapping;
 
@@ -17,6 +18,7 @@ namespace Tests.xUpdate
 	{
 		sealed class IDTable
 		{
+			[PrimaryKey]
 			public int ID;
 		}
 
@@ -54,7 +56,8 @@ namespace Tests.xUpdate
 				using (var tmp = db.CreateTempTable(
 					"TempTable",
 					db.Parent.Select(p => new { ID = p.ParentID }),
-					tableOptions:TableOptions.CheckExistence))
+					tableOptions:TableOptions.CheckExistence,
+					setTable: ed => ed.Property(r => r.ID).IsPrimaryKey()))
 				{
 					var list =
 					(
@@ -88,6 +91,67 @@ namespace Tests.xUpdate
 						select t
 					).ToList();
 				}
+			}
+		}
+
+		[Test]
+		public async ValueTask CreateTable3Async([DataSources] string context)
+		{
+			await using var db = GetDataContext(context);
+
+			await using var tmp = await db.CreateTempTableAsync(
+					"TempTable",
+					db.Parent.Select(p => new { ID = p.ParentID }),
+					em => em
+						.Property(e => e.ID)
+							.IsPrimaryKey(),
+					tableOptions: TableOptions.CheckExistence);
+
+			var list = await
+					(
+						from p in db.Parent
+						join t in tmp on p.ParentID equals t.ID
+						select t
+					).ToListAsync();
+		}
+
+		[Test]
+		public void CreateTableWithHeaderFooter([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		{
+			using var db = GetDataConnection(context);
+
+			using var tmp = db.CreateTempTable<IDTable>(new CreateTempTableOptions(
+				TableName      : "CreateTableWithHeaderFooter",
+				StatementHeader: "/* THIS IS HEADER*/ CREATE TABLE {0}",
+				StatementFooter: "/* THIS IS FOOTER*/"));
+
+			var parts = db.LastQuery!.Split(["CREATE TABLE"], StringSplitOptions.None);
+			Assert.That(parts, Has.Length.EqualTo(2));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(parts[0], Does.Contain("/* THIS IS HEADER*/"));
+				Assert.That(parts[1], Does.Contain("/* THIS IS FOOTER*/"));
+			}
+		}
+
+		[Test]
+		public async ValueTask CreateTableWithHeaderFooterAsync([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		{
+			using var db = GetDataConnection(context);
+
+			db.DropTable<IDTable>(schemaName: "temp", tableName: "CreateTableWithHeaderFooter", tableOptions: TableOptions.CheckExistence);
+
+			await using var tmp = await db.CreateTempTableAsync<IDTable>(new CreateTempTableOptions(
+				TableName      : "CreateTableWithHeaderFooter",
+				StatementHeader: "/* THIS IS ASYNC HEADER*/ CREATE TABLE {0}",
+				StatementFooter: "/* THIS IS ASYNC FOOTER*/"));
+
+			var parts = db.LastQuery!.Split(["CREATE TABLE"], StringSplitOptions.None);
+			Assert.That(parts, Has.Length.EqualTo(2));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(parts[0], Does.Contain("/* THIS IS ASYNC HEADER*/"));
+				Assert.That(parts[1], Does.Contain("/* THIS IS ASYNC FOOTER*/"));
 			}
 		}
 
@@ -157,14 +221,9 @@ namespace Tests.xUpdate
 			}
 		}
 
-
 		[Test]
 		public async Task CreateTableAsyncCanceled([DataSources(false)] string context)
 		{
-#if !NETCOREAPP3_1
-			if (context.IsAnyOf(TestProvName.AllMySqlData))
-				Assert.Inconclusive("MySql.Data 8.0.33 handles cancellation token incorrectly");
-#endif
 			using var cts = new CancellationTokenSource();
 			cts.Cancel();
 			using (var db = GetDataContext(context))
@@ -185,10 +244,19 @@ namespace Tests.xUpdate
 							select t
 						).ToList();
 					}
-					Assert.Fail("Task should have been canceled but was not");
-				}
-				catch (OperationCanceledException) { }
 
+					if (!context.IsAnyOf(TestProvName.AllMySqlData))
+					{
+						Assert.Fail("Task should have been canceled but was not");
+					}
+				}
+				catch (OperationCanceledException)
+				{
+				}
+				catch (Exception ex) when (ex.Message.Contains("ORA-01013") && context.IsAnyOf(TestProvName.AllOracleManaged))
+				{
+					// ~Aliens~ Oracle
+				}
 
 				var tableExists = true;
 				try
@@ -199,17 +267,14 @@ namespace Tests.xUpdate
 				{
 					tableExists = false;
 				}
-				Assert.AreEqual(false, tableExists);
+
+				Assert.That(tableExists, Is.False);
 			}
 		}
 
 		[Test]
 		public async Task CreateTableAsyncCanceled2([DataSources(false)] string context)
 		{
-#if !NETCOREAPP3_1
-			if (context.IsAnyOf(TestProvName.AllMySqlData))
-				Assert.Inconclusive("MySql.Data 8.0.33 handles cancellation token incorrectly");
-#endif
 			using var cts = new CancellationTokenSource();
 			using (var db = GetDataContext(context))
 			{
@@ -234,9 +299,19 @@ namespace Tests.xUpdate
 							select t
 						).ToList();
 					}
-					Assert.Fail("Task should have been canceled but was not");
+
+					if (!context.IsAnyOf(TestProvName.AllMySqlData))
+					{
+						Assert.Fail("Task should have been canceled but was not");
+					}
 				}
-				catch (OperationCanceledException) { }
+				catch (OperationCanceledException)
+				{
+				}
+				catch (Exception ex) when (ex.Message.Contains("ORA-01013") && context.IsAnyOf(TestProvName.AllOracleManaged))
+				{
+					// ~Aliens~ Oracle
+				}
 
 				var tableExists = true;
 				try
@@ -247,7 +322,8 @@ namespace Tests.xUpdate
 				{
 					tableExists = false;
 				}
-				Assert.AreEqual(false, tableExists);
+
+				Assert.That(tableExists, Is.False);
 			}
 		}
 
@@ -267,27 +343,82 @@ namespace Tests.xUpdate
 		}
 
 		[Test]
-		public void CreateTable_NoDisposeError([DataSources(false)] string context)
+		public async ValueTask CreateTableSQLiteAsync([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		{
+			await using var db = GetDataContext(context);
+
+			var data = new[] { new { ID = 1, Field = 2 } };
+
+			await using var tmp = await db.CreateTempTableAsync(data, tableName: "#TempTable");
+
+			var list = await tmp.ToListAsync();
+
+			Assert.That(list, Is.EquivalentTo(data));
+		}
+
+		[Test]
+		public void CreateTableSQLiteWithHeaderFooter([IncludeDataSources(TestProvName.AllSQLite)] string context)
 		{
 			using var db = GetDataConnection(context);
+
+			db.DropTable<IDTable>(schemaName: "temp", tableName: "TempTable", tableOptions: TableOptions.CheckExistence);
+
+			var data = new[] { new { ID = 1, Field = 2 } };
+
+			using var tmp = db.CreateTempTable(
+				new CreateTempTableOptions(
+					TableName: "TempTable",
+					StatementHeader: "/* THIS IS HEADER*/ CREATE TABLE {0}",
+					StatementFooter: "/* THIS IS FOOTER*/"),
+				data);
+
+			var list = tmp.ToList();
+
+			Assert.That(list, Is.EquivalentTo(data));
+		}
+
+		[Test]
+		public async ValueTask CreateTableSQLiteWithHeaderFooterAsync([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		{
+			await using var db = GetDataConnection(context);
+
+			db.DropTable<IDTable>(schemaName: "temp", tableName: "TempTable", tableOptions: TableOptions.CheckExistence);
+
+			var data = new[] { new { ID = 1, Field = 2 } };
+
+			await using var tmp = await db.CreateTempTableAsync(
+				new CreateTempTableOptions(
+					TableName: "TempTable",
+					TableOptions: TableOptions.IsTemporary,
+					StatementHeader: "/* THIS IS ASYNC HEADER*/ CREATE TABLE {0}",
+					StatementFooter: "/* THIS IS ASYNC FOOTER*/"),
+				data);
+
+			var list = await tmp.ToListAsync();
+
+			Assert.That(list, Is.EquivalentTo(data));
+		}
+
+		[Test]
+		public void CreateTable_NoDisposeError([DataSources(false)] string context)
+		{
+			using var db = GetDataContext(context);
 			db.DropTable<int>("TempTable", throwExceptionIfNotExists: false);
 
-			var tempTable = db.CreateTempTable<IDTable>("TempTable");
+			using var tempTable = db.CreateTempTable<IDTable>("TempTable");
 			var table2 = db.GetTable<IDTable>().TableOptions(TableOptions.IsTemporary).TableName("TempTable");
 			table2.Drop();
-			tempTable.Dispose();
 		}
 
 		[Test]
 		public async Task CreateTable_NoDisposeErrorAsync([DataSources(false)] string context)
 		{
-			using var db = GetDataConnection(context);
+			using var db = GetDataContext(context);
 			await db.DropTableAsync<int>("TempTable", throwExceptionIfNotExists: false);
 
-			var tempTable = await db.CreateTempTableAsync<IDTable>("TempTable");
+			await using var tempTable = await db.CreateTempTableAsync<IDTable>("TempTable");
 			var table2 = db.GetTable<IDTable>().TableOptions(TableOptions.IsTemporary).TableName("TempTable");
 			await table2.DropAsync();
-			await tempTable.DisposeAsync();
 		}
 
 		[Table]
@@ -318,12 +449,12 @@ namespace Tests.xUpdate
 		[Table]
 		sealed class TestTempTable
 		{
-			[Column] public int Id        { get; set; }
+			[PrimaryKey] public int Id        { get; set; }
 			[Column] public string? Value { get; set; }
 		}
 
+		[ActiveIssue(Configurations = [TestProvName.AllOracle])]
 		[Test]
-		[ActiveIssue("It is only possible to implement limited set of mapping changes. API should be removed at some point")]
 		public void CreateTempTable_TestSchemaConflicts([DataSources] string context)
 		{
 			using var db    = GetDataContext(context, new MappingSchema());
@@ -343,17 +474,20 @@ namespace Tests.xUpdate
 			var records1 = table.OrderBy(r => r.Id).ToArray();
 			var records2 = tmp.OrderBy(r => r.Id).ToArray();
 
-			Assert.AreEqual(2, records1.Length);
-			Assert.AreEqual(1, records1[0].Id);
-			Assert.AreEqual("value", records1[0].Value);
-			Assert.AreEqual(2, records1[1].Id);
-			Assert.AreEqual("value 2", records1[1].Value);
+			Assert.That(records1, Has.Length.EqualTo(2));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(records1[0].Id, Is.EqualTo(1));
+				Assert.That(records1[0].Value, Is.EqualTo("value"));
+				Assert.That(records1[1].Id, Is.EqualTo(2));
+				Assert.That(records1[1].Value, Is.EqualTo("value 2"));
 
-			Assert.AreEqual(2, records2.Length);
-			Assert.AreEqual(1, records2[0].Id);
-			Assert.AreEqual("value", records2[0].Value);
-			Assert.AreEqual(2, records2[1].Id);
-			Assert.AreEqual("renamed 2", records2[1].Value);
+				Assert.That(records2, Has.Length.EqualTo(2));
+				Assert.That(records2[0].Id, Is.EqualTo(1));
+				Assert.That(records2[0].Value, Is.EqualTo("value"));
+				Assert.That(records2[1].Id, Is.EqualTo(2));
+				Assert.That(records2[1].Value, Is.EqualTo("renamed 2"));
+			}
 		}
 
 		[Test]
@@ -369,7 +503,8 @@ namespace Tests.xUpdate
 					.HasTableName("TempTable")
 					.Property(p => p.Name)
 						.HasLength(20)
-						.IsNotNull(),
+						.IsNotNull()
+						.IsPrimaryKey(),
 				tableOptions:TableOptions.CheckExistence);
 
 			if (db is DataConnection dc)
@@ -382,7 +517,7 @@ namespace Tests.xUpdate
 				select t
 			).ToList();
 
-			Assert.That(list.Count, Is.EqualTo(1));
+			Assert.That(list, Has.Count.EqualTo(1));
 		}
 
 		[Test]
@@ -398,7 +533,8 @@ namespace Tests.xUpdate
 				m => m
 					.Property(p => p.Name)
 						.HasLength(20)
-						.IsNotNull(),
+						.IsNotNull()
+						.IsPrimaryKey(),
 				tableOptions:TableOptions.CheckExistence);
 
 			if (db is DataConnection dc)
@@ -411,7 +547,7 @@ namespace Tests.xUpdate
 				select t
 			).ToList();
 
-			Assert.That(list.Count, Is.EqualTo(1));
+			Assert.That(list, Has.Count.EqualTo(1));
 		}
 
 		[Test]
@@ -427,7 +563,8 @@ namespace Tests.xUpdate
 					.HasTableName("TempTable")
 					.Property(p => p.Name)
 						.HasLength(20)
-						.IsNotNull(),
+						.IsNotNull()
+						.IsPrimaryKey(),
 				tableOptions:TableOptions.CheckExistence);
 
 			if (db is DataConnection dc)
@@ -440,7 +577,7 @@ namespace Tests.xUpdate
 				select t
 			).ToListAsync();
 
-			Assert.That(list.Count, Is.EqualTo(1));
+			Assert.That(list, Has.Count.EqualTo(1));
 		}
 
 		[Test]
@@ -456,7 +593,8 @@ namespace Tests.xUpdate
 				m => m
 					.Property(p => p.Name)
 						.HasLength(20)
-						.IsNotNull(),
+						.IsNotNull()
+						.IsPrimaryKey(),
 				tableOptions:TableOptions.CheckExistence | TableOptions.IsTemporary);
 
 			if (db is DataConnection dc)
@@ -469,7 +607,204 @@ namespace Tests.xUpdate
 				select t
 			).ToListAsync();
 
-			Assert.That(list.Count, Is.EqualTo(1));
+			Assert.That(list, Has.Count.EqualTo(1));
+		}
+
+		[Test]
+		public void CreateTableEnumerableWithDescriptionAndHeaderFooterTest([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		{
+			using var db = GetDataConnection(context);
+
+			db.DropTable<IDTable>(schemaName: "temp", tableName: "TempTable", tableOptions: TableOptions.CheckExistence);
+
+			using var tmp = db.CreateTempTable(
+				new CreateTempTableOptions(
+					TableName: "TempTable",
+					StatementHeader: "/* THIS IS HEADER*/ CREATE TABLE {0}",
+					StatementFooter: "/* THIS IS FOOTER*/",
+					TableOptions   :TableOptions.CheckExistence),
+				new[] { new { Name = "John" } },
+				m => m
+					.Property(p => p.Name)
+						.HasLength(20)
+						.IsNotNull());
+
+			Assert.That(db.LastQuery, Contains.Substring("(20) NOT NULL").Or.Not.Contains("NULL"));
+
+			var list =
+			(
+				from p in db.Person
+				join t in tmp on p.FirstName equals t.Name
+				select t
+			).ToList();
+
+			Assert.That(list, Has.Count.EqualTo(1));
+		}
+
+		[Test]
+		public async ValueTask CreateTableEnumerableWithDescriptionAndHeaderFooterTestAsync([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		{
+			await using var db = GetDataConnection(context);
+
+			db.DropTable<IDTable>(schemaName: "temp", tableName: "TempTable", tableOptions: TableOptions.CheckExistence);
+
+			await using var tmp = await db.CreateTempTableAsync(
+				new CreateTempTableOptions(
+					TableName: "TempTable",
+					StatementHeader: "/* THIS IS ASYNC HEADER*/ CREATE TABLE {0}",
+					StatementFooter: "/* THIS IS ASYNC FOOTER*/",
+					TableOptions   :TableOptions.CheckExistence),
+				new[] { new { Name = "John" } },
+				m => m
+					.Property(p => p.Name)
+						.HasLength(20)
+						.IsNotNull());
+
+			Assert.That(db.LastQuery, Contains.Substring("(20) NOT NULL").Or.Not.Contains("NULL"));
+
+			var list = await
+			(
+				from p in db.Person
+				join t in tmp on p.FirstName equals t.Name
+				select t
+			).ToListAsync();
+
+			Assert.That(list, Has.Count.EqualTo(1));
+		}
+
+		[Test]
+		public void TestCreateTempTableFromQueryWithHeaderFooter([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		{
+			using var db = GetDataConnection(context);
+
+			db.DropTable<IDTable>(schemaName: "temp", tableName: "TestPersons2", tableOptions: TableOptions.CheckExistence);
+
+			using var temp = db.CreateTempTable(
+				new CreateTempTableOptions(
+					TableName: "TestPersons2",
+					StatementHeader: "/* THIS IS HEADER*/ CREATE TABLE {0}",
+					StatementFooter: "/* THIS IS FOOTER*/"),
+				db.Person);
+
+			Assert.That(temp.Count(), Is.EqualTo(db.Person.Count()));
+		}
+
+		[Test]
+		public async ValueTask TestCreateTempTableFromQueryWithHeaderFooterAsync([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		{
+			await using var db = GetDataConnection(context);
+
+			db.DropTable<IDTable>(schemaName: "temp", tableName: "TestPersons2", tableOptions: TableOptions.CheckExistence);
+
+			await using var temp = await db.CreateTempTableAsync(
+				new CreateTempTableOptions(
+					TableOptions: TableOptions.IsTemporary,
+					StatementHeader: "/* THIS IS ASYNC HEADER*/ CREATE TABLE {0}",
+					StatementFooter: "/* THIS IS ASYNC FOOTER*/",
+					TableName      : "TestPersons2"),
+				db.Person);
+
+			Assert.That(await temp.CountAsync(), Is.EqualTo(await db.Person.CountAsync()));
+		}
+
+		[Test]
+		public void CreateTableFromQueryWithDescriptionAndHeaderFooterTest([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		{
+			using var db = GetDataConnection(context);
+
+			db.DropTable<IDTable>(schemaName: "temp", tableName: "TempTable", tableOptions: TableOptions.CheckExistence);
+
+			using var tmp = db.CreateTempTable(
+				new CreateTempTableOptions(
+					StatementHeader: "/* THIS IS HEADER*/ CREATE TABLE {0}",
+					StatementFooter: "/* THIS IS FOOTER*/",
+					TableName      : "TempTable",
+					TableOptions   :TableOptions.CheckExistence),
+				db.Person,
+				m => m.HasTableName("TempTable"));
+
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(db.LastQuery, Contains.Substring("TempTable"));
+				Assert.That(tmp.Count(), Is.EqualTo(db.Person.Count()));
+			}
+		}
+
+		[Test]
+		public async ValueTask CreateTableFromQueryWithDescriptionAndHeaderFooterTestAsync([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		{
+			await using var db = GetDataConnection(context);
+
+			db.DropTable<IDTable>(schemaName: "temp", tableName: "TempTable", tableOptions: TableOptions.CheckExistence);
+
+			await using var tmp = await db.CreateTempTableAsync(
+				new CreateTempTableOptions(
+					StatementHeader: "/* THIS IS ASYNC HEADER*/ CREATE TABLE {0}",
+					StatementFooter: "/* THIS IS ASYNC FOOTER*/",
+					TableName      : "TempTable",
+					TableOptions   :TableOptions.CheckExistence),
+				db.Person,
+				m => m.HasTableName("TempTable"));
+
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(db.LastQuery, Contains.Substring("TempTable"));
+				Assert.That(await tmp.CountAsync(), Is.EqualTo(await db.Person.CountAsync()));
+			}
+		}
+
+		[Test]
+		public void CreateTableFromQueryWithDescriptionTest([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		{
+			using var db = GetDataConnection(context);
+
+			using var tmp = db.CreateTempTable(
+				db.Person,
+				m => m.HasTableName("TempTable"),
+				tableOptions   :TableOptions.CheckExistence);
+
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(db.LastQuery, Contains.Substring("TempTable"));
+				Assert.That(tmp.Count(), Is.EqualTo(db.Person.Count()));
+			}
+		}
+
+		[Test]
+		public async ValueTask CreateTableFromQueryWithDescriptionTestAsync([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		{
+			await using var db = GetDataConnection(context);
+
+			await using var tmp = await db.CreateTempTableAsync(
+				db.Person,
+				m => m.HasTableName("TempTable"),
+				tableOptions   :TableOptions.CheckExistence);
+
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(db.LastQuery, Contains.Substring("TempTable"));
+				Assert.That(await tmp.CountAsync(), Is.EqualTo(await db.Person.CountAsync()));
+			}
+		}
+
+		[Test]
+		public void InsertIntoTempTableWithPrimaryKeyWithOptions([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		{
+			using var db = GetDataContext(context);
+
+			using var t = new[] { new TableWithPrimaryKey() { Key = 1 } }
+				.IntoTempTable(db,
+				new CreateTempTableOptions(TableName: "TableWithPrimaryKey2", TableOptions: TableOptions.IsTemporary));
+		}
+
+		[Test]
+		public async ValueTask InsertIntoTempTableWithPrimaryKeyWithOptionsAsync([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		{
+			await using var db = GetDataContext(context);
+
+			await using var t = await new[] { new TableWithPrimaryKey() { Key = 1 } }
+				.IntoTempTableAsync(db,
+				new CreateTempTableOptions(TableName: "TableWithPrimaryKey2", TableOptions: TableOptions.IsTemporary));
 		}
 	}
 }

@@ -2,11 +2,11 @@
 {
 	public enum DB2iSeriesProviderType
 	{
-		Odbc,
-		OleDb,
-		DB2,
+		Odbc = 0,
+		OleDb = 1,
+		DB2 = 2,
 #if NETFRAMEWORK
-		AccessClient
+		AccessClient = 3
 #endif
 	}
 }

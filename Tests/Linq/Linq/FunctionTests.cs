@@ -4,20 +4,18 @@ using System.Linq;
 using System.Linq.Expressions;
 
 using LinqToDB;
-using LinqToDB.Data;
+using LinqToDB.Internal.SqlQuery;
 using LinqToDB.Linq;
-using LinqToDB.SqlQuery;
+using LinqToDB.Mapping;
 
 using NUnit.Framework;
+
+using Tests.Model;
 
 // ReSharper disable UnusedMember.Local
 
 namespace Tests.Linq
 {
-	using LinqToDB.Common;
-	using LinqToDB.Mapping;
-	using Model;
-
 	[TestFixture]
 	public class FunctionTests : TestBase
 	{
@@ -289,7 +287,7 @@ namespace Tests.Linq
 					from p in db.Parent where arr.Contains(p.ParentID) select p);
 		}
 
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
 		[Test]
 		public void ContainsReadOnlySet([DataSources] string context)
 		{
@@ -308,10 +306,10 @@ namespace Tests.Linq
 			using (var db = GetDataContext(context))
 				AreEqual(
 					from p in Parent
-					where Array<int>.Empty.Contains(p.ParentID) || p.ParentID == 2
+					where Array.Empty<int>().Contains(p.ParentID) || p.ParentID == 2
 					select p,
 					from p in db.Parent
-					where Array<int>.Empty.Contains(p.ParentID) || p.ParentID == 2
+					where Array.Empty<int>().Contains(p.ParentID) || p.ParentID == 2
 					select p);
 		}
 
@@ -422,9 +420,11 @@ namespace Tests.Linq
 		public void NewGuid1(
 			[DataSources(
 				ProviderName.DB2,
+				ProviderName.Ydb,
 				TestProvName.AllInformix,
-				TestProvName.AllPostgreSQL,
+				TestProvName.AllPostgreSQL12Minus,
 				TestProvName.AllSQLite,
+				TestProvName.AllSapHana,
 				TestProvName.AllAccess)]
 			string context)
 		{
@@ -439,22 +439,23 @@ namespace Tests.Linq
 			[DataSources(
 				ProviderName.DB2,
 				TestProvName.AllInformix,
-				TestProvName.AllPostgreSQL,
 				TestProvName.AllSQLite,
 				TestProvName.AllAccess)]
 			string context)
 		{
 			using (var db = GetDataContext(context))
-				Assert.AreNotEqual(Guid.Empty, (from p in db.Types select Sql.NewGuid()).First());
+				Assert.That((from p in db.Types select Sql.NewGuid()).First(), Is.Not.EqualTo(Guid.Empty));
 		}
 
 		[Test]
 		public void NewGuidOrder(
 			[DataSources(false,
 				ProviderName.DB2,
+				ProviderName.Ydb,
 				TestProvName.AllInformix,
 				TestProvName.AllPostgreSQL,
 				TestProvName.AllSQLite,
+				TestProvName.AllSapHana,
 				TestProvName.AllAccess)]
 			string context)
 		{
@@ -484,22 +485,20 @@ namespace Tests.Linq
 		public void Count1([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
-				Assert.AreEqual(
-					   Child.Count(c => c.ParentID == 1),
-					db.Child.Count(c => c.ParentID == 1));
+				Assert.That(
+					db.Child.Count(c => c.ParentID == 1), Is.EqualTo(Child.Count(c => c.ParentID == 1)));
 		}
 
 		[Test]
 		public void Sum1([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
-				Assert.AreEqual(
-					   Child.Sum(c => c.ParentID),
-					db.Child.Sum(c => c.ParentID));
+				Assert.That(
+					db.Child.Sum(c => c.ParentID), Is.EqualTo(Child.Sum(c => c.ParentID)));
 		}
 
 		[ExpressionMethod("ChildCountExpression")]
-		public static int ChildCount(Parent parent)
+		private static int ChildCount(Parent parent)
 		{
 			throw new NotSupportedException();
 		}
@@ -512,7 +511,8 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void Sum2([DataSources(TestProvName.AllClickHouse)] string context)
+		[ThrowsRequiresCorrelatedSubquery]
+		public void Sum2([DataSources] string context)
 		{
 			using (var db = GetDataContext(context))
 				AreEqual(
@@ -607,7 +607,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void MatchFtsTest([IncludeDataSources(true, TestProvName.AllSQLite, TestProvName.AllClickHouse)] string context)
+		public void MatchFtsTest([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -615,8 +615,11 @@ namespace Tests.Linq
 					where SqlLite.MatchFts(c, "some*")
 					select c;
 
-				var str = q.ToString()!;
-				Assert.True(str.Contains(" matches "));
+				// FTS5 required
+				//q.ToArray();
+
+				var str = q.ToSqlQuery().Sql;
+				Assert.That(str, Does.Contain(" MATCH "));
 			}
 		}
 
@@ -627,7 +630,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void Issue3543Test([IncludeDataSources(true, TestProvName.AllSQLiteClassic, TestProvName.AllClickHouse)] string context)
+		public void Issue3543Test([IncludeDataSources(true, TestProvName.AllClickHouse)] string context)
 		{
 			using var db = GetDataContext(context);
 			using var tags = db.CreateLocalTable<TagsTable>();
@@ -638,26 +641,73 @@ namespace Tests.Linq
 				 Name = tag.Name!.Substring(tag.Name.IndexOf(".") + 1, tag.Name.IndexOf(".", 5) - tag.Name.IndexOf(".") - 1)
 			 }).ToList();
 		}
+
+		sealed class DefaultFunctionNullabiityTable
+		{
+			public int Id     { get; set; }
+			public int? Value { get; set; }
+
+			public static readonly DefaultFunctionNullabiityTable[] Data =
+			[
+				new DefaultFunctionNullabiityTable() { Id = 1, Value = null },
+				new DefaultFunctionNullabiityTable() { Id = 2, Value = 0 },
+				new DefaultFunctionNullabiityTable() { Id = 3, Value = 1 },
+			];
+		}
+
+		[Test]
+		public void TestDefaultFunctionNullability([IncludeDataSources(true, TestProvName.AllSQLite)] string context)
+		{
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable(DefaultFunctionNullabiityTable.Data);
+
+			var ids1 = tb.Where(r => Coalesce(r.Value, 0) != 0).Select(r => r.Id).ToArray();
+			var ids2 = tb.Where(r => Coalesce(r.Value, 0) != 1).Select(r => r.Id).ToArray();
+			var ids3 = tb.Where(r => Coalesce(r.Value, 0) == 0).Select(r => r.Id).ToArray();
+			var ids4 = tb.Where(r => Coalesce(r.Value, 0) == 1).Select(r => r.Id).ToArray();
+
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ids1, Has.Length.EqualTo(1));
+				Assert.That(ids1, Does.Contain(3));
+
+				Assert.That(ids2, Has.Length.EqualTo(2));
+				Assert.That(ids2, Does.Contain(1));
+				Assert.That(ids2, Does.Contain(2));
+
+				Assert.That(ids3, Has.Length.EqualTo(2));
+				Assert.That(ids3, Does.Contain(1));
+				Assert.That(ids3, Does.Contain(2));
+
+				Assert.That(ids4, Has.Length.EqualTo(1));
+				Assert.That(ids4, Does.Contain(3));
+			}
+		}
+
+		[Sql.Function("COALESCE")]
+		static int Coalesce(int? value, int defaultValue) => throw new ServerSideOnlyException(nameof(Coalesce));
 	}
 
 	public static class SqlLite
 	{
 		sealed class MatchBuilder : Sql.IExtensionCallBuilder
 		{
-			public void Build(Sql.ISqExtensionBuilder builder)
+			public void Build(Sql.ISqlExtensionBuilder builder)
 			{
-				if (!(builder.GetExpression("src") is SqlField field))
-					throw new InvalidOperationException("Can not get table");
+				var srcExpr = builder.GetExpression("src");
+				if (srcExpr == null)
+				{
+					builder.IsConvertible = false;
+					return;
+				}
 
-				var sqlTable = (SqlTable)field.Table!;
-
-				var newField = new SqlField(sqlTable, sqlTable.TableName.Name);
+				var newField = new SqlAnchor(srcExpr, SqlAnchor.AnchorKindEnum.TableName);
 
 				builder.AddParameter("table_field", newField);
 			}
 		}
 
-		[Sql.Extension("{table_field} matches {match}", BuilderType = typeof(MatchBuilder), IsPredicate = true)]
+		[Sql.Extension("{table_field} MATCH {match}", BuilderType = typeof(MatchBuilder), IsPredicate = true)]
 		public static bool MatchFts<TEntity>(TEntity src, [ExprParameter]string match)
 		{
 			throw new InvalidOperationException();

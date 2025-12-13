@@ -2,16 +2,18 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+
 using LinqToDB;
+using LinqToDB.Async;
+using LinqToDB.Internal.Extensions;
 using LinqToDB.Mapping;
-using LinqToDB.Extensions;
 
 using NUnit.Framework;
 
+using Tests.Model;
+
 namespace Tests.Linq
 {
-	using Model;
-
 	[TestFixture]
 	public partial class IdlTests : TestBase
 	{
@@ -85,15 +87,13 @@ namespace Tests.Linq
 
 			public override int GetHashCode()
 			{
-				unchecked
-				{
-					var result = ID;
-					result = (result * 397) ^ (LastName != null ? LastName.GetHashCode() : 0);
-					result = (result * 397) ^ (MiddleName != null ? MiddleName.GetHashCode() : 0);
-					result = (result * 397) ^ Gender.GetHashCode();
-					result = (result * 397) ^ (FirstName != null ? FirstName.GetHashCode() : 0);
-					return result;
-				}
+				return HashCode.Combine(
+					ID,
+					LastName,
+					MiddleName,
+					Gender,
+					FirstName
+				);
 			}
 		}
 		#endregion
@@ -138,7 +138,7 @@ namespace Tests.Linq
 
 		public class PersonWithObjectId : WithObjectIdBase, IHasObjectId2
 		{
-			public string FistName { get; set; } = null!;
+			public string FirstName { get; set; } = null!;
 		}
 
 		public struct NullableObjectId
@@ -167,7 +167,7 @@ namespace Tests.Linq
 		[Test]
 		public void TestComplexExpression([IdlProviders] string context)
 		{
-			// failed with LinqToDB.Data.Linq.LinqException : 'new StationObjectId() {Value = ConvertNullable(child.ChildID)}'
+			// failed with exception : 'new StationObjectId() {Value = ConvertNullable(child.ChildID)}'
 			//   cannot be converted to SQL.
 			using (var db = GetDataContext(context))
 			{
@@ -277,8 +277,9 @@ namespace Tests.Linq
 		[Test]
 		public void TestForGroupBy([IdlProviders] string context)
 		{
-			using (var db = GetDataContext(context))
+			using (var db = GetDataContext(context, o => o.OmitUnsupportedCompareNulls(context).UseGuardGrouping(false)))
 			{
+
 				/* no error in first call */
 				getData(db, new List<int?> { 2 }, new List<int?> { 211, 212, 221, 222 });
 
@@ -302,8 +303,12 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 			{
-				Assert.That(db.Patient.Where(x => x.PersonID < 0).Select(x => (int?)x.PersonID).Max(), Is.Null);
-				Assert.That(db.Patient.Where(x => x.PersonID < 0).Max(x => (int?)x.PersonID), Is.Null);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(db.Patient.Where(x => x.PersonID < 0).Select(x => (int?)x.PersonID).Max(), Is.Null);
+					Assert.That(db.Patient.Where(x => x.PersonID < 0).Max(x => (int?)x.PersonID), Is.Null);
+				}
+
 				Assert.Catch<InvalidOperationException>(
 					() => db.Patient.Where(x => x.PersonID < 0).Select(x => x.PersonID).Max());
 				Assert.Catch<InvalidOperationException>(
@@ -319,9 +324,11 @@ namespace Tests.Linq
 				var ds = new IdlPatientSource(db);
 				var r1 = ds.Patients().ToList();
 				var r2 = ds.Persons().ToList();
-
-				Assert.That(r1, Is.Not.Empty);
-				Assert.That(r2, Is.Not.Empty);
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(r1, Is.Not.Empty);
+					Assert.That(r2, Is.Not.Empty);
+				}
 
 				var r3 = ds.Patients().ToIdlPatientEx(ds);
 				var r4 = r3.ToList();
@@ -370,7 +377,7 @@ namespace Tests.Linq
 		[Test]
 		public void TestDistinctWithGroupBy([IdlProviders] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var source = db.Parent.ToList();
 				// Ensure that the data source has duplicate values.
@@ -404,7 +411,7 @@ namespace Tests.Linq
 		[Test]
 		public void ImplicitCastTest([IdlProviders] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var people =
 					from p in db.Person
@@ -414,8 +421,14 @@ namespace Tests.Linq
 						Name = p.FirstName
 					};
 
-				var sql1 = (from p in people where p.Id       == 1 select p).ToString();
-				var sql2 = (from p in people where p.Id.Value == 1 select p).ToString();
+				var query1 = from p in people where p.Id       == 1 select p;
+				var query2 = from p in people where p.Id.Value == 1 select p;
+
+				query1.ToArray();
+				query2.ToArray();
+
+				var sql1 = query1.ToSqlQuery().Sql;
+				var sql2 = query2.ToSqlQuery().Sql;
 
 				Assert.That(sql1, Is.EqualTo(sql2));
 			}
@@ -424,7 +437,7 @@ namespace Tests.Linq
 		[Test]
 		public void ListvsArrayTest([IdlProviders] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var st = "John";
 
@@ -445,7 +458,7 @@ namespace Tests.Linq
 		[Test]
 		public void ConcatJoinOrderByTest([IdlProviders] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var query = from y in
 								((from pat in db.Patient
@@ -469,7 +482,7 @@ namespace Tests.Linq
 		{
 			var types2 = new[] { TypeValue.Value2, TypeValue.Value3, TypeValue.Value4 };
 
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var result = (from x in db.Parent4 where types2.Contains(x.Value1) select x)
 					.ToList();
@@ -481,15 +494,15 @@ namespace Tests.Linq
 		[Test]
 		public void TestQueryWithInterface([IdlProviders] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var persons =
 					from x in db.Person
 					select new PersonWithObjectId
-						{
-							Id = new ObjectId { Value = x.ID },
-							FistName = x.FirstName,
-						};
+					{
+						Id = new ObjectId { Value = x.ID },
+						FirstName = x.FirstName,
+					};
 
 				// this works
 				var r1 = FilterSourceByIdDefinedInBaseClass(persons, 5).ToArray();
@@ -508,7 +521,7 @@ namespace Tests.Linq
 		[Test]
 		public void TestCountWithOrderBy([IdlProviders] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var q1 = db.Person.OrderBy(x => x.ID);
 
@@ -524,7 +537,7 @@ namespace Tests.Linq
 		[Test]
 		public void TestCountWithOrderByAsync([IdlProviders] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var q1 = db.Person.OrderBy(x => x.ID);
 
@@ -535,6 +548,20 @@ namespace Tests.Linq
 				Assert.DoesNotThrowAsync(() => q2.MaxAsync(x => x.ID));
 				Assert.DoesNotThrowAsync(() => q2.CountAsync());
 			}
+		}
+
+		[Obsolete("Remove test after API removed")]
+		[Test]
+		public void TestUpdateWithTargetByAssociationPropertyOld([IdlProviders(TestProvName.AllClickHouse)] string context)
+		{
+			TestUpdateByAssociationPropertyOld(context, true);
+		}
+
+		[Obsolete("Remove test after API removed")]
+		[Test]
+		public void TestSetUpdateWithoutTargetByAssociationPropertyOld([IdlProviders(TestProvName.AllClickHouse)] string context)
+		{
+			TestUpdateByAssociationPropertyOld(context, false);
 		}
 
 		[Test]
@@ -549,9 +576,45 @@ namespace Tests.Linq
 			TestUpdateByAssociationProperty(context, false);
 		}
 
+		[Obsolete("Remove test after API removed")]
+		private void TestUpdateByAssociationPropertyOld(string context, bool useUpdateWithTarget)
+		{
+			using (var db = GetDataContext(context))
+			{
+				const int childId = 10000;
+				const int parentId = 20000;
+
+				try
+				{
+					db.Parent.Insert(() => new Parent { ParentID = parentId });
+					db.Child.Insert(() => new Child { ChildID = childId, ParentID = parentId });
+
+					var parents = from child in db.Child
+								  where child.ChildID == childId
+								  select child.Parent;
+
+					if (useUpdateWithTarget)
+					{
+						// this failed for MySql and SQLite but works with MS SQL
+						Assert.DoesNotThrow(() => parents.Update(db.Parent, x => new Parent { Value1 = 5 }));
+					}
+					else
+					{
+						// this works with MySql but failed for SQLite and MS SQL
+						Assert.DoesNotThrow(() => parents.Set(x => x.Value1, 5).Update());
+					}
+				}
+				finally
+				{
+					db.Child.Delete(x => x.ChildID == childId);
+					db.Parent.Delete(x => x.ParentID == parentId);
+				}
+			}
+		}
+
 		private void TestUpdateByAssociationProperty(string context, bool useUpdateWithTarget)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				const int childId = 10000;
 				const int parentId = 20000;
@@ -568,7 +631,7 @@ namespace Tests.Linq
 					if (useUpdateWithTarget)
 					{
 						// this failed for MySql and SQLite but works with MS SQL
-						Assert.DoesNotThrow(() => parents.Update(db.Parent, x => new Parent { Value1 = 5 }));
+						Assert.DoesNotThrow(() => parents.Update(q => q, x => new Parent { Value1 = 5 }));
 					}
 					else
 					{
@@ -602,7 +665,7 @@ namespace Tests.Linq
 		[Test]
 		public void TestComparePropertyOfEnumTypeToVariableInSubquery([IdlProviders] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var gender = Gender.Other;
 				var q = from x in db.Patient
@@ -617,32 +680,32 @@ namespace Tests.Linq
 		[Test]
 		public void ConcatOrderByTest([IdlProviders] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
-				var q = from p in db.Person
+				var query1 = from p in db.Person
 							where p.ID < 0
 							select new { Rank = 0, FirstName = (string?)null, LastName = (string?)null };
-				var q2 =
-					q.Concat(
+				var query2 =
+					query1.Concat(
 						from p in db.Person
 						select new { Rank = p.ID, p.FirstName, p.LastName });
 
-				var resultquery = (from x in q2 orderby x.Rank, x.FirstName, x.LastName select x).ToString()!;
-				
-				TestContext.WriteLine(resultquery);
+				var resultquery = from x in query2 orderby x.Rank, x.FirstName, x.LastName select x;
+				resultquery.ToArray();
 
-				var rqr = resultquery.LastIndexOf("ORDER BY", System.StringComparison.OrdinalIgnoreCase);
-				var rqp = (resultquery.Substring(rqr + "ORDER BY".Length).Split(',')).Select(p => p.Trim()).ToArray();
+				var sql = resultquery.ToSqlQuery().Sql;
 
-				Assert.That(rqp.Length, Is.EqualTo(3));
+				var rqr = sql.LastIndexOf("ORDER BY", StringComparison.OrdinalIgnoreCase);
+				var rqp = (sql.Substring(rqr + "ORDER BY".Length).Split(',')).Select(p => p.Trim()).ToArray();
+
+				Assert.That(rqp, Has.Length.EqualTo(3));
 			}
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void TestContainsForNullableDateTimeWithOnlyNullValue1([IdlProviders] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var dates = new DateTime?[] { null };
 
@@ -657,11 +720,10 @@ namespace Tests.Linq
 			}
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void TestContainsForNullableDateTimeWithOnlyNullValue2([IdlProviders] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				// Ensures that  the query works properly in memory
 				// ReSharper disable RemoveToList.2
@@ -674,11 +736,10 @@ namespace Tests.Linq
 			}
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void TestContainsForNullableDateTimeWithNullAndNotNullValues1([IdlProviders] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var date  = new DateTime(2009,  9,  24,  9, 19, 29,  90);
 				var dates = new DateTime?[] { null, date };
@@ -694,11 +755,10 @@ namespace Tests.Linq
 			}
 		}
 
-		[ActiveIssue("https://github.com/ClickHouse/ClickHouse/issues/37999", Configuration = ProviderName.ClickHouseMySql)]
 		[Test]
 		public void TestContainsForNullableDateTimeWithNullAndNotNullValues2([IdlProviders] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				// Ensures that  the query works properly in memory
 				// ReSharper disable RemoveToList.2
@@ -761,7 +821,7 @@ namespace Tests.Linq
 		[Test]
 		public void TestMono01([IdlProviders] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var ds = new IdlPatientSource(db);
 				var t = "A";
@@ -781,11 +841,11 @@ namespace Tests.Linq
 		[Test]
 		public void TestMono03([IdlProviders] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 				Assert.That(new GenericConcatQuery(db, new object[] { "A", 1 }).Query().ToList(), Is.Not.Null);
 		}
 
-		public static IQueryable<TSource> Concat2<TSource>(IQueryable<TSource> source1, IEnumerable<TSource> source2)
+		private static IQueryable<TSource> Concat2<TSource>(IQueryable<TSource> source1, IEnumerable<TSource> source2)
 		{
 			return source1.Provider.CreateQuery<TSource>(
 				Expression.Call(
@@ -797,7 +857,7 @@ namespace Tests.Linq
 		[Test]
 		public void TestMonoConcat([IdlProviders] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var ds = new IdlPatientSource(db);
 				var t  = "A";
@@ -812,7 +872,7 @@ namespace Tests.Linq
 		[Test]
 		public void TestMonoConcat2([IdlProviders] string context)
 		{
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var ds = new IdlPatientSource(db);
 				var t  = "A";
@@ -823,7 +883,7 @@ namespace Tests.Linq
 				Assert.That(query1.ToList(), Is.Not.Null);
 			}
 
-			using (var db = GetDataConnection(context))
+			using (var db = GetDataContext(context))
 			{
 				var ds = new IdlPatientSource(db);
 				var t  = "A";

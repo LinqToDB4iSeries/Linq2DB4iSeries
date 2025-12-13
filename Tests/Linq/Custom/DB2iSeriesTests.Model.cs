@@ -2,8 +2,6 @@
 using LinqToDB.Mapping;
 using System;
 
-#nullable disable
-
 namespace Tests.DataProvider
 {
 	public partial class DB2iSeriesTests
@@ -48,28 +46,28 @@ namespace Tests.DataProvider
 			public char CHARDATATYPE { get; set; } // CHARACTER
 
 			[Column(DbType = "varchar(20)"), Nullable]
-			public string VARCHARDATATYPE { get; set; } // VARCHAR(20)
+			public string? VARCHARDATATYPE { get; set; } // VARCHAR(20)
 
 			[Column(DbType = "clob"), Nullable]
-			public string CLOBDATATYPE { get; set; } // CLOB(1048576)
+			public string? CLOBDATATYPE { get; set; } // CLOB(1048576)
 
 			[Column(DbType = "dbclob(100)"), Nullable]
-			public string DBCLOBDATATYPE { get; set; } // DBCLOB(100)
+			public string? DBCLOBDATATYPE { get; set; } // DBCLOB(100)
 
 			[Column(DbType = "binary(20)"), Nullable]
-			public object BINARYDATATYPE { get; set; } // BINARY(20)
+			public object? BINARYDATATYPE { get; set; } // BINARY(20)
 
 			[Column(DbType = "varbinary(20)"), Nullable]
-			public object VARBINARYDATATYPE { get; set; } // VARBINARY(20)
+			public object? VARBINARYDATATYPE { get; set; } // VARBINARY(20)
 
 			[Column(DbType = "blob"), Nullable]
-			public byte[] BLOBDATATYPE { get; set; } // BLOB(10)
+			public byte[]? BLOBDATATYPE { get; set; } // BLOB(10)
 
 			[Column(DbType = "graphic(10)"), Nullable]
-			public string GRAPHICDATATYPE { get; set; } // GRAPHIC(10)
+			public string? GRAPHICDATATYPE { get; set; } // GRAPHIC(10)
 
 			[Column(DbType = "vargraphic(10)"), Nullable]
-			public string VARGRAPHICDATATYPE { get; set; } // GRAPHIC(10)
+			public string? VARGRAPHICDATATYPE { get; set; } // GRAPHIC(10)
 
 			[Column(DbType = "date"), Nullable]
 			public DateTime? DATEDATATYPE { get; set; } // DATE
@@ -81,7 +79,7 @@ namespace Tests.DataProvider
 			public DateTime? TIMESTAMPDATATYPE { get; set; } // TIMESTAMP
 
 			[Column, Nullable]
-			public string XMLDATATYPE { get; set; } // XML
+			public string? XMLDATATYPE { get; set; } // XML
 		}
 
 		[Table(Name = "ALLTYPES2")]
@@ -118,19 +116,19 @@ namespace Tests.DataProvider
 			public char CHARDATATYPE { get; set; } // CHARACTER
 
 			[Column(DbType = "varchar(20)"), Nullable]
-			public string VARCHARDATATYPE { get; set; } // VARCHAR(20)
+			public string? VARCHARDATATYPE { get; set; } // VARCHAR(20)
 
 			[Column(DbType = "graphic(10)"), Nullable]
-			public string GRAPHICDATATYPE { get; set; } // GRAPHIC(10)
+			public string? GRAPHICDATATYPE { get; set; } // GRAPHIC(10)
 
 			[Column(DbType = "vargraphic(10)"), Nullable]
-			public string VARGRAPHICDATATYPE { get; set; } // GRAPHIC(10)
+			public string? VARGRAPHICDATATYPE { get; set; } // GRAPHIC(10)
 
 			[Column(DbType = "binary(20)"), Nullable]
-			public object BINARYDATATYPE { get; set; } // BINARY(20)
+			public object? BINARYDATATYPE { get; set; } // BINARY(20)
 
 			[Column(DbType = "varbinary(20)"), Nullable]
-			public object VARBINARYDATATYPE { get; set; } // VARBINARY(20)
+			public object? VARBINARYDATATYPE { get; set; } // VARBINARY(20)
 
 			[Column(DbType = "date"), Nullable]
 			public DateTime? DATEDATATYPE { get; set; } // DATE
@@ -147,9 +145,9 @@ namespace Tests.DataProvider
 		{
 			[Column("Id", IsIdentity = true)] [PrimaryKey] public int Id { get; set; }
 
-			[Column("FieldByteAsDecimal", DataType = DataType.Decimal, Length = 2, Precision = 0)] public byte FieldByte { get; set; }
+			[Column("FieldByteAsDecimal", DataType = DataType.Decimal, Precision = 2, Scale = 0)] public byte FieldByte { get; set; }
 
-			[Column("FieldULongAsDecimal", DataType = DataType.Decimal, Length = 20, Precision = 0)] public ulong FieldULong { get; set; }
+			[Column("FieldULongAsDecimal", DataType = DataType.Decimal, Precision = 20, Scale = 0)] public ulong FieldULong { get; set; }
 		}
 	}
 }

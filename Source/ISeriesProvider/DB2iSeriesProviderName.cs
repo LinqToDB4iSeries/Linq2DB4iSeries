@@ -1,5 +1,7 @@
-﻿using LinqToDB.Extensions;
+﻿using System.Collections.Generic;
 using System.Linq;
+
+using LinqToDB.Internal.Extensions;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
@@ -46,14 +48,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public const string DB2_AccessClient_74_GAS = "DB2.iSeries.Net.74.GAS";
 #endif
 
-		public static string[] AllNames =
+		public static readonly HashSet<string> AllNames = new(
 			typeof(DB2iSeriesProviderName)
 			.GetFields()
 			.Where(x => x.GetMemberType() == typeof(string))
-			.Select(x => x.GetValue(null) as string)
+			.Select(x => (x.GetValue(null) as string)!)
 			.Distinct()
-			.Except(new[] { DB2, DB2_GAS })
-			.ToArray();
+			.Except([DB2, DB2_GAS]));
 
 		public static DB2iSeriesProviderType GetProviderType(string providerName)
 		{
@@ -86,10 +87,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			var mapGuidAsString = providerName.Contains("GAS");
 
-			return new DB2iSeriesProviderOptions(providerName, providerType, version)
-			{
-				MapGuidAsString = mapGuidAsString
-			};
+			return new DB2iSeriesProviderOptions(providerName, providerType, version, mapGuidAsString);
 		}
 
 		public static string GetProviderName(

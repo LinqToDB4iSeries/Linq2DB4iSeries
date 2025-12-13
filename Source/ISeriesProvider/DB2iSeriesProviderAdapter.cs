@@ -1,6 +1,8 @@
 ﻿using System;
-using System.Data;
 using System.Data.Common;
+
+using LinqToDB.Internal.DataProvider;
+using LinqToDB.Internal.DataProvider.DB2;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
@@ -21,7 +23,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 #endif
 				DB2iSeriesProviderType.Odbc => OdbcProviderAdapter.GetInstance(),
 				DB2iSeriesProviderType.OleDb => OleDbProviderAdapter.GetInstance(),
-				DB2iSeriesProviderType.DB2 => DB2.DB2ProviderAdapter.Instance,
+				DB2iSeriesProviderType.DB2 => DB2ProviderAdapter.Instance,
 				_ => throw ExceptionHelper.InvalidAdoProvider(providerType)
 			};
 			this.ProviderType = providerType;
@@ -35,7 +37,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public Type CommandType => adapter.CommandType;
 
-		public Type TransactionType => adapter.TransactionType;
+		public Type? TransactionType => adapter.TransactionType;
 
 		public string AssemblyName => ProviderType switch
 		{
@@ -44,7 +46,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 #endif
 			DB2iSeriesProviderType.Odbc => OdbcProviderAdapter.AssemblyName,
 			DB2iSeriesProviderType.OleDb => OleDbProviderAdapter.AssemblyName,
-			DB2iSeriesProviderType.DB2 => DB2.DB2ProviderAdapter.AssemblyName,
+			DB2iSeriesProviderType.DB2 => DB2ProviderAdapter.AssemblyName,
 			_ => throw ExceptionHelper.InvalidAdoProvider(ProviderType)
 		};
 
@@ -56,7 +58,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 #endif
 			OdbcProviderAdapter odbcAdapter => odbcAdapter.GetDbType(dbDataParameter).ToString(),
 			OleDbProviderAdapter oleDbAdapter => oleDbAdapter.GetDbType(dbDataParameter).ToString(),
-			DB2.DB2ProviderAdapter db2Adapter => db2Adapter.GetDbType(dbDataParameter).ToString(),
+			DB2ProviderAdapter db2Adapter => db2Adapter.GetDbType(dbDataParameter).ToString(),
 			_ => throw ExceptionHelper.InvalidProviderAdapter(adapter)
 		};
 
@@ -73,8 +75,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					&& value is DB2iSeriesAccessClientProviderAdapter.iDB2DbType idb2Type)
 				accessClientAdapter.SetDbType(dbDataParameter, idb2Type);
 #endif
-			else if (adapter is DB2.DB2ProviderAdapter db2Adapter
-					&& value is DB2.DB2ProviderAdapter.DB2Type db2Type)
+			else if (adapter is DB2ProviderAdapter db2Adapter
+					&& value is DB2ProviderAdapter.DB2Type db2Type)
 				db2Adapter.SetDbType(dbDataParameter, db2Type);
 			else
 				throw ExceptionHelper.InvalidProviderAdapter(adapter);
@@ -85,5 +87,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static DB2iSeriesProviderAdapter GetInstance(DB2iSeriesProviderType providerType)
 			=> new(providerType);
+
+		public DbConnection CreateConnection(string connectionString)
+			=> adapter.CreateConnection(connectionString);
 	}
 }

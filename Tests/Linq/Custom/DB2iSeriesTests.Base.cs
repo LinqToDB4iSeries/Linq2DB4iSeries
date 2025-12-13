@@ -5,8 +5,6 @@ using System.Linq;
 using System.ServiceModel;
 using Tests.Model;
 
-#nullable disable
-
 namespace Tests.DataProvider
 {
 	[TestFixture]
@@ -29,9 +27,9 @@ namespace Tests.DataProvider
 		{
 			var throws = false;
 
-			string serverName;
-			string schemaName;
-			string dbName;
+			string? serverName;
+			string? schemaName;
+			string? dbName;
 
 			using (new DisableBaseline("Use instance name is SQL", false))
 			using (var db = GetDataContext(context, testLinqService: false))
@@ -56,7 +54,7 @@ namespace Tests.DataProvider
 
 				if (throws && context.Contains(".LinqService"))
 				{
-#if NET472
+#if NETFRAMEWORK
 					Assert.Throws<FaultException<ExceptionDetail>>(() => table.ToList());
 #endif
 				}
@@ -87,8 +85,8 @@ namespace Tests.DataProvider
 
 				var result = query.ToList();
 
-				Assert.AreEqual(1, result.Count);
-				Assert.AreEqual(3, result[0].Id);
+				Assert.That(result.Count, Is.EqualTo(1));
+				Assert.That(result[0].Id, Is.EqualTo(3));
 			}
 		}
 

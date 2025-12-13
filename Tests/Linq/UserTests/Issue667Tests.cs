@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Linq.Expressions;
+
 using LinqToDB.Common;
 using LinqToDB.Tools.Comparers;
 
@@ -63,7 +64,7 @@ namespace Tests.UserTests
 				var q = db.Parent.Where(predicate);
 				var e = Parent.Where(predicate.CompileExpression());
 
-				Assert.AreEqual(e, q);
+				Assert.That(q, Is.EqualTo(e));
 			}
 		}
 

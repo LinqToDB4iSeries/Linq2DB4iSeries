@@ -2,8 +2,6 @@
 using LinqToDB.Mapping;
 
 using NUnit.Framework;
-using Tests.Model;
-using Tests.xUpdate;
 
 namespace Tests.Mapping
 {
@@ -43,7 +41,7 @@ namespace Tests.Mapping
 			{
 				var sql = db.LastQuery!;
 
-				Assert.AreEqual(@"CREATE TABLE IF NOT EXISTS [TestTable]
+				Assert.That(sql.Replace("\r", ""), Is.EqualTo(@"CREATE TABLE IF NOT EXISTS [TestTable]
 (
 	[ID]      INTEGER       NOT NULL,
 	[Field1]  INTEGER       NOT NULL,
@@ -55,12 +53,12 @@ namespace Tests.Mapping
 
 	CONSTRAINT [PK_TestTable] PRIMARY KEY ([ID])
 )
-".Replace("\r", ""), sql.Replace("\r", ""));
+".Replace("\r", "")));
 			}
 		}
 
 		[Test]
-		public void TestDefaultInsertUpdateMerge([MergeTests.MergeDataContextSource(true, TestProvName.AllSybase, TestProvName.AllSapHana)] string context)
+		public void TestDefaultInsertUpdateMerge([MergeDataContextSource(true, TestProvName.AllSybase, TestProvName.AllSapHana)] string context)
 		{
 			using (var db = GetDataContext(context))
 			using (db.CreateLocalTable<TestTable>())
@@ -74,9 +72,9 @@ namespace Tests.Mapping
 					.Merge();
 
 				if (context.IsAnyOf(TestProvName.AllOracleNative))
-					Assert.AreEqual(-1, res);
+					Assert.That(res, Is.EqualTo(-1));
 				else
-					Assert.AreEqual(0, res);
+					Assert.That(res, Is.Zero);
 			}
 		}
 	}

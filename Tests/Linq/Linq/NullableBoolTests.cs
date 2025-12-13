@@ -1,7 +1,7 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 
 using LinqToDB;
+using LinqToDB.Mapping;
 
 using NUnit.Framework;
 
@@ -12,27 +12,27 @@ namespace Tests.Linq
 	{
 		record NullableBoolClass
 		{
+			[PrimaryKey] public int Id;
 			public bool? Value;
+
+			public static readonly NullableBoolClass[] Data = new NullableBoolClass[]
+			{
+				new () { Id = 1, Value = null },
+				new () { Id = 2, Value = true },
+				new () { Id = 3, Value = false },
+			};
 		}
 
-		// octonica blocked by https://github.com/Octonica/ClickHouseClient/issues/56
-		const string ProvidersThatDoNotSupportNullableBool = $"{TestProvName.AllAccess},{TestProvName.AllSybase},{ProviderName.ClickHouseOctonica}";
+		const string ProvidersThatDoNotSupportNullableBool = $"{TestProvName.AllAccess},{TestProvName.AllSybase}";
 
 		[Test]
 		public void TrueTest([DataSources(ProvidersThatDoNotSupportNullableBool)] string context)
 		{
-			var data = new NullableBoolClass[]
-			{
-				new () { Value = null },
-				new () { Value = true },
-				new () { Value = false },
-			};
-
 			using var db = GetDataContext(context);
-			using var tt = db.CreateLocalTable(data);
+			using var tt = db.CreateLocalTable(NullableBoolClass.Data);
 
 			AreEqual(
-				[ data[1] ]
+				[NullableBoolClass.Data[1] ]
 				,
 				from t in tt
 				where t.Value == true
@@ -41,7 +41,7 @@ namespace Tests.Linq
 			Assert.That(LastQuery, Is.Not.Contains(" NULL"));
 
 			AreEqual(
-				[ data[1] ]
+				[NullableBoolClass.Data[1] ]
 				,
 				from t in tt
 				where Sql.AsNotNull(t.Value) == true
@@ -50,7 +50,7 @@ namespace Tests.Linq
 			Assert.That(LastQuery, Is.Not.Contains(" NULL"));
 
 			AreEqual(
-				[ data[0], data[2] ]
+				[NullableBoolClass.Data[0], NullableBoolClass.Data[2] ]
 				,
 				from t in tt
 				where t.Value != true
@@ -59,7 +59,7 @@ namespace Tests.Linq
 			Assert.That(LastQuery, Contains.Substring("IS NULL"));
 
 			AreEqual(
-				[ data[2] ]
+				[NullableBoolClass.Data[2] ]
 				,
 				from t in tt
 				where Sql.AsNotNull(t.Value) != true
@@ -71,18 +71,11 @@ namespace Tests.Linq
 		[Test]
 		public void FalseTest([DataSources(ProvidersThatDoNotSupportNullableBool)] string context)
 		{
-			var data = new NullableBoolClass[]
-			{
-				new () { Value = null },
-				new () { Value = true },
-				new () { Value = false },
-			};
-
 			using var db = GetDataContext(context);
-			using var tt = db.CreateLocalTable(data);
+			using var tt = db.CreateLocalTable(NullableBoolClass.Data);
 
 			AreEqual(
-				[ data[2] ]
+				[NullableBoolClass.Data[2] ]
 				,
 				from t in tt
 				where t.Value == false
@@ -91,7 +84,7 @@ namespace Tests.Linq
 			Assert.That(LastQuery, Is.Not.Contains(" NULL"));
 
 			AreEqual(
-				[ data[2] ]
+				[NullableBoolClass.Data[2] ]
 				,
 				from t in tt
 				where Sql.AsNotNull(t.Value) == false
@@ -100,7 +93,7 @@ namespace Tests.Linq
 			Assert.That(LastQuery, Is.Not.Contains(" NULL"));
 
 			AreEqual(
-				[ data[0], data[1] ]
+				[NullableBoolClass.Data[0], NullableBoolClass.Data[1] ]
 				,
 				from t in tt
 				where t.Value != false
@@ -109,7 +102,7 @@ namespace Tests.Linq
 			Assert.That(LastQuery, Contains.Substring("IS NULL"));
 
 			AreEqual(
-				[ data[1] ]
+				[NullableBoolClass.Data[1] ]
 				,
 				from t in tt
 				where Sql.AsNotNull(t.Value) != false
@@ -118,64 +111,51 @@ namespace Tests.Linq
 			Assert.That(LastQuery, Is.Not.Contains(" NULL"));
 		}
 
-
 		[Test]
 		public void NullTest([DataSources(ProvidersThatDoNotSupportNullableBool)] string context)
 		{
-			var data = new NullableBoolClass[]
-			{
-				new () { Value = null },
-				new () { Value = true },
-				new () { Value = false },
-			};
-
 			using var db = GetDataContext(context);
-			using var tt = db.CreateLocalTable(data);
+			using var tt = db.CreateLocalTable(NullableBoolClass.Data);
 
 			AreEqual(
-				[ data[0] ]
+				[NullableBoolClass.Data[0] ]
 				,
 				from t in tt
 				where t.Value == null
 				select t);
 
-			AreEqual(
-				[ data[0] ]
+			//TODO: weird test, we should not check for NULL in this case
+			/*AreEqual(
+				[ NullableBoolClass.Data[0] ]
 				,
 				from t in tt
 				where Sql.AsNotNull(t.Value) == null
-				select t);
+				select t);*/
 
 			AreEqual(
-				[ data[1], data[2] ]
+				[NullableBoolClass.Data[1], NullableBoolClass.Data[2] ]
 				,
 				from t in tt
 				where t.Value != null
 				select t);
 
-			AreEqual(
-				[ data[1], data[2] ]
+			//TODO: weird test, we should not check for NULL in this case
+			/*AreEqual(
+				[ NullableBoolClass.Data[1], NullableBoolClass.Data[2] ]
 				,
 				from t in tt
 				where Sql.AsNotNull(t.Value) != null
-				select t);
+				select t);*/
 		}
 
 		[Test]
 		public void ValueTest([DataSources(ProvidersThatDoNotSupportNullableBool)] string context, [Values] bool? value)
 		{
-			var data = new NullableBoolClass[]
-			{
-				new () { Value = null },
-				new () { Value = true },
-				new () { Value = false },
-			};
-
 			using var db = GetDataContext(context);
-			using var tt = db.CreateLocalTable(data);
+			using var tt = db.CreateLocalTable(NullableBoolClass.Data);
 
 			AreEqual(
-				[ data[value switch { null => 0, true => 1, false => 2 }] ]
+				[NullableBoolClass.Data[value switch { null => 0, true => 1, false => 2 }] ]
 				,
 				from t in tt
 				where t.Value == value
@@ -185,17 +165,17 @@ namespace Tests.Linq
 				Assert.That(LastQuery, Is.Not.Contains(" NULL"));
 
 			AreEqual(
-				[ data[value switch { null => 0, true => 1, false => 2 }] ]
+				value is null ? [] : [NullableBoolClass.Data[value switch { true => 1, false => 2 }] ]
 				,
 				from t in tt
 				where Sql.AsNotNull(t.Value) == value
-				select t);
+				select t, allowEmpty: true);
 
 			if (value is not null)
 				Assert.That(LastQuery, Is.Not.Contains(" NULL"));
 
 			AreEqual(
-				value switch { null => [data[1], data[2]], true => [data[0], data[2]], false => [data[0], data[1]] }
+				value switch { null => [NullableBoolClass.Data[1], NullableBoolClass.Data[2]], true => [NullableBoolClass.Data[0], NullableBoolClass.Data[2]], false => [NullableBoolClass.Data[0], NullableBoolClass.Data[1]] }
 				,
 				from t in tt
 				where t.Value != value
@@ -205,7 +185,7 @@ namespace Tests.Linq
 				Assert.That(LastQuery, Contains.Substring("IS NULL"));
 
 			AreEqual(
-				value switch { null => [data[1], data[2]], true => [data[2]], false => [data[1]] }
+				value switch { null => NullableBoolClass.Data, true => [NullableBoolClass.Data[2]], false => [NullableBoolClass.Data[1]] }
 				,
 				from t in tt
 				where Sql.AsNotNull(t.Value) != value
@@ -217,19 +197,23 @@ namespace Tests.Linq
 
 		record NotNullableBoolClass
 		{
+			[PrimaryKey] public int Id;
 			public bool Value;
+
+			public static readonly NotNullableBoolClass[] Data = new NotNullableBoolClass[]
+			{
+				new () { Id = 2, Value = true },
+				new () { Id = 3, Value = false },
+			};
+
 		}
 
 		[Test]
 		public void NotNullableTest([DataSources(ProvidersThatDoNotSupportNullableBool)] string context, [Values] bool compareNullsAsValues)
 		{
-			var data = new NotNullableBoolClass[]
-			{
-				new () { Value = true  },
-				new () { Value = false },
-			};
+			var data = NotNullableBoolClass.Data;
 
-			using var db = GetDataContext(context, o => o.WithOptions<LinqOptions>(lo => lo with { CompareNullsAsValues = compareNullsAsValues }));
+			using var db = GetDataContext(context, o => o.UseCompareNulls(compareNullsAsValues ? CompareNulls.LikeClr : CompareNulls.LikeSql));
 			using var tt = db.CreateLocalTable(data);
 
 			AreEqual(

@@ -1,19 +1,18 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 
 using LinqToDB;
-using LinqToDB.Linq;
 using LinqToDB.Mapping;
 using LinqToDB.Tools;
 
 using NUnit.Framework;
 
+using Tests.Model;
+
 namespace Tests.Mapping
 {
-	using Model;
-
 	[TestFixture]
 	public class FluentMappingTests : TestBase
 	{
@@ -114,9 +113,11 @@ namespace Tests.Mapping
 				mb.Entity<MyClass>().HasTableName("NewName").Property(x => x.ID1).IsColumn().Build();
 
 				var ed = ms.GetEntityDescriptor(typeof(MyClass));
-
-				Assert.That(ed.Name.Name, Is.EqualTo("newname"));
-				Assert.That(ed.Columns[0].ColumnName, Is.EqualTo("id1"));
+				using (Assert.EnterMultipleScope())
+				{
+					Assert.That(ed.TableName, Is.EqualTo("newname"));
+					Assert.That(ed.Columns[0].ColumnName, Is.EqualTo("id1"));
+				}
 			}
 			finally
 			{
@@ -135,12 +136,12 @@ namespace Tests.Mapping
 
 			var ed = ms.GetEntityDescriptor(typeof(MyClass));
 
-			Assert.That(ed.Name.Name, Is.EqualTo("NewName"));
+			Assert.That(ed.TableName, Is.EqualTo("NewName"));
 
 			var ms2 = new MappingSchema();
 			var ed2 = ms2.GetEntityDescriptor(typeof(MyClass));
 
-			Assert.That(ed2.Name.Name, Is.EqualTo("MyClass"));
+			Assert.That(ed2.TableName, Is.EqualTo("MyClass"));
 		}
 
 		[Test]
@@ -153,7 +154,7 @@ namespace Tests.Mapping
 
 			var ed = ms.GetEntityDescriptor(typeof(MyClass));
 
-			Assert.That(ed.Name.Name, Is.EqualTo("MyClass"));
+			Assert.That(ed.TableName, Is.EqualTo("MyClass"));
 		}
 
 		[Test]
@@ -178,9 +179,11 @@ namespace Tests.Mapping
 			mb.Entity<MyClass>().HasPrimaryKey(e => e.ID1, 3).Build();
 
 			var ed = ms.GetEntityDescriptor(typeof(MyClass));
-
-			Assert.That(ed["ID1"]!.IsPrimaryKey);
-			Assert.That(ed["ID1"]!.PrimaryKeyOrder, Is.EqualTo(3));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ed["ID1"]!.IsPrimaryKey);
+				Assert.That(ed["ID1"]!.PrimaryKeyOrder, Is.EqualTo(3));
+			}
 		}
 
 		[Test]
@@ -192,11 +195,13 @@ namespace Tests.Mapping
 			mb.Entity<MyClass>().HasPrimaryKey(e => new { e.ID, e.ID1 }, 3).Build();
 
 			var ed = ms.GetEntityDescriptor(typeof(MyClass));
-
-			Assert.That(ed["ID"]!. IsPrimaryKey);
-			Assert.That(ed["ID"]!. PrimaryKeyOrder, Is.EqualTo(3));
-			Assert.That(ed["ID1"]!.IsPrimaryKey);
-			Assert.That(ed["ID1"]!.PrimaryKeyOrder, Is.EqualTo(4));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ed["ID"]!.IsPrimaryKey);
+				Assert.That(ed["ID"]!.PrimaryKeyOrder, Is.EqualTo(3));
+				Assert.That(ed["ID1"]!.IsPrimaryKey);
+				Assert.That(ed["ID1"]!.PrimaryKeyOrder, Is.EqualTo(4));
+			}
 		}
 
 		[Test]
@@ -225,9 +230,11 @@ namespace Tests.Mapping
 				.Build();
 
 			var ed = ms.GetEntityDescriptor(typeof(MyClass));
-
-			Assert.That(ed["ID"]!.IsPrimaryKey);
-			Assert.That(ed["ID"]!.IsIdentity);
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ed["ID"]!.IsPrimaryKey);
+				Assert.That(ed["ID"]!.IsIdentity);
+			}
 		}
 
 		[Test]
@@ -242,9 +249,11 @@ namespace Tests.Mapping
 				.Build();
 
 			var ed = ms.GetEntityDescriptor(typeof(MyClass));
-
-			Assert.That(ed.Name.Name,   Is.EqualTo("Table"));
-			Assert.That(ed.Name.Schema, Is.EqualTo("Schema"));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ed.TableName,  Is.EqualTo("Table"));
+				Assert.That(ed.SchemaName, Is.EqualTo("Schema"));
+			}
 		}
 
 		[Test]
@@ -260,7 +269,7 @@ namespace Tests.Mapping
 
 			var ed = ms.GetEntityDescriptor(typeof(MyClass));
 
-			Assert.That(ed.Associations, Is.Not.EqualTo(0));
+			Assert.That(ed.Associations, Is.Not.Empty);
 		}
 
 		[Test]
@@ -292,7 +301,7 @@ namespace Tests.Mapping
 
 			var ed = ms.GetEntityDescriptor(typeof(MyClass));
 
-			Assert.That( ed.Associations, Is.Not.EqualTo( 0 ) );
+			Assert.That(ed.Associations, Is.Not.Empty);
 		}
 
 		[Test]
@@ -307,7 +316,7 @@ namespace Tests.Mapping
 
 			var ed = ms.GetEntityDescriptor(typeof(MyClass));
 
-			Assert.That(ed.Associations, Is.Not.EqualTo( 0 ) );
+			Assert.That(ed.Associations, Is.Not.Empty);
 		}
 
 		[Test]
@@ -322,7 +331,7 @@ namespace Tests.Mapping
 
 			var ed = ms.GetEntityDescriptor(typeof(MyInheritedClass));
 
-			Assert.That( ed.Associations, Is.Not.EqualTo( 0 ) );
+			Assert.That(ed.Associations, Is.Not.Empty);
 		}
 
 		[Table("Person", IsColumnAttributeRequired = false)]
@@ -356,7 +365,7 @@ namespace Tests.Mapping
 
 			var ed = ms.GetEntityDescriptor(typeof(TestInheritancePerson));
 
-			Assert.That(ed.InheritanceMapping.Count, Is.Not.EqualTo(0));
+			Assert.That(ed.InheritanceMapping, Is.Not.Empty);
 
 			using (var db = GetDataContext(context, ms))
 			{
@@ -382,15 +391,15 @@ namespace Tests.Mapping
 
 			var ed = ms.GetEntityDescriptor(typeof(TestInheritancePerson));
 
-			Assert.That(ed.InheritanceMapping.Count, Is.Not.EqualTo(0));
+			Assert.That(ed.InheritanceMapping, Is.Not.Empty);
 
 			using (var db = GetDataContext(context, ms))
 			{
 				var john = db.GetTable<TestInheritanceMale>().Where(_ => _.PersonID == 1).FirstOrDefault();
-				Assert.IsNotNull(john);
+				Assert.That(john, Is.Not.Null);
 
 				var jane = db.GetTable<TestInheritanceFemale>().Where(_ => _.PersonID == 3).FirstOrDefault();
-				Assert.IsNotNull(jane);
+				Assert.That(jane, Is.Not.Null);
 
 			}
 		}
@@ -431,7 +440,7 @@ namespace Tests.Mapping
 				var items1 = table.Where(e => e.Value == 101).ToArray();
 				var items2 = table.Where(e => e.ValueMethod() == 1001).ToArray();
 
-				Assert.AreEqual(1, items1.Length);
+				Assert.That(items1, Has.Length.EqualTo(1));
 
 				AreEqualWithComparer(items1, items2);
 			}
@@ -447,13 +456,13 @@ namespace Tests.Mapping
 
 			var od1 = ms.GetEntityDescriptor(typeof(MyClass));
 
-			Assert.AreEqual("Name1", od1.Name.Name);
+			Assert.That(od1.TableName, Is.EqualTo("Name1"));
 
 			b.Entity<MyClass>().HasTableName("Name2").Build();
 
 			var od2 = ms.GetEntityDescriptor(typeof(MyClass));
 
-			Assert.AreEqual("Name2", od2.Name.Name);
+			Assert.That(od2.TableName, Is.EqualTo("Name2"));
 		}
 
 		[Test]
@@ -469,7 +478,7 @@ namespace Tests.Mapping
 				.Build();
 
 			var ed = ms.GetEntityDescriptor(typeof(MyInheritedClass));
-			Assert.AreEqual(2, ed.Associations.Count);
+			Assert.That(ed.Associations, Has.Count.EqualTo(2));
 		}
 
 		[Test]
@@ -485,8 +494,11 @@ namespace Tests.Mapping
 				.Build();
 
 			var ed = ms.GetEntityDescriptor(typeof(MyInheritedClass));
-			Assert.AreEqual(2, ed.Associations.Count);
-			Assert.AreEqual(1, ed.Columns.Count(_ => _.IsPrimaryKey));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ed.Associations, Has.Count.EqualTo(2));
+				Assert.That(ed.Columns.Count(_ => _.IsPrimaryKey), Is.EqualTo(1));
+			}
 
 		}
 
@@ -503,12 +515,18 @@ namespace Tests.Mapping
 				.Build();
 
 			var ed = ms.GetEntityDescriptor(typeof(MyInheritedClass2));
-			Assert.AreEqual(2, ed.Associations.Count);
-			Assert.AreEqual(1, ed.Columns.Count(_ => _.IsPrimaryKey));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ed.Associations, Has.Count.EqualTo(2));
+				Assert.That(ed.Columns.Count(_ => _.IsPrimaryKey), Is.EqualTo(1));
+			}
 
 			var ed1 = ms.GetEntityDescriptor(typeof(MyBaseClass));
-			Assert.AreEqual(0, ed1.Associations.Count);
-			Assert.AreEqual(0, ed1.Columns.Count(_ => _.IsPrimaryKey));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ed1.Associations, Is.Empty);
+				Assert.That(ed1.Columns.Count(_ => _.IsPrimaryKey), Is.Zero);
+			}
 
 		}
 
@@ -531,12 +549,14 @@ namespace Tests.Mapping
 			b.Build();
 
 			var ed = ms.GetEntityDescriptor(typeof(MyInheritedClass4));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ed.TableName, Is.EqualTo(nameof(IInterfaceBase)));
 
-			Assert.AreEqual(nameof(IInterfaceBase), ed.Name.Name);
-
-			Assert.AreEqual(true, ed[nameof(MyInheritedClass4.IntValue)]!    .SkipOnUpdate);
-			Assert.AreEqual(true, ed[nameof(MyInheritedClass4.StringValue)]! .SkipOnInsert);
-			Assert.AreEqual(true, ed[nameof(MyInheritedClass4.MarkedOnType)]!.SkipOnInsert);
+				Assert.That(ed[nameof(MyInheritedClass4.IntValue)]!.SkipOnUpdate, Is.True);
+				Assert.That(ed[nameof(MyInheritedClass4.StringValue)]!.SkipOnInsert, Is.True);
+				Assert.That(ed[nameof(MyInheritedClass4.MarkedOnType)]!.SkipOnInsert, Is.True);
+			}
 		}
 
 		/// issue 291 Tests
@@ -602,10 +622,12 @@ namespace Tests.Mapping
 
 					DerivedClass res = db.GetTable<DerivedClass>().First();
 					var count = db.GetTable<DerivedClass>().Count();
-
-					Assert.AreEqual(item.MyCol1, res.MyCol1);
-					Assert.AreNotEqual(item.NotACol, res.NotACol);
-					Assert.AreEqual(1, count);
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(res.MyCol1, Is.EqualTo(item.MyCol1));
+						Assert.That(res.NotACol, Is.Not.EqualTo(item.NotACol));
+						Assert.That(count, Is.EqualTo(1));
+					}
 				}
 			}
 		}
@@ -638,10 +660,12 @@ namespace Tests.Mapping
 
 					DerivedClass res = db.GetTable<DerivedClass>().Where(o => o.MyCol1 == "MyCol1").First();
 					var count = db.GetTable<DerivedClass>().Count();
-
-					Assert.AreEqual(item.MyCol1, res.MyCol1);
-					Assert.AreNotEqual(item.NotACol, res.NotACol);
-					Assert.AreEqual(2, count);
+					using (Assert.EnterMultipleScope())
+					{
+						Assert.That(res.MyCol1, Is.EqualTo(item.MyCol1));
+						Assert.That(res.NotACol, Is.Not.EqualTo(item.NotACol));
+						Assert.That(count, Is.EqualTo(2));
+					}
 				}
 			}
 		}
@@ -667,27 +691,24 @@ namespace Tests.Mapping
 		[Test]
 		public void ExpressionAlias([IncludeDataSources(TestProvName.AllSQLite)] string context, [Values] bool finalAliases)
 		{
-			using (new GenerateFinalAliases(finalAliases))
-			using (var db = GetDataContext(context))
+			using (var db = GetDataContext(context, o => o.UseGenerateFinalAliases(finalAliases).UseDisableQueryCache(true)))
 			{
-				Query.ClearCaches();
-
 				var query = db.GetTable<PersonCustom>().Where(p => p.Name != "");
-				var sql1 = query.ToString();
-				TestContext.WriteLine(sql1);
+				var sql1 = query.ToSqlQuery().Sql;
+				BaselinesManager.LogQuery(sql1);
 
 				if (finalAliases)
 					Assert.That(sql1, Does.Contain("[AGE]"));
 				else
 					Assert.That(sql1, Does.Not.Contain("[AGE]"));
 
-				var sql2 = query.Select(q => new { q.Name, q.Age }).ToString();
-				TestContext.WriteLine(sql2);
+				var sql2 = query.Select(q => new { q.Name, q.Age }).ToSqlQuery().Sql;
+				BaselinesManager.LogQuery(sql2);
 
 				if (finalAliases)
-					Assert.That(sql2, Does.Contain("[Age]"));
+					Assert.That(sql2, Does.Contain("[AGE]"));
 				else
-					Assert.That(sql2, Does.Not.Contain("[Age]"));
+					Assert.That(sql2, Does.Not.Contain("[AGE]"));
 			}
 		}
 
@@ -701,27 +722,24 @@ namespace Tests.Mapping
 				.Property(p => p.Money).IsExpression(p => Sql.AsSql(p.Age * Sql.AsSql(1000) + p.Name.Length * 10), true, "MONEY")
 				.Build();
 
-			using (new GenerateFinalAliases(finalAliases))
-			using (var db = GetDataContext(context, ms))
+			using (var db = GetDataContext(context, o => o.UseMappingSchema(ms).UseGenerateFinalAliases(finalAliases).UseDisableQueryCache(true)))
 			{
-				Query.ClearCaches();
-
 				var query = db.GetTable<PersonCustom>().Where(p => p.Name != "");
-				var sql1 = query.ToString();
-				TestContext.WriteLine(sql1);
+				var sql1 = query.ToSqlQuery().Sql;
+				BaselinesManager.LogQuery(sql1);
 
 				if (finalAliases)
 					Assert.That(sql1, Does.Contain("[MONEY]"));
 				else
 					Assert.That(sql1, Does.Not.Contain("[MONEY]"));
 
-				var sql2 = query.Select(q => new { q.Name, q.Money }).ToString();
-				TestContext.WriteLine(sql2);
+				var sql2 = query.Select(q => new { q.Name, q.Money }).ToSqlQuery().Sql;
+				BaselinesManager.LogQuery(sql2);
 
 				if (finalAliases)
-					Assert.That(sql2, Does.Contain("[Money]"));
+					Assert.That(sql2, Does.Contain("[MONEY]"));
 				else
-					Assert.That(sql2, Does.Not.Contain("[Money]"));
+					Assert.That(sql2, Does.Not.Contain("[MONEY]"));
 			}
 		}
 
@@ -741,13 +759,13 @@ namespace Tests.Mapping
 				.UseSequence("sequencetestseq")
 				.Build();
 
-			using var db = GetDataConnection(context, ms);
+			using var db = GetDataContext(context, ms);
 			var records = Enumerable.Range(1, 10).Select(x => new SequenceTable()).ToArray();
 
 			records.RetrieveIdentity(db, true);
 
 			for (var i = 0; i < records.Length; i++)
-				Assert.AreEqual(records[0].Id + i, records[i].Id);
+				Assert.That(records[i].Id, Is.EqualTo(records[0].Id + i));
 		}
 
 		[Test]
@@ -761,13 +779,13 @@ namespace Tests.Mapping
 				.HasAttribute(new SequenceNameAttribute("sequencetestseq"))
 				.Build();
 
-			using var db = GetDataConnection(context, ms);
+			using var db = GetDataContext(context, ms);
 			var records = Enumerable.Range(1, 10).Select(x => new SequenceTable()).ToArray();
 
 			records.RetrieveIdentity(db, true);
 
 			for (var i = 0; i < records.Length; i++)
-				Assert.AreEqual(records[0].Id + i, records[i].Id);
+				Assert.That(records[i].Id, Is.EqualTo(records[0].Id + i));
 		}
 
 		[Table("Person")]
@@ -802,11 +820,69 @@ namespace Tests.Mapping
 
 			var records = db.GetTable<EnumPerson>().OrderBy(r => r.PersonID).ToArray();
 
-			Assert.AreEqual(4, records.Length);
-			Assert.AreEqual(GenderEnum.Male,   records[0].Gender);
-			Assert.AreEqual(GenderEnum.Male,   records[1].Gender);
-			Assert.AreEqual(GenderEnum.Female, records[2].Gender);
-			Assert.AreEqual(GenderEnum.Male,   records[3].Gender);
+			Assert.That(records, Has.Length.EqualTo(4));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(records[0].Gender, Is.EqualTo(GenderEnum.Male));
+				Assert.That(records[1].Gender, Is.EqualTo(GenderEnum.Male));
+				Assert.That(records[2].Gender, Is.EqualTo(GenderEnum.Female));
+				Assert.That(records[3].Gender, Is.EqualTo(GenderEnum.Male));
+			}
+		}
+
+		[ActiveIssue]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/3119")]
+		public void Issue3119Test()
+		{
+			var mb = new FluentMappingBuilder();
+
+			mb.Entity<Issue3119Entity>()
+				.Property(u => u.UserId)
+				.HasAttribute(new ColumnAttribute() { IsIdentity = true })
+				.HasAttribute(new ColumnAttribute() { IsPrimaryKey = true });
+
+			mb.Build();
+
+			var attrs = mb.MappingSchema.GetAttributes<ColumnAttribute>(typeof(Issue3119Entity), typeof(Issue3119Entity).GetProperty("UserId")!);
+
+			Assert.That(attrs, Has.Length.EqualTo(1));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(attrs[0].IsIdentity, Is.True);
+				Assert.That(attrs[0].IsPrimaryKey, Is.True);
+			}
+		}
+
+		sealed class Issue3119Entity
+		{
+			public int UserId { get; set; }
+		}
+
+		[ActiveIssue]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/3136")]
+		public void Issue3136Test()
+		{
+			const string configuration = "MyConfiguration";
+			var mb = new FluentMappingBuilder();
+
+			mb
+				.Entity<Issue3119Entity>()
+				.Property(u => u.UserId)
+				.Entity<Issue3119Entity>(configuration)
+				.HasAttribute(new ColumnAttribute() { IsIdentity = true });
+
+			mb.Build();
+
+			var attrs = mb.MappingSchema.GetAttributes<ColumnAttribute>(typeof(Issue3119Entity), typeof(Issue3119Entity).GetProperty("UserId")!);
+
+			Assert.That(attrs, Has.Length.EqualTo(2));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(attrs[0].IsIdentity, Is.False);
+				Assert.That(attrs[0].Configuration, Is.Null);
+				Assert.That(attrs[1].IsIdentity, Is.True);
+				Assert.That(attrs[1].Configuration, Is.EqualTo(configuration));
+			}
 		}
 	}
 }

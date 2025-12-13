@@ -52,7 +52,7 @@ namespace Tests.DataProvider
 
 				var result = query.ToArray();
 
-				Assert.AreEqual(77, result[0].NI);
+				Assert.That(result[0].NI, Is.EqualTo(77));
 			}
 		}
 
@@ -79,9 +79,9 @@ namespace Tests.DataProvider
 
 				var result = query.ToArray();
 
-				Assert.AreEqual(77, result[0].NI);
-				Assert.AreEqual(2, result[0].Count);
-				Assert.AreEqual(10, result[0].Sum);
+				Assert.That(result[0].NI, Is.EqualTo(77));
+				Assert.That(result[0].Count, Is.EqualTo(2));
+				Assert.That(result[0].Sum, Is.EqualTo(10));
 			}
 		}
 	}

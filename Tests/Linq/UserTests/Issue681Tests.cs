@@ -10,7 +10,7 @@ using Grpc.Core;
 
 using LinqToDB;
 using LinqToDB.Data;
-using LinqToDB.DataProvider.SqlServer;
+using LinqToDB.Internal.DataProvider.SqlServer;
 using LinqToDB.Mapping;
 
 using NUnit.Framework;
@@ -94,7 +94,7 @@ namespace Tests.UserTests
 
 		[Test]
 		public async Task TestInsertOrReplace(
-			[DataSources(TestProvName.AllClickHouse)] string context,
+			[InsertOrUpdateDataSources] string context,
 			[Values] bool withServer,
 			[Values] bool withDatabase,
 			[Values] bool withSchema)
@@ -135,13 +135,21 @@ namespace Tests.UserTests
 			{
 				try
 				{
-					db.DropTable<TestTable>(tableName: "Issue681Table2", throwExceptionIfNotExists: false);
+					if (context.IsAnyOf(ProviderName.Ydb))
+						db.DropTable<TestTable>(tableName: "Issue681Table2", databaseName: d, serverName: s, schemaName: u, throwExceptionIfNotExists: false);
+					else
+						db.DropTable<TestTable>(tableName: "Issue681Table2", throwExceptionIfNotExists: false);
+
 					db.CreateTable<TestTable>(tableName: "Issue681Table2", databaseName: d, serverName: s, schemaName: u);
 				}
 				finally
 				{
-					db.DropTable<TestTable>(tableName: "Issue681Table2", throwExceptionIfNotExists: false);
+					if (context.IsAnyOf(ProviderName.Ydb))
+						db.DropTable<TestTable>(tableName: "Issue681Table2", databaseName: d, serverName: s, schemaName: u, throwExceptionIfNotExists: false);
+					else
+						db.DropTable<TestTable>(tableName: "Issue681Table2", throwExceptionIfNotExists: false);
 				}
+
 				return Task.CompletedTask;
 				// not allowed for remote server
 			}, $"{TestProvName.AllSqlServer},{TestProvName.AllOracle}", ddl: true);
@@ -158,12 +166,19 @@ namespace Tests.UserTests
 			{
 				try
 				{
-					db.DropTable<TestTable>(tableName: "Issue681Table2", throwExceptionIfNotExists: false);
+					if (context.IsAnyOf(ProviderName.Ydb))
+						db.DropTable<TestTable>(tableName: "Issue681Table2", databaseName: d, serverName: s, schemaName: u, throwExceptionIfNotExists: false);
+					else
+						db.DropTable<TestTable>(tableName: "Issue681Table2", throwExceptionIfNotExists: false);
+
 					await db.CreateTableAsync<TestTable>(tableName: "Issue681Table2", databaseName: d, serverName: s, schemaName: u);
 				}
 				finally
 				{
-					await db.DropTableAsync<TestTable>(tableName: "Issue681Table2", throwExceptionIfNotExists: false);
+					if (context.IsAnyOf(ProviderName.Ydb))
+						await db.DropTableAsync<TestTable>(tableName: "Issue681Table2", databaseName: d, serverName: s, schemaName: u, throwExceptionIfNotExists: false);
+					else
+						await db.DropTableAsync<TestTable>(tableName: "Issue681Table2", throwExceptionIfNotExists: false);
 				}
 				// not allowed for remote server
 			}, $"{TestProvName.AllSqlServer},{TestProvName.AllOracle}", ddl: true);
@@ -180,18 +195,27 @@ namespace Tests.UserTests
 			{
 				try
 				{
-					db.DropTable<TestTable>(tableName: "Issue681Table2", throwExceptionIfNotExists: false);
-					db.CreateTable<TestTable>(tableName: "Issue681Table2");
+					if (context.IsAnyOf(ProviderName.Ydb))
+					{
+						db.DropTable<TestTable>(tableName: "Issue681Table2", databaseName: d, serverName: s, schemaName: u, throwExceptionIfNotExists: false);
+						db.CreateTable<TestTable>(tableName: "Issue681Table2", databaseName: d, serverName: s, schemaName: u);
+					}
+					else
+					{
+						db.DropTable<TestTable>(tableName: "Issue681Table2", throwExceptionIfNotExists: false);
+						db.CreateTable<TestTable>(tableName: "Issue681Table2");
+					}
 				}
 				finally
 				{
 					db.DropTable<TestTable>(tableName: "Issue681Table2", databaseName: d, serverName: s, schemaName: u);
 				}
+
 				return Task.CompletedTask;
 			}, TestProvName.AllSqlServer, ddl: true);
 		}
 
-		public async Task TestTableFQN<TTable>(
+		private async Task TestTableFQN<TTable>(
 			string context,
 			bool withServer, bool withDatabase, bool withSchema,
 			Func<IDataContext, ITable<TTable>, string?, string?, string?, Task> operation,
@@ -207,10 +231,6 @@ namespace Tests.UserTests
 			string? serverName;
 			string? schemaName;
 			string? dbName;
-
-			using var _  = new DisableBaseline("Use instance name is SQL", context.IsAnyOf(TestProvName.AllSqlServer) && !context.IsAnyOf(TestProvName.AllSqlAzure) && withServer);
-			using var db = GetDataContext(context, testLinqService : false);
-			using var t  = db.CreateLocalTable<TTable>();
 
 			if (withServer && (!withDatabase || !withSchema || ddl) && context.IsAnyOf(TestProvName.AllSqlServer))
 			{
@@ -261,12 +281,19 @@ namespace Tests.UserTests
 				throws = true;
 			}
 
+			using var _  = new DisableBaseline("Use instance name is SQL", context.IsAnyOf(TestProvName.AllSqlServer) && !context.IsAnyOf(TestProvName.AllSqlAzure) && withServer);
+			using var db = GetDataContext(context, testLinqService : false);
+
 			using (new DisableLogging())
 			{
 				serverName = withServer   ? TestUtils.GetServerName  (db, context) : null;
 				dbName     = withDatabase ? TestUtils.GetDatabaseName(db, context) : null;
 				schemaName = withSchema   ? TestUtils.GetSchemaName  (db, context) : null;
 			}
+
+			using var t  = context.IsAnyOf(ProviderName.Ydb)
+				? db.CreateLocalTable<TTable>(databaseName: dbName, serverName: serverName, schemaName: schemaName)
+				: db.CreateLocalTable<TTable>();
 
 			var table = db.GetTable<TTable>();
 
@@ -277,18 +304,16 @@ namespace Tests.UserTests
 			if (throws && context.IsRemote())
 			{
 #if NETFRAMEWORK
-				Assert.ThrowsAsync<FaultException>(() => operation(db, table, schemaName, dbName, serverName));
+				await Assert.ThatAsync(() => operation(db, table, schemaName, dbName, serverName), Throws.InstanceOf<FaultException>());
 #else
-				Assert.ThrowsAsync<RpcException>(() => operation(db, table, schemaName, dbName, serverName));
+				await Assert.ThatAsync(() => operation(db, table, schemaName, dbName, serverName), Throws.InstanceOf<RpcException>());
 #endif
 			}
 			else if (throws)
 			{
 				if (throwsSqlException)
 				{
-					Assert.ThrowsAsync(
-						((SqlServerDataProvider)((DataConnection)db).DataProvider).Adapter.SqlExceptionType,
-						() => operation(db, table, schemaName, dbName, serverName));
+					await Assert.ThatAsync(() => operation(db, table, schemaName, dbName, serverName), Throws.InstanceOf(((SqlServerDataProvider)((DataConnection)db).DataProvider).Adapter.SqlExceptionType));
 				}
 				else if (throwsHanaException)
 				{
@@ -316,7 +341,7 @@ namespace Tests.UserTests
 				}
 				else
 				{
-					Assert.ThrowsAsync<LinqToDBException>(() => operation(db, table, schemaName, dbName, serverName));
+					await Assert.ThatAsync(() => operation(db, table, schemaName, dbName, serverName), Throws.InstanceOf<LinqToDBException>());
 				}
 			}
 			else

@@ -1,10 +1,11 @@
-﻿using LinqToDB;
-using LinqToDB.Data;
+﻿using System;
+using System.Linq;
+
+using LinqToDB;
 using LinqToDB.Mapping;
 using LinqToDB.SchemaProvider;
+
 using NUnit.Framework;
-using System;
-using System.Linq;
 
 namespace Tests.UserTests
 {
@@ -39,6 +40,7 @@ namespace Tests.UserTests
 		}
 
 		[Test]
+		[YdbNotImplementedYet]
 		public void TestWithoutTransaction([DataSources(false,
 			// those providers doesn't support stored procedures
 			ProviderName.SqlCe,
@@ -64,12 +66,14 @@ namespace Tests.UserTests
 					});
 
 					var recordsAfter = db.GetTable<AllTypes>().Count();
+					using (Assert.EnterMultipleScope())
+					{
+						// schema request shouldn't execute procedure
+						Assert.That(recordsAfter, Is.EqualTo(recordsBefore));
 
-					// schema request shouldn't execute procedure
-					Assert.AreEqual(recordsBefore, recordsAfter);
-
-					// schema provider should find our procedure for real
-					Assert.AreEqual(1, schema.Procedures.Count(p => p.ProcedureName.ToUpperInvariant() == "ADDISSUE792RECORD"));
+						// schema provider should find our procedure for real
+						Assert.That(schema.Procedures.Count(p => p.ProcedureName.ToUpperInvariant() == "ADDISSUE792RECORD"), Is.EqualTo(1));
+					}
 				}
 				finally
 				{
@@ -80,6 +84,7 @@ namespace Tests.UserTests
 		}
 
 		[Test]
+		[YdbNotImplementedYet]
 		public void TestWithTransaction([DataSources(false,
 			// those providers doesn't support stored procedures
 			ProviderName.SqlCe,
@@ -89,9 +94,10 @@ namespace Tests.UserTests
 			TestProvName.AllInformix,
 			// those providers cannot load schema when in transaction
 			ProviderName.DB2,
-			ProviderName.Access,
+			TestProvName.AllAccessOleDb,
 			TestProvName.AllMySql,
 			TestProvName.AllOracle,
+			TestProvName.AllSapHana,
 			TestProvName.AllSqlServer)]
 			string context)
 		{
@@ -110,12 +116,14 @@ namespace Tests.UserTests
 				});
 
 				var recordsAfter = db.GetTable<AllTypes>().Count();
+				using (Assert.EnterMultipleScope())
+				{
+					// schema request shouldn't execute procedure
+					Assert.That(recordsAfter, Is.EqualTo(recordsBefore));
 
-				// schema request shouldn't execute procedure
-				Assert.AreEqual(recordsBefore, recordsAfter);
-
-				// schema provider should find our procedure for real
-				Assert.AreEqual(1, schema.Procedures.Count(p => p.ProcedureName.ToUpperInvariant() == "ADDISSUE792RECORD"));
+					// schema provider should find our procedure for real
+					Assert.That(schema.Procedures.Count(p => p.ProcedureName.ToUpperInvariant() == "ADDISSUE792RECORD"), Is.EqualTo(1));
+				}
 			}
 		}
 
@@ -137,11 +145,11 @@ namespace Tests.UserTests
 					GetTables = false
 				}))!;
 
-				Assert.IsInstanceOf<InvalidOperationException>(ex);
-				Assert.IsTrue(
+				Assert.That(ex, Is.InstanceOf<InvalidOperationException>());
+				Assert.That(
 					ex.Message.Contains("requires the command to have a transaction")
 					|| ex.Message.Contains("команда имела транзакцию") //for those who accidentally installed a russian localization of Sql Server :)
-					);
+, Is.True);
 			}
 		}
 
@@ -160,8 +168,8 @@ namespace Tests.UserTests
 					GetTables = false
 				}))!;
 
-				Assert.IsInstanceOf<LinqToDBException>(ex);
-				Assert.AreEqual("Cannot read schema with GetSchemaOptions.GetProcedures = true from transaction. Remove transaction or set GetSchemaOptions.GetProcedures to false", ex.Message);
+				Assert.That(ex, Is.InstanceOf<LinqToDBException>());
+				Assert.That(ex.Message, Is.EqualTo("Cannot read schema with GetSchemaOptions.GetProcedures = true from transaction. Remove transaction or set GetSchemaOptions.GetProcedures to false"));
 			}
 		}
 	}

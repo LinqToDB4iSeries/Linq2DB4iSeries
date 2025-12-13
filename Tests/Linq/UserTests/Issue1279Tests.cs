@@ -1,7 +1,9 @@
-﻿using LinqToDB;
+﻿using System.Linq;
+
+using LinqToDB;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
-using System.Linq;
 
 namespace Tests.UserTests
 {
@@ -28,7 +30,7 @@ namespace Tests.UserTests
 
 				var result = db.GetTable<Issue1279Table>().First().CharFld;
 
-				Assert.AreEqual(val, result);
+				Assert.That(result, Is.EqualTo(val));
 			}
 		}
 	}

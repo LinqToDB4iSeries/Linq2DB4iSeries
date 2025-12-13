@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Linq;
 using System.Linq.Expressions;
+
 using LinqToDB;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.UserTests
@@ -51,7 +53,7 @@ namespace Tests.UserTests
 			}}))
 			{
 				var result = db.GetTable<PersonTest>().Where(p => p.Type == 4 || p.Type == 5).ToList();
-				Assert.That(result.Count, Is.EqualTo(1));
+				Assert.That(result, Has.Count.EqualTo(1));
 			}
 		}
 	}

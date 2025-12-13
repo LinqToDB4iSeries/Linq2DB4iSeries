@@ -1,9 +1,10 @@
-﻿using System;
-using System.Linq;
-using FluentAssertions;
+﻿using System.Linq;
+
 using LinqToDB;
+
 using NUnit.Framework;
-using Tests.Model;
+
+using Shouldly;
 
 namespace Tests.UserTests
 {
@@ -21,14 +22,11 @@ namespace Tests.UserTests
 				var union = persons
 						.Union (persons);
 
-				var sql = union.ToString();
+				var sql = union.ToSqlQuery().Sql;
 
-				sql.Should().NotContain("ORDER");
+				sql.ShouldNotContain("ORDER");
 
-				Assert.DoesNotThrow (() =>
-				{
-					union.ToList();
-				});
+				union.ToArray();
 			}
 		}
 
@@ -43,14 +41,11 @@ namespace Tests.UserTests
 				var union = persons
 					.Union (persons);
 
-				var sql = union.ToString();
+				var sql = union.ToSqlQuery().Sql;
 
-				sql.Should().Contain("ORDER", Exactly.Twice());
+				sql.ShouldContain("ORDER", Exactly.Twice());
 
-				Assert.DoesNotThrow (() =>
-				{
-					union.ToList();
-				});
+				union.ToArray();
 			}
 		}
 
@@ -65,14 +60,11 @@ namespace Tests.UserTests
 				var concat = persons
 					.Concat(persons);
 
-				var sql = concat.ToString();
+				var sql = concat.ToSqlQuery().Sql;
 
-				sql.Should().Contain("ORDER", Exactly.Twice());
+				sql.ShouldContain("ORDER", Exactly.Twice());
 
-				Assert.DoesNotThrow (() =>
-				{
-					concat.ToList();
-				});
+				concat.ToArray();
 			}
 		}
 
@@ -87,20 +79,17 @@ namespace Tests.UserTests
 				var concat = persons
 					.Concat(persons);
 
-				var sql = concat.ToString();
+				var sql = concat.ToSqlQuery().Sql;
 
-				sql.Should().Contain("ORDER", Exactly.Twice());
+				sql.ShouldContain("ORDER", Exactly.Twice());
 
-				Assert.DoesNotThrow (() =>
-				{
-					concat.ToList();
-				});
+				concat.ToArray();
 			}
 		}
 
-
+		[YdbMemberNotFound]
 		[Test]
-		public void OrderByExcept([DataSources(TestProvName.AllSybase, TestProvName.AllSqlServer)] string context)
+		public void OrderByExcept([DataSources(TestProvName.AllSybase, TestProvName.AllSqlServer, TestProvName.AllAccess)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -110,14 +99,12 @@ namespace Tests.UserTests
 				var concat = persons
 					.Except(persons);
 
-				var sql = concat.ToString();
+				var sql = concat.ToSqlQuery().Sql;
 
-				sql.Should().Contain("ORDER", AtLeast.Once());
+				if (!sql.Contains("EXISTS"))
+					sql.ShouldNotContain("ORDER");
 
-				Assert.DoesNotThrow (() =>
-				{
-					concat.ToList();
-				});
+				concat.ToArray();
 			}
 		}
 
@@ -133,14 +120,11 @@ namespace Tests.UserTests
 				var except = persons
 					.Except(persons);
 
-				var sql = except.ToString();
+				var sql = except.ToSqlQuery().Sql;
 
-				sql.Should().Contain("ORDER", AtLeast.Once());
+				sql.ShouldContain("ORDER");
 
-				Assert.DoesNotThrow (() =>
-				{
-					except.ToList();
-				});
+				except.ToArray();
 			}
 		}
 

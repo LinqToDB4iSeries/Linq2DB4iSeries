@@ -1,9 +1,10 @@
-﻿namespace LinqToDB.DataProvider.DB2iSeries
-{
-	using Common;
-	using Common.Internal;
-	using Data;
+﻿using LinqToDB.Data;
+using LinqToDB.Internal.Common;
+using LinqToDB.Internal.DataProvider;
+using LinqToDB.Internal.Options;
 
+namespace LinqToDB.DataProvider.DB2iSeries
+{
 	public sealed record DB2iSeriesOptions
 	(
 		BulkCopyType BulkCopyType = BulkCopyType.MultipleRows,
@@ -28,7 +29,7 @@
 
 		#region IEquatable implementation
 
-		public bool Equals(DB2iSeriesOptions other)
+		public bool Equals(DB2iSeriesOptions? other)
 		{
 			if (ReferenceEquals(null, other)) return false;
 			if (ReferenceEquals(this, other)) return true;

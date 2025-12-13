@@ -30,7 +30,7 @@ namespace Tests.UserTests
 		{
 			var ms      = new MappingSchema();
 
-			Assert.IsEmpty(ms.GetAttributes<PrimaryKeyAttribute>(typeof(TestEntity), typeof(TestEntity).GetProperty("Id")!));
+			Assert.That(ms.GetAttributes<PrimaryKeyAttribute>(typeof(TestEntity), typeof(TestEntity).GetProperty("Id")!), Is.Empty);
 
 			const int taskCount = 10;
 
@@ -46,7 +46,7 @@ namespace Tests.UserTests
 
 				for (var i = 0; i < taskCount; i++)
 					tasks[i].Start();
-
+				 
 				Thread.Sleep(100);
 				semaphore.Release(taskCount);
 
@@ -54,14 +54,16 @@ namespace Tests.UserTests
 			}
 		}
 
-		[SkipCI]
+		[Repeat(100)]
 		[Test]
 		public void Test2()
 		{
 			var ms      = new MappingSchema();
-
-			Assert.IsEmpty(ms.GetAttributes<ColumnAttribute>(typeof(TestEntity), typeof(TestEntity).GetProperty("Id")!));
-			Assert.IsEmpty(ms.GetAttributes<ColumnAttribute>(typeof(TestEntity), typeof(TestEntity).GetProperty("Value")!));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(ms.GetAttributes<ColumnAttribute>(typeof(TestEntity), typeof(TestEntity).GetProperty("Id")!), Is.Empty);
+				Assert.That(ms.GetAttributes<ColumnAttribute>(typeof(TestEntity), typeof(TestEntity).GetProperty("Value")!), Is.Empty);
+			}
 
 			const int taskCount = 2;
 
@@ -69,19 +71,23 @@ namespace Tests.UserTests
 			using (var semaphore2 = new Semaphore(0, taskCount))
 			{
 				var tasks = new Task[taskCount];
+				var events = new EventWaitHandle[taskCount];
 
 				for (var i = 0; i < taskCount; i++)
+				{
+					var evt = events[i] = new AutoResetEvent(false);
 					if (i % 2 == 0)
-						tasks[i] = new Task(() => Test2Internal1(ms, semaphore1, semaphore2));
+						tasks[i] = new Task(() => Test2Internal1(ms, semaphore1, semaphore2, evt));
 					else
-						tasks[i] = new Task(() => Test2Internal2(ms, semaphore1, semaphore2));
+						tasks[i] = new Task(() => Test2Internal2(ms, semaphore1, semaphore2, evt));
+				}
 
 				for (var i = 0; i < taskCount; i++)
 					tasks[i].Start();
 
-				Thread.Sleep(100);
+				WaitHandle.WaitAll(events);
 				semaphore1.Release(taskCount);
-				Thread.Sleep(100);
+				WaitHandle.WaitAll(events);
 				semaphore2.Release(taskCount);
 
 				Task.WaitAll(tasks);
@@ -120,7 +126,7 @@ namespace Tests.UserTests
 			{
 				semaphore.WaitOne();
 
-				Assert.IsEmpty(ms.GetAttributes<PrimaryKeyAttribute>(typeof(TestEntity), typeof(TestEntity).GetProperty("Id")!));
+				Assert.That(ms.GetAttributes<PrimaryKeyAttribute>(typeof(TestEntity), typeof(TestEntity).GetProperty("Id")!), Is.Empty);
 			}
 			finally
 			{
@@ -130,60 +136,50 @@ namespace Tests.UserTests
 		}
 
 		/// <summary>
-		/// <see cref="Test2Internal1(MappingSchema, Semaphore, Semaphore)"/> and <see cref="Test2Internal2(MappingSchema, Semaphore, Semaphore)"/>
+		/// <see cref="Test2Internal1(MappingSchema, Semaphore, Semaphore, EventWaitHandle)"/> and <see cref="Test2Internal2(MappingSchema, Semaphore, Semaphore, EventWaitHandle)"/>
 		/// are creating two instances of <see cref="FluentMappingBuilder"/> and have a chance to race in <see cref="MappingSchema.AddMetadataReader(LinqToDB.Metadata.IMetadataReader)"/>
 		/// one <see cref="LinqToDB.Metadata.IMetadataReader"/> could be lost
 		/// </summary>
 		/// <param name="ms"></param>
 		/// <param name="semaphore1"></param>
 		/// <param name="semaphore2"></param>
-		private void Test2Internal1(MappingSchema ms, Semaphore semaphore1, Semaphore semaphore2)
+		private void Test2Internal1(MappingSchema ms, Semaphore semaphore1, Semaphore semaphore2, EventWaitHandle done)
 		{
-			try
-			{
-				semaphore1.WaitOne();
-				var builder = new FluentMappingBuilder(ms);
+			done.Set();
+			semaphore1.WaitOne();
+			var builder = new FluentMappingBuilder(ms);
 
-				builder.Entity<TestEntity>().Property(_ => _.Id).IsColumn().Build();
-				semaphore2.WaitOne();
+			builder.Entity<TestEntity>().Property(_ => _.Id).IsColumn().Build();
+			done.Set();
+			semaphore2.WaitOne();
 
-				Assert.IsNotEmpty(ms.GetAttributes<ColumnAttribute>(typeof(TestEntity), typeof(TestEntity).GetProperty("Id")!));
-				Assert.IsNotEmpty(ms.GetAttributes<ColumnAttribute>(typeof(TestEntity), typeof(TestEntity).GetProperty("Value")!));
-
-			}
-			finally
-			{
-				semaphore1.Release();
-				semaphore2.Release();
-			}
+#pragma warning disable NUnit2045 // Use Assert.Multiple
+			Assert.That(ms.GetAttributes<ColumnAttribute>(typeof(TestEntity), typeof(TestEntity).GetProperty("Id")!), Is.Not.Empty);
+#pragma warning restore NUnit2045 // Use Assert.Multiple
+			Assert.That(ms.GetAttributes<ColumnAttribute>(typeof(TestEntity), typeof(TestEntity).GetProperty("Value")!), Is.Not.Empty);
 
 		}
 
 		/// <summary>
-		/// <see cref="Test2Internal2(MappingSchema, Semaphore, Semaphore)"/>
+		/// <see cref="Test2Internal2(MappingSchema, Semaphore, Semaphore, EventWaitHandle)"/>
 		/// </summary>
 		/// <param name="ms"></param>
 		/// <param name="semaphore1"></param>
 		/// <param name="semaphore2"></param>
-		private void Test2Internal2(MappingSchema ms, Semaphore semaphore1, Semaphore semaphore2)
+		private void Test2Internal2(MappingSchema ms, Semaphore semaphore1, Semaphore semaphore2, EventWaitHandle done)
 		{
-			try
-			{
-				semaphore1.WaitOne();
-				var builder = new FluentMappingBuilder(ms);
+			done.Set();
+			semaphore1.WaitOne();
+			var builder = new FluentMappingBuilder(ms);
 
-				builder.Entity<TestEntity>().Property(_ => _.Value).IsColumn().Build();
-				semaphore2.WaitOne();
+			builder.Entity<TestEntity>().Property(_ => _.Value).IsColumn().Build();
+			done.Set();
+			semaphore2.WaitOne();
 
-				Assert.IsNotEmpty(ms.GetAttributes<ColumnAttribute>(typeof(TestEntity), typeof(TestEntity).GetProperty("Id")!));
-				Assert.IsNotEmpty(ms.GetAttributes<ColumnAttribute>(typeof(TestEntity), typeof(TestEntity).GetProperty("Value")!));
-			}
-			finally
-			{
-				semaphore1.Release();
-				semaphore2.Release();
-			}
-
+#pragma warning disable NUnit2045 // Use Assert.Multiple
+			Assert.That(ms.GetAttributes<ColumnAttribute>(typeof(TestEntity), typeof(TestEntity).GetProperty("Id")!), Is.Not.Empty);
+#pragma warning restore NUnit2045 // Use Assert.Multiple
+			Assert.That(ms.GetAttributes<ColumnAttribute>(typeof(TestEntity), typeof(TestEntity).GetProperty("Value")!), Is.Not.Empty);
 		}
 	}
 }

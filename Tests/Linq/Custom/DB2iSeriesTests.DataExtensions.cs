@@ -2,6 +2,7 @@
 
 using LinqToDB;
 using LinqToDB.Data;
+using LinqToDB.Tools;
 using NUnit.Framework;
 using System;
 using System.Linq;
@@ -55,7 +56,7 @@ namespace Tests.DataProvider
 			using (var conn = new TestDataConnection(context))
 			{
 				conn.InlineParameters = true;
-				var sql = conn.Person.Where(p => p.ID == 1).Select(p => p.Name).Take(1).ToString()!;
+				var sql = conn.Person.Where(p => p.ID == 1).Select(p => p.Name).Take(1).ToSqlQuery().Sql!;
 				sql = string.Join(Environment.NewLine, sql.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
 				.Where(line => !line.StartsWith("--")));
 				var res = conn.Execute<string>(sql);

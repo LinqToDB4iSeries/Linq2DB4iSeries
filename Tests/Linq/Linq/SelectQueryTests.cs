@@ -1,6 +1,10 @@
 ﻿using System.Linq;
+
 using LinqToDB;
+using LinqToDB.Data;
+using LinqToDB.Internal.Common;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 namespace Tests.Linq
@@ -11,7 +15,7 @@ namespace Tests.Linq
 		[Table]
 		sealed class SampleClass
 		{
-			[Column] public int Id    { get; set; }
+			[PrimaryKey] public int Id    { get; set; }
 			[Column] public int Value { get; set; }
 		}
 
@@ -45,6 +49,7 @@ namespace Tests.Linq
 
 		[ActiveIssue(Configuration = TestProvName.AllInformix, Details = "Informix interval cannot be created from non-literal value")]
 		[Test]
+		[ThrowsForProvider(typeof(LinqToDBException), TestProvName.AllSybase, ErrorMessage = ErrorHelper.Sybase.Error_JoinToDerivedTableWithTakeInvalid)]
 		public void SubQueryTest([DataSources(TestProvName.AllAccess)] string context)
 		{
 			var data = GenerateData();
@@ -142,7 +147,6 @@ namespace Tests.Linq
 			}
 		}
 
-
 		private static SampleClass[] GenerateData()
 		{
 			return Enumerable.Range(1, 1).Select(i => new SampleClass() { Id = i, Value = i * 100 }).ToArray();
@@ -167,14 +171,15 @@ namespace Tests.Linq
 		{
 			using (var db = GetDataContext(context))
 			{
-				var sql = db.Child.Where(child => child.ChildID == -1).ToString();
+				var query = db.Child.Where(child => child.ChildID == -1);
+				query.ToArray();
+				var sql = query.ToSqlQuery().Sql;
 				Assert.That(sql, Does.Contain("child_1"));
 			}
 		}
 
-		[ActiveIssue(4284)]
 		[Test(Description = "https://github.com/linq2db/linq2db/issues/4284")]
-		public void Select_GroupBy_SelectAgain([DataSources(TestProvName.AllSqlServer2017)] string context)
+		public void Select_GroupBy_SelectAgain([DataSources(ProviderName.Firebird25, TestProvName.AllAccess, TestProvName.AllSqlServer2017, ProviderName.SqlCe, TestProvName.AllMySql57, TestProvName.AllSybase)] string context)
 		{
 			using (var db = GetDataContext(context))
 			{
@@ -193,5 +198,105 @@ namespace Tests.Linq
 				query.ToArray();
 			}
 		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/2494")]
+		public void Issue2494Test1([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		{
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable<Issue2494Table>();
+
+			var query = db.SelectQuery(() => tb.Any()
+				? db.Insert(new Issue2494Table() { Value = 1 }, null, null, null, null, default)
+				: 0);
+
+			var res = query.ToArray();
+			Assert.That(res[0], Is.Zero);
+			res = query.ToArray();
+			Assert.That(res[0], Is.Zero);
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/2494")]
+		public void Issue2494Test2([IncludeDataSources(TestProvName.AllSQLite)] string context)
+		{
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable<Issue2494Table>();
+
+			var query = db.SelectQuery(() => !tb.Any()
+				? db.Insert(new Issue2494Table() { Value = 1 }, null, null, null, null, default)
+				: 0);
+
+			var res = query.ToArray();
+			Assert.That(res[0], Is.EqualTo(1));
+			res = query.ToArray();
+			Assert.That(res[0], Is.Zero);
+		}
+
+		[Table]
+		sealed class Issue2494Table
+		{
+			[Column] public int Value { get; set; }
+		}
+
+		#region Issue 2779
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/2779")]
+		public void Issue2779Test1([DataSources(false,
+			TestProvName.AllAccess,
+			TestProvName.AllFirebird,
+			TestProvName.AllOracle,
+			TestProvName.AllSapHana,
+			TestProvName.AllDB2
+			)] string context)
+		{
+			using var db = GetDataContext(context);
+
+			var res = db.FromSqlScalar<int>($"SELECT 1 as value").ToArray();
+
+			Assert.That(res, Has.Length.EqualTo(1));
+			Assert.That(res[0], Is.EqualTo(1));
+		}
+
+		[ActiveIssue]
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/2779")]
+		public void Issue2779Test2([DataSources(false)] string context)
+		{
+			using var db = GetDataContext(context);
+
+			var res = db.FromSql<int>("SELECT 1").ToArray();
+
+			Assert.That(res, Has.Length.EqualTo(1));
+			Assert.That(res[0], Is.EqualTo(1));
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/2779")]
+		public void Issue2779Test3([DataSources(false, TestProvName.AllDB2, TestProvName.AllFirebird, TestProvName.AllOracle21Minus, TestProvName.AllSapHana)] string context)
+		{
+			using var db = GetDataContext(context);
+
+			var res = db.Query<int>("SELECT 1").ToArray();
+
+			Assert.That(res, Has.Length.EqualTo(1));
+			Assert.That(res[0], Is.EqualTo(1));
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/2779")]
+		[YdbCteAsSource]
+		public void Issue2779Test4([DataSources(false,
+			TestProvName.AllAccess,
+			TestProvName.AllFirebird,
+			TestProvName.AllOracle,
+			TestProvName.AllSapHana,
+			TestProvName.AllDB2
+			)] string context)
+		{
+			using var db = GetDataContext(context);
+
+			var res = (from x in db.Person
+					  where db.FromSqlScalar<int>($"SELECT 1 as value").Contains(x.ID)
+					  select x).ToArray();
+
+			Assert.That(res, Has.Length.EqualTo(1));
+			Assert.That(res[0].ID, Is.EqualTo(1));
+		}
+		#endregion
 	}
 }

@@ -1,9 +1,11 @@
-﻿#if NET472
-using LinqToDB;
-using LinqToDB.Metadata;
-using NUnit.Framework;
+﻿#if NETFRAMEWORK
 using System.ComponentModel;
 using System.Linq;
+
+using LinqToDB;
+using LinqToDB.Metadata;
+
+using NUnit.Framework;
 
 namespace Tests.Metadata
 {
@@ -109,10 +111,13 @@ namespace Tests.Metadata
 			var attrs = rd.GetAttributes(typeof(Shipper))
 				.OfType<LinqToDB.Mapping.TableAttribute>().ToArray();
 
-			Assert.NotNull(attrs);
-			Assert.AreEqual(1, attrs.Length);
-			Assert.AreEqual("Shippers", attrs[0].Name);
-			Assert.AreEqual("dbo",      attrs[0].Schema);
+			Assert.That(attrs, Is.Not.Null);
+			Assert.That(attrs, Has.Length.EqualTo(1));
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(attrs[0].Name, Is.EqualTo("Shippers"));
+				Assert.That(attrs[0].Schema, Is.EqualTo("dbo"));
+			}
 		}
 
 		[Test]

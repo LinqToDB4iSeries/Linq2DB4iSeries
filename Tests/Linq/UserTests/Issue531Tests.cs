@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Data.Linq;
 using System.Linq;
+
 using LinqToDB;
 using LinqToDB.Data;
 using LinqToDB.Mapping;
+
 using NUnit.Framework;
 
 using Tests.Model;
@@ -79,12 +81,11 @@ namespace Tests.UserTests
 
 			using (var db = new NorthwindDB(context))
 			{
-
 				var jj = from e in db.GetTable<EmployeeWithList>()
 						 where e.Extension == ext
 						 select e;
 
-			    var res1 = jj.ToList();
+				var res1 = jj.ToList();
 
 				var zz =
 					from e in db.Employee
@@ -93,7 +94,7 @@ namespace Tests.UserTests
 
 				var res2 = zz.ToList();
 
-				Assert.That(res2.Count, Is.EqualTo(2));
+				Assert.That(res2, Has.Count.EqualTo(2));
 			}
 		}
 	}

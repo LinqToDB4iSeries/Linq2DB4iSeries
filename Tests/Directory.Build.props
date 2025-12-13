@@ -1,0 +1,52 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<Import Project="$(MSBuildThisFileDirectory)\..\Directory.Build.props" />
+
+	<PropertyGroup>
+		<TargetFrameworks>net8.0;net462</TargetFrameworks>
+		<Configurations>Debug;Release;</Configurations>
+		<DefineConstants>$(DefineConstants)</DefineConstants>
+		<DefineConstants Condition="$(X86) != ''">$(DefineConstants);X86</DefineConstants>
+		
+		<AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)\..\Build\linq2db.snk</AssemblyOriginatorKeyFile>
+		<SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="$(MSBuildThisFileDirectory)\..\Source\ISeriesProvider\LinqToDB.DataProvider.DB2iSeries.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="linq2db.Tools" />
+		<PackageReference Include="linq2db.FSharp" />
+		<PackageReference Include="linq2db.Extensions" />
+		<PackageReference Include="Meziantou.Polyfill" PrivateAssets="All" />
+
+		<AdditionalFiles Include="$(MSBuildThisFileDirectory)\BannedSymbols.txt" />
+	</ItemGroup>
+
+	<PropertyGroup Label="Enabled Polyfills">
+		<!--https://github.com/meziantou/Meziantou.Polyfill?tab=readme-ov-file#supported-polyfills-->
+		<Polyfill>T:System.HashCode</Polyfill>
+		<Polyfill>$(Polyfill)|T:System.Index</Polyfill>
+		<Polyfill>$(Polyfill)|T:System.Range</Polyfill>
+		<Polyfill>$(Polyfill)|T:System.Runtime.CompilerServices</Polyfill>
+		<Polyfill>$(Polyfill)|T:System.Diagnostics.CodeAnalysis</Polyfill>
+		<Polyfill>$(Polyfill)|T:System.Threading.Lock</Polyfill>
+		<Polyfill>$(Polyfill)|M:System.Collections.Concurrent.ConcurrentDictionary`2.GetOrAdd``1(`0,System.Func{`0,``0,`1},``0)</Polyfill>
+		<Polyfill>$(Polyfill)|M:System.String.Contains(System.String,System.StringComparison)</Polyfill>
+		<Polyfill>$(Polyfill)|M:System.String.CopyTo(System.Span{System.Char})</Polyfill>
+		<Polyfill>$(Polyfill)|M:System.String.TryCopyTo(System.Span{System.Char})</Polyfill>
+		<MeziantouPolyfill_IncludedPolyfills>$(Polyfill)</MeziantouPolyfill_IncludedPolyfills>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net462' ">
+		<Reference Include="System.Data.Linq" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net462' ">
+		<Reference Include="IBM.Data.DB2.iSeries">
+			<HintPath>..\..\Redist\IBM.Data.DB2.iSeries.dll</HintPath>
+		</Reference>
+	</ItemGroup>
+
+</Project>
