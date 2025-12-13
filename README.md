@@ -100,6 +100,13 @@ DB2 doesn't have a GUID type.  By default GUIDs will be stored as CHAR(16) FOR B
 
 Using a "*GAS" provider will save the GUID in clear text. The underlying column should be set to VARCHAR(38) data type.
 
+### Table Hints
+The provider supports the following table hints:
+- OVERRIDING SYSTEM VALUE : Used to override system generated values on insert (e.g. for identity columns)
+Usage : 
+```
+table.TableHint(DB2iSeriesTableHints.OverridingSystemValue).Insert(() => new TableEntity { ... });
+```
 
 ## Caveats
 
