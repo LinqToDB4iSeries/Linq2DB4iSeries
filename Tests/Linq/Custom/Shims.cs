@@ -1,5 +1,9 @@
 ﻿using System;
 
+namespace LinqToDB.Schema
+{
+}
+
 namespace JetBrains.Annotations
 {
 	[Flags]
