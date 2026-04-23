@@ -52,6 +52,7 @@
 		<Compile Remove="Data\DataConnectionTests.cs" />
 		<Compile Remove="Data\DataExtensionsTests.cs" />
 		<Compile Remove="Linq\DataContextTests.cs" />
+		<Compile Remove="Exceptions\StackUseTests.cs" />
 
 		<!--Window Functions in v6 are hidden until fully implemented-->
 		<Compile Remove="Linq\WindowFunctionsTests.*" />

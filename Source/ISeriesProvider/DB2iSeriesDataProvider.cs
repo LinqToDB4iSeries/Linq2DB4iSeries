@@ -57,13 +57,12 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			DB2iSeriesLoadExpressions.SetupExpressions(Name);
 
-			//TODO: Check these flags
-			//SqlProviderFlags.IsCrossJoinSupported = true;
-			//SqlProviderFlags.IsRecursiveCTEJoinWithConditionSupported = false;
-			//SqlProviderFlags.IsDistinctFromSupported = true;
-			//SqlProviderFlags.SupportsPredicatesComparison = true;
-			//SqlProviderFlags.SupportedCorrelatedSubqueriesLevel = 1;
-
+			SqlProviderFlags.IsCrossJoinSupported = true;
+			SqlProviderFlags.IsDistinctFromSupported = true;
+			SqlProviderFlags.SupportedCorrelatedSubqueriesLevel = 1;
+			SqlProviderFlags.CalculateSupportedCorrelatedLevelWithAggregateQueries = true;
+			SqlProviderFlags.IsSubQueryOrderBySupported = false;
+			SqlProviderFlags.IsUnionAllOrderBySupported = true;
 			SqlProviderFlags.SupportsBooleanType = false;
 			SqlProviderFlags.IsCTESupportsOrdering = false;
 			SqlProviderFlags.AcceptsTakeAsParameter = false;
@@ -72,6 +71,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SqlProviderFlags.IsCommonTableExpressionsSupported = true;
 			SqlProviderFlags.IsUpdateFromSupported = false;
 			SqlProviderFlags.IsExistsPreferableForContains = true;
+			SqlProviderFlags.IsOrderByAggregateSubquerySupported = true;
 
 			//This feature is undocumented, it passes the tests on 7.5
 			//DB2 supports Comparison, Between, Update, UpateLiteral these don't work in iDB2
@@ -82,7 +82,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			//Setup string to char mapping reader
 			Constants.DbTypes.Groups.StringTypes.ForEach(type 
-				=> SetCharFieldToType<char>(type, DataTools.GetCharExpression));
+				=> SetCharFieldToType<char>(type, ReaderExpressionTools.GetCharExpression));
 			
 			//Setup string trimming on fixed length string types
 			Constants.DbTypes.Groups.FixedLengthStringTypes.ForEach(type 

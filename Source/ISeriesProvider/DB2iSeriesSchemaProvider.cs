@@ -251,6 +251,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			if (provider.ProviderType.IsOdbc())
 			{
+				var dbconnection = (dataConnection.TryGetDbConnection() ?? dataConnection.OpenDbConnection()) 
+					?? throw ExceptionHelper.MisssingDbConnection();
+				
 				DataTypesSchema = dataConnection.GetDbConnection().GetSchema("DataTypes");
 
 				return DataTypesSchema.AsEnumerable()
