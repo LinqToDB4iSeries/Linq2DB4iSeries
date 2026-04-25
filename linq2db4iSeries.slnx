@@ -32,6 +32,7 @@
     <File Path="Tests/DataProviders.json" />
     <File Path="Tests/UserDataProviders.json" />
     <Project Path="Tests/Base/Tests.Base.csproj" />
+    <Project Path="Tests/Compatibility/Compatibility.csproj" Id="75d4806b-071a-49cb-98a3-eb189750994d" />
     <Project Path="Tests/FSharp/Tests.FSharp.fsproj" />
     <Project Path="Tests/Linq/Tests.csproj" />
     <Project Path="Tests/Model/Tests.Model.csproj" />

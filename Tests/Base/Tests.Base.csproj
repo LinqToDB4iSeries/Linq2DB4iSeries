@@ -3,6 +3,7 @@
 	<PropertyGroup>
 		<AssemblyName>linq2db.Tests.Base</AssemblyName>
 		<RootNamespace>Tests</RootNamespace>
+        <IsTestProject>false</IsTestProject>
 	</PropertyGroup>
 	
 	<ItemGroup>
@@ -31,7 +32,7 @@
 		
 		<PackageReference Include="protobuf-net.Grpc.AspNetCore" />
 		<PackageReference Include="MiniProfiler.Minimal" />
-		<PackageReference Include="linq2db.Remote.HttpClient.Sever" />
+		<PackageReference Include="linq2db.Remote.HttpClient.Server" />
 	</ItemGroup>
 
 </Project>

@@ -349,7 +349,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected override void BuildUpdateQuery(SqlStatement statement, SelectQuery selectQuery, SqlUpdateClause updateClause)
 		{
-			if (statement.GetWithClause() != null)
+			if (statement.WithClause != null)
 				throw new NotSupportedException("iSeries doesn't support Cte in Update statement");
 
 			base.BuildUpdateQuery(statement, selectQuery, updateClause);

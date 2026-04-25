@@ -18,4 +18,9 @@
 		<PackageReference Include="linq2db.Remote.Grpc" />
 		<PackageReference Include="linq2db.Remote.HttpClient.Client" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Compatibility\Compatibility.csproj" />
+	</ItemGroup>
+
 </Project>

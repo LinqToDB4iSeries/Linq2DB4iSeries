@@ -43,7 +43,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			
 			// add type hint only if column contains NULL in all rows
 			return rows.All(r => r[column] is SqlValue value && (value.Value == null
-				|| value.IsNullValue()));
+				|| value.IsNullValue));
 		}
 	}
 }

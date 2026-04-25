@@ -22,6 +22,8 @@ namespace Tests.Custom
 				_ when Matches(testMethod, [
 					//Tests spicific to linq2db providers
 					(Data.TransactionTests _) => _.AttachToExistingTransaction,
+					//The tests tries to run out of stack but the iterations are not enough for the all CPUs. Not a provider specific test can be ommitted.
+					//(Exceptions.StackUseTests _) => _.TestSqlVisitorHops, //compiler removed
 					//Tests spicific to linq2db providers
 					(Infrastructure.DataOptionsTests _) => _.TestProviderAutoDetect,
 					//Test specific to the DB2 provider
@@ -114,6 +116,7 @@ namespace Tests.Custom
 					(Linq.IdentifierTests _) => _,
 					//Test cases invalid for DB2i
 					(Linq.InSubqueryTests _) => _,
+					(Linq.SubQueryTests _) => _.DistinctSubqueryTest,
 					//Test cases rely on TestUtils.GetSchemaName
 					(UserTests.Issue681Tests _) => _,
 					//Invalid for DB2i - APPLY not supported
@@ -122,18 +125,11 @@ namespace Tests.Custom
 					(Linq.EagerLoadingTests _) => _.TestAggregateAverage,
 					(Linq.ElementOperationTests _) => _.NestedFirstOrDefault4,
 					(Linq.JoinTests _) => _.Issue3311Test3,
-					// Invalid for DB2i - Date is utc
-					//(Linq.DateTimeFunctionsTests _) => _.CurrentTimestampUtc, //was typed wrong, probably passes
 					// Streaming to column not supported
 					(Linq.DataTypesTests _) => _.Issue1918Test,
 					//Delete From Subquery not supported
 					(xUpdate.DeleteTests _) => _.DeleteFromWithTake,
 					(xUpdate.DeleteTests _) => _.DeleteFromWithTake_NoSort,
-					//Not supported for DB2/DB2i
-					//Test not supported by DB2/DB2i
-					(Linq.GroupByTests _) => _.CountInGroup,
-					//Trailing whitespace is ignored in DB2iSeries provider
-					//(Linq.StringFunctionTests _) => _.LengthWhiteSpace,
 					//Not applicable for DB2i
 					(Linq.ParameterTests _) => _.CharAsSqlParameter2,
 					(Linq.ParameterTests _) => _.CharAsSqlParameter3,
@@ -158,14 +154,13 @@ namespace Tests.Custom
 					(Linq.PredicateTests _) => _,
 					//Contains tests that target specific providers. Additionally some are not bypassable.
 					//(Data.DataContextTests _) => _, //compiler removed
-					//Tests produce query not supported by DB2i (Cross/Outter joins)
-					(Linq.IssueTests _) => _.IncorrectNesting,
-					(Linq.IssueTests _) => _.IncorrectNesting_Merged,
+					//Tests produce query not supported by DB2i (Cross/Outter/Latter Apply joins)
 					(Linq.StringJoinTests _) => _.JoinAggregateArray,
 					(Linq.StringJoinTests _) => _.JoinAggregateArrayNotNull,
 					(Linq.StringJoinTests _) => _.JoinWithGroupingAndUnsupportedMethod,
 					(Linq.StringJoinTests _) => _.JoinWithGroupingDistinctSimple,
 					(Linq.StringJoinTests _) => _.JoinWithGroupingVarious,
+					(UserTests.Issue5256Tests _) => _.NestedSubqueryWithGroupedAggregationsFilteredSumOfSums,
 					//Tests produce unexpected sql on DB2i that the test cannot assert
 					(UserTests.Issue5152Tests _) => _.TestCase1,
 					(UserTests.Issue5152Tests _) => _.TestCase2,
