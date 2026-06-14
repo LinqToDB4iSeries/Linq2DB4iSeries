@@ -337,6 +337,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 				case DataType.DateTime2:
 				case DataType.DateTime:
+				case DataType.DateTimeOffset:
 
 					//Sanitize DataType based on provided DbType
 					dataType = dataType.WithDataType(dataType.DbType?.ToUpper() switch

@@ -39,6 +39,8 @@ namespace Tests.Custom
 					//(xUpdate.DynamicColumnsTests => _.SqlPropertyNoStoreNonIdentifierGrouping, //deleted
 					//Valid for DB2 but not DB2i - Test copied to custom
 					(xUpdate.DropTableTests _) => _.DropSpecificDatabaseTableTest,
+					//Invalid for DB2i
+					(xUpdate.DropTableTests _) => _.DropTable_IfExists_IdentifierWithApostrophe,
 					//Test copied to custom to reduce default source row number
 					(xUpdate.MergeTests _) => _.BigSource,
 					//Tests passing provider specific parameter types - Generic linq2db test - Not applicable
@@ -160,10 +162,18 @@ namespace Tests.Custom
 					(Linq.StringJoinTests _) => _.JoinWithGroupingAndUnsupportedMethod,
 					(Linq.StringJoinTests _) => _.JoinWithGroupingDistinctSimple,
 					(Linq.StringJoinTests _) => _.JoinWithGroupingVarious,
+					(Linq.StringConcatTests _) => _.Concat_OverGrouping_DistinctNullableValues,
+					(Linq.StringConcatTests _) => _.Concat_OverGroupingWithTake,
 					(UserTests.Issue5256Tests _) => _.NestedSubqueryWithGroupedAggregationsFilteredSumOfSums,
 					//Tests produce unexpected sql on DB2i that the test cannot assert
 					(UserTests.Issue5152Tests _) => _.TestCase1,
 					(UserTests.Issue5152Tests _) => _.TestCase2,
+					//Can't match local timezone on DB2i with local time on client. Test copied to custom tests.
+					(Linq.DateTimeFunctionsTests _) => _.GetDate,
+					(Linq.DateTimeFunctionsTests _) => _.CurrentTimestamp,
+					(Linq.DateTimeFunctionsTests _) => _.CurrentTimestamp2,
+					(Linq.DateTimeFunctionsTests _) => _.DateTimeOffsetNow,
+					(Linq.DateTimeFunctionsTests _) => _.DateTimeOffsetNowUtc,
 					])
 					=> [],
 
