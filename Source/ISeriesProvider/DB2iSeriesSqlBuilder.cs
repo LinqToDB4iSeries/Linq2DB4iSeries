@@ -21,6 +21,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		public DB2iSeriesSqlProviderFlags DB2iSeriesSqlProviderFlags { get; }
 
 		public override bool CteFirst => false;
+		protected override ConcatBuildStyle ConcatStyle => ConcatBuildStyle.Pipes;
 
 		public DB2iSeriesSqlBuilder(
 			DB2iSeriesDataProvider provider,

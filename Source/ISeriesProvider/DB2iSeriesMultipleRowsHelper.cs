@@ -12,7 +12,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		private readonly DB2iSeriesSqlProviderFlags db2ISeriesSqlProviderFlags;
 		
 		public DB2iSeriesMultipleRowsHelper(ITable<T> table, DataOptions options, DB2iSeriesSqlProviderFlags db2ISeriesSqlProviderFlags)
-			: base(table, options)
+			: base(table, options, null)
 		{
 			this.db2ISeriesSqlProviderFlags = db2ISeriesSqlProviderFlags;
 		}

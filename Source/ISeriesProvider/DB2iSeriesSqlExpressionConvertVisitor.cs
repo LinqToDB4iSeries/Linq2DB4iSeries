@@ -14,6 +14,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		}
 
 		protected override bool SupportsNullInColumn => false;
+		protected override bool ConcatRequiresExplicitStringCast => false;
 
 		public override string[] LikeCharactersToEscape => DB2LikeCharactersToEscape;
 
@@ -37,7 +38,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				case "&": return new SqlFunction(element.Type, "BitAnd", element.Expr1, element.Expr2);
 				case "|": return new SqlFunction(element.Type, "BitOr", element.Expr1, element.Expr2);
 				case "^": return new SqlFunction(element.Type, "BitXor", element.Expr1, element.Expr2);
-				case "+": return element.SystemType == typeof(string) ? new SqlBinaryExpression(element.SystemType, element.Expr1, "||", element.Expr2, element.Precedence) : element;
 			}
 
 			return base.ConvertSqlBinaryExpression(element);
