@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 using LinqToDB;
+using LinqToDB.Data;
 using LinqToDB.Mapping;
 
 using NUnit.Framework;
+
+using Shouldly;
 
 using Tests.Model;
 
@@ -90,7 +94,7 @@ namespace Tests.Linq
 							TestProvName.AllSybase,
 							TestProvName.AllDuckDB,
 							TestProvName.AllFirebirdLess4,
-							ProviderName.Ydb)
+							TestProvName.AllYdb)
 					? DateTime.Now.ToUniversalTime()
 					: DateTime.Now;
 
@@ -150,7 +154,7 @@ namespace Tests.Linq
 							TestProvName.AllSybase,
 							TestProvName.AllFirebirdLess4,
 							TestProvName.AllDuckDB,
-							ProviderName.Ydb)
+							TestProvName.AllYdb)
 					? DateTime.Now.ToUniversalTime()
 					: DateTime.Now;
 
@@ -188,7 +192,7 @@ namespace Tests.Linq
 
 				// we don't set kind and rely on provider's behavior
 				// Most providers return Unspecified, but at least it shouldn't be Local
-				if (context.IsAnyOf(ProviderName.ClickHouseOctonica, ProviderName.ClickHouseDriver))
+				if (context.IsAnyOf(ProviderName.ClickHouseOctonica, ProviderName.ClickHouseDriver, TestProvName.AllYdb))
 					Assert.That(dbUtcNow.Kind, Is.EqualTo(DateTimeKind.Utc));
 				else
 					Assert.That(dbUtcNow.Kind, Is.EqualTo(DateTimeKind.Unspecified));
@@ -234,7 +238,7 @@ namespace Tests.Linq
 					TestProvName.AllClickHouse,
 					TestProvName.AllMySql,
 					TestProvName.AllOracle,
-					ProviderName.Ydb);
+					TestProvName.AllYdb);
 				var kind       = returnsUtc
 					? DateTimeKind.Utc
 					: DateTimeKind.Local;
@@ -383,7 +387,7 @@ namespace Tests.Linq
 
 				// ClickHouse: requires session time zone set otherwise returns in server timezone
 				// YDB: returns UTC
-				var isUtc = context.IsAnyOf(TestProvName.AllClickHouse, ProviderName.Ydb);
+				var isUtc = context.IsAnyOf(TestProvName.AllClickHouse, TestProvName.AllYdb);
 				var kind  = isUtc ? DateTimeKind.Utc : DateTimeKind.Local;
 
 				var dbParts = new DateTime(row.Year, row.Month, row.Day, row.Hour, row.Minute, row.Second, kind);
@@ -436,7 +440,7 @@ namespace Tests.Linq
 #pragma warning disable CS8073 // The result of the expression is always the same since a value of this type is never equal to 'null'
 				var q =
 					from p in db.Person
-					where p.ID == 1 && 
+					where p.ID == 1 &&
 					      (
 						      DateTime.Now != null  &&
 							  DateTime.UtcNow != null &&
@@ -1004,7 +1008,8 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void AddDaysFromColumnPositive([DataSources(TestProvName.AllInformix)] string context)
+		// PostgreSQL 9.4+ (make_interval)
+		public void AddDaysFromColumnPositive([DataSources(TestProvName.AllInformix, TestProvName.AllPostgreSQL93Minus)] string context)
 		{
 			using var db = GetDataContext(context);
 				db.Insert(new LinqDataTypes { ID = 5000, SmallIntValue = 2, DateTimeValue = new DateTime(2018, 01, 03) });
@@ -1021,7 +1026,8 @@ namespace Tests.Linq
 			}
 
 		[Test]
-		public void AddDaysFromColumnNegative([DataSources(TestProvName.AllInformix)] string context)
+		// PostgreSQL 9.4+ (make_interval)
+		public void AddDaysFromColumnNegative([DataSources(TestProvName.AllInformix, TestProvName.AllPostgreSQL93Minus)] string context)
 		{
 			using var db = GetDataContext(context);
 				db.Insert(new LinqDataTypes { ID = 5000, SmallIntValue = -2, DateTimeValue = new DateTime(2018, 01, 03) });
@@ -1304,7 +1310,8 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void AddDaysFromColumnPositiveExpression([DataSources(TestProvName.AllInformix)] string context)
+		// PostgreSQL 9.4+ (make_interval)
+		public void AddDaysFromColumnPositiveExpression([DataSources(TestProvName.AllInformix, TestProvName.AllPostgreSQL93Minus)] string context)
 		{
 			var part1 = 4;
 			var part2 = 4;
@@ -1324,7 +1331,8 @@ namespace Tests.Linq
 			}
 
 		[Test]
-		public void AddDaysFromColumnNegativeExpression([DataSources(TestProvName.AllInformix)] string context)
+		// PostgreSQL 9.4+ (make_interval)
+		public void AddDaysFromColumnNegativeExpression([DataSources(TestProvName.AllInformix, TestProvName.AllPostgreSQL93Minus)] string context)
 		{
 			var part1 = 4;
 			var part2 = 4;
@@ -1424,6 +1432,10 @@ namespace Tests.Linq
 
 		#region DateDiff
 
+		// SQL Server before 2016 has no exact measure of elapsed time - DATEDIFF_BIG arrived there - and Sql.AsSql
+		// below asks for the value in SQL, so there is no client-side answer to fall back to. Declared rather than
+		// excluded so it goes red the day the lowering reaches those versions.
+		[ThrowsCannotBeConverted(TestProvName.AllSqlServer2014Minus)]
 		[Test]
 		public void SubDateDay(
 			[DataSources(TestProvName.AllInformix)]
@@ -1446,6 +1458,7 @@ namespace Tests.Linq
 					from t in db.Types select Sql.AsSql(Sql.DateDiff(Sql.DateParts.Day, t.DateTimeValue, t.DateTimeValue.AddHours(100))));
 		}
 
+		[ThrowsCannotBeConverted(TestProvName.AllSqlServer2014Minus)]
 		[Test]
 		public void SubDateHour(
 			[DataSources(TestProvName.AllInformix)]
@@ -1469,6 +1482,7 @@ namespace Tests.Linq
 		}
 
 		[ActiveIssue("Devart returns 100 as 99.999...", Configuration = TestProvName.AllOracleDevart)]
+		[ThrowsCannotBeConverted(TestProvName.AllSqlServer2014Minus)]
 		[Test]
 		public void SubDateMinute(
 			[DataSources(TestProvName.AllInformix)]
@@ -1493,6 +1507,7 @@ namespace Tests.Linq
 		}
 
 		[ActiveIssue("Devart returns 6000 as 5999.999...", Configuration = TestProvName.AllOracleDevart)]
+		[ThrowsCannotBeConverted(TestProvName.AllSqlServer2014Minus)]
 		[Test]
 		public void SubDateSecond(
 			[DataSources(TestProvName.AllInformix)]
@@ -1524,6 +1539,7 @@ namespace Tests.Linq
 		// Possible reason:
 		// looks like Access runtime modify some C++ runtime options that affect runtime's rounding behavior
 		// used also by SQLite provider's native part
+		[ThrowsCannotBeConverted(TestProvName.AllSqlServer2014Minus)]
 		[Test]
 		public void SubDateMillisecond(
 			[DataSources(
@@ -1598,7 +1614,8 @@ namespace Tests.Linq
 		#region MakeDateTime
 
 		[Test]
-		public void MakeDateTime([DataSources] string context)
+		// PostgreSQL 9.4+ (make_timestamp)
+		public void MakeDateTime([DataSources(TestProvName.AllPostgreSQL93Minus)] string context)
 		{
 			using var db = GetDataContext(context);
 				AreEqual(
@@ -1607,7 +1624,8 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void MakeDateTimeParameters([DataSources] string context)
+		// PostgreSQL 9.4+ (make_timestamp)
+		public void MakeDateTimeParameters([DataSources(TestProvName.AllPostgreSQL93Minus)] string context)
 		{
 			var year = 2010;
 			using var db = GetDataContext(context);
@@ -1617,7 +1635,8 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void MakeDateTimeParametersMonth([DataSources] string context, [Values(1, 10)] int month)
+		// PostgreSQL 9.4+ (make_timestamp)
+		public void MakeDateTimeParametersMonth([DataSources(TestProvName.AllPostgreSQL93Minus)] string context, [Values(1, 10)] int month)
 		{
 			using var db = GetDataContext(context);
 				AreEqual(
@@ -1626,7 +1645,8 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void NewDateTime1([DataSources] string context)
+		// PostgreSQL 9.4+ (make_timestamp)
+		public void NewDateTime1([DataSources(TestProvName.AllPostgreSQL93Minus)] string context)
 		{
 			using var db = GetDataContext(context);
 				AreEqual(
@@ -1635,7 +1655,8 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void NewDateTime2([DataSources] string context)
+		// PostgreSQL 9.4+ (make_timestamp)
+		public void NewDateTime2([DataSources(TestProvName.AllPostgreSQL93Minus)] string context)
 		{
 			using var db = GetDataContext(context);
 				AreEqual(
@@ -1644,7 +1665,8 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void MakeDateTime2([DataSources] string context)
+		// PostgreSQL 9.4+ (make_timestamp)
+		public void MakeDateTime2([DataSources(TestProvName.AllPostgreSQL93Minus)] string context)
 		{
 			using var db = GetDataContext(context);
 				AreEqual(
@@ -1653,7 +1675,8 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void NewDateTime3([DataSources] string context)
+		// PostgreSQL 9.4+ (make_timestamp)
+		public void NewDateTime3([DataSources(TestProvName.AllPostgreSQL93Minus)] string context)
 		{
 			using var db = GetDataContext(context);
 				AreEqual(
@@ -1662,7 +1685,8 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void NewDateTime4([DataSources] string context)
+		// PostgreSQL 9.4+ (make_timestamp)
+		public void NewDateTime4([DataSources(TestProvName.AllPostgreSQL93Minus)] string context)
 		{
 			using var db = GetDataContext(context);
 				AreEqual(
@@ -1671,7 +1695,8 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		public void NewDateTime5([DataSources] string context)
+		// PostgreSQL 9.4+ (make_timestamp)
+		public void NewDateTime5([DataSources(TestProvName.AllPostgreSQL93Minus)] string context)
 		{
 			using var db = GetDataContext(context);
 				AreEqual(
@@ -1879,19 +1904,20 @@ namespace Tests.Linq
 		public void GetDateTest2([DataSources] string context)
 		{
 			using var db = GetDataContext(context);
-				var dates =
-					from v in db.Parent
-						join s in db.Child on v.ParentID equals s.ParentID
-					where v.Value1 > 0
-					select Sql.CurrentTimestamp.Date;
 
-				var countByDates =
-					from v in dates
-					group v by v into g
-					select new { g.Key, Count = g.Count() };
+			var dates =
+				from v in db.Parent
+					join s in db.Child on v.ParentID equals s.ParentID
+				where v.Value1 > 0
+				select Sql.CurrentTimestamp.Date;
 
-				var _ = countByDates.Take(5).ToList();
-			}
+			var countByDates =
+				from v in dates
+				group v by v into g
+				select new { g.Key, Count = g.Count() };
+
+			_ = countByDates.Take(5).ToList();
+		}
 
 		[Test]
 		public void DateTimeSum(
@@ -1903,38 +1929,40 @@ namespace Tests.Linq
 			string context)
 		{
 			using var db = GetDataContext(context);
-				AreEqual(
-					from t in Types
-					group t by t.ID into g
-					select new
-					{
-					ID = g.Key,
-					Count = g.Count(),
-					Duration = g.Sum(x => Sql.DateDiff(Sql.DateParts.Millisecond, x.DateTimeValue, x.DateTimeValue.AddDays(1)))!.Value,
-					HasDuration = g.Sum(x => Sql.DateDiff(Sql.DateParts.Millisecond, x.DateTimeValue, x.DateTimeValue.AddDays(1))).HasValue,
-						LongestDuration = g.Max(x => Sql.DateDiff(Sql.DateParts.Millisecond, x.DateTimeValue, x.DateTimeValue.AddDays(1))!.Value),
-					},
-					from t in db.Types
-					group t by t.ID into g
-					select new
-					{
-					ID = g.Key,
-					Count = g.Count(),
-					Duration = g.Sum(x => Sql.DateDiff(Sql.DateParts.Millisecond, x.DateTimeValue, x.DateTimeValue.AddDays(1)))!.Value,
-					HasDuration = g.Sum(x => Sql.DateDiff(Sql.DateParts.Millisecond, x.DateTimeValue, x.DateTimeValue.AddDays(1))).HasValue,
-						LongestDuration = g.Max(x => Sql.DateDiff(Sql.DateParts.Millisecond, x.DateTimeValue, x.DateTimeValue.AddDays(1))!.Value),
-					});
-			}
+
+			AreEqual(
+				from t in Types
+				group t by t.ID into g
+				select new
+				{
+					ID              = g.Key,
+					Count           = g.Count(),
+					Duration        = g.Sum(x => Sql.DateDiff(Sql.DateParts.Millisecond, x.DateTimeValue, x.DateTimeValue.AddDays(1)))!.Value,
+					HasDuration     = g.Sum(x => Sql.DateDiff(Sql.DateParts.Millisecond, x.DateTimeValue, x.DateTimeValue.AddDays(1))).HasValue,
+					LongestDuration = g.Max(x => Sql.DateDiff(Sql.DateParts.Millisecond, x.DateTimeValue, x.DateTimeValue.AddDays(1))!.Value),
+				},
+				from t in db.Types
+				group t by t.ID into g
+				select new
+				{
+					ID              = g.Key,
+					Count           = g.Count(),
+					Duration        = g.Sum(x => Sql.DateDiff(Sql.DateParts.Millisecond, x.DateTimeValue, x.DateTimeValue.AddDays(1)))!.Value,
+					HasDuration     = g.Sum(x => Sql.DateDiff(Sql.DateParts.Millisecond, x.DateTimeValue, x.DateTimeValue.AddDays(1))).HasValue,
+					LongestDuration = g.Max(x => Sql.DateDiff(Sql.DateParts.Millisecond, x.DateTimeValue, x.DateTimeValue.AddDays(1))!.Value),
+				});
+		}
 
 		[Test]
 		public void Issue1615Test([DataSources] string context)
 		{
 			using var db = GetDataContext(context);
-				var datePart = Sql.DateParts.Day;
-				AreEqual(
+
+			var datePart = Sql.DateParts.Day;
+			AreEqual(
 				from t in Types select Sql.DateAdd(datePart, 5, t.DateTimeValue)!.Value.Date,
-					from t in db.Types select Sql.AsSql(Sql.DateAdd(datePart, 5, t.DateTimeValue))!.Value.Date);
-			}
+				from t in db.Types select Sql.AsSql(Sql.DateAdd(datePart, 5, t.DateTimeValue))!.Value.Date);
+		}
 
 		[Table]
 		sealed class Issue2950Table
@@ -1969,6 +1997,208 @@ namespace Tests.Linq
 
 			Assert.That(result, Has.Length.EqualTo(1));
 			Assert.That(result[0].Output, Is.EqualTo(TestData.TimeOfDay.Hours));
+		}
+
+		// Short name: Oracle 11 (30) and Firebird <= 3 (31) cap identifier length; the 32-char class name overflows both.
+		/// <summary>
+		/// Providers whose lowering expresses an elapsed date difference in SQL. One name to add as each gains
+		/// support - the three tests below read it in opposite directions, so they cannot drift apart.
+		/// </summary>
+		const string ElapsedDifferenceProviders =
+			TestProvName.AllSqlServer2016Plus + "," +
+			TestProvName.AllPostgreSQL        + "," +
+			TestProvName.AllSQLite            + "," +
+			TestProvName.AllMySql             + "," +
+			TestProvName.AllDuckDB            + "," +
+			ProviderName.SqlCe                + "," +
+			TestProvName.AllFirebird          + "," +
+			TestProvName.AllClickHouse        + "," +
+			TestProvName.AllSapHana           + "," +
+			TestProvName.AllSybase            + "," +
+			TestProvName.AllOracle            + "," +
+			TestProvName.AllDB2               + "," +
+			TestProvName.AllYdb;
+
+		[Table("NullableDateTimeSub")]
+		sealed class NullableDateTimeSubtractionTable
+		{
+			[PrimaryKey]
+			public int Id { get; set; }
+
+			// No explicit data type: the two values are whole hours apart, so each provider's own default for
+			// DateTime carries them, and DateTime2 is not a type Access ODBC or ClickHouse can be handed at all.
+			[Column(CanBeNull = false)]
+			public DateTime StartedOn { get; set; }
+
+			[Column(CanBeNull = true)]
+			public DateTime? FinishedOn { get; set; }
+
+			public static readonly NullableDateTimeSubtractionTable[] Data =
+			[
+				new() { Id = 1, StartedOn = TestData.DateTime, FinishedOn = TestData.DateTime.AddHours(2) },
+				new() { Id = 2, StartedOn = TestData.DateTime, FinishedOn = null },
+			];
+		}
+
+		[Test]
+		public void NullableDateTimeSubtractionProjectionTest([DataSources] string context)
+		{
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable(NullableDateTimeSubtractionTable.Data);
+
+			var result =
+				(
+					from t in tb
+					orderby t.Id
+					select new
+					{
+						Time = t.FinishedOn - t.StartedOn,
+					})
+				.ToArray();
+
+			result.Length.ShouldBe(2);
+			result[0].Time.ShouldNotBeNull();
+			result[0].Time!.Value.TotalHours.ShouldBeInRange(1.9, 2.1);
+			result[1].Time.ShouldBeNull();
+
+			// Where the provider can express the elapsed interval it is free to compute it server-side, so the
+			// contract this test pins is the value. Where it cannot, the subtraction must still not leak into SQL -
+			// the value has to come from .NET - and that is what the guard below keeps honest.
+			AssertSubtractionStaysClientSide(context, db, "DateTime");
+		}
+
+		/// <summary>
+		/// Asserts the subtraction was not emitted, on a provider that has no lowering for it.
+		/// </summary>
+		/// <remarks>
+		/// Both column names appear in the SQL either way, since the client-side path still has to read them, so
+		/// what is looked for is a subtraction <em>between</em> them. The pattern only catches the operands in the
+		/// written order - which is the order the builder emits - and stops at a comma so a function call taking
+		/// both dates as arguments does not read as one.
+		/// </remarks>
+		static void AssertSubtractionStaysClientSide(string context, IDataContext db, string valueType)
+		{
+			if (context.IsRemote() || context.IsAnyOf(ElapsedDifferenceProviders) || db is not DataConnection dc)
+				return;
+
+			Regex.IsMatch(dc.LastQuery!, @"FinishedOn[^,]*-[^,]*StartedOn", RegexOptions.IgnoreCase)
+				.ShouldBeFalse($"{valueType} subtraction must not appear in SQL — it is evaluated client-side in .NET");
+		}
+
+		// Forced server-side on a provider that has no lowering for date subtraction. The excluded set is the
+		// providers that do have one - one name to move as each gains support, rather than a list of the rest.
+		[ThrowsCannotBeConverted]
+		[Test]
+		public void NullableDateTimeSubtractionProjectionSqlTest(
+			[DataSources(ElapsedDifferenceProviders)] string context)
+		{
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable(NullableDateTimeSubtractionTable.Data);
+
+			var query =
+				from t in tb
+				orderby t.Id
+				select new
+				{
+					Time = Sql.AsSql(t.FinishedOn - t.StartedOn),
+				};
+
+			_ = query.ToArray();
+		}
+
+		[Test]
+		public void NullableDateTimeSubtractionProjectionServerSideTest(
+			[IncludeDataSources(true, ElapsedDifferenceProviders)] string context)
+		{
+			// The same query on a provider that does translate it. Sql.AsSql forces the server side, so this
+			// fails outright rather than quietly falling back if the lowering ever stops working.
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable(NullableDateTimeSubtractionTable.Data);
+
+			var result =
+				(
+					from t in tb
+					orderby t.Id
+					select new
+					{
+						Time = Sql.AsSql(t.FinishedOn - t.StartedOn),
+					})
+				.ToArray();
+
+			result.Length.ShouldBe(2);
+			result[0].Time.ShouldNotBeNull();
+			result[0].Time!.Value.TotalHours.ShouldBeInRange(1.9, 2.1);
+			result[1].Time.ShouldBeNull();
+		}
+
+		// Short name: Oracle 11 caps identifiers at 30 chars.
+		[Table("NullableDtOffsetSub")]
+		sealed class NullableDateTimeOffsetSubtractionTable
+		{
+			[PrimaryKey]
+			public int Id { get; set; }
+
+			[Column(DataType = DataType.DateTimeOffset, CanBeNull = false)]
+			public DateTimeOffset StartedOn { get; set; }
+
+			[Column(DataType = DataType.DateTimeOffset, CanBeNull = true)]
+			public DateTimeOffset? FinishedOn { get; set; }
+
+			public static readonly NullableDateTimeOffsetSubtractionTable[] Data =
+			[
+				new() { Id = 1, StartedOn = TestData.DateTimeOffset, FinishedOn = TestData.DateTimeOffset.AddHours(2) },
+				new() { Id = 2, StartedOn = TestData.DateTimeOffset, FinishedOn = null },
+			];
+		}
+
+		[Test]
+		public void NullableDateTimeOffsetSubtractionProjectionTest([DataSources(TestProvName.AllAccess, TestProvName.AllFirebird, TestProvName.AllSQLite, TestProvName.AllSqlServer2005, ProviderName.DB2, TestProvName.AllInformix, TestProvName.AllSapHana, TestProvName.AllSybase, TestProvName.AllMySqlData, ProviderName.SqlCe, TestProvName.AllClickHouse)] string context)
+		{
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable(NullableDateTimeOffsetSubtractionTable.Data);
+
+			var result =
+				(
+					from t in tb
+					orderby t.Id
+					select new
+					{
+						Time = t.FinishedOn - t.StartedOn,
+					})
+				.ToArray();
+
+			result.Length.ShouldBe(2);
+			result[0].Time.ShouldNotBeNull();
+			result[0].Time!.Value.TotalHours.ShouldBeInRange(1.9, 2.1);
+			result[1].Time.ShouldBeNull();
+
+			AssertSubtractionStaysClientSide(context, db, "DateTimeOffset");
+		}
+
+		[Test]
+		public void NullableDateTimeOffsetSubtractionProjectionServerSideTest(
+			[IncludeDataSources(true, TestProvName.AllSqlServer2016Plus, TestProvName.AllPostgreSQL)] string context)
+		{
+			// Sql.AsSql forces the server side, so this fails outright rather than quietly falling back if the
+			// lowering ever stops working. There is no Sql.AsSql counterpart for the providers that cannot express
+			// it, because the throw comes from the same builder method the DateTime overload already covers.
+			using var db = GetDataContext(context);
+			using var tb = db.CreateLocalTable(NullableDateTimeOffsetSubtractionTable.Data);
+
+			var result =
+				(
+					from t in tb
+					orderby t.Id
+					select new
+					{
+						Time = Sql.AsSql(t.FinishedOn - t.StartedOn),
+					})
+				.ToArray();
+
+			result.Length.ShouldBe(2);
+			result[0].Time.ShouldNotBeNull();
+			result[0].Time!.Value.TotalHours.ShouldBeInRange(1.9, 2.1);
+			result[1].Time.ShouldBeNull();
 		}
 	}
 }

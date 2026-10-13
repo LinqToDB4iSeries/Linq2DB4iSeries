@@ -1219,7 +1219,11 @@ namespace Tests.DataProvider
 			using var db = (DataConnection)GetDataContext(context);
 			var expectedProc = testCase.Schema;
 
-			expectedProc.CatalogName = TestUtils.GetDatabaseName(db, context);
+			// Do not mutate testCase.Schema.CatalogName: NUnit reuses the same test-case instances
+			// across every provider, so under parallel execution two provider lanes (e.g. MySql.Data +
+			// MySqlConnector, which resolve different database names) would race this shared field and
+			// produce spurious CatalogName mismatches. Compare against a local instead.
+			var expectedCatalogName = TestUtils.GetDatabaseName(db, context);
 
 			var schema     = db.DataProvider.GetSchemaProvider().GetSchema(db);
 			var procedures = schema.Procedures.Where(_ => _.ProcedureName == expectedProc.ProcedureName).ToList();
@@ -1229,7 +1233,7 @@ namespace Tests.DataProvider
 			var procedure = procedures[0];
 			using (Assert.EnterMultipleScope())
 			{
-				Assert.That(procedure.CatalogName!.ToLowerInvariant(), Is.EqualTo(expectedProc.CatalogName.ToLowerInvariant()));
+				Assert.That(procedure.CatalogName!.ToLowerInvariant(), Is.EqualTo(expectedCatalogName.ToLowerInvariant()));
 				Assert.That(procedure.SchemaName, Is.EqualTo(expectedProc.SchemaName));
 				Assert.That(procedure.MemberName, Is.EqualTo(expectedProc.MemberName));
 				Assert.That(procedure.IsTableFunction, Is.EqualTo(expectedProc.IsTableFunction));
@@ -1381,7 +1385,7 @@ namespace Tests.DataProvider
 		[Sql.Expression("@n:=@n+1", ServerSideOnly = true)]
 		static int IncrementIndex()
 		{
-			throw new NotImplementedException();
+			throw new ServerSideOnlyException(nameof(IncrementIndex));
 		}
 
 		[Description("https://stackoverflow.com/questions/50858172/linq2db-mysql-set-row-index/50958483")]
@@ -2450,19 +2454,19 @@ END");
 		[Sql.Function("TEST_FUNCTION", ServerSideOnly = true)]
 		public static int TestFunction(int param)
 		{
-			throw new InvalidOperationException("Scalar function cannot be called outside of query");
+			throw new ServerSideOnlyException(nameof(TestFunction));
 		}
 
 		[Sql.Function("TEST_PACKAGE1.TEST_FUNCTION", ServerSideOnly = true)]
 		public static int TestFunctionP1(int param)
 		{
-			throw new InvalidOperationException("Scalar function cannot be called outside of query");
+			throw new ServerSideOnlyException(nameof(TestFunctionP1));
 		}
 
 		[Sql.Function("TEST_PACKAGE2.TEST_FUNCTION", ServerSideOnly = true)]
 		public static int TestFunctionP2(int param)
 		{
-			throw new InvalidOperationException("Scalar function cannot be called outside of query");
+			throw new ServerSideOnlyException(nameof(TestFunctionP2));
 		}
 
 		[Sql.TableFunction("TEST_TABLE_FUNCTION", argIndices: new[] { 1 })]

@@ -15,6 +15,8 @@ using Microsoft.Data.SqlClient;
 
 using NUnit.Framework;
 
+using Shouldly;
+
 using Tests.Model;
 
 namespace Tests.Infrastructure
@@ -29,6 +31,31 @@ namespace Tests.Infrastructure
 			var lo2 = lo1 with { GuardGrouping = true };
 
 			Assert.That(((IConfigurationID)lo1).ConfigurationID, Is.Not.EqualTo(((IConfigurationID)lo2).ConfigurationID));
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/pull/5639 - the sequential-access materialization plan must not be shared by the cache between contexts that differ only in this option")]
+		public void OptimizeForSequentialAccessConfigurationIDTest()
+		{
+			var off = new DataOptions().UseConfiguration("X").UseOptimizeForSequentialAccess(false);
+			var on  = new DataOptions().UseConfiguration("X").UseOptimizeForSequentialAccess(true);
+
+			Assert.That(((IConfigurationID)on).ConfigurationID, Is.Not.EqualTo(((IConfigurationID)off).ConfigurationID));
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/pull/5450 - WithDefaultEagerLoadingStrategy sets the LinqOptions value")]
+		public void WithDefaultEagerLoadingStrategyTest()
+		{
+			var options = new LinqOptions().WithDefaultEagerLoadingStrategy(EagerLoadingStrategy.KeyedQuery);
+
+			Assert.That(options.DefaultEagerLoadingStrategy, Is.EqualTo(EagerLoadingStrategy.KeyedQuery));
+		}
+
+		[Test(Description = "https://github.com/linq2db/linq2db/pull/5450 - WithImplicitCollectionLoading sets the LinqOptions value")]
+		public void WithImplicitCollectionLoadingTest()
+		{
+			var options = new LinqOptions().WithImplicitCollectionLoading(ImplicitCollectionLoading.Throw);
+
+			Assert.That(options.ImplicitCollectionLoading, Is.EqualTo(ImplicitCollectionLoading.Throw));
 		}
 
 		[Test]
@@ -281,16 +308,33 @@ namespace Tests.Infrastructure
 			public int Id { get; }
 		}
 
+		static readonly System.Threading.Lock _entityDescriptorCreatedSync = new();
+
 		[Test]
 		public void OnEntityDescriptorCreatedTest([DataSources(false)] string context)
+		{
+			// MappingSchema.EntityDescriptorCreatedCallback is a single process-wide slot and this test
+			// runs one case per provider: without serializing the cases, one case's install replaces
+			// another's handler mid-run and its finally clears the slot underneath it.
+			lock (_entityDescriptorCreatedSync)
+			{
+				OnEntityDescriptorCreatedTestBody(context);
+			}
+		}
+
+		void OnEntityDescriptorCreatedTestBody(string context)
 		{
 			MappingSchema.ClearCache();
 			var globalTriggered = false;
 			var localTriggrered = false;
+			// while the handler is installed it fires for every schema, including those of tests running
+			// concurrently - only descriptors built by this case's own context count as a trigger
+			MappingSchema? caseSchema = null;
 
-			MappingSchema.EntityDescriptorCreatedCallback = (_, _) =>
+			MappingSchema.EntityDescriptorCreatedCallback = (mappingSchema, _) =>
 			{
-				globalTriggered = true;
+				if (ReferenceEquals(mappingSchema, caseSchema))
+					globalTriggered = true;
 			};
 
 			try
@@ -299,6 +343,7 @@ namespace Tests.Infrastructure
 				// global handler set
 				using (var db = GetDataContext(context))
 				{
+					caseSchema = db.MappingSchema;
 					_ = db.GetTable<EntityDescriptorTable>().ToSqlQuery();
 				}
 
@@ -317,6 +362,7 @@ namespace Tests.Infrastructure
 					localTriggrered = true;
 				})))
 				{
+					caseSchema = db.MappingSchema;
 					_ = db.GetTable<EntityDescriptorTable>().ToSqlQuery();
 				}
 
@@ -331,6 +377,7 @@ namespace Tests.Infrastructure
 				// descriptor cached
 				using (var db = GetDataContext(context))
 				{
+					caseSchema = db.MappingSchema;
 					_ = db.GetTable<EntityDescriptorTable>().ToSqlQuery();
 				}
 
@@ -343,6 +390,7 @@ namespace Tests.Infrastructure
 				// cache miss
 				using (var db = GetDataContext(context, new MappingSchema("name1")))
 				{
+					caseSchema = db.MappingSchema;
 					_ = db.GetTable<EntityDescriptorTable>().ToSqlQuery();
 				}
 
@@ -759,10 +807,41 @@ namespace Tests.Infrastructure
 					var ctx when ctx.IsAnyOf(TestProvName.AllSqlServer)  => new DataOptions().UseConfiguration(context).UseSqlServer   (connectionString),
 					var ctx when ctx.IsAnyOf(TestProvName.AllSybase)     => new DataOptions().UseConfiguration(context).UseAse         (connectionString),
 					var ctx when ctx.IsAnyOf(TestProvName.AllDuckDB)     => new DataOptions().UseConfiguration(context).UseDuckDB      (connectionString),
+					var ctx when ctx.IsAnyOf(TestProvName.AllYdb)        => new DataOptions().UseConfiguration(context).UseYdb         (connectionString),
 					_                                                    => throw new NotImplementedException($"Missing case for provider {context}")
 				});
 
 			db.GetTable<Person>().ToArray();
+		}
+
+		[Test]
+		public void WithDefaultNullsPositionTest()
+		{
+			// SUG002: the SqlOptions fluent extension and the DataOptions extension both carry the value.
+			new SqlOptions().WithDefaultNullsPosition(Sql.NullsPosition.Last).DefaultNullsPosition.ShouldBe(Sql.NullsPosition.Last);
+			new DataOptions().UseDefaultNullsPosition(Sql.NullsPosition.First).SqlOptions.DefaultNullsPosition.ShouldBe(Sql.NullsPosition.First);
+		}
+
+		// NonParallelizable: the subject of this test is the process-global setter itself, so unlike
+		// WithDefaultNullsPositionTest above it cannot be expressed against a local DataOptions. The
+		// save/restore below bounds the mutation in time but does not isolate it - while it is in effect,
+		// any concurrent lane building a DataOptions inherits NULLS LAST.
+		[Test, NonParallelizable]
+		public void ConfigurationSqlDefaultNullsPositionTest()
+		{
+			// MIN006: the process-global static getter/setter, and its propagation to freshly-built DataOptions.
+			var saved = Configuration.Sql.DefaultNullsPosition;
+			try
+			{
+				Configuration.Sql.DefaultNullsPosition = Sql.NullsPosition.Last;
+
+				Configuration.Sql.DefaultNullsPosition.ShouldBe(Sql.NullsPosition.Last);
+				new DataOptions().SqlOptions.DefaultNullsPosition.ShouldBe(Sql.NullsPosition.Last);
+			}
+			finally
+			{
+				Configuration.Sql.DefaultNullsPosition = saved;
+			}
 		}
 	}
 }

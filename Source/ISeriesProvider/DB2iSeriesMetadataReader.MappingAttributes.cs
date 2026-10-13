@@ -16,8 +16,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				CharIndex = new FunctionAttribute(providerName, "Locate") { IsNullable = IsNullableType.IfAnyParameterNullable };
 				Trim = new ExtensionAttribute(providerName, "") { ServerSideOnly = false, PreferServerSide = false, BuilderType = typeof(TrimBuilderDB2i) };
 				Truncate = new ExpressionAttribute(providerName, "Truncate({0}, 0)") { IsNullable = IsNullableType.IfAnyParameterNullable };
-				StringAggregateSource = new ExtensionAttribute(providerName, "LISTAGG({source}, {separator}){_}{aggregation_ordering?}") { IsAggregate = true, ChainPrecedence = Precedence.LogicalDisjunction };
-				StringAggregateSelector = new ExtensionAttribute(providerName, "LISTAGG({selector}, {separator}){_}{aggregation_ordering?}") { IsAggregate = true, ChainPrecedence = Precedence.LogicalDisjunction };
 				Replicate = new FunctionAttribute(providerName, "Repeat") { IsNullable = IsNullableType.IfAnyParameterNullable };
 				Log = new FunctionAttribute(providerName, "Ln") { IsNullable = IsNullableType.IfAnyParameterNullable };
 				Log10 = new FunctionAttribute(providerName, "Log10") { IsNullable = IsNullableType.IfAnyParameterNullable };
@@ -32,8 +30,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			public FunctionAttribute CharIndex { get; }
 			public ExtensionAttribute Trim { get; }
 			public ExpressionAttribute Truncate { get; }
-			public ExtensionAttribute StringAggregateSource { get; }
-			public ExtensionAttribute StringAggregateSelector { get; }
 			public FunctionAttribute Replicate { get; }
 			public FunctionAttribute Log { get; }
 			public FunctionAttribute Log10 { get; }

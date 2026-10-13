@@ -35,42 +35,42 @@ namespace Tests.Linq
 		}
 
 		[Sql.Expression("{0}", IsPredicate = true, ServerSideOnly = true)]
-		static bool AsIs(bool? value) => throw new InvalidOperationException();
+		static bool AsIs(bool? value) => throw new ServerSideOnlyException(nameof(AsIs));
 
 		[Sql.Expression("{0} IS NULL", IsPredicate = true, ServerSideOnly = true)]
-		static bool IsNull(bool? value) => throw new InvalidOperationException();
+		static bool IsNull(bool? value) => throw new ServerSideOnlyException(nameof(IsNull));
 		[Sql.Expression("{0} IS NOT NULL", IsPredicate = true, ServerSideOnly = true)]
-		static bool IsNotNull(bool? value) => throw new InvalidOperationException();
+		static bool IsNotNull(bool? value) => throw new ServerSideOnlyException(nameof(IsNotNull));
 
 		[Sql.Expression("{0} IS UNKNOWN", IsPredicate = true, ServerSideOnly = true)]
-		static bool IsUnknown(bool? value) => throw new InvalidOperationException();
+		static bool IsUnknown(bool? value) => throw new ServerSideOnlyException(nameof(IsUnknown));
 		[Sql.Expression("{0} IS NOT UNKNOWN", IsPredicate = true, ServerSideOnly = true)]
-		static bool IsNotUnknown(bool? value) => throw new InvalidOperationException();
+		static bool IsNotUnknown(bool? value) => throw new ServerSideOnlyException(nameof(IsNotUnknown));
 
 		[Sql.Expression("{0} IS TRUE", IsPredicate = true, ServerSideOnly = true)]
-		static bool IsTrue(bool? value) => throw new InvalidOperationException();
+		static bool IsTrue(bool? value) => throw new ServerSideOnlyException(nameof(IsTrue));
 		[Sql.Expression("{0} IS NOT TRUE", IsPredicate = true, ServerSideOnly = true)]
-		static bool IsNotTrue(bool? value) => throw new InvalidOperationException();
+		static bool IsNotTrue(bool? value) => throw new ServerSideOnlyException(nameof(IsNotTrue));
 
 		[Sql.Expression("{0} IS FALSE", IsPredicate = true, ServerSideOnly = true)]
-		static bool IsFalse(bool? value) => throw new InvalidOperationException();
+		static bool IsFalse(bool? value) => throw new ServerSideOnlyException(nameof(IsFalse));
 		[Sql.Expression("{0} IS NOT FALSE", IsPredicate = true, ServerSideOnly = true)]
-		static bool IsNotFalse(bool? value) => throw new InvalidOperationException();
+		static bool IsNotFalse(bool? value) => throw new ServerSideOnlyException(nameof(IsNotFalse));
 
 		[Sql.Expression("{0} = TRUE", IsPredicate = true, ServerSideOnly = true, IsNullable = Sql.IsNullableType.IfAnyParameterNullable, Precedence = Precedence.Comparison)]
-		static bool? EqualTrue(bool? value) => throw new InvalidOperationException();
+		static bool? EqualTrue(bool? value) => throw new ServerSideOnlyException(nameof(EqualTrue));
 		[Sql.Expression("{0} <> TRUE", IsPredicate = true, ServerSideOnly = true, IsNullable = Sql.IsNullableType.IfAnyParameterNullable, Precedence = Precedence.Comparison)]
-		static bool? NotEqualTrue(bool? value) => throw new InvalidOperationException();
+		static bool? NotEqualTrue(bool? value) => throw new ServerSideOnlyException(nameof(NotEqualTrue));
 
 		[Sql.Expression("{0} = FALSE", IsPredicate = true, ServerSideOnly = true, IsNullable = Sql.IsNullableType.IfAnyParameterNullable, Precedence = Precedence.Comparison)]
-		static bool? EqualFalse(bool? value) => throw new InvalidOperationException();
+		static bool? EqualFalse(bool? value) => throw new ServerSideOnlyException(nameof(EqualFalse));
 		[Sql.Expression("{0} <> FALSE", IsPredicate = true, ServerSideOnly = true, IsNullable = Sql.IsNullableType.IfAnyParameterNullable, Precedence = Precedence.Comparison)]
-		static bool? NotEqualFalse(bool? value) => throw new InvalidOperationException();
+		static bool? NotEqualFalse(bool? value) => throw new ServerSideOnlyException(nameof(NotEqualFalse));
 
 		[Sql.Expression("{0} = UNKNOWN", IsPredicate = true, ServerSideOnly = true, IsNullable = Sql.IsNullableType.Nullable)]
-		static bool? EqualUnknown(bool? value) => throw new InvalidOperationException();
+		static bool? EqualUnknown(bool? value) => throw new ServerSideOnlyException(nameof(EqualUnknown));
 		[Sql.Expression("{0} <> UNKNOWN", IsPredicate = true, ServerSideOnly = true, IsNullable = Sql.IsNullableType.Nullable)]
-		static bool? NotEqualUnknown(bool? value) => throw new InvalidOperationException();
+		static bool? NotEqualUnknown(bool? value) => throw new ServerSideOnlyException(nameof(NotEqualUnknown));
 
 		[Sql.Expression("({0} = {1})", IsPredicate = true, ServerSideOnly = true, IsNullable = Sql.IsNullableType.IfAnyParameterNullable)]
 		static bool? Equal(int? left, int? right) => left is null || right is null ? null : left == right;
@@ -78,52 +78,52 @@ namespace Tests.Linq
 		static bool? NotEqual(int? left, int? right) => left is null || right is null ? null : left != right;
 
 		[Sql.Expression("{0} = {1}", IsPredicate = true, ServerSideOnly = true, IsNullable = Sql.IsNullableType.NotNullable, Precedence = Precedence.Comparison)]
-		static bool Equal(bool left, bool right) => throw new InvalidOperationException();
+		static bool Equal(bool left, bool right) => throw new ServerSideOnlyException(nameof(Equal));
 		[Sql.Expression("{0} <> {1}", IsPredicate = true, ServerSideOnly = true, IsNullable = Sql.IsNullableType.NotNullable, Precedence = Precedence.Comparison)]
-		static bool NotEqual(bool left, bool right) => throw new InvalidOperationException();
+		static bool NotEqual(bool left, bool right) => throw new ServerSideOnlyException(nameof(NotEqual));
 
 		[Sql.Expression("{0} IS DISTINCT FROM {1}", IsPredicate = true, ServerSideOnly = true)]
-		static bool IsDistinctFrom(int? left, int? right) => throw new InvalidOperationException();
+		static bool IsDistinctFrom(int? left, int? right) => throw new ServerSideOnlyException(nameof(IsDistinctFrom));
 		[Sql.Expression("{0} IS NOT DISTINCT FROM {1}", IsPredicate = true, ServerSideOnly = true)]
-		static bool IsNotDistinctFrom(int? left, int? right) => throw new InvalidOperationException();
+		static bool IsNotDistinctFrom(int? left, int? right) => throw new ServerSideOnlyException(nameof(IsNotDistinctFrom));
 
 		[Sql.Expression("{0} <=> {1}", IsPredicate = true, ServerSideOnly = true)]
-		static bool NullSaveEqual(int? left, int? right) => throw new InvalidOperationException();
+		static bool NullSaveEqual(int? left, int? right) => throw new ServerSideOnlyException(nameof(NullSaveEqual));
 		[Sql.Expression("NOT({0} <=> {1})", IsPredicate = true, ServerSideOnly = true)]
-		static bool NotNullSaveEqual(int? left, int? right) => throw new InvalidOperationException();
+		static bool NotNullSaveEqual(int? left, int? right) => throw new ServerSideOnlyException(nameof(NotNullSaveEqual));
 
 		[Sql.Expression("{0} IS {1}", IsPredicate = true, ServerSideOnly = true)]
-		static bool IsPredicate(int? left, int? right) => throw new InvalidOperationException();
+		static bool IsPredicate(int? left, int? right) => throw new ServerSideOnlyException(nameof(IsPredicate));
 		[Sql.Expression("{0} IS NOT {1}", IsPredicate = true, ServerSideOnly = true)]
-		static bool IsNotPredicate(int? left, int? right) => throw new InvalidOperationException();
+		static bool IsNotPredicate(int? left, int? right) => throw new ServerSideOnlyException(nameof(IsNotPredicate));
 
 		[Sql.Expression("DECODE({0}, {1}, 0, 1) = 0", IsPredicate = true, ServerSideOnly = true)]
-		static bool IsDistinctByDecode(int? left, int? right) => throw new InvalidOperationException();
+		static bool IsDistinctByDecode(int? left, int? right) => throw new ServerSideOnlyException(nameof(IsDistinctByDecode));
 		[Sql.Expression("DECODE({0}, {1}, 0, 1) <> 0", IsPredicate = true, ServerSideOnly = true)]
-		static bool IsNotDistinctByDecode(int? left, int? right) => throw new InvalidOperationException();
+		static bool IsNotDistinctByDecode(int? left, int? right) => throw new ServerSideOnlyException(nameof(IsNotDistinctByDecode));
 
 		[Sql.Expression("EXISTS{0}", IsPredicate = true, ServerSideOnly = true)]
-		static bool Exists(IQueryable<int?> values) => throw new InvalidOperationException();
+		static bool Exists(IQueryable<int?> values) => throw new ServerSideOnlyException(nameof(Exists));
 		[Sql.Expression("NOT EXISTS{0}", IsPredicate = true, ServerSideOnly = true)]
-		static bool NotExists(IQueryable<int?> values) => throw new InvalidOperationException();
+		static bool NotExists(IQueryable<int?> values) => throw new ServerSideOnlyException(nameof(NotExists));
 
 		[Sql.Expression("{0} = (1=1)", IsPredicate = true, ServerSideOnly = true, IsNullable = Sql.IsNullableType.IfAnyParameterNullable, Precedence = Precedence.Comparison)]
-		static bool? EqualCalculatedTrue(bool? value) => throw new InvalidOperationException();
+		static bool? EqualCalculatedTrue(bool? value) => throw new ServerSideOnlyException(nameof(EqualCalculatedTrue));
 		[Sql.Expression("{0} <> (1=1)", IsPredicate = true, ServerSideOnly = true, IsNullable = Sql.IsNullableType.IfAnyParameterNullable, Precedence = Precedence.Comparison)]
-		static bool? NotEqualCalculatedTrue(bool? value) => throw new InvalidOperationException();
+		static bool? NotEqualCalculatedTrue(bool? value) => throw new ServerSideOnlyException(nameof(NotEqualCalculatedTrue));
 
 		[Sql.Expression("{0} = (1=0)", IsPredicate = true, ServerSideOnly = true, IsNullable = Sql.IsNullableType.IfAnyParameterNullable, Precedence = Precedence.Comparison)]
-		static bool? EqualCalculatedFalse(bool? value) => throw new InvalidOperationException();
+		static bool? EqualCalculatedFalse(bool? value) => throw new ServerSideOnlyException(nameof(EqualCalculatedFalse));
 		[Sql.Expression("{0} <> (1=0)", IsPredicate = true, ServerSideOnly = true, IsNullable = Sql.IsNullableType.IfAnyParameterNullable, Precedence = Precedence.Comparison)]
-		static bool? NotEqualCalculatedFalse(bool? value) => throw new InvalidOperationException();
+		static bool? NotEqualCalculatedFalse(bool? value) => throw new ServerSideOnlyException(nameof(NotEqualCalculatedFalse));
 
 		[Sql.Expression("{0} = (1=null)", IsPredicate = true, ServerSideOnly = true, IsNullable = Sql.IsNullableType.Nullable, Precedence = Precedence.Comparison)]
-		static bool? EqualCalculatedUnknown(bool? value) => throw new InvalidOperationException();
+		static bool? EqualCalculatedUnknown(bool? value) => throw new ServerSideOnlyException(nameof(EqualCalculatedUnknown));
 		[Sql.Expression("{0} <> (1=null)", IsPredicate = true, ServerSideOnly = true, IsNullable = Sql.IsNullableType.Nullable, Precedence = Precedence.Comparison)]
-		static bool? NotEqualCalculatedUnknown(bool? value) => throw new InvalidOperationException();
+		static bool? NotEqualCalculatedUnknown(bool? value) => throw new ServerSideOnlyException(nameof(NotEqualCalculatedUnknown));
 
 		[Sql.Expression("{0} IS NULL", IsPredicate = true, ServerSideOnly = true, CanBeNull = false, Precedence = Precedence.Comparison)]
-		static bool IsNull(object? value) => throw new InvalidOperationException();
+		static bool IsNull(object? value) => throw new ServerSideOnlyException(nameof(IsNull));
 
 		[Sql.Expression("({0} + {1})", ServerSideOnly = true, IsNullable = Sql.IsNullableType.IfAnyParameterNullable)]
 		static int? Add(int? left, int? right) => left is null || right is null ? null : left + right;
@@ -131,22 +131,19 @@ namespace Tests.Linq
 		[Sql.Expression("(1=1)", IsPredicate = true, ServerSideOnly = true)]
 		static bool TruePredicate() => true;
 
-		// Supported: DB2, FB3+, MySQL, PostgreSQL, SQLite
+		// Supported: ClickHouse, DB2, FB3+, MySQL, PostgreSQL, SQLite
 		[Test(Description = "<PREDICATE> IS [NOT] TRUE")]
 		[ThrowsForProvider("System.Data.OleDb.OleDbException", TestProvName.AllAccessOleDb)]
 		[ThrowsForProvider("Sap.Data.Hana.HanaException", ProviderName.SapHanaNative)]
 		[ThrowsForProvider("System.Data.Odbc.OdbcException", ProviderName.SapHanaOdbc, TestProvName.AllAccessOdbc)]
 		[ThrowsForProvider("FirebirdSql.Data.FirebirdClient.FbException", ProviderName.Firebird25)]
-		[ThrowsForProvider("ClickHouse.Driver.ClickHouseServerException", ProviderName.ClickHouseDriver)]
-		[ThrowsForProvider("MySqlConnector.MySqlException", ProviderName.ClickHouseMySql)]
-		[ThrowsForProvider("Octonica.ClickHouseClient.Exceptions.ClickHouseServerException", ProviderName.ClickHouseOctonica)]
 		[ThrowsForProvider("System.Data.SqlServerCe.SqlCeException", ProviderName.SqlCe)]
 		[ThrowsForProvider("Oracle.ManagedDataAccess.Client.OracleException", TestProvName.AllOracleManaged)]
 		[ThrowsForProvider("System.Data.SqlClient.SqlException", TestProvName.AllSqlServerSystem)]
 		[ThrowsForProvider("Microsoft.Data.SqlClient.SqlException", TestProvName.AllSqlServerMS)]
 		[ThrowsForProvider("AdoNetCore.AseClient.AseException", ProviderName.SybaseManaged)]
 		[ThrowsForProvider("IBM.Data.Db2.DB2Exception", ProviderName.InformixDB2)]
-		[ThrowsForProvider("Ydb.Sdk.Ado.YdbException", ProviderName.Ydb)]
+		[ThrowsForProvider("Ydb.Sdk.Ado.YdbException", TestProvName.AllYdb)]
 		public void Test_Feature_IsTrue([DataSources(false)] string context)
 		{
 			using var db = GetDataContext(context);
@@ -169,22 +166,19 @@ namespace Tests.Linq
 			}
 		}
 
-		// Supported: DB2, FB3+, MySQL, PostgreSQL, SQLite
+		// Supported: ClickHouse, DB2, FB3+, MySQL, PostgreSQL, SQLite
 		[Test(Description = "<PREDICATE> IS [NOT] FALSE")]
 		[ThrowsForProvider("System.Data.OleDb.OleDbException", TestProvName.AllAccessOleDb)]
 		[ThrowsForProvider("Sap.Data.Hana.HanaException", ProviderName.SapHanaNative)]
 		[ThrowsForProvider("System.Data.Odbc.OdbcException", ProviderName.SapHanaOdbc, TestProvName.AllAccessOdbc)]
 		[ThrowsForProvider("FirebirdSql.Data.FirebirdClient.FbException", ProviderName.Firebird25)]
-		[ThrowsForProvider("ClickHouse.Driver.ClickHouseServerException", ProviderName.ClickHouseDriver)]
-		[ThrowsForProvider("MySqlConnector.MySqlException", ProviderName.ClickHouseMySql)]
-		[ThrowsForProvider("Octonica.ClickHouseClient.Exceptions.ClickHouseServerException", ProviderName.ClickHouseOctonica)]
 		[ThrowsForProvider("System.Data.SqlServerCe.SqlCeException", ProviderName.SqlCe)]
 		[ThrowsForProvider("Oracle.ManagedDataAccess.Client.OracleException", TestProvName.AllOracleManaged)]
 		[ThrowsForProvider("System.Data.SqlClient.SqlException", TestProvName.AllSqlServerSystem)]
 		[ThrowsForProvider("Microsoft.Data.SqlClient.SqlException", TestProvName.AllSqlServerMS)]
 		[ThrowsForProvider("AdoNetCore.AseClient.AseException", ProviderName.SybaseManaged)]
 		[ThrowsForProvider("IBM.Data.Db2.DB2Exception", ProviderName.InformixDB2)]
-		[ThrowsForProvider("Ydb.Sdk.Ado.YdbException", ProviderName.Ydb)]
+		[ThrowsForProvider("Ydb.Sdk.Ado.YdbException", TestProvName.AllYdb)]
 		public void Test_Feature_IsFalse([DataSources(false)] string context)
 		{
 			using var db = GetDataContext(context);
@@ -207,7 +201,7 @@ namespace Tests.Linq
 			}
 		}
 
-		// Supported: Firebird3+, MySQL, PostgreSQL
+		// Supported: ClickHouse, Firebird3+, MySQL, PostgreSQL
 		[Test(Description = "<PREDICATE> IS [NOT] UNKNOWN")]
 		[ThrowsForProvider("System.Data.OleDb.OleDbException", TestProvName.AllAccessOleDb)]
 		[ThrowsForProvider("Sap.Data.Hana.HanaException", ProviderName.SapHanaNative)]
@@ -221,10 +215,7 @@ namespace Tests.Linq
 		[ThrowsForProvider("AdoNetCore.AseClient.AseException", ProviderName.SybaseManaged)]
 		[ThrowsForProvider("System.Data.SQLite.SQLiteException", TestProvName.AllSQLiteClassic)]
 		[ThrowsForProvider("Microsoft.Data.Sqlite.SqliteException", ProviderName.SQLiteMS)]
-		[ThrowsForProvider("ClickHouse.Driver.ClickHouseServerException", ProviderName.ClickHouseDriver)]
-		[ThrowsForProvider("MySqlConnector.MySqlException", ProviderName.ClickHouseMySql)]
-		[ThrowsForProvider("Octonica.ClickHouseClient.Exceptions.ClickHouseServerException", ProviderName.ClickHouseOctonica)]
-		[ThrowsForProvider("Ydb.Sdk.Ado.YdbException", ProviderName.Ydb)]
+		[ThrowsForProvider("Ydb.Sdk.Ado.YdbException", TestProvName.AllYdb)]
 		public void Test_Feature_IsUnknown([DataSources(false)] string context)
 		{
 			using var db = GetDataContext(context);
@@ -365,7 +356,7 @@ namespace Tests.Linq
 		[ThrowsForProvider("AdoNetCore.AseClient.AseException", ProviderName.SybaseManaged)]
 		[ThrowsForProvider("FirebirdSql.Data.FirebirdClient.FbException", ProviderName.Firebird25)]
 		[ThrowsForProvider("MySql.Data.MySqlClient.MySqlException", TestProvName.AllMySqlData)]
-		[ThrowsForProvider("Ydb.Sdk.Ado.YdbException", ProviderName.Ydb)]
+		[ThrowsForProvider("Ydb.Sdk.Ado.YdbException", TestProvName.AllYdb)]
 		[ThrowsForProvider("DuckDB.NET.Data.DuckDBException", TestProvName.AllDuckDB)]
 		public void Test_Feature_Unknown([DataSources(false)] string context)
 		{
@@ -540,7 +531,7 @@ namespace Tests.Linq
 		[ThrowsForProvider("Microsoft.Data.SqlClient.SqlException", TestProvName.AllSqlServerMS)]
 		[ThrowsForProvider("AdoNetCore.AseClient.AseException", ProviderName.SybaseManaged)]
 		[ThrowsForProvider("FirebirdSql.Data.FirebirdClient.FbException", TestProvName.AllFirebird)]
-		[ThrowsForProvider("Ydb.Sdk.Ado.YdbException", ProviderName.Ydb)]
+		[ThrowsForProvider("Ydb.Sdk.Ado.YdbException", TestProvName.AllYdb)]
 		[ThrowsForProvider("DuckDB.NET.Data.DuckDBException", TestProvName.AllDuckDB)]
 		public void Test_Feature_NullSaveEqual([DataSources(false)] string context)
 		{
@@ -581,7 +572,7 @@ namespace Tests.Linq
 		[ThrowsForProvider("Oracle.ManagedDataAccess.Client.OracleException", TestProvName.AllOracleManaged)]
 		[ThrowsForProvider("AdoNetCore.AseClient.AseException", ProviderName.SybaseManaged)]
 		[ThrowsForProvider("IBM.Data.Db2.DB2Exception", ProviderName.InformixDB2, TestProvName.AllDB2)]
-		[ThrowsForProvider("Ydb.Sdk.Ado.YdbException", ProviderName.Ydb)]
+		[ThrowsForProvider("Ydb.Sdk.Ado.YdbException", TestProvName.AllYdb)]
 		[ThrowsForProvider("DuckDB.NET.Data.DuckDBException", TestProvName.AllDuckDB)]
 		public void Test_Feature_Is([DataSources(false)] string context)
 		{
@@ -622,7 +613,7 @@ namespace Tests.Linq
 		[ThrowsForProvider("Npgsql.PostgresException", TestProvName.AllPostgreSQL)]
 		[ThrowsForProvider("System.Data.SQLite.SQLiteException", TestProvName.AllSQLiteClassic)]
 		[ThrowsForProvider("Microsoft.Data.Sqlite.SqliteException", ProviderName.SQLiteMS)]
-		[ThrowsForProvider("Ydb.Sdk.Ado.YdbException", ProviderName.Ydb)]
+		[ThrowsForProvider("Ydb.Sdk.Ado.YdbException", TestProvName.AllYdb)]
 		[ThrowsForProvider("DuckDB.NET.Data.DuckDBException", TestProvName.AllDuckDB)]
 		public void Test_Feature_Decode([DataSources(false, TestProvName.AllFirebird)] string context)
 		{
@@ -655,9 +646,7 @@ namespace Tests.Linq
 		[Test(Description = "EXISTS INTERSECT")]
 		[ThrowsForProvider("System.Data.OleDb.OleDbException", TestProvName.AllAccessOleDb)]
 		[ThrowsForProvider("System.Data.Odbc.OdbcException", TestProvName.AllAccessOdbc)]
-		[ThrowsForProvider("ClickHouse.Driver.ClickHouseServerException", ProviderName.ClickHouseDriver)]
-		[ThrowsForProvider("MySqlConnector.MySqlException", ProviderName.ClickHouseMySql)]
-		[ThrowsForProvider("Octonica.ClickHouseClient.Exceptions.ClickHouseServerException", ProviderName.ClickHouseOctonica)]
+		[ThrowsRequiresCorrelatedSubquery]
 		public void Test_Feature_Intersect([DataSources(false)] string context)
 		{
 			using var db = GetDataConnection(context);
@@ -1065,7 +1054,6 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		[YdbCteAsSource]
 		public void Test_FieldInSubquery([DataSources] string context)
 		{
 			using var db = GetDataContext(context);
@@ -1086,7 +1074,7 @@ namespace Tests.Linq
 		}
 
 		[Test]
-		[YdbMemberNotFound]
+		[ThrowsRequiresCorrelatedSubquery(simple: true)]
 		public void Test_VariableInSubquery([DataSources(TestProvName.AllClickHouse)] string context, [Values] bool inline)
 		{
 			using var db = GetDataContext(context);

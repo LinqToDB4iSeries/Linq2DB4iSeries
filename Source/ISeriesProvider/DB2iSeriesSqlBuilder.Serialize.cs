@@ -56,7 +56,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			{
 				DataType.Date => "{0:yyyy-MM-dd}",
 				DataType.Time => "{0:HH:mm:ss}",
-				_ => GetSqlDateTimeFormat(value.Millisecond, precision)
+				_ => GetSqlDateTimeFormat(precision)
 			};
 
 			if (quoted) stringBuilder.Append('\'');
@@ -93,9 +93,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		}
 
 		// The Ole Db provider requires DateTime strings to match the DB type's precision.
-		private static string GetSqlDateTimeFormat(int value, int? precision)
+		private static string GetSqlDateTimeFormat(int? precision)
 		{
-			if (value == 0 || precision == 0)
+			if (precision == 0)
 				return sqlDateTimeFormats[0];
 			else if (precision == null)
 				return sqlDateTimeFormats[6];

@@ -23,6 +23,7 @@ using LinqToDB.Common;
 using LinqToDB.Linq.Translation;
 using LinqToDB.Internal.DataProvider;
 using LinqToDB.Internal.DataProvider.DB2;
+using LinqToDB.Internal.SqlQuery;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
@@ -69,6 +70,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SqlProviderFlags.AcceptsTakeAsParameterIfSkip = true;
 			SqlProviderFlags.CanCombineParameters = false;
 			SqlProviderFlags.IsCommonTableExpressionsSupported = true;
+			SqlProviderFlags.IsNullsOrderingSupported = false;
+			SqlProviderFlags.DefaultNullsOrdering = NullsDefaultOrdering.Largest; // DB2 sorts NULL as the largest value
 			SqlProviderFlags.IsUpdateFromSupported = false;
 			SqlProviderFlags.IsExistsPreferableForContains = true;
 			SqlProviderFlags.IsOrderByAggregateSubquerySupported = true;

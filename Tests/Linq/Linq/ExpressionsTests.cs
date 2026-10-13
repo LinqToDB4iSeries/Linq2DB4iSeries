@@ -72,7 +72,7 @@ namespace Tests.Linq
 		[Table]
 		sealed class MappingTestClass
 		{
-			[Column] public int       Id    { get; set; }
+			[PrimaryKey] public int   Id    { get; set; }
 			[Column] public int       Value { get; set; }
 			[Column] public FlagsEnum Flags { get; set; }
 		}
@@ -189,35 +189,38 @@ namespace Tests.Linq
 		static int Count1(Parent p) { return p.Children.Count(c => c.ChildID > 0); }
 
 		[Test]
+		[ThrowsRequiresCorrelatedSubquery(simple: true)]
 		public void MapMember1([DataSources(TestProvName.AllClickHouse)] string context)
 		{
-			Expressions.MapMember<Parent,int>(p => Count1(p), p => p.Children.Count(c => c.ChildID > 0));
+			Expressions.MapMember<Parent,int>(nameof(MapMember1), p => Count1(p), p => p.Children.Count(c => c.ChildID > 0));
 
-			using var db = GetDataContext(context);
+			using var db = GetDataContext(context, new MappingSchema(nameof(MapMember1)));
 			AreEqual(Parent.Select(Count1), db.Parent.Select(p => Count1(p)));
 		}
 
 		static int Count2(Parent p, int id) { return p.Children.Count(c => c.ChildID > id); }
 
 		[Test]
+		[ThrowsRequiresCorrelatedSubquery(simple: true)]
 		public void MapMember2([DataSources(TestProvName.AllClickHouse)] string context)
 		{
-			Expressions.MapMember<Parent,int,int>((p,id) => Count2(p, id), (p, id) => p.Children.Count(c => c.ChildID > id));
+			Expressions.MapMember<Parent,int,int>(nameof(MapMember2), (p,id) => Count2(p, id), (p, id) => p.Children.Count(c => c.ChildID > id));
 
-			using var db = GetDataContext(context);
+			using var db = GetDataContext(context, new MappingSchema(nameof(MapMember2)));
 			AreEqual(Parent.Select(p => Count2(p, 1)), db.Parent.Select(p => Count2(p, 1)));
 		}
 
 		static int Count3(Parent p, int id) { return p.Children.Count(c => c.ChildID > id) + 2; }
 
 		[Test]
+		[ThrowsRequiresCorrelatedSubquery(simple: true)]
 		public void MapMember3([DataSources(ProviderName.SqlCe, TestProvName.AllClickHouse)] string context)
 		{
-			Expressions.MapMember<Parent,int,int>((p,id) => Count3(p, id), (p, id) => p.Children.Count(c => c.ChildID > id) + 2);
+			Expressions.MapMember<Parent,int,int>(nameof(MapMember3), (p,id) => Count3(p, id), (p, id) => p.Children.Count(c => c.ChildID > id) + 2);
 
 			var n = 2;
 
-			using var db = GetDataContext(context);
+			using var db = GetDataContext(context, new MappingSchema(nameof(MapMember3)));
 			AreEqual(Parent.Select(p => Count3(p, n)), db.Parent.Select(p => Count3(p, n)));
 		}
 
@@ -320,7 +323,7 @@ namespace Tests.Linq
 		[ExpressionMethod(nameof(Expression8))]
 		static IQueryable<Parent> GetParent(ITestDataContext db, Child ch)
 		{
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(GetParent));
 		}
 
 		static Expression<Func<ITestDataContext, Child, IQueryable<Parent>>> Expression8()
@@ -391,7 +394,7 @@ namespace Tests.Linq
 		[ExpressionMethod("GetBoolExpression1")]
 		static bool GetBool1<T>(T obj)
 		{
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(GetBool1));
 		}
 
 		static Expression<Func<T,bool>> GetBoolExpression1<T>()
@@ -415,7 +418,7 @@ namespace Tests.Linq
 		[ExpressionMethod("GetBoolExpression2_{0}")]
 		static bool GetBool2<T>(T obj)
 		{
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(GetBool2));
 		}
 
 		static Expression<Func<Parent,bool>> GetBoolExpression2_Parent()
@@ -440,7 +443,7 @@ namespace Tests.Linq
 			[ExpressionMethod(nameof(GetBoolExpression3))]
 			public static bool GetBool3(Parent? obj)
 			{
-				throw new InvalidOperationException();
+				throw new ServerSideOnlyException(nameof(GetBool3));
 			}
 
 			static Expression<Func<Parent?,bool>> GetBoolExpression3()
@@ -464,7 +467,7 @@ namespace Tests.Linq
 		[ExpressionMethod(nameof(AssociationExpression))]
 		static IEnumerable<GrandChild> GrandChildren(Parent p)
 		{
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(GrandChildren));
 		}
 
 		static Expression<Func<Parent,IEnumerable<GrandChild>>> AssociationExpression()
@@ -570,9 +573,9 @@ namespace Tests.Linq
 			var _ = db.Child.LeftJoin(db.Parent, c => c.ParentID, p => p.ParentID).ToList();
 		}
 
-		[YdbMemberNotFound]
+		[ThrowsRequiresCorrelatedSubquery(simple: true)]
 		[Test]
-		public void LeftJoinTest2([DataSources(TestProvName.AllClickHouse)] string context)
+		public void LeftJoinTest2([DataSources] string context)
 		{
 			using var db = GetDataContext(context);
 			var _ = (
@@ -585,9 +588,9 @@ namespace Tests.Linq
 		[Test]
 		public void ToLowerInvariantTest([DataSources] string context)
 		{
-			Expressions.MapMember((string s) => s.ToLowerInvariant(), s => s.ToLower());
+			Expressions.MapMember(nameof(ToLowerInvariantTest), (string s) => s.ToLowerInvariant(), s => s.ToLower());
 
-			using var db = GetDataContext(context);
+			using var db = GetDataContext(context, new MappingSchema(nameof(ToLowerInvariantTest)));
 			AreEqual(
 				   Doctor.Where(p => p.Taxonomy.ToLowerInvariant() == "psychiatry").Select(p => p.Taxonomy.ToLower()),
 				db.Doctor.Where(p => p.Taxonomy.ToLowerInvariant() == "psychiatry").Select(p => p.Taxonomy.ToLower()));
@@ -825,13 +828,13 @@ namespace Tests.Linq
 		[Sql.Expression("COALESCE({0}, {0})", ServerSideOnly = true)]
 		private static int? Noop(int? value)
 		{
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(Noop));
 		}
 
 		[ExpressionMethod(nameof(Func2Expr))]
 		private static int? FirstIfNullOrSecondAsNumber(string? value, string intValue)
 		{
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(FirstIfNullOrSecondAsNumber));
 		}
 
 		private static Expression<Func<string, string, int?>> Func2Expr()
@@ -842,7 +845,7 @@ namespace Tests.Linq
 		[Sql.Expression("CASE WHEN {0} IS NULL THEN NULL ELSE CAST({1} AS INT) END", ServerSideOnly = true)]
 		private static int? Func3(string value, string intValue)
 		{
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(Func3));
 		}
 
 		#region issue 2688
@@ -884,7 +887,7 @@ namespace Tests.Linq
 		[ExpressionMethod(nameof(GetTernaryExpressionValue1Expr))]
 		private static int? GetTernaryExpressionValue1(int? value)
 		{
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(GetTernaryExpressionValue1));
 		}
 
 		private static Expression<Func<int?, int?>> GetTernaryExpressionValue1Expr()
@@ -896,7 +899,7 @@ namespace Tests.Linq
 		[ExpressionMethod(nameof(GetTernaryExpressionValue2Expr))]
 		private static int? GetTernaryExpressionValue2(int? value)
 		{
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(GetTernaryExpressionValue2));
 		}
 
 		private static Expression<Func<int?, int?>> GetTernaryExpressionValue2Expr()
@@ -908,7 +911,7 @@ namespace Tests.Linq
 		[ExpressionMethod(nameof(GetTernaryExpressionValue3Expr))]
 		private static int? GetTernaryExpressionValue3(int? value)
 		{
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(GetTernaryExpressionValue3));
 		}
 
 		private static Expression<Func<int?, int?>> GetTernaryExpressionValue3Expr()
@@ -920,7 +923,7 @@ namespace Tests.Linq
 		[ExpressionMethod(nameof(GetTernaryExpressionValue4Expr))]
 		private static int? GetTernaryExpressionValue4(int? value)
 		{
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(GetTernaryExpressionValue4));
 		}
 
 		private static Expression<Func<int?, int?>> GetTernaryExpressionValue4Expr()
@@ -932,7 +935,7 @@ namespace Tests.Linq
 		[ExpressionMethod(nameof(GetTernaryExpressionValue5Expr))]
 		private static int? GetTernaryExpressionValue5(int? value)
 		{
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(GetTernaryExpressionValue5));
 		}
 
 		private static Expression<Func<int?, int?>> GetTernaryExpressionValue5Expr()
@@ -945,7 +948,7 @@ namespace Tests.Linq
 		[Sql.Function("COALESCE", ServerSideOnly = true)]
 		private static int GetTernaryExpressionValueFunction(int value, int defaultValue)
 		{
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(GetTernaryExpressionValueFunction));
 		}
 		#endregion
 
@@ -981,7 +984,7 @@ namespace Tests.Linq
 		private static TJsonProp JsonExtractPathText<TColumn, TJsonProp>(
 			TColumn field,
 			Expression<Func<TColumn, TJsonProp>> path)
-			=> throw new InvalidOperationException();
+			=> throw new ServerSideOnlyException(nameof(JsonExtractPathText));
 
 		private static Expression<Func<TColumn, Expression<Func<TColumn, TJsonProp>>, TJsonProp>>
 			JsonExtractPathExpression<TColumn, TJsonProp>()
@@ -991,7 +994,7 @@ namespace Tests.Linq
 
 		[Sql.Expression("{0}::json #>> {1}", ServerSideOnly = true, IsPredicate = true)]
 		private static TJsonProp JsonExtractPathText<TColumn, TJsonProp>(TColumn left, string right)
-			=> throw new InvalidOperationException();
+			=> throw new ServerSideOnlyException(nameof(JsonExtractPathText));
 
 		private static string JsonPath<TColumn, TJsonProp>(Expression<Func<TColumn, TJsonProp>> extractor) => "'{json, text}'";
 		#endregion
@@ -1091,16 +1094,16 @@ namespace Tests.Linq
 		}
 
 		[Sql.Expression("{0}", ServerSideOnly = true, IsNullable = Sql.IsNullableType.SameAsFirstParameter)]
-		private static int? Function2(int? Value) => throw new InvalidOperationException();
+		private static int? Function2(int? Value) => throw new ServerSideOnlyException(nameof(Function2));
 
 		[ExpressionMethod(nameof(Function1LeftExpr))]
-		private static int? Function1Left(int? value) => throw new InvalidOperationException();
+		private static int? Function1Left(int? value) => throw new ServerSideOnlyException(nameof(Function1Left));
 
 		[ExpressionMethod(nameof(Function1RightExpr))]
-		private static int? Function1Right(int? value) => throw new InvalidOperationException();
+		private static int? Function1Right(int? value) => throw new ServerSideOnlyException(nameof(Function1Right));
 
 		[Sql.Expression("CAST(N'SHOULD NOT BE CALLED' AS INT)", ServerSideOnly = true)]
-		private static int Fail(int value) => throw new InvalidOperationException();
+		private static int Fail(int value) => throw new ServerSideOnlyException(nameof(Fail));
 
 		private static Expression<Func<int?, int?>> Function1LeftExpr()
 		{
@@ -1115,8 +1118,7 @@ namespace Tests.Linq
 		#endregion
 
 		#region Regression: query comparison
-		[YdbCteAsSource]
-		[Test(Description = "Tests regression introduced in 3.5.2")]
+		[Test(Description = "Tests regression introduced in 3.5.2"), QueryCacheTest]
 		public void ComparisonTest1([DataSources(ProviderName.SqlCe, TestProvName.AllClickHouse)] string context, [Values(1, 2)] int iteration)
 		{
 			using var db = GetDataContext(context);
@@ -1136,7 +1138,6 @@ namespace Tests.Linq
 				db.Patient.GetCacheMissCount().ShouldBe(cacheMiss);
 		}
 
-		[YdbCteAsSource]
 		[Test(Description = "Tests regression introduced in 3.5.2")]
 		public void ComparisonTest2([DataSources(TestProvName.AllAccess, TestProvName.AllClickHouse)] string context)
 		{
@@ -1181,7 +1182,7 @@ namespace Tests.Linq
 		{
 			[ExpressionMethod(nameof(ToServiceProjectionExpr))]
 			public static Issue4613ServiceProjection ToServiceProjection(Issue4613Service serv)
-				=> throw new NotImplementedException();
+				=> throw new ServerSideOnlyException(nameof(ToServiceProjection));
 
 			static Expression<Func<Issue4613Service, Issue4613ServiceProjection>> ToServiceProjectionExpr()
 				=> (serv) => new Issue4613ServiceProjection { IdContract = serv.IdContract };

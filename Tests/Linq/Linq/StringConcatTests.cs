@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -108,6 +108,46 @@ namespace Tests.Linq
 				select e.Id;
 
 			AssertQuery(query);
+		}
+
+		[Table("Concat5530")]
+		sealed class Concat5530Entity
+		{
+			[PrimaryKey]                public int     Id   { get; set; }
+			[Column(CanBeNull = false)] public string  Req  { get; set; } = "";
+			[Column(CanBeNull = true)]  public string? Opt1 { get; set; }
+			[Column(CanBeNull = true)]  public string? Opt2 { get; set; }
+		}
+
+		// Regression for https://github.com/linq2db/linq2db/issues/5530.
+		// Sybase ASE has no null-safe concat operator, so Sql.Concat (PreserveNull) is emitted
+		// as `CASE WHEN <op> IS NULL OR ... THEN NULL ELSE a + b + ... END`. The guard must fire
+		// only for operands that can actually be NULL — a string literal or a non-nullable column
+		// can never be NULL, so wrapping it in `IS NULL` is dead weight that previously bloated
+		// the SQL (#5530). Nullability is taken from the explicit Column(CanBeNull = ...) mapping.
+		[Test]
+		public void Concat_Sybase_NullGuardOnlyForNullableOperands([IncludeDataSources(TestProvName.AllSybase)] string context)
+		{
+			using var db    = GetDataConnection(context);
+			using var table = db.CreateLocalTable(new[] { new Concat5530Entity { Id = 1, Req = "x", Opt1 = "a", Opt2 = "b" } });
+
+			// Both operands provably non-null (non-nullable column + literal): no CASE, no IS NULL guard at all.
+			_ = table.Select(e => Sql.Concat(e.Req, "-x")).ToList();
+			db.LastQuery!.ShouldNotContain("CASE WHEN");
+			db.LastQuery!.ShouldNotContain("IS NULL");
+
+			// Mixed: only the nullable column is guarded; the literal and the non-nullable column are not.
+			_ = table.Select(e => Sql.Concat(e.Req, "-", e.Opt1)).ToList();
+			db.LastQuery!.ShouldContain("CASE WHEN");
+			db.LastQuery!.ShouldContain("[Opt1] IS NULL");
+			db.LastQuery!.ShouldNotContain("[Req] IS NULL");
+			db.LastQuery!.ShouldNotContain("'-' IS NULL");
+
+			// All operands nullable: every column guarded.
+			_ = table.Select(e => Sql.Concat(e.Opt1, e.Opt2)).ToList();
+			db.LastQuery!.ShouldContain("CASE WHEN");
+			db.LastQuery!.ShouldContain("[Opt1] IS NULL");
+			db.LastQuery!.ShouldContain("[Opt2] IS NULL");
 		}
 
 		[Test]
@@ -368,6 +408,7 @@ namespace Tests.Linq
 		[ThrowsForProvider(typeof(LinqToDBException), providers: [TestProvName.AllDB2, TestProvName.AllOracle11, TestProvName.AllMySql57, TestProvName.AllMariaDB], ErrorMessage = ErrorHelper.Error_OUTER_Joins)]
 		[ThrowsForProvider(typeof(LinqToDBException), providers: [TestProvName.AllClickHouse],                                                                      ErrorMessage = ErrorHelper.Error_Correlated_Subqueries)]
 		[Test]
+		[ThrowsRequiresCorrelatedSubquery(simple: true)]
 		public void Concat_OverGroupingWithTake([DataSources] string context)
 		{
 			using var db    = GetDataContext(context);
@@ -457,6 +498,7 @@ namespace Tests.Linq
 		};
 
 		[Test]
+		[ThrowsRequiresCorrelatedSubquery(simple: true)]
 		public void Concat_AssociationSubquery([DataSources(TestProvName.AllAccess, TestProvName.AllSqlServer2016Minus, ProviderName.SqlCe, TestProvName.AllInformix, TestProvName.AllSybase)] string context)
 		{
 			using var db          = GetDataContext(context);
@@ -477,7 +519,7 @@ namespace Tests.Linq
 
 		sealed class StringConcatNullEntity
 		{
-			public int     ID     { get; set; }
+			[PrimaryKey] public int     ID     { get; set; }
 			public string? Value1 { get; set; }
 			public string? Value2 { get; set; }
 		}
@@ -797,5 +839,95 @@ namespace Tests.Linq
 			res[1].Text13.ShouldBe("Element тест3 Text13");
 			res[1].Text14.ShouldBe("Element тест4 Text14");
 		}
+
+		#region Concat inside a set-operation operand's projection
+
+		[Table]
+		sealed class ConcatSetOpEntity
+		{
+			[PrimaryKey]       public Guid    Id       { get; set; }
+			[Column, Nullable] public Guid?   ParentId { get; set; }
+			[Column, Nullable] public string? Name     { get; set; }
+		}
+
+		static readonly Guid ConcatSetOpRootId  = new Guid("11111111-1111-1111-1111-111111111111");
+		static readonly Guid ConcatSetOpChildId = new Guid("22222222-2222-2222-2222-222222222222");
+
+		static readonly ConcatSetOpEntity[] ConcatSetOpData =
+		{
+			new() { Id = ConcatSetOpRootId,  ParentId = null,               Name = "root"  },
+			new() { Id = ConcatSetOpChildId, ParentId = ConcatSetOpRootId,  Name = "child" },
+		};
+
+		// `Guid.ToString("N")` has no SQL translation, so the concat around it can only be computed
+		// client-side over the Guid column. A terminal Select has always allowed that; inside a
+		// set-operation operand it started throwing "The LINQ expression '…ToString("N")' could not be
+		// converted to SQL" once binary `+` got routed through the concat translator, because a set
+		// projection asks translators for strict SQL and the translator reports an error rather than
+		// declining. Each operand must instead select the columns the projection reads and let the
+		// materializer build the string.
+		// The flag's other users are deliberately not pinned here: the four ExpressionBuilder.EagerLoadUnion
+		// sites that set it build a ContextRefExpression rather than a user lambda body, so an untranslatable
+		// member never reaches the fall-through from there - forcing EagerLoadingStrategy.CteUnion over this
+		// shape still throws.
+		[Test]
+		public void Concat_SetOperationOperand_UntranslatableConcatOperand([DataSources] string context)
+		{
+			using var db    = GetDataContext(context);
+			using var table = db.CreateLocalTable(ConcatSetOpData);
+
+			var query = table.Where(e => e.ParentId == null).Select(e => new { id = "p_" + e.Id.ToString("N"), name = e.Name })
+				.Concat(table.Where(e => e.ParentId != null).Select(e => new { id = "c_" + e.Id.ToString("N"), name = e.Name }));
+
+			AssertQuery(query);
+		}
+
+		// The operands overlap and carry the same prefix, so the Union has something to deduplicate. Disjoint
+		// operands would answer exactly what Concat answers and pin nothing the Concat test does not.
+		[Test]
+		public void Union_SetOperationOperand_UntranslatableConcatOperand([DataSources] string context)
+		{
+			using var db    = GetDataContext(context);
+			using var table = db.CreateLocalTable(ConcatSetOpData);
+
+			var query = table.Where(e => e.Name != null).Select(e => new { id = "p_" + e.Id.ToString("N"), name = e.Name })
+				.Union(table.Where(e => e.ParentId == null).Select(e => new { id = "p_" + e.Id.ToString("N"), name = e.Name }));
+
+			AssertQuery(query);
+		}
+
+		// Reached as a method call rather than as binary `+`, which is the other call site the fall-through is
+		// applied to - the three tests around it all enter through VisitBinary.
+		[Test]
+		public void Concat_SetOperationOperand_UntranslatableStringConcatCall([DataSources] string context)
+		{
+			using var db    = GetDataContext(context);
+			using var table = db.CreateLocalTable(ConcatSetOpData);
+
+			var query = table.Where(e => e.ParentId == null).Select(e => new { id = string.Concat("p_", e.Id.ToString("N")), name = e.Name })
+				.Concat(table.Where(e => e.ParentId != null).Select(e => new { id = string.Concat("c_", e.Id.ToString("N")), name = e.Name }));
+
+			AssertQuery(query);
+		}
+
+		// Same defect where the untranslatable concat sits in a different member on each side: the first operand
+		// concatenates into `id` and passes a null literal for `parent`, the second leaves `id` a bare ToString
+		// and concatenates into `parent`. Both operands still project the same anonymous type - Concat requires
+		// it - so what differs is the placeholder layout, each operand selecting NULLs in the other's slots.
+		[Test]
+		public void Concat_SetOperationOperand_UntranslatableConcatInDifferentMembers([DataSources] string context)
+		{
+			using var db    = GetDataContext(context);
+			using var table = db.CreateLocalTable(ConcatSetOpData);
+
+			var query = table.Where(e => e.ParentId == null)
+					.Select(e => new { id = "p_" + e.Id.ToString("N"), name = e.Name, parent = (string?)null })
+				.Concat(table.Where(e => e.ParentId != null)
+					.Select(e => new { id = e.Id.ToString("N"), name = e.Name, parent = (string?)("p_" + e.ParentId!.Value.ToString("N")) }));
+
+			AssertQuery(query);
+		}
+
+		#endregion
 	}
 }

@@ -13,7 +13,7 @@
 		<PackageReference Include="MySql.Data"     Aliases="MySqlData" />
 		<PackageReference Include="MySqlConnector" Aliases="MySqlConnector" />
 		<PackageReference Include="System.Data.SQLite" />
-		<PackageReference Include="SourceGear.sqlite3" GeneratePathProperty="true" />
+		<PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" GeneratePathProperty="true" />
 		<PackageReference Include="Microsoft.Data.SqlClient" />
 		<PackageReference Include="System.Data.SqlClient" />
 		<PackageReference Include="AdoNetCore.AseClient" />
@@ -49,6 +49,7 @@
 		<PackageReference Include="System.Data.Odbc" />
 		<PackageReference Include="System.Data.OleDb" />
 		<PackageReference Include="Ydb.Sdk" />
+		<PackageReference Include="DuckDB.NET.Data.Full" />
 
 		<!--<PackageReference Include="Devart.Data.Oracle" />-->
 

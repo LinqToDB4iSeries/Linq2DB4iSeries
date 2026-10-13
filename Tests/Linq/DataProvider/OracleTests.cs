@@ -44,15 +44,12 @@ namespace Tests.DataProvider
 	[TestFixture]
 	public class OracleTests : TestBase
 	{
-		string _pathThroughSql = "SELECT :p FROM sys.dual";
-		string  PathThroughSql
-		{
-			get
-			{
-				_pathThroughSql += " ";
-				return _pathThroughSql;
-			}
-		}
+		// Each raw-SQL call below reuses one statement text with a different parameter or return type, so
+		// every call needs its own text or the type mapping cached for an earlier one is reused. Markers
+		// are fixed per call site - or derived from what the call varies, inside helpers that run many
+		// times per test - so the captured SQL is identical on every run regardless of execution order.
+		static string PathThroughSql(FormattableString cacheBuster) =>
+			"SELECT :p FROM sys.dual -- cache-buster: " + cacheBuster.ToString(CultureInfo.InvariantCulture);
 
 		[Test]
 		public void TestParameters([IncludeDataSources(TestProvName.AllOracle)] string context)
@@ -60,11 +57,11 @@ namespace Tests.DataProvider
 			using var conn = GetDataContext(context);
 			using (Assert.EnterMultipleScope())
 			{
-				Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.VarBinary("p", null)), Is.Null);
-				Assert.That(conn.Execute<char>(PathThroughSql, DataParameter.Char("p", '1')), Is.EqualTo('1'));
+				Assert.That(conn.Execute<byte[]>(PathThroughSql($"1"), DataParameter.VarBinary("p", null)), Is.Null);
+				Assert.That(conn.Execute<char>(PathThroughSql($"2"), DataParameter.Char("p", '1')), Is.EqualTo('1'));
 
-				Assert.That(conn.Execute<string>(PathThroughSql, new { p = 1 }), Is.EqualTo("1"));
-				Assert.That(conn.Execute<string>(PathThroughSql, new { p = "1" }), Is.EqualTo("1"));
+				Assert.That(conn.Execute<string>(PathThroughSql($"3"), new { p = 1 }), Is.EqualTo("1"));
+				Assert.That(conn.Execute<string>(PathThroughSql($"4"), new { p = "1" }), Is.EqualTo("1"));
 				Assert.That(conn.Execute<int>("SELECT :p FROM sys.dual", new { p = new DataParameter { Value = 1 } }), Is.EqualTo(1));
 				Assert.That(conn.Execute<string>("SELECT :p1 FROM sys.dual", new { p1 = new DataParameter { Value = "1" } }), Is.EqualTo("1"));
 				Assert.That(conn.Execute<int>("SELECT :p1 + :p2 FROM sys.dual", new { p1 = 2, p2 = 3 }), Is.EqualTo(5));
@@ -193,9 +190,11 @@ namespace Tests.DataProvider
 
 			using (Assert.EnterMultipleScope())
 			{
-				Assert.That(conn.Execute<T>(PathThroughSql, new DataParameter { Name = "p", DataType = dataType, Value = expectedValue }), Is.EqualTo(expectedValue));
-				Assert.That(conn.Execute<T>(PathThroughSql, new DataParameter { Name = "p", Value = expectedValue }), Is.EqualTo(expectedValue));
-				Assert.That(conn.Execute<T>(PathThroughSql, new { p = expectedValue }), Is.EqualTo(expectedValue));
+				// Runs once per type/value the callers exercise, so a fixed marker would repeat and the
+				// statements would collide across invocations - derive it from what actually varies.
+				Assert.That(conn.Execute<T>(PathThroughSql($"numeric/{typeof(T)}/{dataType}/{expectedValue}/1"), new DataParameter { Name = "p", DataType = dataType, Value = expectedValue }), Is.EqualTo(expectedValue));
+				Assert.That(conn.Execute<T>(PathThroughSql($"numeric/{typeof(T)}/{dataType}/{expectedValue}/2"), new DataParameter { Name = "p", Value = expectedValue }), Is.EqualTo(expectedValue));
+				Assert.That(conn.Execute<T>(PathThroughSql($"numeric/{typeof(T)}/{dataType}/{expectedValue}/3"), new { p = expectedValue }), Is.EqualTo(expectedValue));
 			}
 		}
 
@@ -260,8 +259,8 @@ namespace Tests.DataProvider
 			var dateTime = new DateTime(2012, 12, 12);
 			using (Assert.EnterMultipleScope())
 			{
-				Assert.That(conn.Execute<DateTime>(PathThroughSql, DataParameter.Date("p", dateTime)), Is.EqualTo(dateTime));
-				Assert.That(conn.Execute<DateTime?>(PathThroughSql, new DataParameter("p", dateTime, DataType.Date)), Is.EqualTo(dateTime));
+				Assert.That(conn.Execute<DateTime>(PathThroughSql($"8"), DataParameter.Date("p", dateTime)), Is.EqualTo(dateTime));
+				Assert.That(conn.Execute<DateTime?>(PathThroughSql($"9"), new DataParameter("p", dateTime, DataType.Date)), Is.EqualTo(dateTime));
 			}
 		}
 
@@ -272,8 +271,8 @@ namespace Tests.DataProvider
 			var dateTime = new DateTime(2012, 12, 12, 12, 12, 00);
 			using (Assert.EnterMultipleScope())
 			{
-				Assert.That(conn.Execute<DateTime>(PathThroughSql, DataParameter.SmallDateTime("p", dateTime)), Is.EqualTo(dateTime));
-				Assert.That(conn.Execute<DateTime?>(PathThroughSql, new DataParameter("p", dateTime, DataType.SmallDateTime)), Is.EqualTo(dateTime));
+				Assert.That(conn.Execute<DateTime>(PathThroughSql($"10"), DataParameter.SmallDateTime("p", dateTime)), Is.EqualTo(dateTime));
+				Assert.That(conn.Execute<DateTime?>(PathThroughSql($"11"), new DataParameter("p", dateTime, DataType.SmallDateTime)), Is.EqualTo(dateTime));
 			}
 		}
 
@@ -287,9 +286,9 @@ namespace Tests.DataProvider
 				Assert.That(conn.Execute<DateTime>("SELECT to_date('2012-12-12 12:12:12', 'YYYY-MM-DD HH:MI:SS') FROM sys.dual"), Is.EqualTo(dateTime));
 				Assert.That(conn.Execute<DateTime?>("SELECT to_date('2012-12-12 12:12:12', 'YYYY-MM-DD HH:MI:SS') FROM sys.dual"), Is.EqualTo(dateTime));
 
-				Assert.That(conn.Execute<DateTime>(PathThroughSql, DataParameter.DateTime("p", dateTime)), Is.EqualTo(dateTime));
-				Assert.That(conn.Execute<DateTime?>(PathThroughSql, new DataParameter("p", dateTime)), Is.EqualTo(dateTime));
-				Assert.That(conn.Execute<DateTime?>(PathThroughSql, new DataParameter("p", dateTime, DataType.DateTime)), Is.EqualTo(dateTime));
+				Assert.That(conn.Execute<DateTime>(PathThroughSql($"12"), DataParameter.DateTime("p", dateTime)), Is.EqualTo(dateTime));
+				Assert.That(conn.Execute<DateTime?>(PathThroughSql($"13"), new DataParameter("p", dateTime)), Is.EqualTo(dateTime));
+				Assert.That(conn.Execute<DateTime?>(PathThroughSql($"14"), new DataParameter("p", dateTime, DataType.DateTime)), Is.EqualTo(dateTime));
 			}
 		}
 
@@ -303,9 +302,9 @@ namespace Tests.DataProvider
 			{
 				Assert.That(conn.Execute<DateTime?>("SELECT timestamp '2012-12-12 12:12:12.012' FROM sys.dual"), Is.EqualTo(dateTime2));
 
-				Assert.That(conn.Execute<DateTime>(PathThroughSql, DataParameter.DateTime2("p", dateTime2)), Is.EqualTo(dateTime2));
-				Assert.That(conn.Execute<DateTime>(PathThroughSql, DataParameter.Create("p", dateTime2)), Is.EqualTo(dateTime2));
-				Assert.That(conn.Execute<DateTime?>(PathThroughSql, new DataParameter("p", dateTime2, DataType.DateTime2)), Is.EqualTo(dateTime2));
+				Assert.That(conn.Execute<DateTime>(PathThroughSql($"15"), DataParameter.DateTime2("p", dateTime2)), Is.EqualTo(dateTime2));
+				Assert.That(conn.Execute<DateTime>(PathThroughSql($"16"), DataParameter.Create("p", dateTime2)), Is.EqualTo(dateTime2));
+				Assert.That(conn.Execute<DateTime?>(PathThroughSql($"17"), new DataParameter("p", dateTime2, DataType.DateTime2)), Is.EqualTo(dateTime2));
 			}
 		}
 
@@ -326,7 +325,7 @@ namespace Tests.DataProvider
 					Is.EqualTo(new DateTimeOffset(2012, 12, 12, 12, 12, 12, 12, TimeZoneInfo.Local.GetUtcOffset(new DateTime(2012, 12, 12, 12, 12, 12)))));
 
 				// no idea how/why it works that way. In any case it is not a good idea to map TS to DT
-				var expected = 
+				var expected =
 #if !NETFRAMEWORK
 					context.IsAnyOf(TestProvName.AllOracleManaged)
 						? new DateTime(2012, 12, 12, 17, 12, 12, 12)
@@ -355,8 +354,8 @@ namespace Tests.DataProvider
 				Assert.That(conn.Execute<DateTime?>("SELECT \"datetimeoffsetDataType\" FROM \"AllTypes\" WHERE ID = 1"), Is.Default);
 			}
 
-			conn.Execute<DateTimeOffset?>(PathThroughSql, new DataParameter("p", dto)).ShouldBe(dto);
-			conn.Execute<DateTimeOffset?>(PathThroughSql, new DataParameter("p", dto, DataType.DateTimeOffset)).ShouldBe(dto);
+			conn.Execute<DateTimeOffset?>(PathThroughSql($"18"), new DataParameter("p", dto)).ShouldBe(dto);
+			conn.Execute<DateTimeOffset?>(PathThroughSql($"19"), new DataParameter("p", dto, DataType.DateTimeOffset)).ShouldBe(dto);
 		}
 
 		[Test]
@@ -381,20 +380,20 @@ namespace Tests.DataProvider
 				Assert.That(conn.Execute<char>("SELECT Cast('1' as nvarchar2(20)) FROM sys.dual"), Is.EqualTo('1'));
 				Assert.That(conn.Execute<char?>("SELECT Cast('1' as nvarchar2(20)) FROM sys.dual"), Is.EqualTo('1'));
 
-				Assert.That(conn.Execute<char>(PathThroughSql, DataParameter.Char("p", '1')), Is.EqualTo('1'));
-				Assert.That(conn.Execute<char?>(PathThroughSql, DataParameter.Char("p", '1')), Is.EqualTo('1'));
+				Assert.That(conn.Execute<char>(PathThroughSql($"20"), DataParameter.Char("p", '1')), Is.EqualTo('1'));
+				Assert.That(conn.Execute<char?>(PathThroughSql($"21"), DataParameter.Char("p", '1')), Is.EqualTo('1'));
 
-				Assert.That(conn.Execute<char>(PathThroughSql, DataParameter.VarChar("p", '1')), Is.EqualTo('1'));
-				Assert.That(conn.Execute<char?>(PathThroughSql, DataParameter.VarChar("p", '1')), Is.EqualTo('1'));
-				Assert.That(conn.Execute<char>(PathThroughSql, DataParameter.NChar("p", '1')), Is.EqualTo('1'));
-				Assert.That(conn.Execute<char?>(PathThroughSql, DataParameter.NChar("p", '1')), Is.EqualTo('1'));
-				Assert.That(conn.Execute<char>(PathThroughSql, DataParameter.NVarChar("p", '1')), Is.EqualTo('1'));
-				Assert.That(conn.Execute<char?>(PathThroughSql, DataParameter.NVarChar("p", '1')), Is.EqualTo('1'));
-				Assert.That(conn.Execute<char>(PathThroughSql, DataParameter.Create("p", '1')), Is.EqualTo('1'));
-				Assert.That(conn.Execute<char?>(PathThroughSql, DataParameter.Create("p", '1')), Is.EqualTo('1'));
+				Assert.That(conn.Execute<char>(PathThroughSql($"22"), DataParameter.VarChar("p", '1')), Is.EqualTo('1'));
+				Assert.That(conn.Execute<char?>(PathThroughSql($"23"), DataParameter.VarChar("p", '1')), Is.EqualTo('1'));
+				Assert.That(conn.Execute<char>(PathThroughSql($"24"), DataParameter.NChar("p", '1')), Is.EqualTo('1'));
+				Assert.That(conn.Execute<char?>(PathThroughSql($"25"), DataParameter.NChar("p", '1')), Is.EqualTo('1'));
+				Assert.That(conn.Execute<char>(PathThroughSql($"26"), DataParameter.NVarChar("p", '1')), Is.EqualTo('1'));
+				Assert.That(conn.Execute<char?>(PathThroughSql($"27"), DataParameter.NVarChar("p", '1')), Is.EqualTo('1'));
+				Assert.That(conn.Execute<char>(PathThroughSql($"28"), DataParameter.Create("p", '1')), Is.EqualTo('1'));
+				Assert.That(conn.Execute<char?>(PathThroughSql($"29"), DataParameter.Create("p", '1')), Is.EqualTo('1'));
 
-				Assert.That(conn.Execute<char>(PathThroughSql, new DataParameter { Name = "p", Value = '1' }), Is.EqualTo('1'));
-				Assert.That(conn.Execute<char?>(PathThroughSql, new DataParameter { Name = "p", Value = '1' }), Is.EqualTo('1'));
+				Assert.That(conn.Execute<char>(PathThroughSql($"30"), new DataParameter { Name = "p", Value = '1' }), Is.EqualTo('1'));
+				Assert.That(conn.Execute<char?>(PathThroughSql($"31"), new DataParameter { Name = "p", Value = '1' }), Is.EqualTo('1'));
 			}
 		}
 
@@ -422,17 +421,108 @@ namespace Tests.DataProvider
 				Assert.That(conn.Execute<string>("SELECT \"ntextDataType\" FROM \"AllTypes\" WHERE ID = 2"), Is.EqualTo("111"));
 				Assert.That(conn.Execute<string>("SELECT \"ntextDataType\" FROM \"AllTypes\" WHERE ID = 1"), Is.Null);
 
-				Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.Char("p", "123")), Is.EqualTo("123"));
-				Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.VarChar("p", "123")), Is.EqualTo("123"));
-				Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.Text("p", "123")), Is.EqualTo("123"));
-				Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.NChar("p", "123")), Is.EqualTo("123"));
-				Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.NVarChar("p", "123")), Is.EqualTo("123"));
-				Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.NText("p", "123")), Is.EqualTo("123"));
-				Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.Create("p", "123")), Is.EqualTo("123"));
+				Assert.That(conn.Execute<string>(PathThroughSql($"32"), DataParameter.Char("p", "123")), Is.EqualTo("123"));
+				Assert.That(conn.Execute<string>(PathThroughSql($"33"), DataParameter.VarChar("p", "123")), Is.EqualTo("123"));
+				Assert.That(conn.Execute<string>(PathThroughSql($"34"), DataParameter.Text("p", "123")), Is.EqualTo("123"));
+				Assert.That(conn.Execute<string>(PathThroughSql($"35"), DataParameter.NChar("p", "123")), Is.EqualTo("123"));
+				Assert.That(conn.Execute<string>(PathThroughSql($"36"), DataParameter.NVarChar("p", "123")), Is.EqualTo("123"));
+				Assert.That(conn.Execute<string>(PathThroughSql($"37"), DataParameter.NText("p", "123")), Is.EqualTo("123"));
+				Assert.That(conn.Execute<string>(PathThroughSql($"38"), DataParameter.Create("p", "123")), Is.EqualTo("123"));
 
-				Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.Create("p", (string?)null)), Is.Null);
-				Assert.That(conn.Execute<string>(PathThroughSql, new DataParameter { Name = "p", Value = "1" }), Is.EqualTo("1"));
+				Assert.That(conn.Execute<string>(PathThroughSql($"39"), DataParameter.Create("p", (string?)null)), Is.Null);
+				Assert.That(conn.Execute<string>(PathThroughSql($"40"), new DataParameter { Name = "p", Value = "1" }), Is.EqualTo("1"));
 			}
+		}
+
+		[Test]
+		public void LongStringParameterTest([IncludeDataSources(TestProvName.AllOracle)] string context)
+		{
+			using var conn  = GetDataContext(context);
+			using var table = conn.CreateLocalTable<BlobsTable>();
+
+			var tableName = table.GetTableName();
+			var value     = "LongString".PadRight(50000, '1');
+
+			conn.Execute($"INSERT INTO {tableName} (\"Id\", \"NClob\") VALUES (1, TO_NCLOB(:p))", DataParameter.NText("p", value));
+			conn.Execute($"INSERT INTO {tableName} (\"Id\", \"NClob\") VALUES (2, TO_NCLOB(:p))", new DataParameter { Name = "p", DbType = "NClob", Value = value });
+			conn.Execute($"INSERT INTO {tableName} (\"Id\", \"NClob\") VALUES (3, :p)",           new DataParameter { Name = "p", Value = value });
+
+			conn.Execute<int>($"SELECT LENGTH(\"NClob\") FROM {tableName} WHERE \"Id\" = 1").ShouldBe(value.Length);
+			conn.Execute<int>($"SELECT LENGTH(\"NClob\") FROM {tableName} WHERE \"Id\" = 2").ShouldBe(value.Length);
+			conn.Execute<int>($"SELECT LENGTH(\"NClob\") FROM {tableName} WHERE \"Id\" = 3").ShouldBe(value.Length);
+		}
+
+		[Test]
+		public void LongStringParameterCustomThresholdTest([IncludeDataSources(TestProvName.AllOracle)] string context)
+		{
+			var parameterInterceptor = new SaveCommandInterceptor();
+
+			using var conn  = GetDataContext(context, o => o
+				.WithOptions<OracleOptions>(oo => oo with { MaxStringParameterLength = 10 })
+				.UseInterceptor(parameterInterceptor)
+			);
+			using var table = conn.CreateLocalTable<BlobsTable>();
+
+			var tableName = table.GetTableName();
+
+			var value = "LongStringValue"; // length >= 10
+
+			conn.Execute(
+				$"INSERT INTO {tableName} (\"Id\", \"NClob\") VALUES (1, :p)",
+				new DataParameter { Name = "p", Value = value });
+
+			parameterInterceptor.Parameters.Length.ShouldBe(1);
+
+			if (parameterInterceptor.Parameters[0] is OracleParameter p)
+				p.OracleDbType.ShouldBe(OracleDbType.NClob);
+		}
+
+		[Test]
+		public void LongStringParameterNClobInferenceDisabledTest([IncludeDataSources(TestProvName.AllOracle)] string context)
+		{
+			var parameterInterceptor = new SaveAndSkipCommandInterceptor();
+
+			using var conn  = GetDataContext(context, o => o
+				.WithOptions<OracleOptions>(oo => oo with { MaxStringParameterLength = null })
+				.UseInterceptor(parameterInterceptor)
+			);
+			using var table = conn.CreateLocalTable<BlobsTable>();
+
+			var tableName = table.GetTableName();
+
+			var value = "LongStringValue".PadRight(50000, '1');
+
+			conn.Execute(
+				$"INSERT INTO {tableName} (\"Id\", \"NClob\") VALUES (1, :p)",
+				new DataParameter { Name = "p", Value = value });
+
+			parameterInterceptor.Parameters.Length.ShouldBe(1);
+
+			if (parameterInterceptor.Parameters[0] is OracleParameter p)
+				p.OracleDbType.ShouldBe(OracleDbType.Varchar2);
+		}
+
+		[Test]
+		public void LongStringParameterExplicitTypeNotPromotedTest([IncludeDataSources(TestProvName.AllOracle)] string context)
+		{
+			var parameterInterceptor = new SaveAndSkipCommandInterceptor();
+
+			using var conn  = GetDataContext(context, o => o.UseInterceptor(parameterInterceptor));
+			using var table = conn.CreateLocalTable<BlobsTable>();
+
+			var tableName = table.GetTableName();
+
+			var value = "LongStringValue".PadRight(50000, '1');
+
+			// explicit non-NCLOB type must not be promoted to NCLOB even past the default threshold
+			conn.Execute(
+				$"INSERT INTO {tableName} (\"Id\", \"NClob\") VALUES (1, :p)",
+				new DataParameter { Name = "p", DataType = DataType.VarChar, Value = value });
+
+			parameterInterceptor.Parameters.Length.ShouldBe(1);
+
+			if (parameterInterceptor.Parameters[0] is OracleParameter p)
+				p.OracleDbType.ShouldBe(OracleDbType.Varchar2);
 		}
 
 		[Test]
@@ -447,15 +537,15 @@ namespace Tests.DataProvider
 				Assert.That(conn.Execute<byte[]>("SELECT to_blob('3039')     FROM sys.dual"), Is.EqualTo(arr1));
 				Assert.That(conn.Execute<Binary>("SELECT to_blob('00003039') FROM sys.dual"), Is.EqualTo(new Binary(arr2)));
 
-				Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.VarBinary("p", null)), Is.Null);
-				Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.Binary("p", arr1)), Is.EqualTo(arr1));
-				Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.VarBinary("p", arr1)), Is.EqualTo(arr1));
-				Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.Create("p", arr1)), Is.EqualTo(arr1));
-				Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.VarBinary("p", Array.Empty<byte>())), Is.EqualTo(Array.Empty<byte>()));
-				Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.Image("p", Array.Empty<byte>())), Is.EqualTo(Array.Empty<byte>()));
-				Assert.That(conn.Execute<byte[]>(PathThroughSql, new DataParameter { Name = "p", Value = arr1 }), Is.EqualTo(arr1));
-				Assert.That(conn.Execute<byte[]>(PathThroughSql, DataParameter.Create("p", new Binary(arr1))), Is.EqualTo(arr1));
-				Assert.That(conn.Execute<byte[]>(PathThroughSql, new DataParameter("p", new Binary(arr1))), Is.EqualTo(arr1));
+				Assert.That(conn.Execute<byte[]>(PathThroughSql($"41"), DataParameter.VarBinary("p", null)), Is.Null);
+				Assert.That(conn.Execute<byte[]>(PathThroughSql($"42"), DataParameter.Binary("p", arr1)), Is.EqualTo(arr1));
+				Assert.That(conn.Execute<byte[]>(PathThroughSql($"43"), DataParameter.VarBinary("p", arr1)), Is.EqualTo(arr1));
+				Assert.That(conn.Execute<byte[]>(PathThroughSql($"44"), DataParameter.Create("p", arr1)), Is.EqualTo(arr1));
+				Assert.That(conn.Execute<byte[]>(PathThroughSql($"45"), DataParameter.VarBinary("p", Array.Empty<byte>())), Is.EqualTo(Array.Empty<byte>()));
+				Assert.That(conn.Execute<byte[]>(PathThroughSql($"46"), DataParameter.Image("p", Array.Empty<byte>())), Is.EqualTo(Array.Empty<byte>()));
+				Assert.That(conn.Execute<byte[]>(PathThroughSql($"47"), new DataParameter { Name = "p", Value = arr1 }), Is.EqualTo(arr1));
+				Assert.That(conn.Execute<byte[]>(PathThroughSql($"48"), DataParameter.Create("p", new Binary(arr1))), Is.EqualTo(arr1));
+				Assert.That(conn.Execute<byte[]>(PathThroughSql($"49"), new DataParameter("p", new Binary(arr1))), Is.EqualTo(arr1));
 			}
 		}
 
@@ -527,8 +617,8 @@ namespace Tests.DataProvider
 					Assert.That(conn.Execute<Guid?>("SELECT \"guidDataType\" FROM \"AllTypes\" WHERE ID = 1"), Is.Null);
 					Assert.That(conn.Execute<Guid?>("SELECT \"guidDataType\" FROM \"AllTypes\" WHERE ID = 2"), Is.EqualTo(guid));
 
-					Assert.That(conn.Execute<Guid>(PathThroughSql, DataParameter.Create("p", guid)), Is.EqualTo(guid));
-					Assert.That(conn.Execute<Guid>(PathThroughSql, new DataParameter { Name = "p", Value = guid }), Is.EqualTo(guid));
+					Assert.That(conn.Execute<Guid>(PathThroughSql($"50"), DataParameter.Create("p", guid)), Is.EqualTo(guid));
+					Assert.That(conn.Execute<Guid>(PathThroughSql($"51"), new DataParameter { Name = "p", Value = guid }), Is.EqualTo(guid));
 				}
 			}
 		}
@@ -550,11 +640,11 @@ namespace Tests.DataProvider
 			var xmlExpected = context.IsAnyOf(TestProvName.AllOracleNative) ? "<xml/>\n" : "<xml/>";
 			using (Assert.EnterMultipleScope())
 			{
-				Assert.That(conn.Execute<string>(PathThroughSql, DataParameter.Xml("p", "<xml/>")), Is.EqualTo(xmlExpected));
-				Assert.That(conn.Execute<XDocument>(PathThroughSql, DataParameter.Xml("p", xdoc)).ToString(), Is.EqualTo("<xml />"));
-				Assert.That(conn.Execute<XmlDocument>(PathThroughSql, DataParameter.Xml("p", xml)).InnerXml, Is.EqualTo("<xml />"));
-				Assert.That(conn.Execute<XDocument>(PathThroughSql, new DataParameter("p", xdoc)).ToString(), Is.EqualTo("<xml />"));
-				Assert.That(conn.Execute<XDocument>(PathThroughSql, new DataParameter("p", xml)).ToString(), Is.EqualTo("<xml />"));
+				Assert.That(conn.Execute<string>(PathThroughSql($"52"), DataParameter.Xml("p", "<xml/>")), Is.EqualTo(xmlExpected));
+				Assert.That(conn.Execute<XDocument>(PathThroughSql($"53"), DataParameter.Xml("p", xdoc)).ToString(), Is.EqualTo("<xml />"));
+				Assert.That(conn.Execute<XmlDocument>(PathThroughSql($"54"), DataParameter.Xml("p", xml)).InnerXml, Is.EqualTo("<xml />"));
+				Assert.That(conn.Execute<XDocument>(PathThroughSql($"55"), new DataParameter("p", xdoc)).ToString(), Is.EqualTo("<xml />"));
+				Assert.That(conn.Execute<XDocument>(PathThroughSql($"56"), new DataParameter("p", xml)).ToString(), Is.EqualTo("<xml />"));
 			}
 		}
 
@@ -583,12 +673,12 @@ namespace Tests.DataProvider
 			using var conn = GetDataContext(context);
 			using (Assert.EnterMultipleScope())
 			{
-				Assert.That(conn.Execute<string>(PathThroughSql, new { p = TestEnum.AA }), Is.EqualTo("A"));
-				Assert.That(conn.Execute<string>(PathThroughSql, new { p = (TestEnum?)TestEnum.BB }), Is.EqualTo("B"));
+				Assert.That(conn.Execute<string>(PathThroughSql($"57"), new { p = TestEnum.AA }), Is.EqualTo("A"));
+				Assert.That(conn.Execute<string>(PathThroughSql($"58"), new { p = (TestEnum?)TestEnum.BB }), Is.EqualTo("B"));
 
-				Assert.That(conn.Execute<string>(PathThroughSql, new { p = ConvertTo<string>.From((TestEnum?)TestEnum.AA) }), Is.EqualTo("A"));
-				Assert.That(conn.Execute<string>(PathThroughSql, new { p = ConvertTo<string>.From(TestEnum.AA) }), Is.EqualTo("A"));
-				Assert.That(conn.Execute<string>(PathThroughSql, new { p = conn.MappingSchema.GetConverter<TestEnum?, string>()!(TestEnum.AA) }), Is.EqualTo("A"));
+				Assert.That(conn.Execute<string>(PathThroughSql($"59"), new { p = ConvertTo<string>.From((TestEnum?)TestEnum.AA) }), Is.EqualTo("A"));
+				Assert.That(conn.Execute<string>(PathThroughSql($"60"), new { p = ConvertTo<string>.From(TestEnum.AA) }), Is.EqualTo("A"));
+				Assert.That(conn.Execute<string>(PathThroughSql($"61"), new { p = conn.MappingSchema.GetConverter<TestEnum?, string>()!(TestEnum.AA) }), Is.EqualTo("A"));
 			}
 		}
 
@@ -1086,6 +1176,77 @@ namespace Tests.DataProvider
 			}
 		}
 
+		[Table("BULK_SPLIT")]
+		sealed class BulkSplitTable
+		{
+			[PrimaryKey, Column("ID")]      public int     Id  { get; set; }
+			[Column("VAL", Length = 1000)]  public string? Val { get; set; }
+		}
+
+		/// <summary>
+		/// Covers the batch-splitting path in <see cref="LinqToDB.Internal.DataProvider.BasicBulkCopy"/>. Only
+		/// <c>InsertAll</c> and <c>InsertDual</c> reach the splitter - <c>InsertInto</c> array-binds a single
+		/// fixed-length statement. In literal mode the payload crosses the 384KB provider limit on its own, which
+		/// is what pins the raised <c>OracleBulkCopy.MaxSqlLength</c>; parameterized rows are far shorter, so those
+		/// batches split only under an explicit <see cref="BulkCopyOptions.MaxSqlLengthForBatch"/>.
+		/// </summary>
+		[Test]
+		public void BulkCopyMultipleRowsCrossesSqlLengthLimit(
+			[IncludeDataSources(TestProvName.AllOracle)] string              context,
+			[Values]                                     AlternativeBulkCopy useAlternativeBulkCopy,
+			[Values]                                     bool                useParameters)
+		{
+			using var _  = new DisableBaseline("generated statement volume is the subject of the test");
+			using var db = GetDataConnection(context, o => o.UseOracle(o => o with { AlternativeBulkCopy = useAlternativeBulkCopy }));
+
+			var queries = new SaveQueriesInterceptor();
+			db.AddInterceptor(queries);
+
+			using var table = db.CreateLocalTable<BulkSplitTable>();
+
+			var rows = Enumerable.Range(1, 500)
+				.Select(i => new BulkSplitTable { Id = i, Val = new string((char)('a' + i % 26), 1000) })
+				.ToList();
+
+			db.BulkCopy(
+				new BulkCopyOptions
+				{
+					BulkCopyType         = BulkCopyType.MultipleRows,
+					MaxBatchSize         = 5000,
+					// a literal row renders ~1050 chars, so 500 of them cross the 384KB provider limit unaided;
+					// a parameterized row is ~45 chars, so only an explicit cap makes those batches split
+					MaxSqlLengthForBatch = useParameters ? (int?)8192 : null,
+					UseParameters        = useParameters,
+				},
+				rows);
+
+			var loaded = table.OrderBy(r => r.Id).ToArray();
+
+			loaded.Select(r => r.Id). ShouldBe(rows.Select(r => r.Id));
+			loaded.Select(r => r.Val).ShouldBe(rows.Select(r => r.Val));
+
+			var inserts = queries.Queries
+				.Where(q => q.Contains("INSERT", StringComparison.OrdinalIgnoreCase))
+				.ToList();
+
+			if (useAlternativeBulkCopy == AlternativeBulkCopy.InsertInto)
+			{
+				// array-bound: one fixed-length statement whatever the row count, so nothing reaches the splitter
+				inserts.Count.ShouldBe(1);
+			}
+			else
+			{
+				inserts.Count.ShouldBeGreaterThan(1);
+
+				if (!useParameters)
+				{
+					// pins the raise without pinning the constant: under the old 65535 ceiling no statement
+					// could have exceeded ~66KB
+					inserts.Max(q => q.Length).ShouldBeGreaterThan(128 * 1024);
+				}
+			}
+		}
+
 		[Test]
 		public void BulkCopyLinqTypesMultipleRows(
 			[IncludeDataSources(TestProvName.AllOracle)] string context,
@@ -1248,6 +1409,10 @@ namespace Tests.DataProvider
 
 		void BulkCopyRetrieveSequence(string context, BulkCopyType bulkCopyType, AlternativeBulkCopy alternativeBulkCopy)
 		{
+			// RetrieveIdentity inlines sequence-allocated ids as literals, so the captured SQL records
+			// SEQUENCETESTSEQ state - same reason SequenceInsert/SequenceInsertWithIdentity opt out
+			using var _ = new DisableBaseline("Sequence values could vary for Oracle");
+
 			var data = new[]
 			{
 				new OracleSpecific.SequenceTest { Value = "Value"},
@@ -1280,6 +1445,10 @@ namespace Tests.DataProvider
 
 		async Task BulkCopyRetrieveSequenceAsync(string context, BulkCopyType bulkCopyType, AlternativeBulkCopy alternativeBulkCopy)
 		{
+			// RetrieveIdentity inlines sequence-allocated ids as literals, so the captured SQL records
+			// SEQUENCETESTSEQ state - same reason SequenceInsert/SequenceInsertWithIdentity opt out
+			using var _ = new DisableBaseline("Sequence values could vary for Oracle");
+
 			var data = new[]
 			{
 				new OracleSpecific.SequenceTest { Value = "Value"},
@@ -1917,6 +2086,35 @@ namespace Tests.DataProvider
 			).ToList();
 
 			Assert.That(list[0].ParentID, Is.EqualTo(2));
+		}
+
+		class RegTestData
+		{
+			[Column(DataType = DataType.VarChar, Length = 30), NotNull] public required string  ID1  { get; set; }
+			[Column(DataType = DataType.VarChar, Length = 30)]          public          string? ID2  { get; set; }
+			[Column, NotNull]                                           public          int     Type { get; set; }
+		}
+
+		[Test]
+		public void XmlTestRegressionTest([IncludeDataSources(TestProvName.AllOracle)] string context)
+		{
+			using var db = GetDataContext(context);
+
+			var data = Enumerable.Range(0, 5000)
+				.Select(i => new RegTestData { ID1 = i.ToString(), Type = i })
+				.ToList();
+
+			var xml = OracleTools.GetXmlData(
+				db.Options,
+				db.MappingSchema,
+				data);
+
+			using var tmp = db.CreateLocalTable<RegTestData>();
+
+			var id2 = "123";
+
+			db.OracleXmlTable<RegTestData>(() => xml)
+				.Insert(tmp, i => new RegTestData { ID1 = i.ID1, ID2 = id2, Type = i.Type });
 		}
 
 #endregion
@@ -3302,16 +3500,16 @@ namespace Tests.DataProvider
 			assert("TIMESTAMP '2020-01-03 04:05:06.7891234'");
 
 			results = table.Where(r => r.DateTimeOffset_ == pDateTimeOffset).ToArray();
-			assert("TIMESTAMP '2020-01-03 03:20:06.789123 +00:00'");
+			assert("TIMESTAMP '2020-01-03 04:05:06.789123 +00:45'");
 
 			results = table.Where(r => r.DateTimeOffset_0 == pDateTimeOffset).ToArray();
-			assert("TIMESTAMP '2020-01-03 03:20:06 +00:00'");
+			assert("TIMESTAMP '2020-01-03 04:05:06 +00:45'");
 
 			results = table.Where(r => r.DateTimeOffset_1 == pDateTimeOffset).ToArray();
-			assert("TIMESTAMP '2020-01-03 03:20:06.7 +00:00'");
+			assert("TIMESTAMP '2020-01-03 04:05:06.7 +00:45'");
 
 			results = table.Where(r => r.DateTimeOffset_9 == pDateTimeOffset).ToArray();
-			assert("TIMESTAMP '2020-01-03 03:20:06.7891234 +00:00'");
+			assert("TIMESTAMP '2020-01-03 04:05:06.7891234 +00:45'");
 
 			void assert(string function)
 			{
@@ -3334,6 +3532,21 @@ namespace Tests.DataProvider
 				if (inlineParameters)
 					Assert.That(db.LastQuery, Does.Contain(function));
 			}
+		}
+
+		[Test]
+		public void TestDateTimeOffsetToTimestampLiteral([IncludeDataSources(false, TestProvName.AllOracle)] string context)
+		{
+			using var db = GetDataConnection(context);
+
+			var value = new DateTimeOffset(2020, 1, 3, 4, 5, 6, 789, TimeSpan.FromMinutes(45)).AddTicks(1234);
+
+			var sb = new StringBuilder();
+			db.MappingSchema.ValueToSqlConverter.TryConvert(sb, db.MappingSchema, new DbDataType(typeof(DateTimeOffset), DataType.DateTime2), db.Options, value);
+
+			// DateTimeOffset bound to a zone-less TIMESTAMP column.
+			// UTC-normalized form (value.UtcDateTime = 2020-01-03 03:20:06.789123 UTC):
+			Assert.That(sb.ToString(), Is.EqualTo("TIMESTAMP '2020-01-03 03:20:06.789123'"));
 		}
 
 #endregion
@@ -3920,19 +4133,19 @@ CREATE TABLE ""TABLE_A""(
 			[Sql.Function("TEST_FUNCTION", ServerSideOnly = true)]
 			public static int TestFunction(int param)
 			{
-				throw new InvalidOperationException("Scalar function cannot be called outside of query");
+				throw new ServerSideOnlyException(nameof(TestFunction));
 			}
 
 			[Sql.Function("TEST_PACKAGE1.TEST_FUNCTION", ServerSideOnly = true)]
 			public static int TestFunctionP1(int param)
 			{
-				throw new InvalidOperationException("Scalar function cannot be called outside of query");
+				throw new ServerSideOnlyException(nameof(TestFunctionP1));
 			}
 
 			[Sql.Function("TEST_PACKAGE2.TEST_FUNCTION", ServerSideOnly = true)]
 			public static int TestFunctionP2(int param)
 			{
-				throw new InvalidOperationException("Scalar function cannot be called outside of query");
+				throw new ServerSideOnlyException(nameof(TestFunctionP2));
 			}
 
 			[Sql.TableFunction("TEST_TABLE_FUNCTION", argIndices: new[] { 1 })]
@@ -4014,7 +4227,7 @@ END convert_bool;");
 		}
 
 		[Sql.Expression("convert_bool({0})", ServerSideOnly = true)]
-		private static bool Issue3742Function(string parameter) => throw new InvalidOperationException();
+		private static bool Issue3742Function(string parameter) => throw new ServerSideOnlyException(nameof(Issue3742Function));
 
 		#region Issue 4172
 
@@ -4375,5 +4588,44 @@ END convert_bool;");
 
 			}
 		}
+
+		#region Coalesce charset
+
+		[Table]
+		sealed class CoalesceCharsetTable
+		{
+			[PrimaryKey]                                        public int     Id     { get; set; }
+			[Column(DataType = DataType.NVarChar, Length = 50)]  public string? NValue { get; set; }
+			[Column(DataType = DataType.VarChar,  Length = 50)]  public string? VValue { get; set; }
+		}
+
+		// OracleSqlExpressionConvertVisitor.ConvertCoalesce unifies the charset of a COALESCE mixing
+		// VARCHAR2 and NVARCHAR2 operands (To_NChar around the VARCHAR2 side). That rule runs on a
+		// Transform pass over the query's cached statement. The second execution below re-renders that
+		// cached statement; a write reaching it changes neither the results nor the SQL, and is caught
+		// instead by the Transform-mutation guard in OptimizationContext.OptimizeAndConvertAll, which is
+		// compiled in for the Debug/Testing/Azure configurations the test legs are built with.
+		[Test]
+		public void CoalesceWithInconsistentCharset([IncludeDataSources(true, TestProvName.AllOracle)] string context)
+		{
+			using var db    = GetDataContext(context);
+			using var table = db.CreateLocalTable<CoalesceCharsetTable>();
+
+			db.Insert(new CoalesceCharsetTable { Id = 1, NValue = null,       VValue = "varchar" });
+			db.Insert(new CoalesceCharsetTable { Id = 2, NValue = "nvarchar", VValue = "varchar" });
+
+			string?[] Execute() => table.OrderBy(x => x.Id).Select(x => x.NValue ?? x.VValue).ToArray();
+
+			Execute().ShouldBe(new string?[] { "varchar", "nvarchar" });
+
+			if (db is DataConnection dc)
+				dc.LastQuery!.ShouldContain("To_NChar");
+
+			// Second render of the same cached statement - this is what the Transform-mutation guard in
+			// OptimizeAndConvertAll checks, so keep it.
+			Execute().ShouldBe(new string?[] { "varchar", "nvarchar" });
+		}
+
+		#endregion
 	}
 }

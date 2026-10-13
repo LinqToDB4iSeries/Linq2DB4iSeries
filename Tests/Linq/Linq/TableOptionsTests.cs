@@ -20,6 +20,7 @@ namespace Tests.Linq
 			public int ID;
 			public int Value;
 		}
+		[ActiveIssue(Configuration = TestProvName.AllYdb, Details = "YDB temporary-table creation is not yet supported by the provider (\"Creating temporary table is not supported\").")]
 		[Test]
 		public void IsTemporaryOptionTest(
 			[DataSources(false)] string context,
@@ -42,6 +43,7 @@ namespace Tests.Linq
 			t2.Truncate();
 		}
 
+		[ActiveIssue(Configuration = TestProvName.AllYdb, Details = "YDB temporary-table creation is not yet supported by the provider (\"Creating temporary table is not supported\").")]
 		[Test]
 		public async Task IsTemporaryOptionAsyncTest(
 			[DataSources(false)] string context,
@@ -97,6 +99,7 @@ namespace Tests.Linq
 			[Column] public int Value { get; set; }
 		}
 
+		[ActiveIssue(Configuration = TestProvName.AllYdb, Details = "YDB temporary-table creation is not yet supported by the provider (\"Creating temporary table is not supported\").")]
 		[Test]
 		public void IsTemporaryFlagTest([DataSources(false)] string context, [Values(true)] bool firstCall)
 		{
@@ -114,7 +117,9 @@ namespace Tests.Linq
 			[Column] public int Value { get; set; }
 		}
 
-		[Test]
+		// NonParallelizable: creates a SQL Server GLOBAL temp table (##) in instance-wide tempdb;
+		// a concurrent session on the same server collides on the object name.
+		[Test, NonParallelizable]
 		public void IsGlobalTemporaryTest([IncludeDataSources(
 			ProviderName.DB2,
 			ProviderName.Firebird25,
@@ -139,7 +144,9 @@ namespace Tests.Linq
 			[Column] public int Value { get; set; }
 		}
 
-		[Test]
+		// NonParallelizable: on SQL Server 2012 maps to the GLOBAL temp table ##temp_table (instance-wide tempdb);
+		// a concurrent session collides on the object name.
+		[Test, NonParallelizable]
 		public void CreateIfNotExistsTest([IncludeDataSources(
 			true,
 			ProviderName.DB2,
@@ -171,7 +178,10 @@ namespace Tests.Linq
 			}
 		}
 
-		[Test]
+		// NonParallelizable: creates a SQL Server GLOBAL temp table (##), which lives in the
+		// instance-wide tempdb; a concurrent session (e.g. the .MS variant in another lane on the
+		// same server) collides on the same object name.
+		[Test, NonParallelizable]
 		public void CreateTempIfNotExistsTest([IncludeDataSources(
 			false,
 			ProviderName.DB2,
@@ -208,6 +218,7 @@ namespace Tests.Linq
 			[Column] public int Value { get; set; }
 		}
 
+		[ActiveIssue(Configuration = TestProvName.AllYdb, Details = "YDB temporary-table creation is not yet supported by the provider (\"Creating temporary table is not supported\").")]
 		[Test]
 		public void IsTemporaryMethodTest([DataSources(false, TestProvName.AllMySql)] string context)
 		{
@@ -227,6 +238,7 @@ namespace Tests.Linq
 			.ToList();
 		}
 
+		[ActiveIssue(Configuration = TestProvName.AllYdb, Details = "YDB temporary-table creation is not yet supported by the provider (\"Creating temporary table is not supported\").")]
 		[Test]
 		public void IsTemporaryMethodTest2([DataSources(false, TestProvName.AllMySql)] string context)
 		{
@@ -247,6 +259,7 @@ namespace Tests.Linq
 			.ToList();
 		}
 
+		[ActiveIssue(Configuration = TestProvName.AllYdb, Details = "YDB temporary-table creation is not yet supported by the provider (\"Creating temporary table is not supported\").")]
 		[Test]
 		public void IsTemporaryMethodTest3([DataSources(false, TestProvName.AllMySql)] string context)
 		{
@@ -267,6 +280,7 @@ namespace Tests.Linq
 			.ToList();
 		}
 
+		[ActiveIssue(Configuration = TestProvName.AllYdb, Details = "YDB temporary-table creation is not yet supported by the provider (\"Creating temporary table is not supported\").")]
 		[Test]
 		public void TableOptionsMethodTest([DataSources(false, TestProvName.AllMySql)] string context)
 		{
@@ -287,6 +301,7 @@ namespace Tests.Linq
 			.ToList();
 		}
 
+		[ActiveIssue(Configuration = TestProvName.AllYdb, Details = "YDB temporary-table creation is not yet supported by the provider (\"Creating temporary table is not supported\").")]
 		[Test]
 		public void FluentMappingTest([DataSources(false, TestProvName.AllMySql)] string context)
 		{
@@ -459,7 +474,9 @@ namespace Tests.Linq
 			TestTableOptions(context, tableOptions);
 		}
 
-		[Test]
+		// NonParallelizable: the IsGlobalTemporary* cases create a GLOBAL temp table (##) in instance-wide
+		// tempdb; a concurrent session on the same server collides on the object name.
+		[Test, NonParallelizable]
 		public void SqlServerTableOptionsTest(
 			[IncludeDataSources(TestProvName.AllSqlServer)] string context,
 			[Values(

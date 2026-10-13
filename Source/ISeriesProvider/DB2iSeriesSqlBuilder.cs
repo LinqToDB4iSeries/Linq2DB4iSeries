@@ -1,16 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
-
-using static LinqToDB.Sql;
-
-using LinqToDB.Data;
+﻿using LinqToDB.Data;
 using LinqToDB.Internal.SqlProvider;
 using LinqToDB.Internal.SqlQuery;
 using LinqToDB.Mapping;
 using LinqToDB.SqlQuery;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using System.Text;
+using static LinqToDB.Sql;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
@@ -200,6 +198,47 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			base.BuildCreateTablePrimaryKey(createTable, pkName, fieldNames);
 		}
 
+		// DB2 null-treatment placement is per function:
+		//  - FIRST_VALUE/LAST_VALUE/LAG/LEAD take it as a quoted string argument: FUNC(.., 'IGNORE NULLS').
+		//    (LAG/LEAD require offset + default to precede it — see BuildSqlExtendedFunction below.)
+		//  - NTH_VALUE takes no string argument; it uses the standard after-close keyword: NTH_VALUE(e, n) IGNORE NULLS.
+		protected override WindowNullsPlacement GetWindowNullsPlacement(SqlExtendedFunction extendedFunction)
+			=> extendedFunction.FunctionName is "NTH_VALUE"
+				? WindowNullsPlacement.AfterClose
+				: WindowNullsPlacement.StringArgument;
+
+		protected override void BuildSqlExtendedFunction(SqlExtendedFunction extendedFunction)
+		{
+			// DB2 LAG/LEAD take the null-treatment string as the argument after offset and default:
+			// LAG(expr, offset, default, 'IGNORE NULLS'). Pad the (optional) offset (1) and default (NULL)
+			// so the string lands in the correct position.
+			if (extendedFunction.NullTreatment == LinqToDB.Sql.Nulls.Ignore
+				&& extendedFunction.FunctionName is "LAG" or "LEAD"
+				&& extendedFunction.Arguments.Count < 3)
+			{
+				var args = extendedFunction.Arguments.ToList();
+				var nullability = extendedFunction.ArgumentsNullability.ToList();
+				var dbType = QueryHelper.GetDbDataTypeWithoutSchema(extendedFunction.Arguments[0].Expression);
+
+				if (args.Count < 2)
+				{
+					args.Add(new SqlFunctionArgument(new SqlValue(typeof(int), 1)));
+					nullability.Add(false);
+				}
+
+				if (args.Count < 3)
+				{
+					// DB2 rejects an untyped NULL default (SQL0418N); emit a typed CAST(NULL AS <type>).
+					args.Add(new SqlFunctionArgument(new SqlCastExpression(new SqlValue(dbType, null), dbType, null, isMandatory: true)));
+					nullability.Add(true);
+				}
+
+				extendedFunction = extendedFunction.WithArguments(args, nullability.ToArray());
+			}
+
+			base.BuildSqlExtendedFunction(extendedFunction);
+		}
+
 		#endregion
 
 		#region Similar to DB2 provider
@@ -360,32 +399,25 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			//Note: DB2 uses a parameter wrap visitor to set NeedsCast instead of casting in all cases,
 			//however there are many obscure cases in DB2i where this doesn't work, so we are casting in all cases
-			if (BuildStep != Step.TypedExpression)
-			{
-				//Check if value can be accessed to get the cast from it
-				var paramValue = parameter.GetParameterValue(OptimizationContext.EvaluationContext.ParameterValues);
-				var dbDataType = paramValue.DbDataType;
+
+			//Check if value can be accessed to get the cast from it
+			var paramValue = parameter.GetParameterValue(OptimizationContext.EvaluationContext.ParameterValues);
+			var dbDataType = paramValue.DbDataType;
 				
-				var saveStep = BuildStep;
-				BuildStep = Step.TypedExpression;
+			var typeToCast = MappingSchema.GetDbTypeForCast(dbDataType, paramValue.ProviderValue, DB2iSeriesSqlProviderFlags);
 
-				var typeToCast = MappingSchema.GetDbTypeForCast(dbDataType, paramValue.ProviderValue, DB2iSeriesSqlProviderFlags);
-
-				if (typeToCast.DataType != DataType.Undefined)
-				{
-					BuildTypedExpression(typeToCast, parameter);
-				}
-				else
-				{
-					base.BuildParameter(parameter);
-				}
-
-				BuildStep = saveStep;
-
-				return;
+			if (typeToCast.DataType != DataType.Undefined)
+			{
+				StringBuilder.Append("CAST(");
+				base.BuildParameter(parameter);
+				StringBuilder.Append(" AS ");
+				BuildDataType(typeToCast, false, parameter.CanBeNullable(NullabilityContext));
+				StringBuilder.Append(')');
 			}
-
-			base.BuildParameter(parameter);
+			else
+			{
+				base.BuildParameter(parameter);
+			}
 		}
 
 		public override void BuildSqlValue(SqlValue value)
@@ -406,22 +438,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 			base.BuildSqlValue(value);
 		}
-
-		//protected override void BuildTypedExpression(DbDataType dataType, ISqlExpression value)
-		//{
-		//	//No type found, dont' cast
-		//	if (dataType.DataType == DataType.Undefined)
-		//		BuildExpression(value);
-		//	else
-		//	{
-		//		//StringBuilder.Append("CAST(");
-		//		//BuildExpression(value);
-		//		//StringBuilder.Append(" AS ");
-		//		//StringBuilder.Append(dataType.ToSqlString());
-		//		//StringBuilder.Append(')');
-		//		base.BuildTypedExpression(dataType, value);
-		//	}
-		//}
 
 		//Same as BasicBuilder but handles allow NULL as blank
 		protected override void BuildCreateTableNullAttribute(SqlField field, DefaultNullable defaulNullable)
@@ -516,7 +532,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		protected override void BuildUpdateSet(SelectQuery? selectQuery, SqlUpdateClause updateClause)
 		{
-			if (HasHint(updateClause.Table?.SqlQueryExtensions, QueryExtensionScope.TableHint, DB2iSeriesHints.Table.OverridingSystemValue))
+			if (updateClause.Table is SqlTable table && HasHint(table.SqlQueryExtensions, QueryExtensionScope.TableHint, DB2iSeriesHints.Table.OverridingSystemValue))
 				StringBuilder.Append("OVERRIDING SYSTEM VALUE ");
 
 			base.BuildUpdateSet(selectQuery, updateClause);

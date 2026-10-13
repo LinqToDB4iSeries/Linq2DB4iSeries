@@ -54,6 +54,9 @@ namespace Tests.Linq
 			}
 		}
 
+		// NonParallelizable: cleanDefault=true nulls the process-global DataConnection.DefaultConfiguration /
+		// DefaultSettings (via EmptyDefaultSetingsScope); a concurrent context-less test reading the global
+		// would throw "Invalid configuration. Configuration string is not provided.".
 		[Test, NonParallelizable]
 		public void TestNullConfiguration_Unset([Values] bool cleanDefault)
 		{
@@ -66,6 +69,7 @@ namespace Tests.Linq
 			_ = db.GetTable<Person>().ToArray();
 		}
 
+		// NonParallelizable: nulls the process-global DataConnection.DefaultConfiguration (EmptyDefaultSetingsScope) - see TestNullConfiguration_Unset.
 		[Test, NonParallelizable]
 		public void TestNullConfiguration_UnsetRemote([Values] bool cleanDefault)
 		{
@@ -82,6 +86,7 @@ namespace Tests.Linq
 			_ = db.GetTable<Person>().ToArray();
 		}
 
+		// NonParallelizable: nulls the process-global DataConnection.DefaultConfiguration (EmptyDefaultSetingsScope) - see TestNullConfiguration_Unset.
 		[Test, NonParallelizable]
 		public void TestNullConfiguration_SetNull([Values] bool cleanDefault)
 		{
@@ -94,6 +99,7 @@ namespace Tests.Linq
 			_ = db.GetTable<Person>().ToArray();
 		}
 
+		// NonParallelizable: nulls the process-global DataConnection.DefaultConfiguration (EmptyDefaultSetingsScope) - see TestNullConfiguration_Unset.
 		[Test, NonParallelizable]
 		public void TestNullConfiguration_SetNullRemote([Values] bool cleanDefault)
 		{

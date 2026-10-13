@@ -160,6 +160,7 @@ namespace Tests.Custom
 					(Linq.StringJoinTests _) => _.JoinAggregateArray,
 					(Linq.StringJoinTests _) => _.JoinAggregateArrayNotNull,
 					(Linq.StringJoinTests _) => _.JoinWithGroupingAndUnsupportedMethod,
+					(Linq.StringJoinTests _) => _.JoinWithGroupingAndUnsupportedMethodMemberInit,
 					(Linq.StringJoinTests _) => _.JoinWithGroupingDistinctSimple,
 					(Linq.StringJoinTests _) => _.JoinWithGroupingVarious,
 					(Linq.StringConcatTests _) => _.Concat_OverGrouping_DistinctNullableValues,
@@ -174,6 +175,52 @@ namespace Tests.Custom
 					(Linq.DateTimeFunctionsTests _) => _.CurrentTimestamp2,
 					(Linq.DateTimeFunctionsTests _) => _.DateTimeOffsetNow,
 					(Linq.DateTimeFunctionsTests _) => _.DateTimeOffsetNowUtc,
+					//Test asserts with specific target providers, not supported
+					(Linq.DateTimeFunctionsTests _) => _.NullableDateTimeSubtractionProjectionTest,
+					//Tests use ThrowsForProvider which currently not interceptable, excluding for now
+					(Linq.IntervalTranslationTests _) => _.ADateShiftsByAComputedDuration,
+					(Linq.IntervalTranslationTests _) => _.ADateShiftsByAComputedDurationInSql,
+					(Linq.IntervalTranslationTests _) => _.ADeclaredDurationShiftIsExpressedInAPredicate,
+					(Linq.IntervalTranslationTests _) => _.ShiftIsExpressedInAPredicate,
+					//Tests use StringAggregate without order by which is not supported by DB2i. Test copied to custom tests
+					(Linq.StringFunctionsTests _) => _.AggregationSelectorTest,
+					(Linq.StringFunctionsTests _) => _.AggregationTest,
+					(Linq.StringFunctionsTests _) => _.Issue1765TestLiteral4,
+					(Linq.StringFunctionsTests _) => _.Issue1765TestParameter4,
+					(Linq.StringFunctionsTests _) => _.Issue4501Test,
+					//Not supported window function tests
+					(Linq.WindowFunctionsTests _) => _.AggregateWithFrameExclude,
+					(Linq.WindowFunctionsTests _) => _.AverageDistinct,
+					(Linq.WindowFunctionsTests _) => _.CountDistinct,
+					(Linq.WindowFunctionsTests _) => _.CountDistinctWithBooleanArg,
+					(Linq.WindowFunctionsTests _) => _.FrameExclusionGroups,
+					(Linq.WindowFunctionsTests _) => _.FrameExclusionRange,
+					(Linq.WindowFunctionsTests _) => _.FrameExclusionRows,
+					(Linq.WindowFunctionsTests _) => _.FrameGroups,
+					(Linq.WindowFunctionsTests _) => _.FrameGroupsExclude,
+					(Linq.WindowFunctionsTests _) => _.FrameGroupsValuesShortcut,
+					(Linq.WindowFunctionsTests _) => _.FrameRangeExclude,
+					(Linq.WindowFunctionsTests _) => _.FrameRowsExcludeCurrentRow,
+					(Linq.WindowFunctionsTests _) => _.FrameRowsExcludeGroup,
+					(Linq.WindowFunctionsTests _) => _.FrameRowsExcludeTies,
+					(Linq.WindowFunctionsTests _) => _.HypotheticalCumeDist,
+					(Linq.WindowFunctionsTests _) => _.HypotheticalDenseRank,
+					(Linq.WindowFunctionsTests _) => _.HypotheticalPercentRank,
+					(Linq.WindowFunctionsTests _) => _.HypotheticalRank,
+					(Linq.WindowFunctionsTests _) => _.KeepAllAggregates,
+					(Linq.WindowFunctionsTests _) => _.KeepFirstBasic,
+					(Linq.WindowFunctionsTests _) => _.KeepWithBooleanOrderBy,
+					(Linq.WindowFunctionsTests _) => _.KeepWithMultipleOrderBy,
+					(Linq.WindowFunctionsTests _) => _.KeepWithoutPartition,
+					(Linq.WindowFunctionsTests _) => _.MaxDistinct,
+					(Linq.WindowFunctionsTests _) => _.MinDistinct,
+					(Linq.WindowFunctionsTests _) => _.PercentileContFilter,
+					(Linq.WindowFunctionsTests _) => _.PercentileContWindowed,
+					(Linq.WindowFunctionsTests _) => _.PercentileContWithBooleanOrderBy,
+					(Linq.WindowFunctionsTests _) => _.PercentileDiscWindowed,
+					(Linq.WindowFunctionsTests _) => _.PercentileDiscWithBooleanOrderBy,
+					(Linq.WindowFunctionsTests _) => _.SumDistinct,
+					(Linq.WindowFunctionsTests _) => _.ValueFunctionWithFrameExclude
 					])
 					=> [],
 
@@ -203,6 +250,12 @@ namespace Tests.Custom
 				])
 				=> contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_AccessClient)),
 
+				//** Tests excluded for version lower than 7.4 **
+				_ when Matches(testMethod, [
+					// ODBC test times out due to large operation 
+					(Linq.BooleanTests _) => _.Test,
+				])
+				=> contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_ODBC)),
 
 				//** Tests excluded for the OleDb provider **
 				_ when Matches(testMethod, [
@@ -212,7 +265,7 @@ namespace Tests.Custom
 					(Extensions.QueryNameTests _) => _.TableTest,
 					(Extensions.QueryNameTests _) => _.FromTest,
 					(Extensions.QueryNameTests _) => _.MainInlineTest,
-					// OleDb test timesout due to large operation 
+					// OleDb test times out due to large operation 
 					(Linq.BooleanTests _) => _.Test,
 					// Test compares produced sql with hardcoded test case. OleDb has additional spaces that break it.
 					(Linq.WhereTests _) => _.Issue2897_ParensGeneration_MixedFromAnd,
