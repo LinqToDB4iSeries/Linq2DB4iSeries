@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -22,13 +22,13 @@ namespace Tests.DataProvider
 		sealed class YdbDataSourcesAttribute : IncludeDataSourcesAttribute
 		{
 			public YdbDataSourcesAttribute()
-				: base(ProviderName.Ydb)
+				: base(TestProvName.AllYdb)
 			{
 			}
 		}
 
 		[Sql.Expression("ListHas({1}, {0})", IsPredicate = true, ServerSideOnly = true)]
-		static bool InList(object? field, object? list) => throw new InvalidOperationException();
+		static bool InList(object? field, object? list) => throw new ServerSideOnlyException(nameof(InList));
 
 		protected override IQueryable<TypeTable<TType, TNullableType>> MakeListFilter<TType, TNullableType>(TempTable<TypeTable<TType, TNullableType>> table, object? columnValue, object? nullableColumnValue)
 		{
@@ -564,7 +564,7 @@ namespace Tests.DataProvider
 		[Test]
 		public async ValueTask TestTimestamp([YdbDataSources] string context)
 		{
-			// A moment in time in UTC, precision to the second
+			// A moment in time in UTC, precision to the microsecond
 			// from 00:00 01.01.1970 to 00:00 01.01.2106
 
 			var min = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);

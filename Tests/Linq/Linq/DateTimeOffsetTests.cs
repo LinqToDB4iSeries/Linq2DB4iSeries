@@ -113,8 +113,30 @@ namespace Tests.Linq
 
 			using var db    = GetDataContext(context);
 			using var table = db.CreateLocalTable(data);
-			
+
 			AreEqualWithComparer(table, data);
+		}
+
+		[Test]
+		public void TimeZonePreservation(
+			[IncludeDataSources(TestProvName.AllOracleManaged, TestProvName.AllSqlServer2008Plus)] string context)
+		{
+			// Related issue: OracleMappingSchema was not preserving Offset when converting DateTimeOffset as TIMESTAMP WITH TIME ZONE literal.
+			var dt = new DateTime(2026, 04, 12, 17, 00, 00);
+			var offset = new TimeSpan(7, 30, 00);
+			var dto = new DateTimeOffset(dt, offset);
+
+			DateTimeOffsetTable[] data = [
+				new() { TransactionId = 1, TransactionDate = dto },
+			];
+
+			using var db = GetDataContext(context);
+			using var table = db.CreateLocalTable(data);
+
+			var row = table.First();
+
+			Assert.That(row.TransactionDate.Offset, Is.EqualTo(offset));
+			Assert.That(row.TransactionDate, Is.EqualTo(dto));
 		}
 
 		#region Group By Tests
@@ -875,6 +897,12 @@ namespace Tests.Linq
 
 		#region DateDiff
 
+		// Every gate in this region carries the same reason: SQL Server before 2016 has no exact measure of elapsed
+		// time - DATEDIFF_BIG arrived there - and Sql.AsSql asks for the value in SQL, so there is no client-side
+		// answer to fall back to. These used to be answered from DATEDIFF, which counts boundary crossings rather
+		// than elapsed time and was therefore wrong for unaligned inputs. Declared rather than excluded so they go
+		// red the day the lowering reaches those versions.
+		[ThrowsCannotBeConverted(TestProvName.AllSqlServer2014Minus)]
 		[Test]
 		public void SubDateDay(
 			[IncludeDataSources(true, TestProvName.AllSqlServer2008Plus, TestProvName.AllPostgreSQL, TestProvName.AllClickHouse)]
@@ -899,6 +927,7 @@ namespace Tests.Linq
 					from t in db.GetTable<Transaction>()                 select Sql.AsSql(Sql.DateDiff(Sql.DateParts.Day, t.TransactionDate, t.TransactionDate.AddHours(96))));
 		}
 
+		[ThrowsCannotBeConverted(TestProvName.AllSqlServer2014Minus)]
 		[Test]
 		public void SubDateHour(
 			[IncludeDataSources(true, TestProvName.AllSqlServer2008Plus, TestProvName.AllPostgreSQL, TestProvName.AllClickHouse)]
@@ -923,6 +952,7 @@ namespace Tests.Linq
 					from t in db.GetTable<Transaction>()                 select Sql.AsSql(Sql.DateDiff(Sql.DateParts.Hour, t.TransactionDate, t.TransactionDate.AddHours(100))));
 		}
 
+		[ThrowsCannotBeConverted(TestProvName.AllSqlServer2014Minus)]
 		[Test]
 		public void SubDateMinute(
 			[IncludeDataSources(true, TestProvName.AllSqlServer2008Plus, TestProvName.AllPostgreSQL, TestProvName.AllClickHouse)]
@@ -947,6 +977,7 @@ namespace Tests.Linq
 					from t in db.GetTable<Transaction>()                 select Sql.AsSql(Sql.DateDiff(Sql.DateParts.Minute, t.TransactionDate, t.TransactionDate.AddMinutes(100))));
 		}
 
+		[ThrowsCannotBeConverted(TestProvName.AllSqlServer2014Minus)]
 		[Test]
 		public void SubDateSecond(
 			[IncludeDataSources(true, TestProvName.AllSqlServer2008Plus, TestProvName.AllPostgreSQL, TestProvName.AllClickHouse)]
@@ -971,6 +1002,7 @@ namespace Tests.Linq
 					from t in db.GetTable<Transaction>()                 select Sql.AsSql(Sql.DateDiff(Sql.DateParts.Second, t.TransactionDate, t.TransactionDate.AddMinutes(100))));
 		}
 
+		[ThrowsCannotBeConverted(TestProvName.AllSqlServer2014Minus)]
 		[Test]
 		public void SubDateMillisecond(
 			[IncludeDataSources(true, TestProvName.AllSqlServer2008Plus, TestProvName.AllPostgreSQL, TestProvName.AllClickHouse)]
@@ -998,6 +1030,7 @@ namespace Tests.Linq
 		#endregion
 
 		#region Issue Tests
+
 		[Test]
 		public void Issue2508Test([IncludeDataSources(true, TestProvName.AllSqlServer2008Plus, TestProvName.AllPostgreSQL, TestProvName.AllClickHouse)] string context)
 		{
@@ -1007,9 +1040,7 @@ namespace Tests.Linq
 					from t in Transaction.GetTestDataForContext(context) where           t.TransactionDate > TestData.DateTimeOffset.AddMinutes(200).ToUniversalTime() select t.TransactionId,
 					from t in db.GetTable<Transaction>()                 where Sql.AsSql(t.TransactionDate > TestData.DateTimeOffset.AddMinutes(200))                  select t.TransactionId);
 		}
-		#endregion
 
-		#region Issue 1855
 		[ActiveIssue(Configurations =
 		[
 			// caused by difference in how DTO parameter stored into database by provider

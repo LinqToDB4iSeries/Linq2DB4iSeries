@@ -19,10 +19,27 @@ namespace Tests
 	{
 		public   static string?         BaselinesPath        { get; }
 		public   static bool?           StoreMetrics         { get; }
+		// Configured cap on concurrent provider lanes for the parallel dispatcher; null => use the default.
+		public   static int?            MaxParallelLanes     { get; }
 		public   static bool            DisableRemoteContext { get; }
 		public   static HashSet<string> UserProviders        { get; }
 		internal static string?         DefaultProvider      { get; }
 		internal static HashSet<string> SkipCategories       { get; }
+
+		// Provider names passed via the --provider command-line option (see TestCommandLine), or null when absent.
+		// For the main test set (UserProviders) they REPLACE the providers configured in UserDataProviders.json, so
+		// any provider with a defined connection string can run without editing the file. For EFProviders they
+		// INTERSECT the curated EF-Core-supported list instead (a provider with no EF context can't run EF tests,
+		// so replacing there would just break). Declared above Providers/EFProviders so its initializer runs before
+		// theirs: static field initializers run in textual order, ahead of the static constructor body.
+		static readonly HashSet<string>? ProviderOverride =
+			TestCommandLine.Providers.Count > 0
+				? new HashSet<string>(TestCommandLine.Providers, StringComparer.OrdinalIgnoreCase)
+				: null;
+
+		// EFProviders keeps the intersection of its curated list and --provider (never an unsupported provider).
+		static IEnumerable<string> ApplyEFProviderOverride(IEnumerable<string> providers) =>
+			ProviderOverride is null ? providers : providers.Where(ProviderOverride.Contains);
 
 		static TestConfiguration()
 		{
@@ -59,7 +76,21 @@ namespace Tests
 				testSettings.Connections ??= new();
 
 				DisableRemoteContext = testSettings.DisableRemoteContext == true;
-				UserProviders = new HashSet<string>(testSettings.Providers ?? [], StringComparer.OrdinalIgnoreCase);
+				// --provider, when supplied, REPLACES the providers from UserDataProviders.json (see ProviderOverride):
+				// any provider with a defined connection string can be run without editing the file.
+				UserProviders = ProviderOverride is not null
+					? new HashSet<string>(ProviderOverride, StringComparer.OrdinalIgnoreCase)
+					: new HashSet<string>(testSettings.Providers ?? [], StringComparer.OrdinalIgnoreCase);
+
+				if (ProviderOverride is not null)
+				{
+					TestContext.Out.WriteLine($"Provider override (--provider): {string.Join(", ", UserProviders)}");
+
+					foreach (var p in UserProviders)
+						if (!testSettings.Connections.Keys.Contains(p, StringComparer.OrdinalIgnoreCase))
+							TestContext.Out.WriteLine($"WARNING: --provider '{p}' has no connection string defined; it will fail to connect.");
+				}
+
 				SkipCategories = new HashSet<string>(testSettings.Skip ?? [], StringComparer.OrdinalIgnoreCase);
 
 				var logLevel   = testSettings.TraceLevel;
@@ -129,6 +160,9 @@ namespace Tests
 #endif
 				}
 
+				// parallel lane cap (null => dispatcher uses its default)
+				MaxParallelLanes = testSettings.MaxParallelLanes;
+
 				// baselines
 				if (!string.IsNullOrWhiteSpace(testSettings.BaselinesPath))
 				{
@@ -194,20 +228,43 @@ namespace Tests
 			TestProvName.AllMySql,
 			TestProvName.AllSapHana,
 			TestProvName.AllClickHouse,
-			ProviderName.Ydb,
+			TestProvName.AllYdb,
 			TestProvName.AllDuckDB,
 		}.SplitAll()).ToList();
 
-		public static readonly IReadOnlyList<string> EFProviders = CustomizationSupport.Interceptor.GetSupportedProviders(new List<string>
+		/// <summary>
+		/// The providers <c>a_CreateData.CreateDatabase</c> generates a case for, and therefore the only
+		/// ones whose readiness latch is ever signalled. Note this is narrower than
+		/// <see cref="UserProviders"/>: the <see cref="IncludeDataSourcesAttribute"/> family selects test
+		/// arguments from <see cref="UserProviders"/> alone, so a provider outside <see cref="Providers"/>
+		/// (the Northwind contexts, TestNoopProvider) reaches tests - and becomes a parallel resource-lane
+		/// key - without ever getting a CreateDatabase case. Single source of truth for both
+		/// <see cref="CreateDatabaseSourcesAttribute"/> and the readiness wait in TestBase.OnBeforeTest,
+		/// so the two cannot drift apart.
+		/// </summary>
+		/// <param name="exclude">Providers the caller has already ruled out.</param>
+		public static List<string> GetCreateDatabaseProviders(IReadOnlyCollection<string> exclude)
+		{
+			var list = new List<string>();
+
+			// initialize default database, even if we don't run tests against it
+			// because it is used as source of test data
+			if (!UserProviders.Contains(DefaultProvider!))
+				list.Add(DefaultProvider!);
+
+			list.AddRange(UserProviders.Where(p => !exclude.Contains(p) && Providers.Contains(p)));
+
+			return list;
+		}
+
+		public static readonly IReadOnlyList<string> EFProviders = ApplyEFProviderOverride(CustomizationSupport.Interceptor.GetSupportedProviders(new List<string>
 		{
 			ProviderName.SQLiteMS,
 			// latest tested ef.core doesn't support older versions, leading to too many failing tests to disable
 			TestProvName.AllSqlServer2016PlusMS,
 			// latest tested ef.core doesn't support older versions, leading to too many failing tests to disable
 			TestProvName.AllPostgreSQL13Plus,
-#if !NET10_0 // provider need update for v10
 			TestProvName.AllMySqlConnector,
-#endif
 
 #if NETFRAMEWORK
 			// test providers with .net framework provider only
@@ -228,6 +285,6 @@ namespace Tests
 			//TestProvName.AllMySql,
 			//TestProvName.AllSapHana,
 			//TestProvName.AllClickHouse
-		}.SplitAll()).ToList();
+		}.SplitAll())).ToList();
 	}
 }

@@ -42,8 +42,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					nameof(Sql.Log) => attributes.Log,
 					nameof(Sql.Log10) => attributes.Log10,
 					nameof(Sql.Atan2) => attributes.Atan2,
-					nameof(Sql.StringAggregate) when memberInfo is MethodInfo stringAggregateMethod
-						=> stringAggregateMethod.GetParameters().Any(x => x.Name == "selector") ? attributes.StringAggregateSelector : attributes.StringAggregateSource,
 					nameof(Sql.CurrentTimestampUtc) => attributes.CurrentTimestampUtc,
 					_ => null
 				};

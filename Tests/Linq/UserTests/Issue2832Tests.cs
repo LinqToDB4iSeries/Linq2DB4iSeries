@@ -32,9 +32,7 @@ namespace Tests.UserTests
 			[Column] public int? ParentId { get; set; }
 		}
 
-		public class PrimaryKeyEquality<T>
-		{
-		}
+		public class PrimaryKeyEquality<T>;
 
 		[Table]
 		public class Deviation : PrimaryKeyEquality<Deviation>
@@ -63,9 +61,10 @@ namespace Tests.UserTests
 		[Sql.FunctionAttribute(Name = "UTILS.GREATESTNOTNULL3", ServerSideOnly = true, IsNullable = Sql.IsNullableType.Nullable)]
 		private static decimal? UtilsGreatestnotnull3(decimal? value1, decimal? value2, decimal? value3)
 		{
-			throw new NotImplementedException();
+			throw new ServerSideOnlyException(nameof(UtilsGreatestnotnull3));
 		}
 
+		[ActiveIssue(5590, Configuration = TestProvName.AllYdb, Details = "YDB does not support correlated subqueries (IsSupportedSimpleCorrelatedSubqueries=false); surfaces as a generic conversion error pending reason-propagation.")]
 		[Test]
 		public void TestIssue2832([DataSources] string context)
 		{

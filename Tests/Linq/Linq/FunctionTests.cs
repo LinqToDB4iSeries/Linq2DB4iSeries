@@ -416,7 +416,7 @@ namespace Tests.Linq
 		public void NewGuid1(
 			[DataSources(
 				ProviderName.DB2,
-				ProviderName.Ydb,
+				TestProvName.AllYdb,
 				TestProvName.AllInformix,
 				TestProvName.AllPostgreSQL12Minus,
 				TestProvName.AllSQLite,
@@ -447,7 +447,7 @@ namespace Tests.Linq
 		public void NewGuidOrder(
 			[DataSources(false,
 				ProviderName.DB2,
-				ProviderName.Ydb,
+				TestProvName.AllYdb,
 				TestProvName.AllInformix,
 				TestProvName.AllPostgreSQL,
 				TestProvName.AllSQLite,
@@ -466,12 +466,72 @@ namespace Tests.Linq
 			Assert.That(db.LastQuery, Does.Contain("ORDER"));
 		}
 
+		// Version nibble of a GUID is the first hex digit of its third group (canonical layout),
+		// i.e. index 12 of the dash-less "N" form. Works on every TFM (Guid.Version is net9+ only).
+		static int GuidVersion(Guid guid) => Convert.ToInt32(guid.ToString("N").Substring(12, 1), 16);
+
+		// Providers with a native server-side UUIDv7 generator. Sql.AsSql forces the value into SQL,
+		// so the emitted function call is deterministic and the baseline captures it — that baseline
+		// is the SQL-generation assertion that the right server function is used. The returned value
+		// itself is non-deterministic, so only its version is asserted.
+		[Test]
+		public void NewGuid7_Native([IncludeDataSources(true, TestProvName.AllClickHouse, TestProvName.AllDuckDB, TestProvName.AllMariaDB, TestProvName.AllPostgreSQL18Plus)] string context)
+		{
+			using var db = GetDataContext(context);
+
+			var guid = (from p in db.Types select Sql.AsSql(Sql.NewGuid7())).First();
+
+			Assert.That(guid, Is.Not.EqualTo(Guid.Empty));
+			Assert.That(GuidVersion(guid), Is.EqualTo(7));
+		}
+
+		// Providers without a native generator fall back to client-side generation, embedding a
+		// random literal in the SQL — non-deterministic, so the baseline is disabled.
+		[Test]
+		public void NewGuid7_Emulated([DataSources(TestProvName.AllClickHouse, TestProvName.AllDuckDB, TestProvName.AllMariaDB, TestProvName.AllPostgreSQL18Plus)] string context)
+		{
+			using (new DisableBaseline("Non-deterministic UUIDv7 value"))
+			using (var db = GetDataContext(context))
+			{
+				var guid = (from p in db.Types select Sql.AsSql(Sql.NewGuid7())).First();
+
+				Assert.That(guid, Is.Not.EqualTo(Guid.Empty));
+				Assert.That(GuidVersion(guid), Is.EqualTo(7));
+			}
+		}
+
+#if NET9_0_OR_GREATER
+		[Test]
+		public void CreateVersion7_Native([IncludeDataSources(true, TestProvName.AllClickHouse, TestProvName.AllDuckDB, TestProvName.AllMariaDB, TestProvName.AllPostgreSQL18Plus)] string context)
+		{
+			using var db = GetDataContext(context);
+
+			var guid = (from p in db.Types select Sql.AsSql(Guid.CreateVersion7())).First();
+
+			Assert.That(guid, Is.Not.EqualTo(Guid.Empty));
+			Assert.That(guid.Version, Is.EqualTo(7));
+		}
+
+		[Test]
+		public void CreateVersion7_Emulated([DataSources(TestProvName.AllClickHouse, TestProvName.AllDuckDB, TestProvName.AllMariaDB, TestProvName.AllPostgreSQL18Plus)] string context)
+		{
+			using (new DisableBaseline("Non-deterministic UUIDv7 value"))
+			using (var db = GetDataContext(context))
+			{
+				var guid = (from p in db.Types select Sql.AsSql(Guid.CreateVersion7())).First();
+
+				Assert.That(guid, Is.Not.EqualTo(Guid.Empty));
+				Assert.That(guid.Version, Is.EqualTo(7));
+			}
+		}
+#endif
+
 		[Test]
 		public void CustomFunc([DataSources] string context)
 		{
-			Expressions.MapMember<Person>(p => p.FullName(), (Expression<Func<Person,string>>)(p => p.LastName + ", " + p.FirstName));
+			Expressions.MapMember<Person>(nameof(CustomFunc), p => p.FullName(), (Expression<Func<Person,string>>)(p => p.LastName + ", " + p.FirstName));
 
-			using var db = GetDataContext(context);
+			using var db = GetDataContext(context, new MappingSchema(nameof(CustomFunc)));
 			AreEqual(
 				from p in Person where p.FullName() == "Pupkin, John" select p.FullName(),
 				from p in db.Person where p.FullName() == "Pupkin, John" select p.FullName());
@@ -496,7 +556,7 @@ namespace Tests.Linq
 		[ExpressionMethod("ChildCountExpression")]
 		private static int ChildCount(Parent parent)
 		{
-			throw new NotSupportedException();
+			throw new ServerSideOnlyException(nameof(ChildCount));
 		}
 
 		static Expression ChildCountExpression()
@@ -678,7 +738,7 @@ namespace Tests.Linq
 			}
 		}
 
-		[Sql.Function("COALESCE")]
+		[Sql.Function("COALESCE", ServerSideOnly = true)]
 		static int Coalesce(int? value, int defaultValue) => throw new ServerSideOnlyException(nameof(Coalesce));
 	}
 
@@ -704,7 +764,7 @@ namespace Tests.Linq
 		[Sql.Extension("{table_field} MATCH {match}", BuilderType = typeof(MatchBuilder), IsPredicate = true)]
 		public static bool MatchFts<TEntity>(TEntity src, [ExprParameter]string match)
 		{
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(MatchFts));
 		}
 	}
 
@@ -718,7 +778,7 @@ namespace Tests.Linq
 		[Sql.Function("SUM", ServerSideOnly = true, IsAggregate = true, ArgIndices = new[]{1})]
 		public static TItem MySum<TSource,TItem>(this IEnumerable<TSource> src, Expression<Func<TSource,TItem>> value)
 		{
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(MySum));
 		}
 
 	}

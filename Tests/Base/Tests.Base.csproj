@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<AssemblyName>linq2db.Tests.Base</AssemblyName>
 		<RootNamespace>Tests</RootNamespace>
-        <IsTestProject>false</IsTestProject>
+		<IsTestingPlatformApplication>false</IsTestingPlatformApplication>
 	</PropertyGroup>
 	
 	<ItemGroup>
@@ -14,8 +14,11 @@
 		<PackageReference Include="NUnit" />
 		<PackageReference Include="NUnit.Analyzers" />
 		<PackageReference Include="Shouldly" />
-		<PackageReference Include="linq2db.Remote.SignalR.Server" />
 		
+		<!-- MTP command-line option provider (provider / test-progress options) lives in this assembly. -->
+		<PackageReference Include="Microsoft.Testing.Platform" />
+
+		<PackageReference Include="linq2db.Remote.SignalR.Server" />
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'net462' ">

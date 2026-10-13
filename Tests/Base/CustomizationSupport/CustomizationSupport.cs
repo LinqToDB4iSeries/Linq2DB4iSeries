@@ -1,4 +1,11 @@
-﻿namespace Tests
+﻿// Provider configurations can share the same IBM i database, so all tests must run serially.
+// Zero workers also prevents installation of the resource-lane parallel dispatcher.
+using NUnit.Framework;
+
+[assembly: NonParallelizable]
+[assembly: LevelOfParallelism(0)]
+
+namespace Tests
 {
 	public static class CustomizationSupport
 	{

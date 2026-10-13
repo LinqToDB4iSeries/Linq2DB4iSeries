@@ -879,6 +879,7 @@ namespace Tests.DataProvider
 			[Column(DbType = "macaddr8", Configuration = TestProvName.PostgreSQL16)]
 			[Column(DbType = "macaddr8", Configuration = TestProvName.PostgreSQL17)]
 			[Column(DbType = "macaddr8", Configuration = ProviderName.PostgreSQL18)]
+			[Column(DbType = "macaddr8", Configuration = ProviderName.PostgreSQL19)]
 			                                           public PhysicalAddress? macaddr8DataType         { get; set; }
 			// json
 			[Column]                                   public string? jsonDataType                      { get; set; }
@@ -1198,6 +1199,11 @@ namespace Tests.DataProvider
 			public string Value = null!;
 		}
 
+		// Does committed (non-transactional) writes to SequenceTest1 and the sequence sequencetestseq, and
+		// asserts exact sequence values 1..40 - so nothing else may touch them while it runs. Both are
+		// scoped to one database, and every test against a database runs on that database's lane, so no
+		// concurrent test can reach them: this needs no NonParallelizable. Different PostgreSQL versions are
+		// different databases.
 		[Test]
 		public void BulkCopyRetrieveSequences(
 			[IncludeDataSources(TestProvName.AllPostgreSQL)] string context,
@@ -2260,7 +2266,7 @@ $function$
 		[Sql.Function(ServerSideOnly = true)]
 		static short? test_parameter_typing(short? input1, int? input2, long? input3, decimal? input4, float? input5, double? input6)
 		{
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(test_parameter_typing));
 		}
 
 		[Table]
@@ -2781,7 +2787,7 @@ $function$
 		#region issue 4250
 
 		[Sql.Expression("{point1} <-> {point2}", ServerSideOnly = true)]
-		static double Distance([ExprParameter] NpgsqlPoint? point1, [ExprParameter] NpgsqlPoint? point2) => throw new NotImplementedException();
+		static double Distance([ExprParameter] NpgsqlPoint? point1, [ExprParameter] NpgsqlPoint? point2) => throw new ServerSideOnlyException(nameof(Distance));
 
 		[ActiveIssue]
 		[Test(Description = "https://github.com/linq2db/linq2db/issues/4250")]
@@ -2797,7 +2803,7 @@ $function$
 		#region issue 4348
 
 		[Sql.Expression("{0} @> '[{1}]'", ServerSideOnly = true, IsPredicate = true, InlineParameters = true)]
-		static bool JsonContains(string? json, int value) => throw new NotImplementedException();
+		static bool JsonContains(string? json, int value) => throw new ServerSideOnlyException(nameof(JsonContains));
 
 		[Test(Description = "https://github.com/linq2db/linq2db/issues/4348")]
 		public void Issue4348Test1([IncludeDataSources(true, TestProvName.AllPostgreSQL95Plus)] string context)
@@ -3048,6 +3054,118 @@ $function$
 		}
 		#endregion
 
+		#region Issue 5549
+		[Table]
+		sealed class Issue5549Table
+		{
+			// NodaTime.Instant has no built-in linq2db DataType, so the column DDL type must be
+			// given explicitly (the Npgsql NodaTime plugin maps Instant <-> timestamptz). The CLR
+			// type itself stays unmapped, which is the point of the parameter-translation test.
+			[Column(IsIdentity = true)               ] public int              Id        { get; set; }
+			[Column(DbType = "timestamptz"), Nullable] public NodaTime.Instant? ClosedAt  { get; set; }
+			[Column(DbType = "timestamptz")          ] public NodaTime.Instant  CreatedAt { get; set; }
+		}
+
+		// Solution 2 helper: translate a custom coalesce into a real SqlCoalesceExpression via an extension
+		// builder, so the compared Instant? parameter can borrow a column descriptor — unlike the opaque
+		// [Sql.Expression] template (Issue5549CoalesceRaw), which exposes none.
+		sealed class Issue5549CoalesceBuilder : Sql.IExtensionCallBuilder
+		{
+			public void Build(Sql.ISqlExtensionBuilder builder)
+			{
+				builder.ResultExpression = new LinqToDB.Internal.SqlQuery.SqlCoalesceExpression(
+					builder.GetExpression(0)!, builder.GetExpression(1)!);
+			}
+		}
+
+		[Sql.Extension("", BuilderType = typeof(Issue5549CoalesceBuilder), ServerSideOnly = true)]
+		static NodaTime.Instant? Issue5549CoalesceBuilt(NodaTime.Instant? obj1, NodaTime.Instant obj2) => throw new ServerSideOnlyException(nameof(Issue5549CoalesceBuilt));
+
+		[Sql.Expression("coalesce({0},{1})", ServerSideOnly = true)]
+		static NodaTime.Instant? Issue5549CoalesceRaw(NodaTime.Instant? obj1, NodaTime.Instant obj2) => throw new ServerSideOnlyException(nameof(Issue5549CoalesceRaw));
+
+		// Npgsql NodaTime plugin handles Instant at the ADO layer; linq2db has no built-in DataType for it.
+		(NpgsqlDataSource DataSource, IDataProvider Provider) Issue5549Setup(string context)
+		{
+			IDataProvider dataProvider;
+			string?       connectionString;
+			using (var db2 = GetDataConnection(context))
+			{
+				dataProvider     = db2.DataProvider;
+				connectionString = db2.ConnectionString;
+			}
+
+			var builder = new NpgsqlDataSourceBuilder(connectionString);
+			builder.UseNodaTime();
+			return (builder.Build(), dataProvider);
+		}
+
+		static NodaTime.Instant Issue5549Populate(IDataContext db)
+		{
+			// Fixed instant (not SystemClock) so the captured baseline SQL is deterministic; the test
+			// only relies on relative arithmetic (now - 7d / 1h / 2h) and row counts.
+			var now = NodaTime.Instant.FromUtc(2020, 1, 1, 0, 0, 0);
+			db.Insert(new Issue5549Table { ClosedAt = null,                               CreatedAt = now });
+			db.Insert(new Issue5549Table { ClosedAt = now - NodaTime.Duration.FromHours(1), CreatedAt = now - NodaTime.Duration.FromHours(2) });
+			return now;
+		}
+
+		// Solution 1: built-in COALESCE via the ?? operator (produces a SqlCoalesceExpression).
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/5549")]
+		public void Issue5549Test_BuiltInCoalesce([IncludeDataSources(TestProvName.AllPostgreSQL)] string context)
+		{
+			var (dataSource, dataProvider) = Issue5549Setup(context);
+
+			using var db = GetDataContext(context, o => o.UseConnectionFactory(dataProvider, _ => dataSource.CreateConnection()));
+			using var tb = db.CreateLocalTable<Issue5549Table>();
+
+			var               now      = Issue5549Populate(db);
+			NodaTime.Instant? fromDate = now - NodaTime.Duration.FromDays(7);
+
+			var results = tb.Where(e => (e.ClosedAt ?? e.CreatedAt) >= fromDate).ToList();
+
+			Assert.That(results, Has.Count.EqualTo(2));
+		}
+
+		// Solution 2: custom helper translated to a COALESCE node via an extension builder.
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/5549")]
+		public void Issue5549Test_ExtensionBuilder([IncludeDataSources(TestProvName.AllPostgreSQL)] string context)
+		{
+			var (dataSource, dataProvider) = Issue5549Setup(context);
+
+			using var db = GetDataContext(context, o => o.UseConnectionFactory(dataProvider, _ => dataSource.CreateConnection()));
+			using var tb = db.CreateLocalTable<Issue5549Table>();
+
+			var               now      = Issue5549Populate(db);
+			NodaTime.Instant? fromDate = now - NodaTime.Duration.FromDays(7);
+
+			var results = tb.Where(e => Issue5549CoalesceBuilt(e.ClosedAt, e.CreatedAt) >= fromDate).ToList();
+
+			Assert.That(results, Has.Count.EqualTo(2));
+		}
+
+		// Solution 3: register the unmapped type so the opaque [Sql.Expression] template works too
+		// (SetScalarType; equivalent to the reporter's SetDataType workaround).
+		[Test(Description = "https://github.com/linq2db/linq2db/issues/5549")]
+		public void Issue5549Test_ScalarType([IncludeDataSources(TestProvName.AllPostgreSQL)] string context)
+		{
+			var (dataSource, dataProvider) = Issue5549Setup(context);
+
+			var ms = new MappingSchema();
+			ms.SetScalarType(typeof(NodaTime.Instant));
+
+			using var db = GetDataContext(context, o => o.UseConnectionFactory(dataProvider, _ => dataSource.CreateConnection()).UseMappingSchema(ms));
+			using var tb = db.CreateLocalTable<Issue5549Table>();
+
+			var               now      = Issue5549Populate(db);
+			NodaTime.Instant? fromDate = now - NodaTime.Duration.FromDays(7);
+
+			var results = tb.Where(e => Issue5549CoalesceRaw(e.ClosedAt, e.CreatedAt) >= fromDate).ToList();
+
+			Assert.That(results, Has.Count.EqualTo(2));
+		}
+		#endregion
+
 		sealed class JsonComparisonTable1
 		{
 			[Column                                ] public string? Text  { get; set; }
@@ -3163,13 +3281,13 @@ $function$
 		[Sql.Function("test_avg", ServerSideOnly = true, IsAggregate = true, ArgIndices = new[] { 1 })]
 		public static double CustomAvg<TSource>(this IEnumerable<TSource> src, Expression<Func<TSource, double>> value)
 		{
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(CustomAvg));
 		}
 
 		[Sql.Function("test_avg", ServerSideOnly = true, IsAggregate = true, ArgIndices = new[] { 1 })]
 		public static double? CustomAvg<TSource>(this IEnumerable<TSource> src, Expression<Func<TSource, double?>> value)
 		{
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(CustomAvg));
 		}
 	}
 
@@ -3186,7 +3304,7 @@ $function$
 		public static object AddIfNotExists(string value)
 		{
 			// this function has void return type in pg, but we use object in C# to make it usable
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(AddIfNotExists));
 		}
 
 		[Sql.TableFunction("TestTableFunctionSchema")]
@@ -3201,7 +3319,7 @@ $function$
 		[Sql.Function("\"TestFunctionParameters\"", ServerSideOnly = true)]
 		public static TestParametersResult TestParameters(int? param1, int? param2)
 		{
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(TestParameters));
 		}
 
 		[Sql.TableFunction("TestTableFunction")]
@@ -3223,19 +3341,19 @@ $function$
 		[Sql.Function("\"TestScalarFunction\"", ServerSideOnly = true)]
 		public static string TestScalarFunction(int? param)
 		{
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(TestScalarFunction));
 		}
 
 		[Sql.Function("\"TestSingleOutParameterFunction\"", ServerSideOnly = true)]
 		public static int? TestSingleOutParameterFunction(int? param)
 		{
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(TestSingleOutParameterFunction));
 		}
 
 		[Sql.Function("jsonb_to_record", ServerSideOnly = true)]
 		public static TRecord DynamicRecordFunction<TRecord>(string json)
 		{
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(DynamicRecordFunction));
 		}
 
 		[Sql.TableFunction("jsonb_to_recordset")]
@@ -3250,7 +3368,7 @@ $function$
 		[Sql.Function("unnest", 0, IsAggregate = true, ServerSideOnly = true, Precedence = Precedence.Primary)]
 		public static T Unnest<T>(T[] array)
 		{
-			throw new InvalidOperationException();
+			throw new ServerSideOnlyException(nameof(Unnest));
 		}
 
 		public class TestScalarTableFunctionResult
