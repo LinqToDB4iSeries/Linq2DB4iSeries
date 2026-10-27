@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <RunConfiguration>
+    <!-- Both target frameworks use the same database: allow only one test host at a time. -->
+    <MaxCpuCount>1</MaxCpuCount>
+  </RunConfiguration>
+  <NUnit>
+    <NumberOfTestWorkers>0</NumberOfTestWorkers>
+  </NUnit>
+</RunSettings>

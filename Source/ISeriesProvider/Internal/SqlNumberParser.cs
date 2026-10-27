@@ -69,6 +69,15 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}, dbValue => (ulong)dbValue);
 		}
 
+		public static decimal ParseDecimal(string str)
+		{
+			return NumberParser<decimal>.Parse(str, decimal.MinValue, decimal.MaxValue, (s, style, provider) =>
+			{
+				var success = decimal.TryParse(s, style, provider, out var value);
+				return (value, success);
+			}, dbValue => (decimal)dbValue);
+		}
+
 		private class NumberParser<T>
 			where T : struct
 		{

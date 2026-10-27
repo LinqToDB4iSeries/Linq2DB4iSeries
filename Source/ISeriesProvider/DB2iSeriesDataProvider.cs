@@ -257,7 +257,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public override ISqlOptimizer GetSqlOptimizer(DataOptions dataOptions)
 		{
-			return new DB2iSeriesSqlOptimizer(SqlProviderFlags, db2iSeriesSqlProviderFlags, dataOptions);
+			return new DB2iSeriesSqlOptimizer(SqlProviderFlags, db2iSeriesSqlProviderFlags, dataOptions, ProviderType);
 		}
 
 		protected override IMemberTranslator CreateMemberTranslator()

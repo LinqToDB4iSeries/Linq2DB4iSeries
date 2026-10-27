@@ -1,6 +1,7 @@
 ﻿using LinqToDB.Data;
 using LinqToDB.Internal.SqlProvider;
 using LinqToDB.Internal.SqlQuery;
+using LinqToDB.Internal.SqlQuery.Visitors;
 using LinqToDB.Mapping;
 using LinqToDB.SqlQuery;
 using System;
@@ -484,7 +485,30 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			if (predicate is SqlPredicate.Exists existsPredicate
 				&& BuildStep != Step.WhereClause)
 			{
-				var query = reduceSelector(existsPredicate.SubQuery.CloneQuery());
+				var cloneVisitor = new SqlQueryCloneVisitor();
+				var query = (SelectQuery)cloneVisitor.Clone(existsPredicate.SubQuery, static e => e is not SqlCteTable);
+				var replacements = new Dictionary<IQueryElement, IQueryElement>();
+				cloneVisitor.GetReplacements(replacements);
+
+				// Finalized names live outside the AST in linq2db 6.5.1. Keep them when
+				// cloning at build time, after the statement's aliasing pass has completed.
+				foreach (var replacement in replacements)
+				{
+					switch (replacement.Key)
+					{
+						case SqlTableSource source when AliasesContext.GetTableAlias(source) is { } alias:
+							AliasesContext.SetTableAlias((SqlTableSource)replacement.Value, alias);
+							break;
+						case SqlColumn column:
+							AliasesContext.SetColumnAlias((SqlColumn)replacement.Value, AliasesContext.GetColumnAlias(column));
+							break;
+						case SqlFieldBase field:
+							AliasesContext.SetFieldName((SqlExpressionBase)replacement.Value, AliasesContext.GetFieldName(field));
+							break;
+					}
+				}
+
+				query = reduceSelector(query);
 
 				// If there there are Set operator (e.g. UNION etc), reduce the selector of each set member 
 				// and wrap around a subquery with a single row

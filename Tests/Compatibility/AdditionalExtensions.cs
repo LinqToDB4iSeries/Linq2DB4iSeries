@@ -1,14 +1,10 @@
 ﻿#pragma warning disable MA0047 // Declare types in namespaces
 #pragma warning disable MA0048 // File name must match type name
 
-using System.Runtime.CompilerServices;
-using System.Diagnostics;
-
-
-
 #if NETFRAMEWORK || NETSTANDARD2_0
 
-using LinqToDB.Mapping;
+using System.Runtime.CompilerServices;
+using System.Reflection;
 using System;
 
 public static class AdditionalExtensions
@@ -31,7 +27,7 @@ public static class AdditionalExtensions
 			ArgumentNullException.ThrowIfNull(value);
 
 			bool success = Enum.TryParse<TEnum>(value.AsSpan(), ignoreCase, out TEnum result);
-			
+
 			if (!success)
 			{
 				throw new ArgumentException($"The value '{value}' is not valid for enum type '{typeof(TEnum).FullName}'.", nameof(value));
@@ -63,15 +59,34 @@ public static class AdditionalExtensions
 #if TARGET_WINDOWS
             true;
 #else
-			false;
+			Environment.OSVersion.Platform == PlatformID.Win32NT;
 #endif
-		
-		public static bool IsLinux() =>         
+
+		public static bool IsLinux() =>
 #if TARGET_LINUX && !TARGET_ANDROID
             true;
 #else
-			false;
+			Environment.OSVersion.Platform == PlatformID.Unix;
 #endif
+
+		public static bool IsMacOS() =>
+#if TARGET_MACOS
+            true;
+#else
+			Environment.OSVersion.Platform == PlatformID.MacOSX;
+#endif
+	}
+
+	extension(Type type)
+	{
+		public MethodInfo GetMethod(string name, BindingFlags bindingAttr, Type[] types)
+		{
+			ArgumentNullException.ThrowIfNull(name);
+			var method = type.GetMethod(name, bindingAttr, null, types, null);
+			return method is null
+				? throw new MissingMethodException($"The method '{name}' with the specified parameters was not found in type '{type.FullName}'.")
+				: method;
+		}
 	}
 }
 

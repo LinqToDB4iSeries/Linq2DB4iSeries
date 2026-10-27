@@ -27,6 +27,13 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			var options = dataOptions.BulkCopyOptions;
 			var descriptor = dataConnection.MappingSchema.GetEntityDescriptor(typeof(T));
 			var columns = descriptor.Columns.Where(c => !c.SkipOnInsert || options.KeepIdentity == true && c.IsIdentity).ToList();
+			var identityColumn = descriptor.Columns.FirstOrDefault(c => c.IsIdentity);
+
+			if (columns.Count == 0 && identityColumn is null)
+			{
+				throw new InvalidOperationException($"No columns allowed for insert found for table '{descriptor.Name}', type '{typeof(T).FullName}'.");
+			}
+
 			using var rd = new BulkCopyReader<T>(dataConnection, columns, source);
 			var rc = new BulkCopyRowsCopied();
 			var sqlBuilder = dataConnection.DataProvider.CreateSqlBuilder(table.DataContext.MappingSchema, dataOptions);

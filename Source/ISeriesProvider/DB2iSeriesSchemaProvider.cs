@@ -86,7 +86,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					IsNullable = dr.GetTrimmedString("Is_Nullable") == "Y",
 					Name = dr.GetTrimmedString("Column_Name")!,	
 					Ordinal = dr.GetInt32("Ordinal_Position"),
-					TableID = dataConnection.GetDbConnection().Database + "." + dr.GetTrimmedString("Table_Schema") + "." + dr.GetTrimmedString("Table_Name"),
+					TableID = GetDbConnection(dataConnection).Database + "." + dr.GetTrimmedString("Table_Schema") + "." + dr.GetTrimmedString("Table_Name"),
 				};
 				SetColumnParameters(ci, dr.GetInt32("Length"), dr.GetInt32("Numeric_Scale"));
 				return ci;
@@ -122,9 +122,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				Name = dr.GetTrimmedString("Constraint_Name")!,
 				Ordinal = dr.GetInt32("Ordinal_Position"),
 				OtherColumn = dr.GetTrimmedString("OtherColumn")!,
-				OtherTableID = dataConnection.GetDbConnection().Database + "." + dr.GetTrimmedString("OtherSchema") + "." + dr.GetTrimmedString("OtherTable"),
+				OtherTableID = GetDbConnection(dataConnection).Database + "." + dr.GetTrimmedString("OtherSchema") + "." + dr.GetTrimmedString("OtherTable"),
 				ThisColumn = dr.GetTrimmedString("ThisColumn")!,
-				ThisTableID = dataConnection.GetDbConnection().Database + "." + dr.GetTrimmedString("ThisSchema") + "." + dr.GetTrimmedString("ThisTable")
+				ThisTableID = GetDbConnection(dataConnection).Database + "." + dr.GetTrimmedString("ThisSchema") + "." + dr.GetTrimmedString("ThisTable")
 			};
 
 			return dataConnection.Query(drf, sql).ToList();
@@ -150,7 +150,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				ColumnName = dr.GetTrimmedString("Column_Name")!,
 				Ordinal = dr.GetInt32("Ordinal_position"),
 				PrimaryKeyName = dr.GetTrimmedString("constraint_Name"),
-				TableID = dataConnection.GetDbConnection().Database + "." + dr.GetTrimmedString("table_SCHEMA") + "." + dr.GetTrimmedString("table_NAME")
+				TableID = GetDbConnection(dataConnection).Database + "." + dr.GetTrimmedString("table_SCHEMA") + "." + dr.GetTrimmedString("table_NAME")
 			};
 
 			return dataConnection.Query(drf, sql).ToList();
@@ -185,7 +185,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					IsFunction = dr.GetString("Routine_Type") == "FUNCTION",
 					IsTableFunction = dr.GetString("Function_Type") == "T",
 					ProcedureDefinition = dr.GetTrimmedString("Routine_Definition"),
-					ProcedureID = dataConnection.GetDbConnection().Database + "." + dr.GetTrimmedString("Specific_Schema") + "." + dr.GetTrimmedString("Specific_Name"),
+					ProcedureID = GetDbConnection(dataConnection).Database + "." + dr.GetTrimmedString("Specific_Schema") + "." + dr.GetTrimmedString("Specific_Name"),
 					ProcedureName = dr.GetTrimmedString("Routine_Name")!,
 					SchemaName = dr.GetTrimmedString("Routine_Schema")
 				};
@@ -225,7 +225,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					Ordinal = dr.GetInt32("Ordinal_position"),
 					ParameterName = dr.GetTrimmedString("Parameter_Name"),
 					Precision = dr.GetNullableInt32("Numeric_Precision"),
-					ProcedureID = dataConnection.GetDbConnection().Database + "." + dr.GetTrimmedString("Specific_Schema") + "." + dr.GetTrimmedString("Specific_Name"),
+					ProcedureID = GetDbConnection(dataConnection).Database + "." + dr.GetTrimmedString("Specific_Schema") + "." + dr.GetTrimmedString("Specific_Name"),
 					Scale = dr.GetNullableInt32("Numeric_Scale"),
 				};
 			}
@@ -251,10 +251,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			if (provider.ProviderType.IsOdbc())
 			{
-				var dbconnection = (dataConnection.TryGetDbConnection() ?? dataConnection.OpenDbConnection()) 
-					?? throw ExceptionHelper.MisssingDbConnection();
+				var dbconnection = GetDbConnection(dataConnection);
 				
-				DataTypesSchema = dataConnection.GetDbConnection().GetSchema("DataTypes");
+				DataTypesSchema = dbconnection.GetSchema("DataTypes");
 
 				return DataTypesSchema.AsEnumerable()
 					.Select(t => new DataTypeInfo
@@ -269,7 +268,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 			else if (provider.ProviderType.IsDB2())
 			{
-				DataTypesSchema = dataConnection.GetDbConnection().GetSchema("DataTypes");
+				DataTypesSchema = GetDbConnection(dataConnection).GetSchema("DataTypes");
 
 				return DataTypesSchema.AsEnumerable()
 					.Select(t => new DataTypeInfo
@@ -314,7 +313,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 				IsDefaultSchema = dr.GetTrimmedString("Table_Schema") == defaultSchema,
 				IsView = new[] { "L", "V" }.Contains(dr.GetTrimmedString("Table_Type") ?? ""),
 				SchemaName = dr.GetTrimmedString("Table_Schema"),
-				TableID = dataConnection.GetDbConnection().Database + "." + dr.GetTrimmedString("Table_Schema") + "." + dr.GetTrimmedString("Table_Name"),
+				TableID = GetDbConnection(dataConnection).Database + "." + dr.GetTrimmedString("Table_Schema") + "." + dr.GetTrimmedString("Table_Name"),
 				TableName = dr.GetTrimmedString("Table_Name")!
 			};
 			
@@ -327,7 +326,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			if (provider.ProviderType.IsOdbc())
 			{
-				return dataConnection.GetDbConnection().GetSchema("ProcedureColumns", new[] { null, null, commandText });
+				return GetDbConnection(dataConnection).GetSchema("ProcedureColumns", new[] { null, null, commandText });
 			}
 
 			if (provider.ProviderType.IsAccessClient())
@@ -339,6 +338,11 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		}
 
 		#region Helpers
+
+		private static DbConnection GetDbConnection(DataConnection dataConnection)
+		{
+			return dataConnection.TryGetDbConnection() ?? dataConnection.OpenDbConnection();
+		}
 
 		private static void SetColumnParameters(ColumnInfo ci, int? size, int? scale)
 		{
