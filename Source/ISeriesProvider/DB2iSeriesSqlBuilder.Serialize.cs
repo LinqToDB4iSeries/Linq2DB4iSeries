@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 
 using LinqToDB.Internal.DataProvider;
+using LinqToDB.SqlQuery;
 
 namespace LinqToDB.DataProvider.DB2iSeries
 {
@@ -49,6 +50,40 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			})
 			.Select(x => $"{{0:yyyy-MM-dd{x}}}")
 			.ToArray();
+
+		public static void ConvertDateTimeLiteralToSql(StringBuilder stringBuilder, SqlDataType type, DateTime value)
+		{
+			var datatype = type.Type.DataType;
+			var dbType = type.Type.DbType?.Trim();
+			var precision = type.Type.Precision;
+
+			if ("DATE".Equals(dbType, StringComparison.OrdinalIgnoreCase))
+				datatype = DataType.Date;
+			else if ("TIME".Equals(dbType, StringComparison.OrdinalIgnoreCase))
+				datatype = DataType.Time;
+
+			if (precision == null && dbType != null &&
+				dbType.StartsWith("TIMESTAMP(", StringComparison.OrdinalIgnoreCase) &&
+				dbType.EndsWith(")", StringComparison.Ordinal) &&
+				int.TryParse(dbType.Substring(10, dbType.Length - 11), NumberStyles.Integer,
+					CultureInfo.InvariantCulture, out var dbTypePrecision))
+				precision = dbTypePrecision;
+			
+			if (datatype is DataType.Date or DataType.Time)
+			{
+				ConvertDateTimeToSql(stringBuilder, datatype, value, precision: precision);
+				return;
+			}
+
+			precision = precision == 0 ? 0 : precision ?? 6;
+			// An untyped string can inherit a DATE comparand's type and lose its time part.
+			// Parameter values still use ConvertDateTimeToSql without SQL syntax.
+			stringBuilder.Append("CAST(");
+			ConvertDateTimeToSql(stringBuilder, datatype, value, precision: precision);
+			stringBuilder.Append(" AS TIMESTAMP(")
+				.Append(precision.ToString())
+				.Append("))");
+		}
 
 		public static void ConvertDateTimeToSql(StringBuilder stringBuilder, DataType datatype, DateTime value, bool quoted = true, int? precision = null)
 		{
@@ -97,7 +132,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			if (precision == 0)
 				return sqlDateTimeFormats[0];
-			else if (precision == null)
+			else if (precision == null || precision < 0)
 				return sqlDateTimeFormats[6];
 			else if (precision.Value <= sqlDateTimeFormats.Length)
 				return sqlDateTimeFormats[precision.Value];

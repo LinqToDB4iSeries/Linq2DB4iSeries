@@ -25,7 +25,8 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetValueToSqlConverter(typeof(byte[]), (sb, _, v) => ConvertBinaryToSql(sb, (byte[])v));
 			SetValueToSqlConverter(typeof(Binary), (sb, _, v) => ConvertBinaryToSql(sb, ((Binary)v).ToArray()));
 			SetValueToSqlConverter(typeof(TimeSpan), (sb, _, v) => ConvertTimeToSql(sb, (TimeSpan)v));
-			SetValueToSqlConverter(typeof(DateTime), (sb, dt, v) => ConvertDateTimeToSql(sb, dt.Type.DataType, (DateTime)v, precision: dt.Type.Precision));
+			SetValueToSqlConverter(typeof(DateTime), (sb, dt, v) => ConvertDateTimeLiteralToSql(sb, dt, (DateTime)v));
+			SetValueToSqlConverter(typeof(DateTimeOffset), (sb, dt, v) => ConvertDateTimeLiteralToSql(sb, dt, ((DateTimeOffset)v).DateTime));
 
 			// Set reader conversions from literals
 			SetConverter<string, DateTime>(SqlDateTimeParser.ParseDateTime);
@@ -39,6 +40,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetConverter<string, uint>(SqlNumberParser.ParseUInt32);
 			SetConverter<string, long>(SqlNumberParser.ParseInt64);
 			SetConverter<string, ulong>(SqlNumberParser.ParseUInt64);
+			SetConverter<string, decimal>(SqlNumberParser.ParseDecimal);
 
 #if NET6_0_OR_GREATER
 			SetValueToSqlConverter(typeof(DateOnly), (sb, _, _, v) => ConvertDateOnlyToSql(sb, (DateOnly)v));

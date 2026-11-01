@@ -135,6 +135,7 @@ namespace Tests.Custom
 					//Not applicable for DB2i
 					(Linq.ParameterTests _) => _.CharAsSqlParameter2,
 					(Linq.ParameterTests _) => _.CharAsSqlParameter3,
+					(Linq.PreferClientCalculationTests _) => _.DataContextAsQueryableOverInlineArrayIsNotRunPerRow, 
 					//Tests have a hardcoded check for positional parameters, DB2i is mixed so tests cannot work as they are, should be copied over
 					(Linq.QueryGenerationTests _) => _.ToSqlQuery_WithParametersDeduplication,
 					//Query produces no rows but string to number case is evaluated regardless and breaks
@@ -188,6 +189,10 @@ namespace Tests.Custom
 					(Linq.StringFunctionsTests _) => _.Issue1765TestLiteral4,
 					(Linq.StringFunctionsTests _) => _.Issue1765TestParameter4,
 					(Linq.StringFunctionsTests _) => _.Issue4501Test,
+					// Replaced by DB2iSeriesTests.BooleanExpressionsAndCoalesce: compact data
+					// and in-memory expectations avoid repeated large result transfers.
+					(Linq.BooleanTests _) => _.Test,
+					(Linq.BooleanTests _) => _.Test_Coalesce,
 					//Not supported window function tests
 					(Linq.WindowFunctionsTests _) => _.AggregateWithFrameExclude,
 					(Linq.WindowFunctionsTests _) => _.AverageDistinct,
@@ -220,10 +225,17 @@ namespace Tests.Custom
 					(Linq.WindowFunctionsTests _) => _.PercentileDiscWindowed,
 					(Linq.WindowFunctionsTests _) => _.PercentileDiscWithBooleanOrderBy,
 					(Linq.WindowFunctionsTests _) => _.SumDistinct,
-					(Linq.WindowFunctionsTests _) => _.ValueFunctionWithFrameExclude
+					(Linq.WindowFunctionsTests _) => _.ValueFunctionWithFrameExclude,
+#if NETFRAMEWORK
+					// .NET Framework decimal hashing differs for equal values with different scales.
+					// AccessClient returns scale-25 results, causing these hash-based assertions to fail.
+					(Linq.MathFunctionTests _) => _.Round13,
+					(Linq.MathFunctionTests _) => _.Round14,
+					(Linq.MathFunctionTests _) => _.Round15,
+					(Linq.MathFunctionTests _) => _.Round16,
+#endif
 					])
 					=> [],
-
 
 				//** Tests excluded for the AccessClient provider **
 				_ when Matches(testMethod, [
@@ -247,15 +259,12 @@ namespace Tests.Custom
 					(Linq.MappingTests _) => _.MappingTypingByConstant_FromQuery_Int64,
 					(Linq.MappingTests _) => _.MappingTypingByConstant_FromQuery_UInt32,
 					(Linq.MappingTests _) => _.MappingTypingByConstant_FromQuery_UInt64,
+#if NETFRAMEWORK
+					// AccessClient provider does allow creating table without columns
+					(Linq.L2SAttributeTests _) => _.Issue3691Test,
+#endif
 				])
 				=> contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_AccessClient)),
-
-				//** Tests excluded for version lower than 7.4 **
-				_ when Matches(testMethod, [
-					// ODBC test times out due to large operation 
-					(Linq.BooleanTests _) => _.Test,
-				])
-				=> contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_ODBC)),
 
 				//** Tests excluded for the OleDb provider **
 				_ when Matches(testMethod, [
@@ -265,15 +274,15 @@ namespace Tests.Custom
 					(Extensions.QueryNameTests _) => _.TableTest,
 					(Extensions.QueryNameTests _) => _.FromTest,
 					(Extensions.QueryNameTests _) => _.MainInlineTest,
-					// OleDb test times out due to large operation 
-					(Linq.BooleanTests _) => _.Test,
 					// Test compares produced sql with hardcoded test case. OleDb has additional spaces that break it.
 					(Linq.WhereTests _) => _.Issue2897_ParensGeneration_MixedFromAnd,
 					(Linq.WhereTests _) => _.Issue2897_ParensGeneration_MixedFromOr,
 					// Test contains a hardcoded extension with a function that does not have a space after a comma.
 					(UserTests.Issue4336Tests _) => _.Issue4336Test,
 					//OleDb treats null char as space
-					(Linq.ParameterTests _) => _.CharAsSqlParameter5
+					(Linq.ParameterTests _) => _.CharAsSqlParameter5,
+					//Test performs assertionon produced SQL and wide decimal fix for OleDb alters the SQL in a way the test cannot assert it
+					(Linq.GroupByTests _) => _.Issue3761Test2,
 				])
 				=> contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_OleDb)),
 
@@ -295,6 +304,14 @@ namespace Tests.Custom
 				])
 				=> contexts.Where(c => !c.Contains("GAS")),
 
+				//** Tests only supported on the DB2Connet driver **
+				_ when Matches(testMethod, [
+					// AccessClient AddBatch doesn't support DEFAULT and default multiple rows does support this scenario
+					// Can be enabled again after default multiple row insert handles this properly
+					(xUpdate.BulkCopyTests _) => _.BulkCopyAutoOnlyProviderSpecific,
+					(xUpdate.BulkCopyTests _) => _.BulkCopySkipOnlyProviderSpecific,
+				])
+				=> contexts.Intersect(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_DB2Connect)),
 
 				//** Default **
 				_ => contexts

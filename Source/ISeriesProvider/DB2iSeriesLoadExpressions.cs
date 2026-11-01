@@ -10,6 +10,18 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		{
 			if (configurations.TryAdd(configuration, null))
 			{
+				// string.PadRight preserves values wider than totalWidth; Sql.PadRight intentionally truncates them.
+				Linq.Expressions.MapMember(
+					configuration,
+					Linq.Expressions.M(() => "".PadRight(0)).MemberInfo,
+					Linq.Expressions.N(() => Linq.Expressions.L<string, int, string?>((value, width) => value.Length >= width ? value : Sql.PadRight(value, width, ' '))));
+				
+				// string.PadRight preserves values wider than totalWidth; Sql.PadRight intentionally truncates them.
+				Linq.Expressions.MapMember(
+					configuration,
+					Linq.Expressions.M(() => "".PadRight(0, ' ')).MemberInfo,
+					Linq.Expressions.N(() => Linq.Expressions.L<string, int, char, string?>((value, width, padding) => value.Length >= width ? value : Sql.PadRight(value, width, padding))));
+
 				Linq.Expressions.MapMember(
 					configuration,
 					Linq.Expressions.M(() => Sql.Stuff("", 0, 0, "")).MemberInfo,

@@ -44,15 +44,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			return DB2iSeriesDbTypes.UpCastDbDataTypeToFit(type, value);
 		}
 
-		public static DbConnection GetDbConnection(this DataConnection dataConnection)
-		{
-			var dbConnection = dataConnection.TryGetDbConnection();
-			if (dbConnection == null)
-				throw ExceptionHelper.MisssingDbConnection();
-
-			return dbConnection;
-		}
-
 		public static string? GetString(this DbDataReader dbDataReader, string fieldName)
 		{
 			var index = dbDataReader.GetOrdinal(fieldName);
@@ -111,9 +102,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static IEnumerable<string> GetLibList(this DataConnection dataConnection)
 		{
-			var connection = dataConnection.TryGetDbConnection()
-				?? throw ExceptionHelper.MisssingDbConnection();
-
 			if (dataConnection.DataProvider is DB2iSeriesDataProvider iSeriesDataProvider)
 			{
 				var libraryListKey = iSeriesDataProvider.ProviderType switch
@@ -154,9 +142,6 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static string? GetDefaultLib(this DataConnection dataConnection)
 		{
-			var connection = dataConnection.TryGetDbConnection()
-				?? throw ExceptionHelper.MisssingDbConnection();
-
 			if (dataConnection.DataProvider is DB2iSeriesDataProvider iSeriesDataProvider)
 			{
 				var defaultLibKey = iSeriesDataProvider.ProviderType switch

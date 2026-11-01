@@ -1,0 +1,3 @@
+interface:
+  display_name: "Prepare linq2db Upgrade"
+  short_description: "Prepare an upgrade branch and synchronize upstream tests"

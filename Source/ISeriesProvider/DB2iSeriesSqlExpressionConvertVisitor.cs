@@ -21,6 +21,32 @@ namespace LinqToDB.DataProvider.DB2iSeries
 		/// <inheritdoc />
 		public override bool CanLowerIntervalDifference => true;
 
+		protected override SqlIntervalUnit? FinestDateUnit => SqlIntervalUnit.Microsecond;
+
+		protected override ISqlExpression? ShiftDate(SqlIntervalUnit unit, ISqlExpression amount, ISqlExpression date)
+		{
+			var duration = unit switch
+			{
+				SqlIntervalUnit.Day         => "DAYS",
+				SqlIntervalUnit.Second      => "SECONDS",
+				SqlIntervalUnit.Microsecond => "MICROSECONDS",
+				_                          => null,
+			};
+
+			if (duration == null)
+				return null;
+
+			// Promote DATE operands before adding sub-day durations, and type parameter markers.
+			var timestampType = Factory.GetDbDataType(typeof(DateTime));
+			var timestamp = Factory.Cast(date, timestampType, true);
+
+			// Group the entire amount so a divisor cannot be parsed as the labeled duration.
+			return Factory.Expression(timestampType, Precedence.Additive,
+				"{0} + ({1}) " + duration, timestamp, amount);
+		}
+
+		public override string[] LikeCharactersToEscape => DB2LikeCharactersToEscape;
+
 		/// <summary>
 		/// The tick count is built from <c>MICROSECOND()</c> scaled by ten, so it is a multiple of ten by
 		/// construction and a component below the microsecond is identically zero rather than merely imprecise.
@@ -58,7 +84,23 @@ namespace LinqToDB.DataProvider.DB2iSeries
 					Factory.Multiply(longType, FieldDifference("Microsecond"), TimeSpan.TicksPerMillisecond / 1000)));
 		}
 
-		public override string[] LikeCharactersToEscape => DB2LikeCharactersToEscape;
+		/// <summary>
+		/// Whether <c>MOD</c> can take the operand as it is.
+		/// </summary>
+		/// <remarks>
+		/// Asked of the database type as well as the CLR one: a column can store an integer for a model type that is
+		/// not one - a <see cref="TimeSpan"/> stored as a count of seconds - and narrowing that through <c>INT</c>
+		/// overflows a <c>BIGINT</c> count past 2<sup>31</sup>.
+		/// </remarks>
+		bool IsIntegerOperand(ISqlExpression operand)
+		{
+			if (operand.SystemType?.IsIntegerType == true)
+				return true;
+
+			return QueryHelper.GetDbDataType(operand, MappingSchema).DataType
+				is DataType.SByte or DataType.Byte or DataType.Int16 or DataType.UInt16
+				or DataType.Int32 or DataType.UInt32 or DataType.Int64 or DataType.UInt64;
+		}
 
 		public override ISqlExpression ConvertSqlUnaryExpression(SqlUnaryExpression element)
 		{
@@ -74,7 +116,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			{
 				case "%":
 					{
-						var expr1 = !element.Expr1.SystemType!.IsIntegerType ? new SqlFunction(MappingSchema.GetDbDataType(typeof(int)), "Int", element.Expr1) : element.Expr1;
+						var expr1 = !IsIntegerOperand(element.Expr1) ? new SqlFunction(MappingSchema.GetDbDataType(typeof(int)), "Int", element.Expr1) : element.Expr1;
 						return new SqlFunction(element.Type, "Mod", expr1, element.Expr2);
 					}
 				case "&": return new SqlFunction(element.Type, "BitAnd", element.Expr1, element.Expr2);
@@ -202,6 +244,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			=> func.FrameClause != null
 				|| IsOrderDependentWindowFunction(func.FunctionName)
 				|| func.FunctionName is "NTILE";
+
 	}
 }
 
