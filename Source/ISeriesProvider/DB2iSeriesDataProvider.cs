@@ -157,6 +157,9 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			SetProviderField<DbDataReader, DateTime, string>((r, i) => SqlDateTimeParser.ParseDateTime(r.GetString(i)));
 			SetProviderField<DbDataReader, DateTimeOffset, string>((r, i) => SqlDateTimeParser.ParseDateTime(r.GetString(i)));
 			SetProviderField<DbDataReader, TimeSpan, string>((r, i) => SqlDateTimeParser.ParseTimeSpan(r.GetString(i)));
+
+			//Replaces the default decimal reader to handle DBTYPE_NUMERIC values with a coefficient wider than 96 bits.
+			SetField<DbDataReader, decimal>((r, i) => OleDbNumericReader.GetDecimal(r, i));
 		}
 
 		public override DbCommand InitCommand(DataConnection dataConnection, DbCommand command, CommandType commandType, string commandText, DataParameter[]? parameters, bool withParameters)

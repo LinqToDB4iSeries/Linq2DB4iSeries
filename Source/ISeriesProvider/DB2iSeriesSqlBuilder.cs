@@ -184,6 +184,23 @@ namespace LinqToDB.DataProvider.DB2iSeries
 			}
 		}
 
+		// Same as DB2SqlBuilderBase.BuildEndCreateTableStatement (not inherited, as this builder derives from BasicSqlBuilder).
+		// DB2 for i defaults DGTTs to ON COMMIT DELETE ROWS, so without an explicit clause rows are lost
+		// whenever the driver commits (e.g. autocommit under commitment control).
+		protected override void BuildEndCreateTableStatement(SqlCreateTableStatement createTable)
+		{
+			base.BuildEndCreateTableStatement(createTable);
+
+			var table = createTable.Table;
+
+			if (table.TableOptions.IsTemporaryOptionSet())
+			{
+				AppendIndent().AppendLine(table.TableOptions.HasIsTransactionTemporaryData()
+					? "ON COMMIT DELETE ROWS"
+					: "ON COMMIT PRESERVE ROWS");
+			}
+		}
+
 		protected override void BuildCreateTablePrimaryKey(SqlCreateTableStatement createTable, string pkName, IEnumerable<string> fieldNames)
 		{
 			// DB2 doesn't support constraints on temp tables

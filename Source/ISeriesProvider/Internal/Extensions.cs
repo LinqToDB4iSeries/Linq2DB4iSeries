@@ -31,7 +31,7 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 		public static bool IsGuidMappedAsString(this MappingSchema mappingSchema)
 		{
-			return mappingSchema is DB2iSeriesGuidAsStringMappingSchema;
+			return mappingSchema.ConfigurationList.Contains(DB2iSeriesGuidAsStringMappingSchema.ConfigurationMarker, StringComparer.Ordinal);
 		}
 
 		public static DbDataType SanitizeDbDataType(this MappingSchema mappingSchema, DbDataType dbDataType, DB2iSeriesSqlProviderFlags flags)
