@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework.Interfaces;
 using Tests.Data;
+using Tests.Linq;
+using Tests.xUpdate;
 
 namespace Tests.Custom
 {
@@ -233,6 +235,8 @@ namespace Tests.Custom
 					(Linq.MathFunctionTests _) => _.Round14,
 					(Linq.MathFunctionTests _) => _.Round15,
 					(Linq.MathFunctionTests _) => _.Round16,
+					// LINQ-to-SQL requires [Column] attributes; this model has none and generates a zero-column table, invalid on IBM i.
+					(Linq.L2SAttributeTests _) => _.Issue3691Test,
 #endif
 					])
 					=> [],
@@ -259,10 +263,6 @@ namespace Tests.Custom
 					(Linq.MappingTests _) => _.MappingTypingByConstant_FromQuery_Int64,
 					(Linq.MappingTests _) => _.MappingTypingByConstant_FromQuery_UInt32,
 					(Linq.MappingTests _) => _.MappingTypingByConstant_FromQuery_UInt64,
-#if NETFRAMEWORK
-					// AccessClient provider does allow creating table without columns
-					(Linq.L2SAttributeTests _) => _.Issue3691Test,
-#endif
 				])
 				=> contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_AccessClient)),
 
@@ -281,11 +281,24 @@ namespace Tests.Custom
 					(UserTests.Issue4336Tests _) => _.Issue4336Test,
 					//OleDb treats null char as space
 					(Linq.ParameterTests _) => _.CharAsSqlParameter5,
-					//Test performs assertionon produced SQL and wide decimal fix for OleDb alters the SQL in a way the test cannot assert it
-					(Linq.GroupByTests _) => _.Issue3761Test2,
 				])
 				=> contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_OleDb)),
 
+				//** Tests excluded for the DB2Connet driver **
+				_ when Matches(testMethod, [
+					// DB2 driver can't handle decimal precision higher than 31, at least not up to v11.1 test.
+					// Later versions might address that, recommended to use explicit casting to 31
+					(Linq.TypesTests _) => _.Issue4469Test2,
+					// Upsert Merge statements with a USING(SELECT parameters From dummy) failes with SQL0901N / MCH3601 on the
+					// mainframe when preparing the sql the in the second invocation on the same job when the local table
+					// was dropped and recreated. This is happending on the job types DB2Connect creates so it's probably
+					// a bug there, as ODBC/OleDb are not affected.
+					// Similar errors were observed with older versions of the ODBC provider that use the same underlying cli driver
+					// Potentially fixed in later versions than 11.1, however it it's very possible it's a host issue.
+					(InsertTests _) => _.InsertOrReplaceByTableNameAsync, //Same test passes as sync, async would in theory work if the table named was changed
+					(InsertTests _) => _.Issue2243, // First value passes, the other two fail
+				])
+				=> contexts.Except(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_DB2Connect)),
 
 				//** Tests excluded for version lower than 7.4 **
 				_ when Matches(testMethod, [
@@ -294,7 +307,6 @@ namespace Tests.Custom
 					(Linq.AnalyticTests _) => _.Issue1799Test2,
 				])
 				=> contexts.Intersect(TestProvNameDb2i.GetProviders(TestProvNameDb2i.All_74)),
-
 
 				//** Tests excluded for GAS provider versions **
 				_ when Matches(testMethod, [

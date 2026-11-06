@@ -62,8 +62,20 @@ namespace LinqToDB.DataProvider.DB2iSeries
 
 	sealed class DB2iSeriesGuidAsStringMappingSchema : LockedMappingSchema
 	{
+		internal const string ConfigurationMarker = "DB2iSeries.MapGuidAsString";
+
+		// Configuration names survive when linq2db combines mapping schemas.
+		private sealed class GuidAsStringMarkerSchema : LockedMappingSchema
+		{
+			internal static readonly GuidAsStringMarkerSchema Instance = new();
+
+			private GuidAsStringMarkerSchema() : base(ConfigurationMarker)
+			{
+			}
+		}
+
 		public DB2iSeriesGuidAsStringMappingSchema(string configuration, MappingSchema providerSchema) 
-			: base(configuration, providerSchema, DB2iSeriesMappingSchemaBase.Instance)
+			: base(configuration, providerSchema, GuidAsStringMarkerSchema.Instance, DB2iSeriesMappingSchemaBase.Instance)
 		{
 		}
 	}

@@ -65,16 +65,35 @@
 	<Choose>
 		<When Condition=" $(DB2STUB) != 'True' ">
 			<ItemGroup Condition=" '$(TargetFramework)' == 'net462' ">
-				<!--PackageReference + Reference beelongs to same nuget-->
+				<!--Default 11.5 version - requires appropriate license-->
 				<PackageReference Include="IBM.Data.DB.Provider" GeneratePathProperty="true" />
+				<!--Use this override if you have a 11.1 license-->
+				<!--<PackageReference Include="IBM.Data.DB.Provider" GeneratePathProperty="true" VersionOverride="11.1.4040.4"/>-->
+				
 				<Reference Include="IBM.Data.DB2" Condition=" $(PlatformTarget) != 'x86' ">
 					<HintPath>$(PkgIBM_Data_DB_Provider)\build\net451\x64\IBM.Data.DB2.dll</HintPath>
 				</Reference>
 				<Reference Include="IBM.Data.DB2" Condition=" $(PlatformTarget) == 'x86' ">
 					<HintPath>$(PkgIBM_Data_DB_Provider)\build\net451\x86\IBM.Data.DB2.DLL</HintPath>
 				</Reference>
+
+				<!--The installed cersion via Data Server Client-->
+				<!--<Reference Include="IBM.Data.DB2" Condition=" $(PlatformTarget) != 'x86' ">
+					<HintPath>C:\Program Files\IBM\SQLLIB\BIN\netf40\IBM.Data.DB2.dll</HintPath>
+				</Reference>
+				<Reference Include="IBM.Data.DB2" Condition=" $(PlatformTarget) == 'x86' ">
+					<HintPath>C:\Program Files\IBM\SQLLIB\BIN\netf40_32\IBM.Data.DB2.dll</HintPath>
+				</Reference>-->
 			</ItemGroup>
 			<ItemGroup Condition=" '$(TargetFramework)' != 'net462' ">
+				<!--The older core package up to version 11.5. Prefer the newer driver for 11.5, use this one for 11.1-->
+				<!--Note: Namespace is IBM.Data.DB2.Core-->
+				<!--<PackageReference Include="IBM.Data.DB2.Core" Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' " VersionOverride = "1.3.0.100" />
+				<PackageReference Include="IBM.Data.DB2.Core-lnx" Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' " VersionOverride = "1.3.0.100" />
+				<PackageReference Include="IBM.Data.DB2.Core-osx" Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' " VersionOverride = "1.3.0.100" />-->
+				
+				<!--The newer official nuget packages from version 11.5 upwards-->
+				<!--Note: Namespace is IBM.Data.Db2-->
 				<PackageReference Include="Net.IBM.Data.Db2" Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' " />
 				<PackageReference Include="Net.IBM.Data.Db2-lnx" Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' " />
 				<PackageReference Include="Net.IBM.Data.Db2-osx" Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' "/>
